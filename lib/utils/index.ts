@@ -159,4 +159,18 @@ export function parseRating(rating: number | null) {
     emptyStars,
     display: `${stars.toFixed(1)} stars`
   }
+}
+
+// Format engine capacity for display
+export function formatEngineCapacity(capacity: number | null): string {
+  if (!capacity) return 'N/A'
+  
+  // If capacity is less than 1000, show as cc
+  if (capacity < 1000) {
+    return `${capacity}cc`
+  }
+  
+  // If capacity is 1000 or more, show as liters with one decimal place
+  const liters = capacity / 1000
+  return `${liters.toFixed(1)}L`
 } 
