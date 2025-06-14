@@ -7,7 +7,7 @@ This document explains the automated deployment pipeline for RideVault using Git
 Our CI/CD pipeline automatically:
 - ✅ Runs tests, linting, and type checking on all PRs
 - 🚀 Deploys preview versions for pull requests  
-- 🌟 Deploys to production on `main` branch pushes
+- 🌟 Deploys to production on `master` branch pushes
 - 📊 Provides deployment status and preview URLs
 
 ## 🔧 Required Setup
