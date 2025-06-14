@@ -10,23 +10,24 @@ type Province = Database['public']['Tables']['provinces']['Row']
 type Country = Database['public']['Tables']['countries']['Row']
 
 export interface MotorcycleWithDetails extends MotorcycleRental {
-  rental_shops: RentalShop | null
+  rental_shops: (RentalShop & {
+    cities: City & {
+      provinces: Province & {
+        countries: Country | null
+      } | null
+    } | null
+  }) | null
   brands: Brand | null
   categories: Category | null
-  cities?: City & {
-    provinces: Province & {
-      countries: Country | null
-    } | null
-  } | null
 }
 
 export interface SearchFilters {
   location?: string
-  cityId?: number
-  provinceId?: number
+  cityId?: string
+  provinceId?: string
   countryCode?: string
-  brandId?: number
-  categoryId?: number
+  brandId?: string
+  categoryId?: string
   minPrice?: number
   maxPrice?: number
   minEngineCapacity?: number
@@ -139,7 +140,7 @@ export const motorcycleService = {
   },
 
   // Get single motorcycle by ID
-  async getMotorcycleById(id: number) {
+  async getMotorcycleById(id: string) {
     const { data, error } = await supabase
       .from('motorcycle_rentals')
       .select(`

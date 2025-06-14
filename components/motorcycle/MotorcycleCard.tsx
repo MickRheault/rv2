@@ -31,8 +31,8 @@ export default function MotorcycleCard({
     : 'Price on request'
 
   return (
-    <Card className={className} hoverable variant="elevated">
-      <CardHeader padding="none">
+    <Card className={className} hoverable variant="elevated" padding="none">
+      <CardHeader className="pb-0">
         {/* Motorcycle Image */}
         <div className="relative h-48 w-full overflow-hidden rounded-t-lg bg-gray-100">
           <Image
@@ -85,10 +85,10 @@ export default function MotorcycleCard({
             </div>
           )}
           
-          {motorcycle.transmission && (
+          {motorcycle.year && (
             <div className="flex items-center space-x-1">
-              <span className="text-xs">⚙️</span>
-              <span className="capitalize">{motorcycle.transmission}</span>
+              <span className="text-xs">📅</span>
+              <span>{motorcycle.year}</span>
             </div>
           )}
         </div>
@@ -121,14 +121,14 @@ export default function MotorcycleCard({
 
       <CardFooter className="pt-3">
         <div className="flex w-full gap-2">
-          <Link href={`/motorcycle/${motorcycle.id}`} className="flex-1">
+          <Link href={{ pathname: '/motorcycle/[id]', query: { id: motorcycle.id } }} className="flex-1">
             <Button variant="outline" fullWidth size="sm">
               View Details
             </Button>
           </Link>
           
           {shop && (
-            <Link href={`/shop/${shop.id}`} className="flex-1">
+            <Link href={{ pathname: '/shop/[id]', query: { id: shop.id } }} className="flex-1">
               <Button variant="primary" fullWidth size="sm">
                 Visit Shop
               </Button>
