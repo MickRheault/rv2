@@ -1,0 +1,221 @@
+# 🏍️ RideVault - Global Motorcycle Rental Platform
+
+A comprehensive Next.js application for aggregating motorcycle rental businesses worldwide, built with TypeScript, Tailwind CSS, and Supabase.
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Node.js 18+ and npm
+- A Supabase account and project
+- Git
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone <your-repo-url>
+   cd rv2
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables**
+   
+   Create a `.env.local` file in the root directory with your Supabase credentials:
+   
+   ```env
+   # Supabase Configuration
+   NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
+   
+   # Optional: Service Role Key (for server-side operations)
+   SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
+   
+   # Development Environment
+   NODE_ENV=development
+   ```
+   
+   **Where to find your Supabase credentials:**
+   - Go to your [Supabase Dashboard](https://app.supabase.com)
+   - Select your project
+   - Navigate to **Settings** → **API**
+   - Copy your **Project URL** and **anon/public key**
+
+4. **Start the development server**
+   ```bash
+   npm run dev
+   ```
+
+   The application will be available at `http://localhost:3000` (or the next available port).
+
+## 🏗️ Project Structure
+
+```
+rv2/
+├── app/                    # Next.js 14 App Router
+│   ├── globals.css        # Global styles with Tailwind CSS
+│   ├── layout.tsx         # Root layout component
+│   └── page.tsx           # Home page
+├── lib/                   # Core library code
+│   ├── supabase/          # Supabase configuration
+│   │   ├── client.ts      # Supabase client setup
+│   │   └── database.types.ts # TypeScript types from DB schema
+│   └── utils/             # Utility functions
+│       └── index.ts       # Common utilities (formatting, validation, etc.)
+├── context/               # Existing data structures
+│   ├── _lib/              # Legacy database types
+│   ├── supabase/          # Migration files
+│   └── data_template.json # Data import template
+├── PRD/                   # Product Requirements Documents
+├── tasks/                 # Development task lists
+├── tailwind.config.js     # Tailwind CSS configuration
+├── next.config.js         # Next.js configuration
+└── tsconfig.json          # TypeScript configuration
+```
+
+## 🗄️ Database Schema
+
+The platform uses a comprehensive Supabase database with 19 tables for motorcycle rental data:
+
+### Core Tables
+- **`rental_shops`** - Rental business information
+- **`motorcycle_rentals`** - Individual motorcycles available for rent
+- **`brands`** - Motorcycle manufacturers
+- **`categories`** - Motorcycle types (scooter, sport, touring, etc.)
+
+### Location Hierarchy
+- **`countries`** → **`provinces`** → **`cities`**
+
+### Rich Metadata
+- **`images`** - Motorcycle and shop photos
+- **`features`** - Motorcycle features (ABS, GPS, etc.)
+- **`insurance_types`** - Insurance options
+- **`rental_rate_tiers`** - Pricing tiers by duration
+
+### Relationships
+- **`motorcycle_images`** - Image associations
+- **`motorcycle_features`** - Feature associations  
+- **`rental_shop_inclusions`** - What's included in rentals
+- **`rental_shop_tours`** - Available tour packages
+
+## 🛠️ Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
+- `npm run type-check` - Run TypeScript type checking
+
+## 🎨 Styling & UI
+
+- **Tailwind CSS** - Utility-first CSS framework
+- **Mobile-first responsive design** - Optimized for all devices
+- **Custom color palette** - Primary blue and accent green themes
+- **Component utilities** - Pre-built button, card, and layout classes
+
+### Custom Tailwind Classes
+- `.btn-primary` / `.btn-secondary` - Button styles
+- `.card` - Card component styling
+- `.container-custom` - Responsive container
+- `.grid-responsive` - Responsive grid layout
+
+## 📊 Key Features
+
+### Current Implementation
+- ✅ Next.js 14 with App Router and TypeScript
+- ✅ Tailwind CSS with mobile-first responsive design
+- ✅ Supabase integration with TypeScript types
+- ✅ Comprehensive utility functions
+- ✅ Database schema for motorcycle rental data
+
+### Planned Features (See PRD)
+- 🔄 Location-based search and filtering
+- 🔄 Motorcycle listing and detail pages
+- 🔄 Rental shop profiles
+- 🔄 Price comparison and availability
+- 🔄 User authentication and favorites
+- 🔄 Admin interface for data moderation
+
+## 🧪 Development Workflow
+
+1. **Check TypeScript** - `npm run type-check`
+2. **Run tests** - `npm test` (when tests are added)
+3. **Lint code** - `npm run lint`
+4. **Build for production** - `npm run build`
+
+## 🌍 Environment Configuration
+
+### Development
+The app is configured to work with fallback Supabase credentials for development, but you should set up your own `.env.local` file for the best experience.
+
+### Production
+Ensure all environment variables are properly configured in your deployment platform (Vercel, Netlify, etc.).
+
+### Required Environment Variables
+```env
+NEXT_PUBLIC_SUPABASE_URL=          # Your Supabase project URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY=     # Your Supabase anonymous key
+```
+
+### Optional Environment Variables
+```env
+SUPABASE_SERVICE_ROLE_KEY=         # For server-side operations
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=   # For maps integration
+NEXT_PUBLIC_GA_TRACKING_ID=        # For Google Analytics
+```
+
+## 📝 Contributing
+
+1. Follow the existing code style and conventions
+2. Run type checking before committing
+3. Test your changes thoroughly
+4. Update documentation as needed
+
+## 🚢 Deployment
+
+The project is optimized for deployment on Vercel:
+
+1. **Connect your repository** to Vercel
+2. **Configure environment variables** in the Vercel dashboard
+3. **Deploy** - Vercel will automatically build and deploy
+
+### Deployment Checklist
+- [ ] Environment variables configured
+- [ ] Supabase project is active
+- [ ] Database migrations applied
+- [ ] Build passes without errors
+- [ ] TypeScript compilation successful
+
+## 🔧 Technology Stack
+
+- **Framework**: Next.js 14 with App Router
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: Supabase Auth
+- **Deployment**: Vercel (recommended)
+
+## 📚 Useful Resources
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Supabase Documentation](https://supabase.com/docs)
+- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
+- [Project PRD](./PRD/prd-motorcycle-rental-aggregator.md)
+- [Development Tasks](./tasks/tasks-prd-motorcycle-rental-aggregator.md)
+
+## 🤝 Support
+
+If you encounter any issues:
+
+1. Check the [development tasks](./tasks/tasks-prd-motorcycle-rental-aggregator.md) for current progress
+2. Verify your environment variables are correct
+3. Ensure your Supabase project is active and accessible
+4. Run `npm run type-check` to identify TypeScript issues
+
+---
+
+**Built with ❤️ for motorcycle enthusiasts worldwide** 🏍️ 

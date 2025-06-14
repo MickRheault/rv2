@@ -1,0 +1,78 @@
+{
+  "provider_metadata": {
+      "scrape_timestamp": "string (ISO 8601)",
+      "shop_identifier": "string",
+      "provider_name": "string | null",
+      "place_id": "string | null",
+      "address": "string | null",
+      "city": "string | null",
+      "province": "string | null",
+      "country": "string | null",
+      "latitude": "number | null",
+      "longitude": "number | null",
+      "phone": "string | null",
+      "website": "string | null",
+      "google_maps_url": "string | null",
+      "business_status": "string | null",
+      "rating": "number | null",
+      "review_count": "number | null",
+      "rental_conditions": {
+        "example_condition_key": "string | number | boolean | null",
+        "another_example_condition": "string | number | boolean | null"
+      },
+      "rental_inclusions": [
+        "string"
+      ],
+      "available_service_locations": [
+        "string"
+      ],
+      "offered_tours": [
+        {
+          "name": "string",
+          "duration_text": "string | null",
+          "distance_km": "number | null",
+          "price_text": "string | null",
+          "currency": "string | null"
+        }
+      ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "string | null",
+      "scrape_timestamp": "string (ISO 8601) | null",
+      "source_url": "string | null",
+      "brand": "string | null",
+      "model": "string",
+      "year": "number | null",
+      "engine_capacity_cc": "number | null",
+      "category": "string | null",
+      "description": "string | null",
+      "rental_rates": [
+        {
+          "rate_text": "string | null",
+          "min_days": "number",
+          "max_days": "number | null",
+          "rate_per_day": "number | null",
+          "currency": "string | null"
+        }
+      ],
+      "images": [ "string" ],
+      "features": [ "string" ],
+      "specifications_raw": "object | string | null",
+      "conditions_raw": "object | string | null",
+      "required_documents_raw": [ "string" ],
+      "insurance_details_raw": [
+         {
+            "type_name": "string",
+            "is_included": "boolean",
+            "cost_per_day": "number | null",
+            "currency": "string | null",
+            "deductible": "number | null",
+            "deductible_currency": "string | null",
+            "notes": "string | null"
+        }
+       ],
+      "availability_status": "string | null"
+    }
+  ]
+} 

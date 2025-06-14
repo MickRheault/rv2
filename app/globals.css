@@ -1,0 +1,167 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global styles for RideVault */
+
+/* Enhanced mobile-first base styles */
+@layer base {
+  * {
+    @apply box-border;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply text-gray-900 bg-white antialiased;
+    @apply min-h-screen;
+    font-family: system-ui, -apple-system, sans-serif;
+    /* Support for iOS safe area */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+
+  /* Mobile-first typography */
+  h1 {
+    @apply text-2xl font-bold leading-tight;
+  }
+
+  h2 {
+    @apply text-xl font-semibold leading-tight;
+  }
+
+  h3 {
+    @apply text-lg font-medium leading-tight;
+  }
+
+  /* Responsive typography for larger screens */
+  @screen md {
+    h1 {
+      @apply text-4xl;
+    }
+
+    h2 {
+      @apply text-3xl;
+    }
+
+    h3 {
+      @apply text-2xl;
+    }
+  }
+
+  /* Focus styles for accessibility */
+  *:focus {
+    @apply outline-none ring-2 ring-primary-500 ring-offset-2;
+  }
+
+  /* Improve button and interactive element accessibility */
+  button, [role="button"] {
+    @apply transition-colors duration-200;
+  }
+}
+
+/* Custom component styles */
+@layer components {
+  /* Mobile-first container */
+  .container-custom {
+    @apply w-full max-w-7xl mx-auto px-4;
+  }
+
+  @screen sm {
+    .container-custom {
+      @apply px-6;
+    }
+  }
+
+  @screen lg {
+    .container-custom {
+      @apply px-8;
+    }
+  }
+
+  /* Mobile-first button styles */
+  .btn-primary {
+    @apply bg-primary-600 text-white px-4 py-2 rounded-lg font-medium;
+    @apply hover:bg-primary-700 active:bg-primary-800;
+    @apply focus:ring-primary-500 transition-colors duration-200;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-100 text-gray-900 px-4 py-2 rounded-lg font-medium;
+    @apply hover:bg-gray-200 active:bg-gray-300;
+    @apply focus:ring-gray-500 transition-colors duration-200;
+  }
+
+  /* Card component for motorcycle and shop listings */
+  .card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200;
+    @apply hover:shadow-md transition-shadow duration-200;
+  }
+
+  /* Mobile-first responsive grid */
+  .grid-responsive {
+    @apply grid grid-cols-1 gap-4;
+  }
+
+  @screen sm {
+    .grid-responsive {
+      @apply grid-cols-2;
+    }
+  }
+
+  @screen lg {
+    .grid-responsive {
+      @apply grid-cols-3;
+    }
+  }
+
+  @screen xl {
+    .grid-responsive {
+      @apply grid-cols-4;
+    }
+  }
+}
+
+/* Utility layer for custom utilities */
+@layer utilities {
+  /* Touch-friendly sizing for mobile */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Text ellipsis for long text */
+  .text-ellipsis {
+    @apply truncate;
+  }
+
+  /* Safe area utilities for mobile devices */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Custom scrollbar for webkit browsers */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(156 163 175) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    height: 4px;
+    width: 4px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgb(156 163 175);
+    border-radius: 2px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+}
+ 
