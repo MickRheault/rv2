@@ -136,10 +136,10 @@ The system receives data via the template in `context/data_template.json`:
   - [x] 1.5 Configure Vercel deployment with automatic CI/CD from GitHub
   - [x] 1.6 Set up project structure with components, hooks, services, and utils directories
   - [x] 1.7 Install and configure essential dependencies (React Query/Zustand, Zod, etc.)
-  - [x] 1.8 Set up Jest testing framework and basic test configuration
+  - [x] 1.8 Set up Jest testing framework and basic test configuration1
 
 - [ ] 2.0 Database Integration & Search Implementation
-  - [ ] 2.1 Create database service layer for motorcycle and shop queries
+  - [x] 2.1 Create database service layer for motorcycle and shop queries
   - [ ] 2.2 Implement location-based search using countries, provinces, and cities tables
   - [ ] 2.3 Build structured filtering system for categories, brands, and models
   - [ ] 2.4 Create price range and engine capacity filtering functionality
