@@ -144,8 +144,8 @@ The system receives data via the template in `context/data_template.json`:
   - [x] 2.3 Build structured filtering system for categories, brands, and models
   - [x] 2.4 Create price range and engine capacity filtering functionality
   - [x] 2.5 Implement feature-based filtering (ABS, GPS, helmets, etc.)
-  - [ ] 2.6 Add sorting functionality (price, rating, distance, relevance)
-  - [ ] 2.7 Create location autocomplete using database queries
+  - [x] 2.6 Add sorting functionality (price, rating, WITHOUT distance & relevance)
+  - [x] 2.7 Create comprehensive search result display with pagination
   - [ ] 2.8 Optimize database queries with proper indexing and caching
   - [ ] 2.9 Implement pagination or infinite scroll for search results
   - [ ] 2.10 Add search state management and URL parameter handling

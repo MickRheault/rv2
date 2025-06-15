@@ -28,6 +28,22 @@ export interface LocationSearchState {
   clearSearch: () => void
   selectLocation: (location: LocationSearchResult) => void
   
+  // Pagination
+  goToPage: (page: number) => void
+  nextPage: () => void
+  prevPage: () => void
+  setPageSize: (limit: number) => void
+  paginationInfo: {
+    currentPage: number
+    totalPages: number
+    pageSize: number
+    totalItems: number
+    startItem: number
+    endItem: number
+    hasNextPage: boolean
+    hasPrevPage: boolean
+  }
+  
   // Status
   error: Error | null
   isLoading: boolean
@@ -45,7 +61,7 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
   const queryClient = useQueryClient()
   const [query, setQuery] = useState('')
   const [filters, setFiltersState] = useState<LocationBasedSearchFilters>({
-    limit: 20,
+    limit: 5,
     offset: 0,
     ...defaultFilters
   })
@@ -59,8 +75,21 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
     refetch: executeSearch
   } = useQuery({
     queryKey: ['location-search', filters],
-    queryFn: () => searchService.searchByLocation(filters),
-    enabled: false // Manual execution
+    queryFn: async () => {
+      try {
+        return await searchService.searchByLocation(filters)
+      } catch (error: any) {
+        // If we get a range not satisfiable error, retry with offset 0
+        if (error?.code === 'PGRST103' || error?.message?.includes('Requested range not satisfiable')) {
+          console.warn('Pagination offset out of range, resetting to first page')
+          const resetFilters = { ...filters, offset: 0 }
+          setFiltersState(resetFilters)
+          return await searchService.searchByLocation(resetFilters)
+        }
+        throw error
+      }
+    },
+    enabled: hasSearched || (enableAutoSearch && (query.length >= minQueryLength || Boolean(filters.cityId) || Boolean(filters.provinceId) || Boolean(filters.countryCode))) // Keep enabled once searched or when auto-search conditions are met
   })
 
   // Location suggestions query (for autocomplete)
@@ -88,7 +117,7 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
     const debouncedFn = () => {
       clearTimeout(timeoutId)
       timeoutId = setTimeout(() => {
-        if (enableAutoSearch && (query.length >= minQueryLength || filters.cityId || filters.provinceId || filters.countryCode)) {
+        if (enableAutoSearch && (query.length >= minQueryLength || Boolean(filters.cityId) || Boolean(filters.provinceId) || Boolean(filters.countryCode))) {
           executeSearch()
           setHasSearched(true)
         }
@@ -108,13 +137,37 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
 
   // Update filters helper
   const setFilters = useCallback((newFilters: Partial<LocationBasedSearchFilters>) => {
-    setFiltersState(prev => ({
-      ...prev,
-      ...newFilters,
-      // Reset pagination when filters change
-      offset: newFilters.offset !== undefined ? newFilters.offset : 0
-    }))
-  }, [])
+    setFiltersState(prev => {
+      const updatedFilters = {
+        ...prev,
+        ...newFilters
+      }
+      
+      // If we're changing filters that affect results (not just pagination),
+      // reset to first page to avoid offset errors
+      const isFilterChange = Object.keys(newFilters).some(key => 
+        key !== 'offset' && key !== 'limit'
+      )
+      
+      if (isFilterChange) {
+        updatedFilters.offset = 0
+      } else if (newFilters.offset !== undefined) {
+        // If we're changing offset, validate it against current results
+        const limit = updatedFilters.limit || 5
+        const totalResults = results?.totalResults || 0
+        const maxOffset = Math.max(0, totalResults - 1)
+        
+        // Ensure offset doesn't exceed available data
+        updatedFilters.offset = Math.min(newFilters.offset, maxOffset)
+        
+        // Ensure offset is aligned to page boundaries
+        const maxValidOffset = Math.floor(maxOffset / limit) * limit
+        updatedFilters.offset = Math.min(updatedFilters.offset, maxValidOffset)
+      }
+      
+      return updatedFilters
+    })
+  }, [results?.totalResults])
 
   // Manual search function
   const search = useCallback(() => {
@@ -126,7 +179,7 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
   const clearSearch = useCallback(() => {
     setQuery('')
     setFiltersState({
-      limit: 20,
+      limit: 5,
       offset: 0,
       ...defaultFilters
     })
@@ -176,6 +229,75 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
     })
   }, [setFilters])
 
+  // Pagination helpers
+  const goToPage = useCallback((page: number) => {
+    console.log('goToPage called with page:', page)
+    const limit = filters.limit || 5
+    const totalResults = results?.totalResults || 0
+    const maxPage = Math.max(1, Math.ceil(totalResults / limit))
+    
+    console.log('Pagination info:', { limit, totalResults, maxPage, currentOffset: filters.offset })
+    
+    // Ensure page is within valid range
+    const validPage = Math.max(1, Math.min(page, maxPage))
+    const newOffset = (validPage - 1) * limit
+    
+    console.log('Setting new offset:', newOffset, 'for page:', validPage)
+    setFilters({ offset: newOffset })
+    
+    // Trigger search after updating offset
+    setTimeout(() => {
+      console.log('Executing search with new offset')
+      executeSearch()
+    }, 0)
+  }, [filters.limit, results?.totalResults, setFilters, executeSearch])
+
+  const nextPage = useCallback(() => {
+    const currentPage = Math.floor((filters.offset || 0) / (filters.limit || 5)) + 1
+    const totalPages = Math.ceil((results?.totalResults || 0) / (filters.limit || 5))
+    if (currentPage < totalPages) {
+      goToPage(currentPage + 1)
+    }
+  }, [filters.offset, filters.limit, results?.totalResults, goToPage])
+
+  const prevPage = useCallback(() => {
+    const currentPage = Math.floor((filters.offset || 0) / (filters.limit || 5)) + 1
+    if (currentPage > 1) {
+      goToPage(currentPage - 1)
+    }
+  }, [filters.offset, filters.limit, goToPage])
+
+  const setPageSize = useCallback((limit: number) => {
+    setFilters({ limit, offset: 0 }) // Reset to first page when changing page size
+    
+    // Trigger search after updating page size
+    setTimeout(() => {
+      executeSearch()
+    }, 0)
+  }, [setFilters, executeSearch])
+
+  // Pagination info
+  const paginationInfo = useMemo(() => {
+    const limit = filters.limit || 5
+    const offset = filters.offset || 0
+    const total = results?.totalResults || 0
+    const currentPage = Math.floor(offset / limit) + 1
+    const totalPages = Math.ceil(total / limit)
+    const startItem = total > 0 ? offset + 1 : 0
+    const endItem = Math.min(offset + limit, total)
+
+    return {
+      currentPage,
+      totalPages,
+      pageSize: limit,
+      totalItems: total,
+      startItem,
+      endItem,
+      hasNextPage: currentPage < totalPages,
+      hasPrevPage: currentPage > 1
+    }
+  }, [filters.limit, filters.offset, results?.totalResults])
+
   return {
     // Search state
     query,
@@ -193,6 +315,13 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
     search,
     clearSearch,
     selectLocation,
+    
+    // Pagination
+    goToPage,
+    nextPage,
+    prevPage,
+    setPageSize,
+    paginationInfo,
     
     // Status
     error: searchError,
