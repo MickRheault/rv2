@@ -28,6 +28,7 @@ export interface SearchFilters {
   countryCode?: string
   brandId?: string
   categoryId?: string
+  model?: string
   minPrice?: number
   maxPrice?: number
   minEngineCapacity?: number
@@ -40,6 +41,15 @@ export interface SearchFilters {
   offset?: number
 }
 
+export interface FilterOptions {
+  brands: Array<{ id: string; name: string; count: number }>
+  categories: Array<{ id: string; name: string; description: string | null; count: number }>
+  models: Array<{ model: string; brandName: string; count: number }>
+  priceRange: { min: number; max: number }
+  engineCapacityRange: { min: number; max: number }
+  features: Array<{ id: string; name: string; description: string | null; count: number }>
+}
+
 export const motorcycleService = {
   // Get paginated motorcycles with filters
   async getMotorcycles(filters: SearchFilters = {}) {
@@ -49,6 +59,7 @@ export const motorcycleService = {
       countryCode,
       brandId,
       categoryId,
+      model,
       minPrice,
       maxPrice,
       minEngineCapacity,
@@ -91,6 +102,9 @@ export const motorcycleService = {
     }
     if (categoryId) {
       query = query.eq('category_id', categoryId)
+    }
+    if (model) {
+      query = query.ilike('model', `%${model}%`)
     }
     if (minPrice !== undefined) {
       query = query.gte('rental_rate_per_day', minPrice)
@@ -403,6 +417,253 @@ export const motorcycleService = {
       } : null,
       motorcyclesWithPricing: prices.length
     }
+  },
+
+  // Get all available models with brand information and counts
+  async getModels(filters?: Pick<SearchFilters, 'cityId' | 'provinceId' | 'countryCode' | 'brandId' | 'categoryId'>) {
+    // Build query based on whether location filters are needed
+    let query
+    
+    if (filters?.cityId || filters?.provinceId || filters?.countryCode) {
+      // Query with location joins
+      query = supabase
+        .from('motorcycle_rentals')
+        .select(`
+          model,
+          brands!inner (name),
+          rental_shops!inner (
+            city_id,
+            cities!inner (
+              province_id,
+              provinces!inner (
+                country_code
+              )
+            )
+          )
+        `)
+
+      // Apply location filters
+      if (filters.cityId) {
+        query = query.eq('rental_shops.city_id', filters.cityId)
+      } else if (filters.provinceId) {
+        query = query.eq('rental_shops.cities.province_id', filters.provinceId)
+      } else if (filters.countryCode) {
+        query = query.eq('rental_shops.cities.provinces.country_code', filters.countryCode)
+      }
+    } else {
+      // Simple query without location joins
+      query = supabase
+        .from('motorcycle_rentals')
+        .select(`
+          model,
+          brands!inner (name)
+        `)
+    }
+
+    // Apply other filters
+    if (filters?.brandId) {
+      query = query.eq('brand_id', filters.brandId)
+    }
+    if (filters?.categoryId) {
+      query = query.eq('category_id', filters.categoryId)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error('Error fetching models:', error)
+      throw error
+    }
+
+    // Group by model and count occurrences
+    const modelCounts: Record<string, { brandName: string; count: number }> = {}
+    
+    data?.forEach(item => {
+      const model = item.model
+      const brandName = (item as any).brands.name
+      const key = `${model}|${brandName}`
+      
+      if (!modelCounts[key]) {
+        modelCounts[key] = { brandName, count: 0 }
+      }
+      modelCounts[key].count++
+    })
+
+    return Object.entries(modelCounts)
+      .map(([key, value]) => ({
+        model: key.split('|')[0],
+        brandName: value.brandName,
+        count: value.count
+      }))
+      .sort((a, b) => b.count - a.count)
+  },
+
+  // Get structured filter options with counts based on current filters
+  async getFilterOptions(currentFilters?: Pick<SearchFilters, 'cityId' | 'provinceId' | 'countryCode' | 'brandId' | 'categoryId' | 'model'>): Promise<FilterOptions> {
+    // Build base query for counting
+    let baseQuery = supabase
+      .from('motorcycle_rentals')
+      .select(`
+        *,
+        brands!inner (*),
+        categories!inner (*),
+        rental_shops!inner (
+          city_id,
+          cities!inner (
+            province_id,
+            provinces!inner (
+              country_code
+            )
+          )
+        )
+      `)
+
+    // Apply location filters
+    if (currentFilters?.cityId) {
+      baseQuery = baseQuery.eq('rental_shops.city_id', currentFilters.cityId)
+    } else if (currentFilters?.provinceId) {
+      baseQuery = baseQuery.eq('rental_shops.cities.province_id', currentFilters.provinceId)
+    } else if (currentFilters?.countryCode) {
+      baseQuery = baseQuery.eq('rental_shops.cities.provinces.country_code', currentFilters.countryCode)
+    }
+
+    // Apply non-location filters (excluding the one we're counting for)
+    if (currentFilters?.brandId) {
+      baseQuery = baseQuery.eq('brand_id', currentFilters.brandId)
+    }
+    if (currentFilters?.categoryId) {
+      baseQuery = baseQuery.eq('category_id', currentFilters.categoryId)
+    }
+    if (currentFilters?.model) {
+      baseQuery = baseQuery.ilike('model', `%${currentFilters.model}%`)
+    }
+
+    const { data: motorcycles, error } = await baseQuery
+
+    if (error) {
+      console.error('Error fetching filter options:', error)
+      throw error
+    }
+
+    // Count brands
+    const brandCounts: Record<string, { name: string; count: number }> = {}
+    const categoryCounts: Record<string, { name: string; description: string | null; count: number }> = {}
+    const modelCounts: Record<string, { brandName: string; count: number }> = {}
+    
+    motorcycles?.forEach(motorcycle => {
+      const brand = (motorcycle as any).brands
+      const category = (motorcycle as any).categories
+      const model = motorcycle.model
+
+      // Count brands (exclude current brand filter)
+      if (!currentFilters?.brandId || currentFilters.brandId !== brand.id) {
+        if (!brandCounts[brand.id]) {
+          brandCounts[brand.id] = { name: brand.name, count: 0 }
+        }
+        brandCounts[brand.id].count++
+      }
+
+      // Count categories (exclude current category filter)
+      if (!currentFilters?.categoryId || currentFilters.categoryId !== category.id) {
+        if (!categoryCounts[category.id]) {
+          categoryCounts[category.id] = { 
+            name: category.name, 
+            description: category.description,
+            count: 0 
+          }
+        }
+        categoryCounts[category.id].count++
+      }
+
+      // Count models (exclude current model filter)
+      if (!currentFilters?.model || !model.toLowerCase().includes(currentFilters.model.toLowerCase())) {
+        const key = `${model}|${brand.name}`
+        if (!modelCounts[key]) {
+          modelCounts[key] = { brandName: brand.name, count: 0 }
+        }
+        modelCounts[key].count++
+      }
+    })
+
+    // Get price and engine capacity ranges
+    const [priceRange, engineCapacityRange, features] = await Promise.all([
+      this.getPriceRange(),
+      this.getEngineCapacityRange(),
+      this.getFeatures()
+    ])
+
+    // Get feature counts (simplified for now)
+    const featureOptions = features.map(feature => ({
+      id: feature.id,
+      name: feature.name,
+      description: feature.description,
+      count: 0 // TODO: Implement feature counting based on motorcycle_features table
+    }))
+
+    return {
+      brands: Object.entries(brandCounts)
+        .map(([id, data]) => ({ id, name: data.name, count: data.count }))
+        .sort((a, b) => b.count - a.count),
+      
+      categories: Object.entries(categoryCounts)
+        .map(([id, data]) => ({ 
+          id, 
+          name: data.name, 
+          description: data.description, 
+          count: data.count 
+        }))
+        .sort((a, b) => b.count - a.count),
+      
+      models: Object.entries(modelCounts)
+        .map(([key, data]) => ({
+          model: key.split('|')[0],
+          brandName: data.brandName,
+          count: data.count
+        }))
+        .sort((a, b) => b.count - a.count),
+      
+      priceRange,
+      engineCapacityRange,
+      features: featureOptions
+    }
+  },
+
+  // Get popular models across all locations
+  async getPopularModels(limit: number = 20) {
+    const { data, error } = await supabase
+      .from('motorcycle_rentals')
+      .select(`
+        model,
+        brands!inner (name)
+      `)
+
+    if (error) {
+      console.error('Error fetching popular models:', error)
+      throw error
+    }
+
+    // Count model occurrences
+    const modelCounts: Record<string, { brandName: string; count: number }> = {}
+    
+    data?.forEach(item => {
+      const model = item.model
+      const brandName = (item as any).brands.name
+      const key = `${model}|${brandName}`
+      
+      if (!modelCounts[key]) {
+        modelCounts[key] = { brandName, count: 0 }
+      }
+      modelCounts[key].count++
+    })
+
+    return Object.entries(modelCounts)
+      .map(([key, value]) => ({
+        model: key.split('|')[0],
+        brandName: value.brandName,
+        count: value.count
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, limit)
   }
 }
 

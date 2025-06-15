@@ -155,13 +155,34 @@ export const searchService = {
     }
   },
 
+  // Helper function to sanitize search query for Supabase
+  sanitizeSearchQuery(query: string): string {
+    // Remove commas and other special characters that break Supabase queries
+    // Keep only alphanumeric characters, spaces, and basic punctuation
+    return query.replace(/[,;|&()]/g, ' ').replace(/\s+/g, ' ').trim()
+  },
+
+  // Extract the main location name from a full location string
+  extractLocationName(fullLocationString: string): string {
+    // If it looks like "City, Province, Country", extract just the city name
+    const parts = fullLocationString.split(',').map(part => part.trim())
+    return parts[0] || fullLocationString
+  },
+
   // Search locations with counts
   async searchLocations(query: string, limit: number = 10): Promise<LocationSearchResult[]> {
     if (!query || query.trim().length < 2) {
       return []
     }
 
-    const searchQuery = query.trim()
+    // Extract the main location name and sanitize it
+    const mainLocationName = this.extractLocationName(query.trim())
+    const searchQuery = this.sanitizeSearchQuery(mainLocationName)
+    
+    if (!searchQuery || searchQuery.length < 2) {
+      return []
+    }
+
     const results: LocationSearchResult[] = []
 
     // Search cities with shop/motorcycle counts
