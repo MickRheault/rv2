@@ -1,0 +1,194 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2024-01-15T16:00:00Z",
+    "shop_identifier": "sapa-mountain-bikes-001",
+    "name": "Sapa Mountain Motorbikes",
+    "place_id": "ChIJSapaMountainBikes001",
+    "address": "15 Cau May Street, Sapa, Lao Cai Province, Vietnam",
+    "city": "Sapa",
+    "province": "Lao Cai",
+    "country": "Vietnam",
+    "latitude": 22.3364,
+    "longitude": 103.8438,
+    "phone": "+84 214 387 1234",
+    "website": "https://sapamountainmotorbikes.com",
+    "google_maps_url": "https://maps.google.com/?cid=111222333",
+    "business_status": "OPERATIONAL",
+    "rating": 4.5,
+    "number_of_reviews": 127,
+    "rental_conditions": {
+      "minimum_age": 20,
+      "driving_license_required": true,
+      "passport_required": true,
+      "deposit_amount": 3000000,
+      "deposit_currency": "VND",
+      "fuel_policy": "Return with same level",
+      "cancellation_policy": "Free cancellation 24h before",
+      "mountain_experience_recommended": true
+    },
+    "rental_inclusions": [
+      "Mountain Helmet",
+      "Basic insurance",
+      "Mountain trail maps",
+      "Emergency contact",
+      "Weather protection gear"
+    ],
+    "available_service_locations": [
+      "Sapa Town Center",
+      "Lao Cai Railway Station",
+      "Cat Cat Village",
+      "Ham Rong Mountain"
+    ],
+    "offered_tours": [
+      {
+        "name": "Fansipan Base Camp Tour",
+        "duration_text": "Full day (8 hours)",
+        "distance_km": 60,
+        "price_text": "800,000 VND per person",
+        "currency": "VND"
+      },
+      {
+        "name": "Ethnic Villages Circuit",
+        "duration_text": "Half day (5 hours)",
+        "distance_km": 35,
+        "price_text": "600,000 VND per person",
+        "currency": "VND"
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "sapa-mountain-bikes-001",
+      "scrape_timestamp": "2024-01-15T16:00:00Z",
+      "source_url": "https://sapamountainmotorbikes.com/bikes/honda-win-100",
+      "brand": "Honda",
+      "model": "Win 100",
+      "year": 2021,
+      "engine_capacity_cc": 100,
+      "category": "Trail",
+      "description": "Classic Vietnamese mountain bike, perfect for Sapa's terrain",
+      "rental_rates": [
+        {
+          "rate_text": "Daily rate",
+          "min_days": 1,
+          "max_days": 1,
+          "rate_per_day": 200000,
+          "currency": "VND"
+        },
+        {
+          "rate_text": "Weekly rate (7+ days)",
+          "min_days": 7,
+          "max_days": 13,
+          "rate_per_day": 170000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://example.com/images/honda-win-100-front.jpg",
+        "https://example.com/images/honda-win-100-mountain.jpg"
+      ],
+      "features": [
+        "Kick Start",
+        "Simple Mechanics",
+        "Mountain Proven",
+        "Easy Maintenance",
+        "Local Favorite"
+      ],
+      "specifications_raw": {
+        "engine_type": "Single cylinder, 2-stroke",
+        "transmission": "4-speed manual",
+        "fuel_capacity": "9 liters",
+        "weight": "90 kg",
+        "ground_clearance": "180mm"
+      },
+      "conditions_raw": {
+        "minimum_rental_period": "1 day",
+        "mountain_trails_suitable": true,
+        "vintage_character": true
+      },
+      "required_documents_raw": [
+        "Valid Driving License",
+        "Passport",
+        "Deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Mountain Trail Coverage",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": 1000000,
+          "deductible_currency": "VND",
+          "notes": "Basic coverage for mountain trail riding"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "sapa-mountain-bikes-001",
+      "scrape_timestamp": "2024-01-15T16:00:00Z",
+      "source_url": "https://sapamountainmotorbikes.com/bikes/yamaha-sirius",
+      "brand": "Yamaha",
+      "model": "Sirius",
+      "year": 2022,
+      "engine_capacity_cc": 110,
+      "category": "Commuter",
+      "description": "Reliable commuter bike adapted for mountain conditions",
+      "rental_rates": [
+        {
+          "rate_text": "Daily rate",
+          "min_days": 1,
+          "max_days": 1,
+          "rate_per_day": 180000,
+          "currency": "VND"
+        },
+        {
+          "rate_text": "Weekly rate (7+ days)",
+          "min_days": 7,
+          "max_days": 13,
+          "rate_per_day": 150000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://example.com/images/yamaha-sirius-front.jpg",
+        "https://example.com/images/yamaha-sirius-sapa.jpg"
+      ],
+      "features": [
+        "Electric Start",
+        "Fuel Efficient",
+        "Reliable Engine",
+        "Comfortable Seat",
+        "Weather Resistant"
+      ],
+      "specifications_raw": {
+        "engine_type": "Single cylinder, 4-stroke",
+        "transmission": "Semi-automatic",
+        "fuel_capacity": "4.2 liters",
+        "weight": "95 kg",
+        "fuel_consumption": "1.8L/100km"
+      },
+      "conditions_raw": {
+        "minimum_rental_period": "1 day",
+        "mountain_adapted": true,
+        "beginner_friendly": true
+      },
+      "required_documents_raw": [
+        "Valid Driving License",
+        "Passport"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Standard Mountain Coverage",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": 800000,
+          "deductible_currency": "VND",
+          "notes": "Standard coverage for mountain riding"
+        }
+      ],
+      "availability_status": "Available"
+    }
+  ]
+} 

@@ -2,16 +2,16 @@ import fs from 'fs/promises';
 import path from 'path';
 import dotenv from 'dotenv';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Database, Tables, TablesInsert } from '../app/_lib/database.types'; // Adjust path as necessary
+import { Database, Tables, TablesInsert } from '../../lib/supabase/database.types'; // Adjust path as necessary
 import { fileURLToPath } from 'url'; // Import fileURLToPath
 
 // Load environment variables from .env.local
 // ES Module equivalent for __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 console.log(`DEBUG: Using Supabase URL: ${supabaseUrl}`); // Add logging for URL
@@ -97,7 +97,7 @@ const supabase: SupabaseClient<Database> = createClient<Database>(supabaseUrl, s
   }
 });
 
-const DATA_DIR = path.resolve(__dirname, '../design-data/templated-data');
+const DATA_DIR = path.resolve(__dirname, './templated-data');
 
 // --- Helper Functions for Find/Create ---
 
@@ -768,7 +768,7 @@ Processing file: ${file}`);
 
              // 6. Process Features
              if (offering.features && offering.features.length > 0) {
-                let featureLinks = [];
+                let featureLinks: TablesInsert<'motorcycle_features'>[] = [];
                  for (const featureName of offering.features) {
                      try {
                          const featureId = await findOrCreateFeature(featureName);
@@ -786,7 +786,7 @@ Processing file: ${file}`);
 
              // 7. Process Required Documents
             if (offering.required_documents_raw && offering.required_documents_raw.length > 0) {
-                let docLinks = [];
+                let docLinks: TablesInsert<'motorcycle_required_documents'>[] = [];
                 for (const docName of offering.required_documents_raw) {
                     try {
                         const docTypeId = await findOrCreateRequiredDocumentType(docName);
@@ -805,7 +805,7 @@ Processing file: ${file}`);
 
              // 8. Process Insurance Details
              if (offering.insurance_details_raw && offering.insurance_details_raw.length > 0) {
-                 let insuranceData = [];
+                 let insuranceData: TablesInsert<'motorcycle_insurance_details'>[] = [];
                  for (const detail of offering.insurance_details_raw) {
                      try {
                          const insuranceTypeId = await findOrCreateInsuranceType(detail.type_name);
