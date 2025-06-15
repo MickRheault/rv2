@@ -129,13 +129,38 @@ export default function TestLocationSearchPage() {
           
           <div>
             <label className="block text-sm font-medium mb-2">Brand Filter</label>
-            <input
-              type="text"
+            <select
               value={locationSearch.filters.brandId || ''}
               onChange={(e) => locationSearch.setFilters({ brandId: e.target.value || undefined })}
-              placeholder="Brand ID..."
               className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-            />
+            >
+              <option value="">All Brands</option>
+              <option value="honda">Honda</option>
+              <option value="yamaha">Yamaha</option>
+              <option value="kawasaki">Kawasaki</option>
+              <option value="bmw">BMW</option>
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              Note: You can use brand names (e.g., "Honda") or UUIDs
+            </p>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium mb-2">Category Filter</label>
+            <select
+              value={locationSearch.filters.categoryId || ''}
+              onChange={(e) => locationSearch.setFilters({ categoryId: e.target.value || undefined })}
+              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Categories</option>
+              <option value="scooter">Scooter</option>
+              <option value="sport">Sport</option>
+              <option value="naked">Naked</option>
+              <option value="adventure">Adventure</option>
+              <option value="touring">Touring</option>
+              <option value="enduro">Enduro</option>
+              <option value="dual sport">Dual Sport</option>
+            </select>
           </div>
           
           <div>
