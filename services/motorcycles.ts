@@ -74,7 +74,7 @@ export const motorcycleService = {
         ),
         brands (*),
         categories (*)
-      `)
+      `, { count: 'exact' })
 
     // Apply location filters
     if (cityId) {
