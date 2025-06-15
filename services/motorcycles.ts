@@ -32,8 +32,10 @@ export interface SearchFilters {
   maxPrice?: number
   minEngineCapacity?: number
   maxEngineCapacity?: number
-  features?: number[]
-  sortBy?: 'price_asc' | 'price_desc' | 'engine_capacity_asc' | 'engine_capacity_desc' | 'newest'
+  features?: string[]
+  availability?: string
+  query?: string // Search in model name or brand
+  sortBy?: 'price_asc' | 'price_desc' | 'engine_capacity_asc' | 'engine_capacity_desc' | 'newest' | 'rating_desc'
   limit?: number
   offset?: number
 }
@@ -223,6 +225,183 @@ export const motorcycleService = {
     return {
       min: Math.min(...prices),
       max: Math.max(...prices)
+    }
+  },
+
+  // Get all features for filters
+  async getFeatures() {
+    const { data, error } = await supabase
+      .from('features')
+      .select('*')
+      .order('name')
+
+    if (error) {
+      console.error('Error fetching features:', error)
+      throw error
+    }
+
+    return data
+  },
+
+  // Get engine capacity range for filters
+  async getEngineCapacityRange() {
+    const { data, error } = await supabase
+      .from('motorcycle_rentals')
+      .select('engine_capacity_cc')
+      .not('engine_capacity_cc', 'is', null)
+      .order('engine_capacity_cc')
+
+    if (error || !data || data.length === 0) {
+      return { min: 0, max: 1000 }
+    }
+
+    const capacities = data.map(item => item.engine_capacity_cc).filter(Boolean) as number[]
+    return {
+      min: Math.min(...capacities),
+      max: Math.max(...capacities)
+    }
+  },
+
+  // Get motorcycles by shop ID
+  async getMotorcyclesByShop(shopId: string, limit?: number) {
+    let query = supabase
+      .from('motorcycle_rentals')
+      .select(`
+        *,
+        brands (*),
+        categories (*),
+        motorcycle_images (
+          *,
+          images (*)
+        )
+      `)
+      .eq('shop_id', shopId)
+      .order('created_at', { ascending: false })
+
+    if (limit) {
+      query = query.limit(limit)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error('Error fetching motorcycles by shop:', error)
+      throw error
+    }
+
+    return data
+  },
+
+  // Search motorcycles by text query
+  async searchMotorcycles(searchQuery: string, limit: number = 20) {
+    const { data, error } = await supabase
+      .from('motorcycle_rentals')
+      .select(`
+        *,
+        rental_shops!inner (
+          *,
+          cities (
+            *,
+            provinces (
+              *,
+              countries (*)
+            )
+          )
+        ),
+        brands!inner (*),
+        categories (*)
+      `)
+      .or(`model.ilike.%${searchQuery}%,brands.name.ilike.%${searchQuery}%`)
+      .limit(limit)
+
+    if (error) {
+      console.error('Error searching motorcycles:', error)
+      throw error
+    }
+
+    return data as MotorcycleWithDetails[]
+  },
+
+  // Get featured/popular motorcycles
+  async getFeaturedMotorcycles(limit: number = 10) {
+    const { data, error } = await supabase
+      .from('motorcycle_rentals')
+      .select(`
+        *,
+        rental_shops!inner (
+          *,
+          cities (
+            *,
+            provinces (
+              *,
+              countries (*)
+            )
+          )
+        ),
+        brands (*),
+        categories (*)
+      `)
+      .not('rental_rate_per_day', 'is', null)
+      .order('rental_shops.rating', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false })
+      .limit(limit)
+
+    if (error) {
+      console.error('Error fetching featured motorcycles:', error)
+      throw error
+    }
+
+    return data as MotorcycleWithDetails[]
+  },
+
+  // Get motorcycle statistics
+  async getMotorcycleStats() {
+    const [totalMotorcycles, avgPrice, topBrand] = await Promise.all([
+      // Total motorcycle count
+      supabase
+        .from('motorcycle_rentals')
+        .select('*', { count: 'exact', head: true }),
+      
+      // Average price
+      supabase
+        .from('motorcycle_rentals')
+        .select('rental_rate_per_day')
+        .not('rental_rate_per_day', 'is', null),
+      
+      // Most popular brand
+      supabase
+        .from('motorcycle_rentals')
+        .select(`
+          brand_id,
+          brands!inner (name)
+        `)
+        .not('brand_id', 'is', null)
+    ])
+
+    // Calculate average price
+    const prices = avgPrice.data?.map(bike => bike.rental_rate_per_day).filter((price): price is number => price !== null) || []
+    const averagePrice = prices.length > 0 
+      ? prices.reduce((sum, price) => sum + price, 0) / prices.length 
+      : 0
+
+    // Calculate brand popularity
+    const brandCounts: Record<string, number> = {}
+    topBrand.data?.forEach(bike => {
+      const brandName = (bike as any).brands.name
+      brandCounts[brandName] = (brandCounts[brandName] || 0) + 1
+    })
+
+    const mostPopularBrand = Object.entries(brandCounts)
+      .sort(([,a], [,b]) => b - a)[0]
+
+    return {
+      totalMotorcycles: totalMotorcycles.count || 0,
+      averagePrice: Math.round(averagePrice * 100) / 100,
+      mostPopularBrand: mostPopularBrand ? {
+        name: mostPopularBrand[0],
+        count: mostPopularBrand[1]
+      } : null,
+      motorcyclesWithPricing: prices.length
     }
   }
 }
