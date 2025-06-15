@@ -64,6 +64,7 @@ export const motorcycleService = {
       maxPrice,
       minEngineCapacity,
       maxEngineCapacity,
+      features,
       sortBy = 'newest',
       limit = 20,
       offset = 0
@@ -84,7 +85,11 @@ export const motorcycleService = {
           )
         ),
         brands (*),
-        categories (*)
+        categories (*),
+        motorcycle_features (
+          feature_id,
+          features (*)
+        )
       `, { count: 'exact' })
 
     // Apply location filters
@@ -119,6 +124,9 @@ export const motorcycleService = {
       query = query.lte('engine_capacity_cc', maxEngineCapacity)
     }
 
+    // Apply feature filtering - we'll handle this after the main query
+    // since Supabase doesn't easily support complex EXISTS queries in the filter
+
     // Apply sorting
     switch (sortBy) {
       case 'price_asc':
@@ -149,9 +157,22 @@ export const motorcycleService = {
       throw error
     }
 
+    let filteredData = data || []
+
+    // Apply feature filtering if features are specified
+    if (features && features.length > 0) {
+      filteredData = filteredData.filter(motorcycle => {
+        const motorcycleFeatures = (motorcycle as any).motorcycle_features || []
+        const motorcycleFeatureIds = motorcycleFeatures.map((mf: any) => mf.feature_id)
+        
+        // Check if motorcycle has ALL required features
+        return features.every(featureId => motorcycleFeatureIds.includes(featureId))
+      })
+    }
+
     return {
-      motorcycles: data as MotorcycleWithDetails[],
-      total: count || 0
+      motorcycles: filteredData as MotorcycleWithDetails[],
+      total: filteredData.length // Note: this will be the filtered count, not the total DB count
     }
   },
 
@@ -507,6 +528,10 @@ export const motorcycleService = {
         *,
         brands!inner (*),
         categories!inner (*),
+        motorcycle_features (
+          feature_id,
+          features (*)
+        ),
         rental_shops!inner (
           city_id,
           cities!inner (
@@ -592,12 +617,32 @@ export const motorcycleService = {
       this.getFeatures()
     ])
 
-    // Get feature counts (simplified for now)
+    // Count features based on motorcycle_features relationships
+    const featureCounts: Record<string, { name: string; description: string | null; count: number }> = {}
+    
+    motorcycles?.forEach(motorcycle => {
+      const motorcycleFeatures = (motorcycle as any).motorcycle_features || []
+      motorcycleFeatures.forEach((mf: any) => {
+        if (mf.features) {
+          const feature = mf.features
+          if (!featureCounts[feature.id]) {
+            featureCounts[feature.id] = {
+              name: feature.name,
+              description: feature.description,
+              count: 0
+            }
+          }
+          featureCounts[feature.id].count++
+        }
+      })
+    })
+
+    // Merge with all available features to show features with 0 count
     const featureOptions = features.map(feature => ({
       id: feature.id,
       name: feature.name,
       description: feature.description,
-      count: 0 // TODO: Implement feature counting based on motorcycle_features table
+      count: featureCounts[feature.id]?.count || 0
     }))
 
     return {

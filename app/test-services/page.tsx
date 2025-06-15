@@ -19,6 +19,7 @@ export default function TestServicesPage() {
   const [maxPrice, setMaxPrice] = useState('')
   const [minEngineCapacity, setMinEngineCapacity] = useState('')
   const [maxEngineCapacity, setMaxEngineCapacity] = useState('')
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([])
 
   // Load initial filter options
   useEffect(() => {
@@ -49,6 +50,7 @@ export default function TestServicesPage() {
       if (maxPrice) filters.maxPrice = parseFloat(maxPrice)
       if (minEngineCapacity) filters.minEngineCapacity = parseInt(minEngineCapacity)
       if (maxEngineCapacity) filters.maxEngineCapacity = parseInt(maxEngineCapacity)
+      if (selectedFeatures.length > 0) filters.features = selectedFeatures
 
       const searchResults = await searchService.searchByLocation(filters)
       setResults(searchResults)
@@ -102,9 +104,39 @@ export default function TestServicesPage() {
     }
   }
 
+  const testFeatureFiltering = async () => {
+    if (selectedFeatures.length === 0) {
+      setError('Please select at least one feature first')
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+    
+    try {
+      const motorcycles = await motorcycleService.getMotorcycles({ 
+        features: selectedFeatures,
+        limit: 20
+      })
+      setResults({ 
+        motorcycles,
+        featureFiltering: {
+          selectedFeatures: selectedFeatures.map(id => 
+            filterOptions?.features.find(f => f.id === id)?.name || id
+          ),
+          resultCount: motorcycles.total
+        }
+      })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="container mx-auto p-6 max-w-6xl">
-      <h1 className="text-3xl font-bold mb-8">🏍️ Structured Filtering System Test (Task 2.3)</h1>
+      <h1 className="text-3xl font-bold mb-8">🏍️ Structured Filtering System Test</h1>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Filter Panel */}
@@ -238,6 +270,46 @@ export default function TestServicesPage() {
                 />
               </div>
             </div>
+
+            {/* Features */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Features
+              </label>
+              <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-2 bg-gray-50">
+                {filterOptions?.features.length ? (
+                  filterOptions.features
+                    .filter(feature => feature.count > 0) // Only show features that exist
+                    .map((feature) => (
+                      <label key={feature.id} className="flex items-center space-x-2 py-1">
+                        <input
+                          type="checkbox"
+                          checked={selectedFeatures.includes(feature.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedFeatures([...selectedFeatures, feature.id])
+                            } else {
+                              setSelectedFeatures(selectedFeatures.filter(id => id !== feature.id))
+                            }
+                          }}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm">
+                          {feature.name} ({feature.count})
+                          {feature.description && (
+                            <span className="text-gray-500 text-xs block">{feature.description}</span>
+                          )}
+                        </span>
+                      </label>
+                    ))
+                ) : (
+                  <p className="text-sm text-gray-500">No features available</p>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Selected: {selectedFeatures.length} features
+              </p>
+            </div>
           </div>
 
           {/* Action Buttons */}
@@ -265,6 +337,14 @@ export default function TestServicesPage() {
             >
               Get Models by Selected Brand
             </button>
+
+            <button
+              onClick={testFeatureFiltering}
+              disabled={loading || selectedFeatures.length === 0}
+              className="w-full bg-orange-600 text-white py-2 px-4 rounded-md hover:bg-orange-700 disabled:opacity-50"
+            >
+              Test Feature Filtering
+            </button>
           </div>
 
           {/* Filter Summary */}
@@ -277,6 +357,7 @@ export default function TestServicesPage() {
                 <div>Models: {filterOptions.models.length}</div>
                 <div>Price Range: ${filterOptions.priceRange.min} - ${filterOptions.priceRange.max}</div>
                 <div>Engine Range: {filterOptions.engineCapacityRange.min}cc - {filterOptions.engineCapacityRange.max}cc</div>
+                <div>Features: {filterOptions.features.filter(f => f.count > 0).length} available</div>
               </div>
             </div>
           )}
@@ -363,6 +444,23 @@ export default function TestServicesPage() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Feature Filtering Results */}
+              {results.featureFiltering && (
+                <div>
+                  <h3 className="font-medium text-gray-900 mb-2">
+                    Feature Filtering Test Results
+                  </h3>
+                  <div className="p-3 border border-orange-200 bg-orange-50 rounded">
+                    <div className="font-medium text-orange-900">
+                      Selected Features: {results.featureFiltering.selectedFeatures.join(', ')}
+                    </div>
+                    <div className="text-sm text-orange-700">
+                      Found {results.featureFiltering.resultCount} motorcycles with ALL selected features
+                    </div>
                   </div>
                 </div>
               )}

@@ -24,6 +24,8 @@ export default function TestLocationSearchPage() {
   // Load filter options when component mounts or when location changes
   useEffect(() => {
     loadFilterOptions()
+    // Pre-load some popular locations for autocomplete
+    preloadAutocomplete()
   }, [selectedLocation])
 
   const loadFilterOptions = async () => {
@@ -66,6 +68,20 @@ export default function TestLocationSearchPage() {
     }
   }
 
+  const preloadAutocomplete = async () => {
+    try {
+      // Pre-load some popular locations to show immediately
+      if (!autocomplete.query) {
+        autocomplete.setQuery('Thailand') // This will trigger the autocomplete
+        setTimeout(() => {
+          autocomplete.setQuery('') // Clear after loading suggestions
+        }, 1000)
+      }
+    } catch (error) {
+      console.error('Error pre-loading autocomplete:', error)
+    }
+  }
+
   const handleLocationSelect = (location: LocationSearchResult) => {
     setSelectedLocation(location)
     locationSearch.selectLocation(location)
@@ -104,6 +120,41 @@ export default function TestLocationSearchPage() {
     }
   }
 
+  const testFeatureFiltering = async () => {
+    if (!locationSearch.filters.features || locationSearch.filters.features.length === 0) {
+      alert('Please select at least one feature first')
+      return
+    }
+
+    try {
+      // Use the main search function to get results that will display at the bottom
+      const searchFilters = {
+        features: locationSearch.filters.features,
+        ...(selectedLocation?.type === 'city' && { cityId: selectedLocation.id }),
+        ...(selectedLocation?.type === 'province' && { provinceId: selectedLocation.id }),
+        ...(selectedLocation?.type === 'country' && { countryCode: selectedLocation.id }),
+        limit: 20
+      }
+
+      // Trigger the main search which will display results at the bottom
+      locationSearch.setFilters(searchFilters)
+      locationSearch.search()
+      
+      const selectedFeatureNames = locationSearch.filters.features.map(id => 
+        filterOptions?.features.find(f => f.id === id)?.name || id
+      )
+      
+      console.log('Feature Filtering Test:', {
+        selectedFeatures: selectedFeatureNames,
+        filters: searchFilters
+      })
+      
+    } catch (error) {
+      console.error('Error testing feature filtering:', error)
+      alert('Error testing feature filtering. Check console for details.')
+    }
+  }
+
   return (
     <div className="container mx-auto p-6 max-w-6xl">
       <h1 className="text-3xl font-bold mb-8">🏍️ Location-Based Search Test</h1>
@@ -134,8 +185,18 @@ export default function TestLocationSearchPage() {
                 onFocus={() => autocomplete.setIsOpen(true)}
                 onKeyDown={autocomplete.handleKeyDown}
                 placeholder="Type a location (e.g., Bangkok, Thailand, Phuket)..."
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
               />
+              
+              {/* Loading indicator for autocomplete */}
+              {autocomplete.isLoading && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <svg className="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                </div>
+              )}
               
               {autocomplete.isOpen && autocomplete.suggestions.length > 0 && (
                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
@@ -169,9 +230,9 @@ export default function TestLocationSearchPage() {
             )}
           </div>
 
-          {/* Enhanced Search Controls with Task 2.3 Features */}
+         
           <div className="bg-white border rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4">Enhanced Search Controls (Task 2.3)</h2>
+            <h2 className="text-xl font-semibold mb-4">Enhanced Search Controls</h2>
             
             <div className="grid grid-cols-1 gap-4 mb-4">
               <div>
@@ -293,14 +354,65 @@ export default function TestLocationSearchPage() {
                   />
                 </div>
               </div>
+
+                          <div>
+              <label className="block text-sm font-medium mb-2">
+                Features {loadingFilterOptions && '(Loading...)'}
+              </label>
+                <div className="max-h-32 overflow-y-auto border border-gray-300 rounded p-2 bg-gray-50">
+                  {filterOptions?.features.length ? (
+                    filterOptions.features
+                      .filter(feature => feature.count > 0) // Only show features that exist
+                      .map((feature) => (
+                        <label key={feature.id} className="flex items-center space-x-2 py-1">
+                          <input
+                            type="checkbox"
+                            checked={locationSearch.filters.features?.includes(feature.id) || false}
+                            onChange={(e) => {
+                              const currentFeatures = locationSearch.filters.features || []
+                              if (e.target.checked) {
+                                locationSearch.setFilters({ 
+                                  features: [...currentFeatures, feature.id] 
+                                })
+                              } else {
+                                locationSearch.setFilters({ 
+                                  features: currentFeatures.filter(id => id !== feature.id) 
+                                })
+                              }
+                            }}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            disabled={loadingFilterOptions}
+                          />
+                          <span className="text-sm">
+                            {feature.name} ({feature.count})
+                            {feature.description && (
+                              <span className="text-gray-500 text-xs block">{feature.description}</span>
+                            )}
+                          </span>
+                        </label>
+                      ))
+                  ) : (
+                    <p className="text-sm text-gray-500">No features available</p>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Selected: {locationSearch.filters.features?.length || 0} features
+                </p>
+              </div>
             </div>
 
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={locationSearch.search}
                 disabled={locationSearch.isLoading}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
               >
+                {locationSearch.isLoading && (
+                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                )}
                 {locationSearch.isLoading ? 'Searching...' : 'Search'}
               </button>
               
@@ -313,17 +425,44 @@ export default function TestLocationSearchPage() {
 
               <button
                 onClick={testPopularModels}
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                disabled={locationSearch.isLoading}
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
               >
+                {locationSearch.isLoading && (
+                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                )}
                 Test Popular Models
               </button>
 
               <button
                 onClick={testModelsByBrand}
-                disabled={!locationSearch.filters.brandId}
-                className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
+                disabled={locationSearch.isLoading || !locationSearch.filters.brandId}
+                className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2"
               >
+                {locationSearch.isLoading && (
+                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                )}
                 Test Models by Brand
+              </button>
+
+              <button
+                onClick={testFeatureFiltering}
+                disabled={locationSearch.isLoading || !locationSearch.filters.features || locationSearch.filters.features.length === 0}
+                className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 disabled:opacity-50 flex items-center gap-2"
+              >
+                {locationSearch.isLoading && (
+                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                )}
+                Test Feature Filtering
               </button>
             </div>
 
@@ -372,9 +511,71 @@ export default function TestLocationSearchPage() {
           )}
 
           {/* Search Results */}
-          {locationSearch.results && (
+          {locationSearch.isLoading && (
             <div className="bg-white border rounded-lg p-6">
               <h2 className="text-xl font-semibold mb-4">Search Results</h2>
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="relative">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                  <div className="absolute inset-0 animate-ping rounded-full h-12 w-12 border border-blue-400 opacity-20"></div>
+                </div>
+                <p className="mt-4 text-gray-600 animate-pulse">Searching motorcycles and shops...</p>
+                <div className="mt-2 flex space-x-1">
+                  <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                  <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {locationSearch.results && !locationSearch.isLoading && (
+            <div className="bg-white border rounded-lg p-6">
+              <h2 className="text-xl font-semibold mb-4">Search Results</h2>
+              
+              {/* Active Filters Summary */}
+              {(locationSearch.filters.brandId || locationSearch.filters.categoryId || locationSearch.filters.model || 
+                locationSearch.filters.minPrice || locationSearch.filters.maxPrice || 
+                locationSearch.filters.minEngineCapacity || locationSearch.filters.maxEngineCapacity ||
+                (locationSearch.filters.features && locationSearch.filters.features.length > 0)) && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h4 className="font-medium text-blue-900 mb-2">Active Filters:</h4>
+                  <div className="flex flex-wrap gap-2 text-sm">
+                    {locationSearch.filters.brandId && (
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                        Brand: {filterOptions?.brands.find(b => b.id === locationSearch.filters.brandId)?.name}
+                      </span>
+                    )}
+                    {locationSearch.filters.categoryId && (
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                        Category: {filterOptions?.categories.find(c => c.id === locationSearch.filters.categoryId)?.name}
+                      </span>
+                    )}
+                    {locationSearch.filters.model && (
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                        Model: {locationSearch.filters.model}
+                      </span>
+                    )}
+                    {(locationSearch.filters.minPrice || locationSearch.filters.maxPrice) && (
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                        Price: {locationSearch.filters.minPrice || 0} - {locationSearch.filters.maxPrice || '∞'}
+                      </span>
+                    )}
+                    {(locationSearch.filters.minEngineCapacity || locationSearch.filters.maxEngineCapacity) && (
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                        Engine: {locationSearch.filters.minEngineCapacity || 0}cc - {locationSearch.filters.maxEngineCapacity || '∞'}cc
+                      </span>
+                    )}
+                    {locationSearch.filters.features && locationSearch.filters.features.length > 0 && (
+                      <span className="px-2 py-1 bg-pink-100 text-pink-800 rounded font-medium">
+                        Features: {locationSearch.filters.features.map(id => 
+                          filterOptions?.features.find(f => f.id === id)?.name || id
+                        ).join(', ')} ({locationSearch.filters.features.length})
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
               
               <div className="mb-4">
                 <p className="text-gray-600">
