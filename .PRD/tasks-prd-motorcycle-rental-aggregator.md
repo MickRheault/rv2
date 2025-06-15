@@ -142,8 +142,8 @@ The system receives data via the template in `context/data_template.json`:
   - [x] 2.1 Create database service layer for motorcycle and shop queries
   - [x] 2.2 Implement location-based search using countries, provinces, and cities tables
   - [x] 2.3 Build structured filtering system for categories, brands, and models
-  - [ ] 2.4 Create price range and engine capacity filtering functionality
-  - [ ] 2.5 Implement feature-based filtering (ABS, GPS, helmets, etc.)
+  - [x] 2.4 Create price range and engine capacity filtering functionality
+  - [x] 2.5 Implement feature-based filtering (ABS, GPS, helmets, etc.)
   - [ ] 2.6 Add sorting functionality (price, rating, distance, relevance)
   - [ ] 2.7 Create location autocomplete using database queries
   - [ ] 2.8 Optimize database queries with proper indexing and caching
