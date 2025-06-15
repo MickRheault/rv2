@@ -1,0 +1,19 @@
+{
+  "name": "ridevault-import-data",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Data import script for RideVault motorcycle rental platform",
+  "main": "import-data.ts",
+  "scripts": {
+    "import": "tsx import-data.ts",
+    "import:dev": "tsx watch import-data.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.7.0",
+    "@types/node": "^20.10.0"
+  }
+} 
