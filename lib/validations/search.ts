@@ -40,7 +40,7 @@ export const searchFiltersSchema = z.object({
   priceRange: priceRangeSchema.optional(),
   engineCapacity: engineCapacitySchema.optional(),
   features: z.array(z.string()).optional(),
-  sortBy: z.enum(['price_asc', 'price_desc', 'rating', 'distance', 'newest']).optional(),
+  sortBy: z.enum(['price_asc', 'price_desc', 'rating', 'newest']).optional(),
 })
 
 // Contact form validation

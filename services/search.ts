@@ -131,14 +131,18 @@ export const searchService = {
         ...otherFilters,
         brandId: resolvedBrandId,
         categoryId: resolvedCategoryId,
-        ...resolvedLocationFilters
+        ...resolvedLocationFilters,
+        // Remove pagination from motorcycles - show all
+        limit: 1000,
+        offset: 0
       }),
       shopService.getShops({
         ...resolvedLocationFilters,
         query: otherFilters.query,
         sortBy: otherFilters.sortBy === 'rating_desc' ? 'rating_desc' : 'newest',
-        limit: otherFilters.limit,
-        offset: otherFilters.offset
+        // Apply pagination to shops for testing - 1 at a time
+        limit: 1,
+        offset: otherFilters.offset || 0
       })
     ])
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motorcycleService, FilterOptions } from '@/services/motorcycles'
 import { searchService } from '@/services/search'
+import Pagination from '@/components/ui/Pagination'
 
 export default function TestServicesPage() {
   const [results, setResults] = useState<any>(null)
@@ -20,6 +21,9 @@ export default function TestServicesPage() {
   const [minEngineCapacity, setMinEngineCapacity] = useState('')
   const [maxEngineCapacity, setMaxEngineCapacity] = useState('')
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([])
+  const [sortBy, setSortBy] = useState('newest')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
 
   // Load initial filter options
   useEffect(() => {
@@ -51,6 +55,11 @@ export default function TestServicesPage() {
       if (minEngineCapacity) filters.minEngineCapacity = parseInt(minEngineCapacity)
       if (maxEngineCapacity) filters.maxEngineCapacity = parseInt(maxEngineCapacity)
       if (selectedFeatures.length > 0) filters.features = selectedFeatures
+      if (sortBy) filters.sortBy = sortBy as any
+      
+      // Add pagination
+      filters.limit = pageSize
+      filters.offset = (currentPage - 1) * pageSize
 
       const searchResults = await searchService.searchByLocation(filters)
       setResults(searchResults)
@@ -310,6 +319,25 @@ export default function TestServicesPage() {
                 Selected: {selectedFeatures.length} features
               </p>
             </div>
+
+            {/* Sorting */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Sort By
+              </label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="newest">Newest First</option>
+                <option value="price_asc">Price: Low to High</option>
+                <option value="price_desc">Price: High to Low</option>
+                <option value="rating_desc">Highest Rated Shops</option>
+                <option value="engine_capacity_asc">Engine: Small to Large</option>
+                <option value="engine_capacity_desc">Engine: Large to Small</option>
+              </select>
+            </div>
           </div>
 
           {/* Action Buttons */}
@@ -484,6 +512,32 @@ export default function TestServicesPage() {
                 </div>
               )}
             </div>
+          )}
+
+          {/* Pagination */}
+          {results && results.motorcycles && results.motorcycles.total > pageSize && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(results.motorcycles.total / pageSize)}
+              pageSize={pageSize}
+              totalItems={results.motorcycles.total}
+              startItem={((currentPage - 1) * pageSize) + 1}
+              endItem={Math.min(currentPage * pageSize, results.motorcycles.total)}
+              hasNextPage={currentPage < Math.ceil(results.motorcycles.total / pageSize)}
+              hasPrevPage={currentPage > 1}
+              onPageChange={(page) => {
+                setCurrentPage(page)
+                // Automatically trigger search when page changes
+                setTimeout(() => handleSearch(), 100)
+              }}
+              onPageSizeChange={(newPageSize) => {
+                setPageSize(newPageSize)
+                setCurrentPage(1) // Reset to first page
+                // Automatically trigger search when page size changes
+                setTimeout(() => handleSearch(), 100)
+              }}
+              isLoading={loading}
+            />
           )}
         </div>
       </div>

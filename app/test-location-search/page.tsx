@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { useLocationSearch, useLocationAutocomplete } from '@/hooks/useLocationSearch'
 import { LocationSearchResult } from '@/services/search'
 import { motorcycleService, FilterOptions } from '@/services/motorcycles'
+import { searchService } from '@/services/search'
+import Pagination from '@/components/ui/Pagination'
 
 export default function TestLocationSearchPage() {
   const [selectedLocation, setSelectedLocation] = useState<LocationSearchResult | null>(null)
@@ -127,31 +129,47 @@ export default function TestLocationSearchPage() {
     }
 
     try {
-      // Use the main search function to get results that will display at the bottom
-      const searchFilters = {
+      // Set the filters and trigger search
+      locationSearch.setFilters({
         features: locationSearch.filters.features,
         ...(selectedLocation?.type === 'city' && { cityId: selectedLocation.id }),
         ...(selectedLocation?.type === 'province' && { provinceId: selectedLocation.id }),
-        ...(selectedLocation?.type === 'country' && { countryCode: selectedLocation.id }),
-        limit: 20
-      }
+        ...(selectedLocation?.type === 'country' && { countryCode: selectedLocation.id })
+      })
 
       // Trigger the main search which will display results at the bottom
-      locationSearch.setFilters(searchFilters)
-      locationSearch.search()
-      
-      const selectedFeatureNames = locationSearch.filters.features.map(id => 
-        filterOptions?.features.find(f => f.id === id)?.name || id
-      )
-      
-      console.log('Feature Filtering Test:', {
-        selectedFeatures: selectedFeatureNames,
-        filters: searchFilters
-      })
-      
+      await locationSearch.search()
+      console.log('Feature filtering test completed. Results displayed below.')
     } catch (error) {
       console.error('Error testing feature filtering:', error)
       alert('Error testing feature filtering. Check console for details.')
+    }
+  }
+
+  const testSorting = async () => {
+    try {
+      // Test different sorting options
+      const sortOptions = ['price_asc', 'price_desc', 'rating_desc', 'engine_capacity_desc']
+      
+      for (const sortBy of sortOptions) {
+        console.log(`Testing sorting by: ${sortBy}`)
+        
+        const searchFilters = {
+          sortBy: sortBy as any,
+          ...(selectedLocation?.type === 'city' && { cityId: selectedLocation.id }),
+          ...(selectedLocation?.type === 'province' && { provinceId: selectedLocation.id }),
+          ...(selectedLocation?.type === 'country' && { countryCode: selectedLocation.id }),
+          limit: 10
+        }
+
+        const results = await searchService.searchByLocation(searchFilters)
+        console.log(`${sortBy} results:`, results.motorcycles.motorcycles.slice(0, 3))
+      }
+      
+      alert('Sorting test completed! Check console for results with different sorting options.')
+    } catch (error) {
+      console.error('Error testing sorting:', error)
+      alert('Error testing sorting. Check console for details.')
     }
   }
 
@@ -399,6 +417,25 @@ export default function TestLocationSearchPage() {
                   Selected: {locationSearch.filters.features?.length || 0} features
                 </p>
               </div>
+
+              {/* Sorting */}
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Sort By
+                </label>
+                <select
+                  value={locationSearch.filters.sortBy || 'newest'}
+                  onChange={(e) => locationSearch.setFilters({ sortBy: e.target.value as any })}
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="price_asc">Price: Low to High</option>
+                  <option value="price_desc">Price: High to Low</option>
+                  <option value="rating_desc">Highest Rated Shops</option>
+                  <option value="engine_capacity_asc">Engine: Small to Large</option>
+                  <option value="engine_capacity_desc">Engine: Large to Small</option>
+                </select>
+              </div>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -463,6 +500,32 @@ export default function TestLocationSearchPage() {
                   </svg>
                 )}
                 Test Feature Filtering
+              </button>
+
+              <button
+                onClick={testSorting}
+                disabled={locationSearch.isLoading || !locationSearch.filters.features || locationSearch.filters.features.length === 0}
+                className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2"
+              >
+                {locationSearch.isLoading && (
+                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                )}
+                Test Sorting
+              </button>
+
+              <button
+                onClick={() => {
+                  console.log('Pagination Info:', locationSearch.paginationInfo)
+                  console.log('Current Filters:', locationSearch.filters)
+                  console.log('Results:', locationSearch.results)
+                  alert('Pagination info logged to console!')
+                }}
+                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 flex items-center gap-2"
+              >
+                Log Pagination Info
               </button>
             </div>
 
@@ -537,40 +600,54 @@ export default function TestLocationSearchPage() {
               {(locationSearch.filters.brandId || locationSearch.filters.categoryId || locationSearch.filters.model || 
                 locationSearch.filters.minPrice || locationSearch.filters.maxPrice || 
                 locationSearch.filters.minEngineCapacity || locationSearch.filters.maxEngineCapacity ||
-                (locationSearch.filters.features && locationSearch.filters.features.length > 0)) && (
+                (locationSearch.filters.features && locationSearch.filters.features.length > 0) ||
+                (locationSearch.filters.sortBy && locationSearch.filters.sortBy !== 'newest')) && (
                 <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <h4 className="font-medium text-blue-900 mb-2">Active Filters:</h4>
-                  <div className="flex flex-wrap gap-2 text-sm">
-                    {locationSearch.filters.brandId && (
-                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
-                        Brand: {filterOptions?.brands.find(b => b.id === locationSearch.filters.brandId)?.name}
+                  <div className="flex flex-wrap gap-2">
+                    {locationSearch.filters.brandId && filterOptions?.brands.find(b => b.id === locationSearch.filters.brandId) && (
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                        Brand: {filterOptions.brands.find(b => b.id === locationSearch.filters.brandId)?.name}
                       </span>
                     )}
-                    {locationSearch.filters.categoryId && (
-                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
-                        Category: {filterOptions?.categories.find(c => c.id === locationSearch.filters.categoryId)?.name}
+                    {locationSearch.filters.categoryId && filterOptions?.categories.find(c => c.id === locationSearch.filters.categoryId) && (
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                        Category: {filterOptions.categories.find(c => c.id === locationSearch.filters.categoryId)?.name}
                       </span>
                     )}
                     {locationSearch.filters.model && (
-                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
                         Model: {locationSearch.filters.model}
                       </span>
                     )}
-                    {(locationSearch.filters.minPrice || locationSearch.filters.maxPrice) && (
-                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
-                        Price: {locationSearch.filters.minPrice || 0} - {locationSearch.filters.maxPrice || '∞'}
+                    {locationSearch.filters.minPrice && (
+                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+                        Min Price: ${locationSearch.filters.minPrice}
                       </span>
                     )}
-                    {(locationSearch.filters.minEngineCapacity || locationSearch.filters.maxEngineCapacity) && (
-                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
-                        Engine: {locationSearch.filters.minEngineCapacity || 0}cc - {locationSearch.filters.maxEngineCapacity || '∞'}cc
+                    {locationSearch.filters.maxPrice && (
+                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+                        Max Price: ${locationSearch.filters.maxPrice}
+                      </span>
+                    )}
+                    {locationSearch.filters.minEngineCapacity && (
+                      <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
+                        Min CC: {locationSearch.filters.minEngineCapacity}
+                      </span>
+                    )}
+                    {locationSearch.filters.maxEngineCapacity && (
+                      <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
+                        Max CC: {locationSearch.filters.maxEngineCapacity}
                       </span>
                     )}
                     {locationSearch.filters.features && locationSearch.filters.features.length > 0 && (
-                      <span className="px-2 py-1 bg-pink-100 text-pink-800 rounded font-medium">
-                        Features: {locationSearch.filters.features.map(id => 
-                          filterOptions?.features.find(f => f.id === id)?.name || id
-                        ).join(', ')} ({locationSearch.filters.features.length})
+                      <span className="px-2 py-1 bg-pink-100 text-pink-800 rounded-full text-sm">
+                        Features: {locationSearch.filters.features.length} selected
+                      </span>
+                    )}
+                    {locationSearch.filters.sortBy && locationSearch.filters.sortBy !== 'newest' && (
+                      <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-sm">
+                        Sort: {locationSearch.filters.sortBy.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                       </span>
                     )}
                   </div>
@@ -580,8 +657,8 @@ export default function TestLocationSearchPage() {
               <div className="mb-4">
                 <p className="text-gray-600">
                   Total Results: {locationSearch.results.totalResults} | 
-                  Motorcycles: {locationSearch.results.motorcycles.total} | 
-                  Shops: {locationSearch.results.shops.total}
+                  Motorcycles: {locationSearch.results.motorcycles.total} (all shown) | 
+                  Shops: {locationSearch.results.shops.total} (1 per page)
                 </p>
               </div>
 
@@ -606,74 +683,84 @@ export default function TestLocationSearchPage() {
                 </div>
               )}
 
-              {/* Motorcycles */}
-              {locationSearch.results.motorcycles.motorcycles.length > 0 && (
-                <div className="mb-6">
-                  <h3 className="text-lg font-medium mb-3">Motorcycles ({locationSearch.results.motorcycles.total})</h3>
-                  <div className="space-y-3 max-h-64 overflow-y-auto">
-                    {locationSearch.results.motorcycles.motorcycles.slice(0, 5).map((motorcycle) => (
-                      <div key={motorcycle.id} className="p-3 border border-gray-200 rounded-lg">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <div className="font-medium">
-                              {motorcycle.brands?.name} {motorcycle.model} ({motorcycle.year})
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {motorcycle.categories?.name} • {motorcycle.engine_capacity_cc}cc
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              Shop: {motorcycle.rental_shops?.provider_name}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              Location: {motorcycle.rental_shops?.cities?.name}, {motorcycle.rental_shops?.cities?.provinces?.name}
-                            </div>
+              {/* Results */}
+              {locationSearch.results && (
+                <div className="space-y-8">
+                  {/* Motorcycles Section - Show all, no pagination */}
+                  <div>
+                    <h2 className="text-xl font-semibold mb-4">
+                      Motorcycles ({locationSearch.results.motorcycles.total} available)
+                    </h2>
+                    {locationSearch.results.motorcycles.motorcycles.length > 0 ? (
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {locationSearch.results.motorcycles.motorcycles.map((motorcycle) => (
+                          <div key={motorcycle.id} className="border rounded-lg p-4">
+                            <h3 className="font-medium">{motorcycle.brands?.name} {motorcycle.model}</h3>
+                            <p className="text-sm text-gray-600">{motorcycle.categories?.name}</p>
+                            <p className="text-sm">{motorcycle.rental_shops?.provider_name}</p>
+                            <p className="text-sm text-gray-500">
+                              {motorcycle.rental_shops?.cities?.name}, {motorcycle.rental_shops?.cities?.provinces?.name}
+                            </p>
+                            <p className="font-semibold">${motorcycle.rental_rate_per_day}/day</p>
                           </div>
-                          <div className="text-right">
-                            <div className="font-bold text-green-600">
-                              {motorcycle.rental_rate_currency} {motorcycle.rental_rate_per_day}/day
-                            </div>
-                          </div>
-                        </div>
+                        ))}
                       </div>
-                    ))}
-                    {locationSearch.results.motorcycles.motorcycles.length > 5 && (
-                      <p className="text-gray-500 text-center">
-                        ... and {locationSearch.results.motorcycles.motorcycles.length - 5} more
-                      </p>
+                    ) : (
+                      <p className="text-gray-500">No motorcycles found</p>
                     )}
                   </div>
-                </div>
-              )}
 
-              {/* Shops */}
-              {locationSearch.results.shops.shops.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-medium mb-3">Shops ({locationSearch.results.shops.total})</h3>
-                  <div className="space-y-3 max-h-64 overflow-y-auto">
-                    {locationSearch.results.shops.shops.slice(0, 5).map((shop) => (
-                      <div key={shop.id} className="p-3 border border-gray-200 rounded-lg">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <div className="font-medium">{shop.provider_name}</div>
-                            <div className="text-sm text-gray-500">{shop.full_address}</div>
-                            <div className="text-sm text-gray-500">
-                              {shop.cities?.name}, {shop.cities?.provinces?.name}, {shop.cities?.provinces?.countries?.name}
+                  {/* Shops Section - Paginated, 1 at a time */}
+                  <div>
+                    <h2 className="text-xl font-semibold mb-4">
+                      Rental Shops ({locationSearch.results.shops.total} total)
+                    </h2>
+                    {locationSearch.results.shops.shops.length > 0 ? (
+                      <div className="space-y-4">
+                        {locationSearch.results.shops.shops.map((shop) => (
+                          <div key={shop.id} className="border rounded-lg p-4">
+                            <h3 className="font-medium">{shop.provider_name}</h3>
+                            <p className="text-sm text-gray-600">{shop.business_description}</p>
+                            <p className="text-sm text-gray-500">
+                              {shop.cities?.name}, {shop.cities?.provinces?.name}
+                            </p>
+                            <p className="text-sm">Rating: {shop.rating}/5</p>
+                          </div>
+                        ))}
+                        
+                        {/* Shop Pagination - Only show if there are multiple shops */}
+                        {locationSearch.results.shops.total > 1 && (
+                          <div className="flex items-center justify-between mt-4">
+                            <div className="text-sm text-gray-600">
+                              Showing shop {Math.floor((locationSearch.filters.offset || 0) / 1) + 1} of {locationSearch.results.shops.total}
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => locationSearch.setFilters({ 
+                                  ...locationSearch.filters,
+                                  offset: Math.max(0, (locationSearch.filters.offset || 0) - 1)
+                                })}
+                                disabled={!locationSearch.filters.offset || locationSearch.filters.offset === 0}
+                                className="px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                Previous
+                              </button>
+                              <button
+                                onClick={() => locationSearch.setFilters({ 
+                                  ...locationSearch.filters,
+                                  offset: (locationSearch.filters.offset || 0) + 1
+                                })}
+                                disabled={(locationSearch.filters.offset || 0) + 1 >= locationSearch.results.shops.total}
+                                className="px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                Next
+                              </button>
                             </div>
                           </div>
-                          <div className="text-right">
-                            {shop.rating && (
-                              <div className="text-yellow-600">
-                                ★ {shop.rating} ({shop.review_count} reviews)
-                              </div>
-                            )}
-                          </div>
-                        </div>
+                        )}
                       </div>
-                    ))}
-                    {locationSearch.results.shops.shops.length > 5 && (
-                      <p className="text-gray-500 text-center">
-                        ... and {locationSearch.results.shops.shops.length - 5} more
-                      </p>
+                    ) : (
+                      <p className="text-gray-500">No shops found</p>
                     )}
                   </div>
                 </div>

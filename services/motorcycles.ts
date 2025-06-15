@@ -124,9 +124,6 @@ export const motorcycleService = {
       query = query.lte('engine_capacity_cc', maxEngineCapacity)
     }
 
-    // Apply feature filtering - we'll handle this after the main query
-    // since Supabase doesn't easily support complex EXISTS queries in the filter
-
     // Apply sorting
     switch (sortBy) {
       case 'price_asc':
@@ -141,38 +138,59 @@ export const motorcycleService = {
       case 'engine_capacity_desc':
         query = query.order('engine_capacity_cc', { ascending: false })
         break
+      case 'rating_desc':
+        // Sort by shop rating (motorcycles inherit shop rating)
+        query = query.order('rental_shops.rating', { ascending: false, nullsFirst: false })
+        break
       case 'newest':
       default:
         query = query.order('created_at', { ascending: false })
         break
     }
 
-    // Apply pagination
-    query = query.range(offset, offset + limit - 1)
-
-    const { data, error, count } = await query
-
-    if (error) {
-      console.error('Error fetching motorcycles:', error)
-      throw error
-    }
-
-    let filteredData = data || []
-
     // Apply feature filtering if features are specified
     if (features && features.length > 0) {
-      filteredData = filteredData.filter(motorcycle => {
+      // For feature filtering, we need to get all results first, then filter, then paginate
+      // This is because Supabase doesn't easily support complex EXISTS queries
+      
+      // Remove pagination temporarily to get all results for filtering
+      const allResultsQuery = query.range(0, 999) // Get up to 1000 results for filtering
+      const { data: allData, error: allError, count: totalCount } = await allResultsQuery
+      
+      if (allError) {
+        console.error('Error fetching motorcycles for feature filtering:', allError)
+        throw allError
+      }
+      
+      // Apply feature filtering
+      const filteredData = (allData || []).filter(motorcycle => {
         const motorcycleFeatures = (motorcycle as any).motorcycle_features || []
         const motorcycleFeatureIds = motorcycleFeatures.map((mf: any) => mf.feature_id)
         
         // Check if motorcycle has ALL required features
         return features.every(featureId => motorcycleFeatureIds.includes(featureId))
       })
-    }
-
-    return {
-      motorcycles: filteredData as MotorcycleWithDetails[],
-      total: filteredData.length // Note: this will be the filtered count, not the total DB count
+      
+      // Apply pagination to filtered results
+      const paginatedData = filteredData.slice(offset, offset + limit)
+      
+      return {
+        motorcycles: paginatedData as MotorcycleWithDetails[],
+        total: filteredData.length // Total count of filtered results
+      }
+    } else {
+      // No feature filtering - use normal pagination
+      const { data, error, count } = await query
+      
+      if (error) {
+        console.error('Error fetching motorcycles:', error)
+        throw error
+      }
+      
+      return {
+        motorcycles: (data || []) as MotorcycleWithDetails[],
+        total: count || 0 // Use the database count
+      }
     }
   },
 
