@@ -76,9 +76,18 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
   } = useQuery({
     queryKey: ['location-search', filters],
     queryFn: async () => {
+      console.log('🔍 React Query executing search with filters:', filters)
       try {
-        return await searchService.searchByLocation(filters)
+        const searchResults = await searchService.searchByLocation(filters)
+        console.log('✅ Search completed successfully:', {
+          totalResults: searchResults.totalResults,
+          motorcycles: searchResults.motorcycles.total,
+          shops: searchResults.shops.total,
+          shopOffset: filters.offset
+        })
+        return searchResults
       } catch (error: any) {
+        console.error('❌ Search failed:', error)
         // If we get a range not satisfiable error, retry with offset 0
         if (error?.code === 'PGRST103' || error?.message?.includes('Requested range not satisfiable')) {
           console.warn('Pagination offset out of range, resetting to first page')
@@ -137,11 +146,15 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
 
   // Update filters helper
   const setFilters = useCallback((newFilters: Partial<LocationBasedSearchFilters>) => {
+    console.log('setFilters called with:', newFilters)
     setFiltersState(prev => {
       const updatedFilters = {
         ...prev,
         ...newFilters
       }
+      
+      console.log('Previous filters:', prev)
+      console.log('Updated filters before validation:', updatedFilters)
       
       // If we're changing filters that affect results (not just pagination),
       // reset to first page to avoid offset errors
@@ -151,23 +164,35 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
       
       if (isFilterChange) {
         updatedFilters.offset = 0
+        console.log('Non-pagination filter change, reset offset to 0')
       } else if (newFilters.offset !== undefined) {
-        // If we're changing offset, validate it against current results
-        const limit = updatedFilters.limit || 5
-        const totalResults = results?.totalResults || 0
-        const maxOffset = Math.max(0, totalResults - 1)
+        // For shops, we have a total shop count, not total results
+        // Let's be more lenient with offset validation for testing
+        const totalShops = results?.shops?.total || 0
+        const maxShopOffset = Math.max(0, totalShops - 1)
         
-        // Ensure offset doesn't exceed available data
-        updatedFilters.offset = Math.min(newFilters.offset, maxOffset)
+        console.log('Offset change detected:', {
+          newOffset: newFilters.offset,
+          totalShops,
+          maxShopOffset,
+          currentResults: results
+        })
         
-        // Ensure offset is aligned to page boundaries
-        const maxValidOffset = Math.floor(maxOffset / limit) * limit
-        updatedFilters.offset = Math.min(updatedFilters.offset, maxValidOffset)
+        // For shop pagination, just ensure we don't exceed shop count
+        if (totalShops > 0) {
+          updatedFilters.offset = Math.min(newFilters.offset, maxShopOffset)
+          console.log('Validated offset:', updatedFilters.offset)
+        } else {
+          // If no results yet, allow the offset to be set
+          updatedFilters.offset = newFilters.offset
+          console.log('No results yet, allowing offset:', updatedFilters.offset)
+        }
       }
       
+      console.log('Final filters:', updatedFilters)
       return updatedFilters
     })
-  }, [results?.totalResults])
+  }, [results?.totalResults, results?.shops?.total])
 
   // Manual search function
   const search = useCallback(() => {
