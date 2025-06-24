@@ -25,7 +25,7 @@ export interface SearchFilters {
     max: number
   }
   features?: string[]
-  sortBy?: 'price_asc' | 'price_desc' | 'rating' | 'distance' | 'newest'
+  sortBy?: 'price_asc' | 'price_desc' | 'rating' | 'newest'
 }
 
 export interface PaginationParams {
