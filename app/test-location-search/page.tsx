@@ -732,26 +732,34 @@ export default function TestLocationSearchPage() {
                         {locationSearch.results.shops.total > 1 && (
                           <div className="flex items-center justify-between mt-4">
                             <div className="text-sm text-gray-600">
-                              Showing shop {Math.floor((locationSearch.filters.offset || 0) / 1) + 1} of {locationSearch.results.shops.total}
+                              Showing shop {(locationSearch.filters.offset || 0) + 1} of {locationSearch.results.shops.total}
                             </div>
                             <div className="flex gap-2">
                               <button
-                                onClick={() => locationSearch.setFilters({ 
-                                  ...locationSearch.filters,
-                                  offset: Math.max(0, (locationSearch.filters.offset || 0) - 1)
-                                })}
-                                disabled={!locationSearch.filters.offset || locationSearch.filters.offset === 0}
-                                className="px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                                onClick={() => {
+                                  console.log('Previous clicked - current offset:', locationSearch.filters.offset)
+                                  const currentOffset = locationSearch.filters.offset || 0
+                                  if (currentOffset > 0) {
+                                    console.log('Setting offset to:', currentOffset - 1)
+                                    locationSearch.setFilters({ offset: currentOffset - 1 })
+                                  }
+                                }}
+                                disabled={!locationSearch.filters.offset || locationSearch.filters.offset === 0 || locationSearch.isLoading}
+                                className="px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
                               >
                                 Previous
                               </button>
                               <button
-                                onClick={() => locationSearch.setFilters({ 
-                                  ...locationSearch.filters,
-                                  offset: (locationSearch.filters.offset || 0) + 1
-                                })}
-                                disabled={(locationSearch.filters.offset || 0) + 1 >= locationSearch.results.shops.total}
-                                className="px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                                onClick={() => {
+                                  console.log('Next clicked - current offset:', locationSearch.filters.offset)
+                                  const currentOffset = locationSearch.filters.offset || 0
+                                  if (locationSearch.results && currentOffset + 1 < locationSearch.results.shops.total) {
+                                    console.log('Setting offset to:', currentOffset + 1)
+                                    locationSearch.setFilters({ offset: currentOffset + 1 })
+                                  }
+                                }}
+                                disabled={(locationSearch.filters.offset || 0) + 1 >= (locationSearch.results?.shops.total || 0) || locationSearch.isLoading}
+                                className="px-3 py-1 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
                               >
                                 Next
                               </button>
