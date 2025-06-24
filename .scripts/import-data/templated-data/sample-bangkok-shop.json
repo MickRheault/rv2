@@ -1,0 +1,208 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2024-01-15T10:30:00Z",
+    "shop_identifier": "bangkok-bike-rental-001",
+    "name": "Bangkok Bike Rental - Silom",
+    "place_id": "ChIJBangkokPlaceId123",
+    "address": "123 Silom Road, Silom, Bang Rak, Bangkok 10500, Thailand",
+    "city": "Bangkok",
+    "province": "Bangkok",
+    "country": "Thailand",
+    "latitude": 13.7563,
+    "longitude": 100.5018,
+    "phone": "+66 2 234 5678",
+    "website": "https://bangkokbikerental.com",
+    "google_maps_url": "https://maps.google.com/?cid=123456789",
+    "business_status": "OPERATIONAL",
+    "rating": 4.5,
+    "number_of_reviews": 127,
+    "rental_conditions": {
+      "minimum_age": 21,
+      "driving_license_required": true,
+      "passport_required": true,
+      "deposit_amount": 5000,
+      "deposit_currency": "THB",
+      "fuel_policy": "Return with same level",
+      "cancellation_policy": "Free cancellation 24h before"
+    },
+    "rental_inclusions": [
+      "Helmet",
+      "Basic insurance",
+      "24/7 roadside assistance",
+      "City map"
+    ],
+    "available_service_locations": [
+      "Silom Office",
+      "Suvarnabhumi Airport",
+      "Don Mueang Airport",
+      "Khao San Road"
+    ],
+    "offered_tours": [
+      {
+        "name": "Bangkok City Tour",
+        "duration_text": "Full day (8 hours)",
+        "distance_km": 50,
+        "price_text": "1,500 THB per person",
+        "currency": "THB"
+      },
+      {
+        "name": "Floating Market Adventure",
+        "duration_text": "Half day (4 hours)",
+        "distance_km": 80,
+        "price_text": "1,200 THB per person",
+        "currency": "THB"
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "bangkok-bike-rental-001",
+      "scrape_timestamp": "2024-01-15T10:30:00Z",
+      "source_url": "https://bangkokbikerental.com/bikes/honda-pcx-150",
+      "brand": "Honda",
+      "model": "PCX 150",
+      "year": 2023,
+      "engine_capacity_cc": 150,
+      "category": "Scooter",
+      "description": "Perfect for city riding with automatic transmission and under-seat storage",
+      "rental_rates": [
+        {
+          "rate_text": "Daily rate",
+          "min_days": 1,
+          "max_days": 1,
+          "rate_per_day": 400,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "Weekly rate (7+ days)",
+          "min_days": 7,
+          "max_days": 13,
+          "rate_per_day": 350,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "Monthly rate (30+ days)",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 300,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://example.com/images/honda-pcx-150-front.jpg",
+        "https://example.com/images/honda-pcx-150-side.jpg",
+        "https://example.com/images/honda-pcx-150-dashboard.jpg"
+      ],
+      "features": [
+        "ABS",
+        "LED Headlight",
+        "Digital Dashboard",
+        "Under-seat Storage",
+        "USB Charging Port"
+      ],
+      "specifications_raw": {
+        "engine_type": "Single cylinder, 4-stroke",
+        "transmission": "Automatic CVT",
+        "fuel_capacity": "8.1 liters",
+        "weight": "130 kg",
+        "max_speed": "95 km/h"
+      },
+      "conditions_raw": {
+        "minimum_rental_period": "1 day",
+        "maximum_rental_period": "90 days",
+        "late_return_fee": "100 THB per hour",
+        "damage_assessment": "Professional inspection required"
+      },
+      "required_documents_raw": [
+        "Valid Driving License",
+        "Passport",
+        "Credit Card for Deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Third Party",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": 5000,
+          "deductible_currency": "THB",
+          "notes": "Covers third party liability up to 1M THB"
+        },
+        {
+          "type_name": "Comprehensive Coverage",
+          "is_included": false,
+          "cost_per_day": 50,
+          "currency": "THB",
+          "deductible": 2000,
+          "deductible_currency": "THB",
+          "notes": "Optional upgrade covering theft and damage"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "bangkok-bike-rental-001",
+      "scrape_timestamp": "2024-01-15T10:30:00Z",
+      "source_url": "https://bangkokbikerental.com/bikes/yamaha-nmax-155",
+      "brand": "Yamaha",
+      "model": "NMAX 155",
+      "year": 2023,
+      "engine_capacity_cc": 155,
+      "category": "Scooter",
+      "description": "Premium scooter with excellent fuel efficiency and comfort",
+      "rental_rates": [
+        {
+          "rate_text": "Daily rate",
+          "min_days": 1,
+          "max_days": 1,
+          "rate_per_day": 450,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "Weekly rate (7+ days)",
+          "min_days": 7,
+          "max_days": 13,
+          "rate_per_day": 400,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://example.com/images/yamaha-nmax-155-front.jpg",
+        "https://example.com/images/yamaha-nmax-155-side.jpg"
+      ],
+      "features": [
+        "ABS",
+        "Smart Key System",
+        "LED Lighting",
+        "Large Storage Compartment",
+        "Traction Control"
+      ],
+      "specifications_raw": {
+        "engine_type": "Single cylinder, 4-stroke, SOHC",
+        "transmission": "Automatic CVT",
+        "fuel_capacity": "6.6 liters",
+        "weight": "127 kg"
+      },
+      "conditions_raw": {
+        "minimum_rental_period": "1 day",
+        "fuel_policy": "Return with same fuel level"
+      },
+      "required_documents_raw": [
+        "Valid Driving License",
+        "Passport"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Third Party",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": 5000,
+          "deductible_currency": "THB",
+          "notes": "Standard coverage included"
+        }
+      ],
+      "availability_status": "Available"
+    }
+  ]
+} 

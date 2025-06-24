@@ -1,0 +1,208 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2024-01-15T13:00:00Z",
+    "shop_identifier": "chiang-mai-touring-002",
+    "name": "Northern Thailand Touring",
+    "place_id": "ChIJChiangMaiTouring002",
+    "address": "321 Nimmanhemin Road, Su Thep, Mueang Chiang Mai, Chiang Mai 50200, Thailand",
+    "city": "Chiang Mai",
+    "province": "Chiang Mai",
+    "country": "Thailand",
+    "latitude": 18.8000,
+    "longitude": 98.9500,
+    "phone": "+66 53 987 654",
+    "website": "https://northernthailandtouring.com",
+    "google_maps_url": "https://maps.google.com/?cid=987654321",
+    "business_status": "OPERATIONAL",
+    "rating": 4.8,
+    "number_of_reviews": 203,
+    "rental_conditions": {
+      "minimum_age": 25,
+      "driving_license_required": true,
+      "passport_required": true,
+      "deposit_amount": 10000,
+      "deposit_currency": "THB",
+      "fuel_policy": "Full to full",
+      "cancellation_policy": "Free cancellation 72h before",
+      "guided_tours_available": true
+    },
+    "rental_inclusions": [
+      "Premium Helmet",
+      "Comprehensive insurance",
+      "GPS with pre-loaded routes",
+      "Touring gear",
+      "24/7 support hotline",
+      "Emergency roadside assistance"
+    ],
+    "available_service_locations": [
+      "Nimman Office",
+      "Chiang Mai Airport",
+      "Train Station",
+      "Maya Shopping Center"
+    ],
+    "offered_tours": [
+      {
+        "name": "Golden Triangle Adventure",
+        "duration_text": "3 days, 2 nights",
+        "distance_km": 600,
+        "price_text": "8,500 THB per person",
+        "currency": "THB"
+      },
+      {
+        "name": "Mae Hong Son Loop Complete",
+        "duration_text": "4 days, 3 nights",
+        "distance_km": 900,
+        "price_text": "12,000 THB per person",
+        "currency": "THB"
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "chiang-mai-touring-002",
+      "scrape_timestamp": "2024-01-15T13:00:00Z",
+      "source_url": "https://northernthailandtouring.com/bikes/honda-cb500x",
+      "brand": "Honda",
+      "model": "CB500X",
+      "year": 2023,
+      "engine_capacity_cc": 471,
+      "category": "Adventure Touring",
+      "description": "Perfect adventure touring bike for long-distance mountain rides",
+      "rental_rates": [
+        {
+          "rate_text": "Daily rate",
+          "min_days": 1,
+          "max_days": 1,
+          "rate_per_day": 1100,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "Weekly rate (7+ days)",
+          "min_days": 7,
+          "max_days": 13,
+          "rate_per_day": 950,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "Monthly rate (30+ days)",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 850,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://example.com/images/honda-cb500x-front.jpg",
+        "https://example.com/images/honda-cb500x-touring.jpg",
+        "https://example.com/images/honda-cb500x-mountains.jpg"
+      ],
+      "features": [
+        "ABS",
+        "Traction Control",
+        "LED Lighting",
+        "Large Fuel Tank",
+        "Touring Windscreen",
+        "Side Cases"
+      ],
+      "specifications_raw": {
+        "engine_type": "Parallel twin, 4-stroke, DOHC",
+        "transmission": "6-speed manual",
+        "fuel_capacity": "17.3 liters",
+        "weight": "196 kg",
+        "seat_height": "810mm"
+      },
+      "conditions_raw": {
+        "minimum_rental_period": "2 days",
+        "touring_optimized": true,
+        "highway_approved": true
+      },
+      "required_documents_raw": [
+        "Valid Motorcycle License",
+        "Passport",
+        "Credit Card for Deposit",
+        "International Driving Permit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Touring Coverage",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": 5000,
+          "deductible_currency": "THB",
+          "notes": "Comprehensive coverage for long-distance touring"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "chiang-mai-touring-002",
+      "scrape_timestamp": "2024-01-15T13:00:00Z",
+      "source_url": "https://northernthailandtouring.com/bikes/kawasaki-versys-650",
+      "brand": "Kawasaki",
+      "model": "Versys 650",
+      "year": 2023,
+      "engine_capacity_cc": 649,
+      "category": "Adventure Touring",
+      "description": "Premium adventure touring motorcycle for serious riders",
+      "rental_rates": [
+        {
+          "rate_text": "Daily rate",
+          "min_days": 1,
+          "max_days": 1,
+          "rate_per_day": 1400,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "Weekly rate (7+ days)",
+          "min_days": 7,
+          "max_days": 13,
+          "rate_per_day": 1200,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://example.com/images/kawasaki-versys-650-front.jpg",
+        "https://example.com/images/kawasaki-versys-650-adventure.jpg"
+      ],
+      "features": [
+        "ABS",
+        "Traction Control",
+        "Adjustable Windscreen",
+        "Touring Cases",
+        "Heated Grips",
+        "Crash Bars"
+      ],
+      "specifications_raw": {
+        "engine_type": "Parallel twin, 4-stroke, DOHC",
+        "transmission": "6-speed manual",
+        "fuel_capacity": "21 liters",
+        "weight": "216 kg",
+        "seat_height": "840mm"
+      },
+      "conditions_raw": {
+        "minimum_rental_period": "3 days",
+        "experience_required": "Advanced",
+        "touring_specialist": true
+      },
+      "required_documents_raw": [
+        "Valid Motorcycle License",
+        "Passport",
+        "International Driving Permit",
+        "Advanced Riding Certificate"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Premium Touring Coverage",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": 8000,
+          "deductible_currency": "THB",
+          "notes": "Premium coverage for advanced touring motorcycles"
+        }
+      ],
+      "availability_status": "Available"
+    }
+  ]
+} 

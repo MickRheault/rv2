@@ -16,6 +16,9 @@ interface SearchState {
   // Recent searches
   recentSearches: SearchLocation[]
   
+  // URL synchronization state
+  isURLSynced: boolean
+  
   // Actions
   setFilters: (filters: Partial<SearchFilters>) => void
   resetFilters: () => void
@@ -24,6 +27,7 @@ interface SearchState {
   toggleFilters: () => void
   addRecentSearch: (location: SearchLocation) => void
   clearRecentSearches: () => void
+  setURLSynced: (synced: boolean) => void
 }
 
 const initialFilters: SearchFilters = {
@@ -40,6 +44,7 @@ export const useSearchStore = create<SearchState>()(
         error: null,
         showFilters: false,
         recentSearches: [],
+        isURLSynced: false,
 
         // Actions
         setFilters: (newFilters) =>
@@ -100,6 +105,9 @@ export const useSearchStore = create<SearchState>()(
 
         clearRecentSearches: () =>
           set({ recentSearches: [] }, false, 'clearRecentSearches'),
+
+        setURLSynced: (synced) =>
+          set({ isURLSynced: synced }, false, 'setURLSynced'),
       }),
       {
         name: 'ridevault-search-store',

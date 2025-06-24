@@ -1,0 +1,202 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2024-01-15T14:00:00Z",
+    "shop_identifier": "hanoi-motorbike-rental-001",
+    "name": "Hanoi Motorbike Adventures",
+    "place_id": "ChIJHanoiMotorbikeAdv001",
+    "address": "45 Hang Bac Street, Hoan Kiem District, Hanoi, Vietnam",
+    "city": "Hanoi",
+    "province": "Hanoi",
+    "country": "Vietnam",
+    "latitude": 21.0285,
+    "longitude": 105.8542,
+    "phone": "+84 24 3828 1234",
+    "website": "https://hanoimotorbikeadventures.com",
+    "google_maps_url": "https://maps.google.com/?cid=123456789",
+    "business_status": "OPERATIONAL",
+    "rating": 4.4,
+    "number_of_reviews": 178,
+    "rental_conditions": {
+      "minimum_age": 18,
+      "driving_license_required": true,
+      "passport_required": true,
+      "deposit_amount": 2000000,
+      "deposit_currency": "VND",
+      "fuel_policy": "Return with same level",
+      "cancellation_policy": "Free cancellation 24h before",
+      "traffic_briefing_required": true
+    },
+    "rental_inclusions": [
+      "Helmet",
+      "Basic insurance",
+      "City map",
+      "Traffic rules briefing",
+      "Emergency contact card"
+    ],
+    "available_service_locations": [
+      "Old Quarter Office",
+      "Noi Bai Airport",
+      "Train Station",
+      "Ba Dinh District"
+    ],
+    "offered_tours": [
+      {
+        "name": "Hanoi City Discovery",
+        "duration_text": "Half day (4 hours)",
+        "distance_km": 40,
+        "price_text": "500,000 VND per person",
+        "currency": "VND"
+      },
+      {
+        "name": "Ha Long Bay Day Trip",
+        "duration_text": "Full day (12 hours)",
+        "distance_km": 320,
+        "price_text": "1,200,000 VND per person",
+        "currency": "VND"
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "hanoi-motorbike-rental-001",
+      "scrape_timestamp": "2024-01-15T14:00:00Z",
+      "source_url": "https://hanoimotorbikeadventures.com/bikes/honda-wave-alpha",
+      "brand": "Honda",
+      "model": "Wave Alpha",
+      "year": 2022,
+      "engine_capacity_cc": 110,
+      "category": "Scooter",
+      "description": "Popular Vietnamese commuter bike, perfect for city navigation",
+      "rental_rates": [
+        {
+          "rate_text": "Daily rate",
+          "min_days": 1,
+          "max_days": 1,
+          "rate_per_day": 150000,
+          "currency": "VND"
+        },
+        {
+          "rate_text": "Weekly rate (7+ days)",
+          "min_days": 7,
+          "max_days": 13,
+          "rate_per_day": 120000,
+          "currency": "VND"
+        },
+        {
+          "rate_text": "Monthly rate (30+ days)",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 100000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://example.com/images/honda-wave-alpha-front.jpg",
+        "https://example.com/images/honda-wave-alpha-side.jpg"
+      ],
+      "features": [
+        "Electric Start",
+        "Under-seat Storage",
+        "Fuel Efficient",
+        "Easy Handling",
+        "Local Favorite"
+      ],
+      "specifications_raw": {
+        "engine_type": "Single cylinder, 4-stroke, OHC",
+        "transmission": "Semi-automatic",
+        "fuel_capacity": "3.7 liters",
+        "weight": "96 kg",
+        "fuel_consumption": "1.55L/100km"
+      },
+      "conditions_raw": {
+        "minimum_rental_period": "1 day",
+        "city_riding_optimized": true,
+        "beginner_friendly": true
+      },
+      "required_documents_raw": [
+        "Valid Driving License",
+        "Passport",
+        "Deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Third Party",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": 500000,
+          "deductible_currency": "VND",
+          "notes": "Standard Vietnamese insurance coverage"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "hanoi-motorbike-rental-001",
+      "scrape_timestamp": "2024-01-15T14:00:00Z",
+      "source_url": "https://hanoimotorbikeadventures.com/bikes/yamaha-exciter-155",
+      "brand": "Yamaha",
+      "model": "Exciter 155",
+      "year": 2023,
+      "engine_capacity_cc": 155,
+      "category": "Sport Scooter",
+      "description": "Popular Vietnamese sport scooter with modern features",
+      "rental_rates": [
+        {
+          "rate_text": "Daily rate",
+          "min_days": 1,
+          "max_days": 1,
+          "rate_per_day": 250000,
+          "currency": "VND"
+        },
+        {
+          "rate_text": "Weekly rate (7+ days)",
+          "min_days": 7,
+          "max_days": 13,
+          "rate_per_day": 200000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://example.com/images/yamaha-exciter-155-front.jpg",
+        "https://example.com/images/yamaha-exciter-155-sport.jpg"
+      ],
+      "features": [
+        "VVA Engine",
+        "LED Lighting",
+        "Digital Display",
+        "ABS",
+        "Smart Key"
+      ],
+      "specifications_raw": {
+        "engine_type": "Single cylinder, 4-stroke, SOHC",
+        "transmission": "Manual 6-speed",
+        "fuel_capacity": "4.6 liters",
+        "weight": "118 kg",
+        "max_power": "15.4 HP"
+      },
+      "conditions_raw": {
+        "minimum_rental_period": "1 day",
+        "sport_riding_capable": true,
+        "highway_suitable": true
+      },
+      "required_documents_raw": [
+        "Valid Motorcycle License",
+        "Passport",
+        "Deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Enhanced Coverage",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": 1000000,
+          "deductible_currency": "VND",
+          "notes": "Enhanced coverage for sport motorcycles"
+        }
+      ],
+      "availability_status": "Available"
+    }
+  ]
+} 
