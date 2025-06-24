@@ -11,6 +11,7 @@ import Pagination from '@/components/ui/Pagination'
 function SearchPageContent() {
   const { filters, setFilters, resetFilters } = useSearchStore()
   const [shareableURL, setShareableURL] = useState<string>('')
+  const [currentURL, setCurrentURL] = useState<string>('Loading...')
   
   // URL parameter management
   const urlParams = useURLParams({
@@ -22,6 +23,13 @@ function SearchPageContent() {
   
   // Pagination from URL
   const pagination = useURLPagination()
+
+  // Update current URL on client side only
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setCurrentURL(window.location.href)
+    }
+  }, [urlParams.urlParams, pagination.page])
   
   // Location search with current filters
   const locationSearch = useLocationSearch({
@@ -79,22 +87,30 @@ function SearchPageContent() {
   return (
     <div className="container mx-auto p-6 max-w-6xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-4">🏍️ Motorcycle Search</h1>
+        <h1 className="text-3xl font-bold mb-4">🧪 Mock Test Search - URL State Demo</h1>
+        
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+          <p className="text-green-800">
+            <strong>📋 Purpose:</strong> This is a comprehensive test page for URL parameter synchronization. 
+            Use the filters below to test how search state syncs with URL parameters for bookmarking, 
+            sharing, and browser navigation.
+          </p>
+        </div>
         
         {/* URL State Debug Info */}
-        <div className="bg-gray-50 p-4 rounded-lg mb-6">
-          <h2 className="font-semibold mb-2">URL State Management Demo</h2>
+        <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg mb-6">
+          <h2 className="font-semibold mb-2 text-blue-800">🔗 URL State Management Demo</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
-              <strong>Has URL Params:</strong> {urlParams.hasParams ? 'Yes' : 'No'}
+              <strong>Has URL Params:</strong> {urlParams.isClient ? (urlParams.hasParams ? 'Yes' : 'No') : 'Loading...'}
             </div>
             <div>
-              <strong>Current Page:</strong> {pagination.page}
+              <strong>Current Page:</strong> {pagination.isClient ? pagination.page : 'Loading...'}
             </div>
             <div className="md:col-span-2">
               <strong>Current URL:</strong> 
               <div className="bg-white p-2 rounded border font-mono text-xs break-all">
-                {typeof window !== 'undefined' ? window.location.href : 'Loading...'}
+                {currentURL}
               </div>
             </div>
             <div className="md:col-span-2">
@@ -258,17 +274,17 @@ function SearchPageContent() {
           </div>
         </div>
 
-        {/* Main Content - Search Results */}
+        {/* Main Content - Mock Search Results */}
         <div className="lg:col-span-3">
           <div className="bg-white border rounded-lg p-6">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold">Search Results</h2>
+              <h2 className="text-xl font-semibold">🎭 Mock Search Results</h2>
               <div className="text-sm text-gray-600">
                 Page {pagination.page} • {pagination.limit} per page
               </div>
             </div>
 
-            {/* Results placeholder */}
+            {/* Mock results for testing URL state */}
             <div className="space-y-4 mb-8">
               {locationSearch.isLoading ? (
                 <div className="text-center py-8">
@@ -281,27 +297,36 @@ function SearchPageContent() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {Array.from({ length: 5 }, (_, i) => (
-                    <div key={i} className="border rounded-lg p-4">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-semibold">Sample Motorcycle {i + 1}</h3>
-                          <p className="text-gray-600">Brand • Category • Location</p>
-                          <p className="text-sm text-gray-500 mt-1">
-                            Features: ABS, GPS, Helmet Included
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-xl font-bold text-blue-600">
-                            ${(Math.random() * 100 + 20).toFixed(0)}/day
+                  {Array.from({ length: 5 }, (_, i) => {
+                    // Use deterministic mock data to avoid hydration issues
+                    const mockPrices = [45, 68, 32, 89, 55]
+                    const mockRatings = [4.2, 3.8, 4.5, 4.1, 3.9]
+                    const mockBrands = ['Honda', 'Yamaha', 'Kawasaki', 'Suzuki', 'BMW']
+                    const mockCategories = ['Scooter', 'Sport', 'Cruiser', 'Adventure', 'Dirt Bike']
+                    const mockLocations = ['Bangkok', 'Phuket', 'Chiang Mai', 'Pattaya', 'Krabi']
+                    
+                    return (
+                      <div key={i} className="border rounded-lg p-4">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="font-semibold">Sample Motorcycle {i + 1}</h3>
+                            <p className="text-gray-600">{mockBrands[i]} • {mockCategories[i]} • {mockLocations[i]}</p>
+                            <p className="text-sm text-gray-500 mt-1">
+                              Features: ABS, GPS, Helmet Included
+                            </p>
                           </div>
-                          <div className="text-sm text-gray-500">
-                            ⭐ {(Math.random() * 2 + 3).toFixed(1)}
+                          <div className="text-right">
+                            <div className="text-xl font-bold text-blue-600">
+                              ${mockPrices[i]}/day
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              ⭐ {mockRatings[i]}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -323,9 +348,9 @@ function SearchPageContent() {
         </div>
       </div>
 
-      {/* URL Management Actions */}
+      {/* URL Management Test Actions */}
       <div className="mt-8 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <h3 className="font-semibold mb-2">URL Management Actions</h3>
+        <h3 className="font-semibold mb-2">🔧 URL Management Test Actions</h3>
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => urlParams.syncFromURL()}
@@ -365,9 +390,9 @@ function SearchPageContent() {
   )
 }
 
-export default function SearchPage() {
+export default function MockTestSearchPage() {
   return (
-    <Suspense fallback={<div className="container mx-auto p-6">Loading search page...</div>}>
+    <Suspense fallback={<div className="container mx-auto p-6">Loading mock test search page...</div>}>
       <SearchPageContent />
     </Suspense>
   )
