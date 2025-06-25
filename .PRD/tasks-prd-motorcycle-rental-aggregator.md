@@ -151,7 +151,7 @@ The system receives data via the template in `context/data_template.json`:
   - [x] 2.10 Add search state management and URL parameter handling
 
 - [ ] 3.0 Core User Interface & Components
-  - [ ] 3.1 Create responsive layout components (Header, Footer, main layout)
+  - [x] 3.1 Create responsive layout components (Header, Footer, main layout)
   - [ ] 3.2 Build reusable UI components (Button, Input, Modal, etc.)
   - [ ] 3.3 Implement search filters component with collapsible panels
   - [ ] 3.4 Create motorcycle listing card with image, specs, and pricing
