@@ -1,7 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    typedRoutes: true,
+    // Temporarily disabled for MVP - will re-enable after all routes are created
+    // typedRoutes: true,
   },
   images: {
     domains: [

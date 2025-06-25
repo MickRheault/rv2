@@ -1,33 +1,33 @@
-import { InputHTMLAttributes, forwardRef, ReactNode } from 'react'
-import { cn } from '@/lib/utils'
+import { InputHTMLAttributes, forwardRef } from 'react'
+import { clsx } from 'clsx'
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string
   error?: string
-  leftIcon?: ReactNode
-  rightIcon?: ReactNode
-  fullWidth?: boolean
+  hint?: string
+  leftIcon?: React.ReactNode
+  rightIcon?: React.ReactNode
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ 
-    className, 
     label, 
     error, 
+    hint, 
     leftIcon, 
     rightIcon, 
-    fullWidth = false,
+    className, 
     id,
     ...props 
   }, ref) => {
     const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`
 
     return (
-      <div className={cn('flex flex-col space-y-2', fullWidth && 'w-full')}>
+      <div className="w-full">
         {label && (
           <label 
-            htmlFor={inputId}
-            className="text-sm font-medium text-gray-700 dark:text-gray-300"
+            htmlFor={inputId} 
+            className="block text-sm font-medium text-gray-700 mb-2"
           >
             {label}
           </label>
@@ -35,43 +35,48 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         
         <div className="relative">
           {leftIcon && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-              {leftIcon}
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <div className="h-5 w-5 text-gray-400">
+                {leftIcon}
+              </div>
             </div>
           )}
           
           <input
-            id={inputId}
             ref={ref}
-            className={cn(
-              // Base styles
-              'flex h-10 w-full rounded-lg border bg-background px-3 py-2 text-sm transition-colors',
-              'file:border-0 file:bg-transparent file:text-sm file:font-medium',
-              'placeholder:text-muted-foreground',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
-              'disabled:cursor-not-allowed disabled:opacity-50',
-              // Icon padding
+            id={inputId}
+            className={clsx(
+              'w-full px-4 py-3 rounded-xl border transition-all duration-200',
+              'placeholder-gray-400 focus:outline-none focus:ring-1',
+              'disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed',
               leftIcon && 'pl-10',
               rightIcon && 'pr-10',
-              // State styles
               error 
-                ? 'border-red-500 focus-visible:ring-red-500' 
-                : 'border-input focus-visible:ring-primary',
+                ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
+                : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500',
               className
             )}
             {...props}
           />
           
           {rightIcon && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-              {rightIcon}
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+              <div className="h-5 w-5 text-gray-400">
+                {rightIcon}
+              </div>
             </div>
           )}
         </div>
         
         {error && (
-          <p className="text-sm text-red-600 dark:text-red-400">
+          <p className="mt-2 text-sm text-red-600">
             {error}
+          </p>
+        )}
+        
+        {hint && !error && (
+          <p className="mt-2 text-sm text-gray-500">
+            {hint}
           </p>
         )}
       </div>
