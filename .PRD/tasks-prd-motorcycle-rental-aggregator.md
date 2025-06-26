@@ -154,7 +154,7 @@ The system receives data via the template in `context/data_template.json`:
   - [x] 3.1 Create responsive layout components (Header, Footer, main layout)
   - [x] 3.2 Build reusable UI components (Button, Input, Modal, etc.)
   - [x] 3.3 Implement search filters component with collapsible panels
-  - [ ] 3.4 Create motorcycle listing card with image, specs, and pricing
+  - [x] 3.4 Create motorcycle listing card with image, specs, and pricing
   - [ ] 3.5 Build rental shop card with location, rating, and contact info
   - [ ] 3.6 Implement motorcycle detail page with image gallery and specifications
   - [ ] 3.7 Create rental shop detail page with Google Maps integration

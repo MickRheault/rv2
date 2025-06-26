@@ -9,6 +9,8 @@ const nextConfig = {
       'localhost',
       // Add Supabase storage domain
       'supabase.co',
+      // Add Unsplash for demo images
+      'images.unsplash.com',
       // Add other image domains as needed
     ],
     formats: ['image/webp', 'image/avif'],
