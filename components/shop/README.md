@@ -166,4 +166,128 @@ Visit `/shop-demo` to see the ShopCard component in action with:
 - **Reviews Preview**: Show recent customer reviews
 - **Map Integration**: Embedded map view for shop location
 - **Booking Integration**: Direct booking functionality
-- **Social Sharing**: Enhanced share functionality with social media integration 
+- **Social Sharing**: Enhanced share functionality with social media integration
+
+## ShopDetails Component
+
+The `ShopDetails` component provides a comprehensive view for individual shop detail pages with full information display and Google Maps integration.
+
+### Features
+
+- **Complete Shop Information**: Business name, description, status, and ratings
+- **Contact Actions**: Direct phone calls and website links
+- **Location Display**: Hierarchical location information with Google Maps
+- **Service Information**: Inclusions, tours, and service locations
+- **Available Motorcycles**: Grid display of shop's motorcycle inventory
+- **Responsive Layout**: Two-column layout with sidebar on desktop
+- **Quick Stats**: Summary panel with key metrics
+
+### Props
+
+```typescript
+interface ShopDetailsProps {
+  shop: ShopWithMotorcycles  // Shop data with motorcycle rentals included
+}
+```
+
+### Usage
+
+```tsx
+import ShopDetails from '@/components/shop/ShopDetails'
+
+<ShopDetails shop={shopWithMotorcycles} />
+```
+
+### Layout Structure
+
+- **Header Section**: Shop name, status, location, rating, description
+- **Main Content**: Inclusions, tours, service locations, motorcycles
+- **Sidebar**: Google Maps, contact info, quick stats
+
+## GoogleMap Component
+
+The `GoogleMap` component provides Google Maps integration for displaying shop locations with fallback support.
+
+### Features
+
+- **Interactive Maps**: Google Maps JavaScript API integration when available
+- **Fallback Display**: Attractive fallback when coordinates unavailable or API not loaded
+- **External Links**: Direct links to Google Maps web interface
+- **Directions**: Get directions functionality
+- **Responsive Design**: Adapts to container size
+- **Development Info**: Coordinate display in development mode
+
+### Props
+
+```typescript
+interface GoogleMapProps {
+  latitude?: number | null      // Shop latitude coordinate
+  longitude?: number | null     // Shop longitude coordinate
+  shopName: string             // Name for display and search
+  address: string              // Full address text
+  googleMapsUrl?: string | null // Direct Google Maps URL
+  placeId?: string | null      // Google Places ID
+  className?: string           // Additional CSS classes
+}
+```
+
+### Usage
+
+```tsx
+import GoogleMap from '@/components/shop/GoogleMap'
+
+<GoogleMap
+  latitude={shop.latitude}
+  longitude={shop.longitude}
+  shopName={shop.provider_name}
+  address={shop.full_address}
+  googleMapsUrl={shop.google_maps_url}
+  placeId={shop.place_id}
+/>
+```
+
+### Map Integration
+
+The component handles three scenarios:
+1. **Full Integration**: Interactive map with custom markers when Google Maps API is available
+2. **Fallback Mode**: Styled placeholder with shop information when no coordinates
+3. **External Links**: Always provides links to Google Maps regardless of API status
+
+### Google Maps Setup
+
+For production use:
+1. Add Google Maps API key to environment variables
+2. Load Google Maps JavaScript API in your app
+3. Configure allowed domains in Google Cloud Console
+
+## Data Requirements
+
+### ShopWithMotorcycles
+Extended shop interface including:
+- All ShopWithDetails fields
+- `motorcycle_rentals`: Array of motorcycle rental data with brands and categories
+
+## Styling Guidelines
+
+All components follow the project's design system:
+- **Consistent Spacing**: Tailwind spacing scale (4, 6, 8, etc.)
+- **Typography**: Proper heading hierarchy and readable text sizes
+- **Colors**: Gray scale base with blue accents for actions
+- **Interactive States**: Hover, focus, and active states for all interactive elements
+- **Mobile First**: Responsive design starting from mobile breakpoints
+
+## Dependencies
+
+- **React**: Hooks (useState, useEffect, useRef) for state management
+- **Next.js**: Link component for internal navigation
+- **Heroicons**: Consistent icon library
+- **Tailwind CSS**: Utility-first styling
+- **UI Components**: Card, Badge, Button from project UI library
+
+## Accessibility Features
+
+- **Semantic HTML**: Proper heading hierarchy and landmark elements
+- **ARIA Labels**: Descriptive labels for screen readers
+- **Keyboard Navigation**: All interactive elements keyboard accessible
+- **Focus Management**: Clear focus indicators
+- **Color Contrast**: WCAG 2.1 AA compliant color combinations 

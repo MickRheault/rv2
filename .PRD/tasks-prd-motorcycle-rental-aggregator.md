@@ -156,8 +156,8 @@ The system receives data via the template in `context/data_template.json`:
   - [x] 3.3 Implement search filters component with collapsible panels
   - [x] 3.4 Create motorcycle listing card with image, specs, and pricing
   - [x] 3.5 Build rental shop card with location, rating, and contact info
-  - [ ] 3.6 Implement motorcycle detail page with image gallery and specifications
-  - [ ] 3.7 Create rental shop detail page with Google Maps integration
+  - [x] 3.6 Implement motorcycle detail page with image gallery and specifications
+  - [x] 3.7 Create rental shop detail page with Google Maps integration
   - [ ] 3.8 Build search results page with filtering and sorting
   - [ ] 3.9 Implement responsive image galleries with zoom and swipe
   - [ ] 3.10 Add premium listing badges and enhanced visibility features
