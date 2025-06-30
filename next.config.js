@@ -11,6 +11,10 @@ const nextConfig = {
       'supabase.co',
       // Add Unsplash for demo images
       'images.unsplash.com',
+      // Add demo/example domains
+      'example.com',
+      'via.placeholder.com',
+      'picsum.photos',
       // Add other image domains as needed
     ],
     formats: ['image/webp', 'image/avif'],
