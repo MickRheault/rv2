@@ -2,6 +2,7 @@
 export { default as SearchFilters } from './SearchFilters'
 export { default as LocationAutocomplete } from './LocationAutocomplete'
 export { default as MobileFilterToggle } from './MobileFilterToggle'
+export { default as SearchResults } from './SearchResults'
 
 // Types
 export type { default as SearchFiltersProps } from './SearchFilters'
