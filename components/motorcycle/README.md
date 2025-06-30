@@ -1,12 +1,149 @@
 # Motorcycle Components
 
-This directory contains components for displaying motorcycle rental information.
+This directory contains reusable components related to motorcycle rental listings and details.
 
-## MotorcycleCard
+## Components
+
+### MotorcycleCard.tsx
+A card component for displaying motorcycle rental listings in grids and search results.
+
+**Features:**
+- Motorcycle image with placeholder fallback
+- Brand, model, year, and engine capacity display
+- Pricing information with currency formatting
+- Rental shop details and rating
+- Location information (city, province, country)
+- Favorite toggle functionality
+- Feature badges (ABS, GPS, Helmet, etc.)
+- Responsive design for mobile and desktop
+
+**Props:**
+- `motorcycle`: MotorcycleWithDetails object
+- `onFavoriteToggle?`: Optional callback for favorite actions
+
+### MotorcycleGallery.tsx
+An image gallery component for displaying motorcycle photos with navigation and zoom functionality.
+
+**Features:**
+- Main image display with navigation arrows
+- Thumbnail strip for multiple images
+- Click-to-navigate thumbnails
+- Zoom modal with full-screen view
+- Navigation within zoom modal
+- Image counter display
+- Responsive design with mobile touch support
+- Graceful fallback for missing images
+
+**Props:**
+- `images`: Array of motorcycle images with id, url, and alt_text
+- `motorcycleName`: String for accessibility labels
+
+### MotorcycleDetails.tsx
+A comprehensive details component for individual motorcycle rental pages.
+
+**Features:**
+- Motorcycle header with title, availability badge, and pricing
+- Detailed specifications grid
+- Features and inclusions with badges
+- Rental conditions and requirements
+- Rental shop information with contact details
+- Quick action buttons (favorites, compare, share)
+- Location display with hierarchy
+- Rating display with review count
+- Links to shop detail page
+
+**Props:**
+- `motorcycle`: MotorcycleWithDetails object
+
+## Usage Examples
+
+### Basic Motorcycle Card
+```tsx
+import MotorcycleCard from '@/components/motorcycle/MotorcycleCard'
+
+<MotorcycleCard 
+  motorcycle={motorcycleData}
+  onFavoriteToggle={(id, isFavorited) => {
+    // Handle favorite toggle
+  }}
+/>
+```
+
+### Image Gallery
+```tsx
+import MotorcycleGallery from '@/components/motorcycle/MotorcycleGallery'
+
+<MotorcycleGallery 
+  images={motorcycle.motorcycle_images}
+  motorcycleName={`${motorcycle.brands?.name} ${motorcycle.model}`}
+/>
+```
+
+### Motorcycle Detail Page
+```tsx
+import MotorcycleDetails from '@/components/motorcycle/MotorcycleDetails'
+
+<MotorcycleDetails motorcycle={motorcycleData} />
+```
+
+## Data Structure
+
+All components expect the `MotorcycleWithDetails` interface from `@/services/motorcycles`:
+
+```typescript
+interface MotorcycleWithDetails {
+  // Basic motorcycle info
+  id: string
+  model: string
+  year: number
+  engine_capacity_cc: number
+  rental_rate_per_day: number
+  rental_rate_currency: string
+  availability_status: string
+  
+  // Related data
+  brands: Brand | null
+  categories: Category | null
+  rental_shops: RentalShop | null
+  
+  // Images and features
+  motorcycle_images?: Array<{
+    images: { id: string; url: string; alt_text: string | null }
+    sort_order: number | null
+  }>
+  motorcycle_features?: Array<{
+    features: { id: string; name: string; description: string | null }
+  }>
+  
+  // Additional details
+  specifications_details?: Json
+  conditions_details?: Json
+}
+```
+
+## Styling
+
+Components use Tailwind CSS classes and follow the design system established in `@/components/ui`. Key styling features:
+
+- Responsive grid layouts
+- Hover and focus states
+- Loading and error states
+- Mobile-first approach
+- Consistent spacing and typography
+- Accessible color contrasts
+
+## Dependencies
+
+- Next.js Image component for optimized images
+- Heroicons for consistent iconography
+- UI components from `@/components/ui`
+- Motorcycle service from `@/services/motorcycles`
+
+### MotorcycleCard
 
 Enhanced motorcycle listing card component with comprehensive features for displaying motorcycle rentals.
 
-### Features
+#### Features
 
 #### Visual Enhancements
 - **Image Gallery**: Multiple images with navigation controls and indicators
@@ -37,7 +174,7 @@ Enhanced motorcycle listing card component with comprehensive features for displ
 - **Error Handling**: Graceful fallbacks for missing images
 - **Performance**: Optimized with Next.js Image and lazy loading
 
-### Usage
+#### Usage
 
 ```tsx
 import MotorcycleCard from '@/components/motorcycle/MotorcycleCard'
@@ -57,7 +194,7 @@ import MotorcycleCard from '@/components/motorcycle/MotorcycleCard'
 />
 ```
 
-### Props
+#### Props
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
@@ -69,7 +206,7 @@ import MotorcycleCard from '@/components/motorcycle/MotorcycleCard'
 | `isFavorited` | `boolean` | `false` | Current favorite state |
 | `className` | `string` | `undefined` | Additional CSS classes |
 
-### Data Structure
+#### Data Structure
 
 The component expects motorcycle data in the following format:
 
@@ -107,7 +244,7 @@ interface MotorcycleWithDetails {
 }
 ```
 
-### Feature Icons
+#### Feature Icons
 
 The component automatically selects appropriate icons based on feature names:
 
@@ -117,7 +254,7 @@ The component automatically selects appropriate icons based on feature names:
 - **Helmet**: Shield icon
 - **Default**: Cog icon
 
-### Styling
+#### Styling
 
 The component uses Tailwind CSS with the following design system:
 
@@ -127,7 +264,7 @@ The component uses Tailwind CSS with the following design system:
 - **Shadows**: Elevation on hover for depth
 - **Borders**: Subtle borders and rounded corners
 
-### Demo
+#### Demo
 
 Visit `/motorcycle-demo` to see the component in action with:
 - Multiple motorcycle examples
@@ -135,7 +272,7 @@ Visit `/motorcycle-demo` to see the component in action with:
 - Interactive features demonstration
 - Feature documentation
 
-### Dependencies
+#### Dependencies
 
 - **Next.js**: Image optimization and routing
 - **React**: Hooks for state management
@@ -144,7 +281,7 @@ Visit `/motorcycle-demo` to see the component in action with:
 - **clsx**: Conditional class names
 - **TypeScript**: Type safety
 
-### Performance Considerations
+#### Performance Considerations
 
 - Images are lazy-loaded with Next.js Image
 - Responsive image sizes for different viewports
@@ -152,7 +289,7 @@ Visit `/motorcycle-demo` to see the component in action with:
 - Optimized bundle size with tree-shaking
 - Minimal DOM updates with conditional rendering
 
-### Accessibility
+#### Accessibility
 
 - Proper ARIA labels for interactive elements
 - Keyboard navigation support
@@ -160,7 +297,7 @@ Visit `/motorcycle-demo` to see the component in action with:
 - High contrast color ratios
 - Focus indicators for all interactive elements
 
-### Future Enhancements
+#### Future Enhancements
 
 - Virtual scrolling for large lists
 - Advanced filtering integration
