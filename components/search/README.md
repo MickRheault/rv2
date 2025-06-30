@@ -1,331 +1,218 @@
 # Search Components
 
-A comprehensive set of search and filter components for the RideVault motorcycle rental platform.
+This directory contains components related to search functionality for motorcycles and rental shops.
 
 ## Components
 
-### SearchFilters
+### SearchFilters.tsx
+A comprehensive filtering component with collapsible panels for different filter categories.
 
-A collapsible filter panel component that provides advanced filtering options for motorcycle searches.
+**Features:**
+- Location filtering (city, province, country)
+- Brand and category selection
+- Price range filters
+- Engine capacity filters
+- Feature selection
+- Sorting options
+- Active filter indicators
+- Filter count badges
+- Responsive design
 
-#### Features
+### LocationAutocomplete.tsx
+An autocomplete component for location search with suggestions and popular locations.
 
-- **Collapsible Panels**: Each filter category can be expanded/collapsed
-- **Active Filter Indicators**: Visual badges show which filters are active
-- **Real-time Filtering**: Filters update search results immediately
-- **Mobile Responsive**: Adapts to different screen sizes
-- **Loading States**: Shows loading indicators during data fetching
+**Features:**
+- Real-time location suggestions
+- Popular locations display
+- Keyboard navigation
+- Click outside to close
+- Clear functionality
+- Loading states
+- Location type icons
 
-#### Usage
+### MobileFilterToggle.tsx
+A mobile-specific component for toggling filter visibility in a modal.
 
-```tsx
-import { SearchFilters } from '@/components/search'
+**Features:**
+- Filter count badge
+- Full-screen modal on mobile
+- Filter persistence
+- Apply/cancel actions
+- Responsive design
 
-function SearchPage() {
-  const [filters, setFilters] = useState<LocationBasedSearchFilters>({})
-  
-  return (
-    <SearchFilters
-      filters={filters}
-      onFiltersChange={setFilters}
-      onClearFilters={() => setFilters({})}
-      resultCount={42}
-      isLoading={false}
-    />
-  )
+### SearchResults.tsx
+A comprehensive results display component with multiple view modes and content filtering.
+
+**Features:**
+- Grid and list view modes
+- Content type filtering (all, motorcycles, shops)
+- Sorting controls
+- Pagination support
+- Loading and error states
+- No results handling
+- Mobile filter toggle integration
+- Results count display
+
+**Props:**
+```typescript
+interface SearchResultsProps {
+  results: SearchResultsType | null
+  filters: LocationBasedSearchFilters
+  onFiltersChange: (filters: Partial<LocationBasedSearchFilters>) => void
+  isLoading?: boolean
+  error?: string | null
+  onToggleFilters?: () => void
+  showFilters?: boolean
+  className?: string
 }
 ```
 
-#### Props
-
-- `filters`: Current filter state
-- `onFiltersChange`: Callback for filter changes
-- `onClearFilters`: Callback to clear all filters
-- `resultCount?`: Number of results to display
-- `isLoading?`: Loading state
-- `className?`: Additional CSS classes
-
-#### Filter Categories
-
-1. **Location**: Shows active location filters
-2. **Brand**: Dropdown to select motorcycle brands
-3. **Category**: Dropdown to select motorcycle categories
-4. **Price Range**: Min/max price inputs
-5. **Engine Capacity**: Min/max engine size inputs
-6. **Features**: Checkboxes for motorcycle features
-7. **Sort**: Dropdown for result sorting
-
-### LocationAutocomplete
-
-An intelligent location search component with autocomplete functionality.
-
-#### Features
-
-- **Autocomplete**: Real-time suggestions as you type
-- **Popular Locations**: Shows popular destinations when empty
-- **Keyboard Navigation**: Arrow keys and Enter support
-- **Location Hierarchy**: Shows country/province/city structure
-- **Result Counts**: Displays number of available motorcycles/shops
-
-#### Usage
-
+**Usage:**
 ```tsx
-import { LocationAutocomplete } from '@/components/search'
+import SearchResults from '@/components/search/SearchResults'
 
-function SearchForm() {
-  const handleLocationSelect = (location: LocationSearchResult | null) => {
-    if (location) {
-      // Update filters based on location type
-      switch (location.type) {
-        case 'city':
-          setFilters({ cityId: location.id })
-          break
-        case 'province':
-          setFilters({ provinceId: location.id })
-          break
-        case 'country':
-          setFilters({ countryCode: location.id })
-          break
-      }
-    }
-  }
-
-  return (
-    <LocationAutocomplete
-      onLocationSelect={handleLocationSelect}
-      placeholder="Search for cities, provinces, or countries..."
-    />
-  )
-}
+<SearchResults
+  results={searchResults}
+  filters={filters}
+  onFiltersChange={handleFiltersChange}
+  isLoading={isLoading}
+  error={error?.message}
+  onToggleFilters={() => setShowFilters(!showFilters)}
+  showFilters={showFilters}
+/>
 ```
 
-#### Props
+## Data Flow
 
-- `onLocationSelect`: Callback when location is selected
-- `onQueryChange?`: Callback for query changes
-- `value?`: Current search value
-- `placeholder?`: Input placeholder text
-- `disabled?`: Disable the input
-- `showPopularLocations?`: Show popular locations when empty
-- `className?`: Additional CSS classes
+The search components work together to provide a complete search experience:
 
-### MobileFilterToggle
+1. **SearchFilters** - Manages filter state and UI
+2. **LocationAutocomplete** - Handles location-based filtering
+3. **SearchResults** - Displays filtered results with sorting and pagination
+4. **MobileFilterToggle** - Provides mobile-friendly filter access
 
-A mobile-optimized filter toggle button that opens filters in a modal.
+## Search Service Integration
 
-#### Features
+All components integrate with the `searchService` from `@/services/search` which provides:
 
-- **Mobile-First**: Only shows on mobile devices
-- **Modal Interface**: Full-screen filter modal
-- **Active Filter Count**: Badge showing number of active filters
-- **Apply/Cancel Actions**: Clear action buttons
+- Location-based search functionality
+- Filter options retrieval
+- Popular locations
+- Advanced search capabilities
 
-#### Usage
+## State Management
 
+The search functionality uses:
+- **React Query** for data fetching and caching
+- **URL synchronization** for shareable search states
+- **Local state** for UI interactions
+- **Zustand store** (optional) for global search state
+
+## Responsive Design
+
+All components are built with mobile-first responsive design:
+- **Desktop**: Side-by-side filters and results
+- **Tablet**: Collapsible filter sidebar
+- **Mobile**: Modal-based filters with toggle button
+
+## Accessibility
+
+- **Keyboard Navigation**: Full keyboard support for all interactions
+- **Screen Reader Support**: Proper ARIA labels and semantic markup
+- **Focus Management**: Clear focus indicators and logical tab order
+- **Color Contrast**: WCAG 2.1 AA compliant colors
+
+## Performance
+
+- **Query Caching**: React Query caching for filter options and results
+- **Debounced Search**: Prevents excessive API calls during typing
+- **Lazy Loading**: Components load only when needed
+- **Optimized Rendering**: Minimal re-renders with proper memoization
+
+## Usage Examples
+
+### Basic Search Page
 ```tsx
-import { MobileFilterToggle } from '@/components/search'
-
-function MobileSearchPage() {
-  return (
-    <div className="lg:hidden">
-      <MobileFilterToggle
-        filters={filters}
-        onFiltersChange={setFilters}
-        onClearFilters={clearFilters}
-        resultCount={results.length}
-      />
-    </div>
-  )
-}
-```
-
-#### Props
-
-- `filters`: Current filter state
-- `onFiltersChange`: Callback for filter changes
-- `onClearFilters`: Callback to clear all filters
-- `resultCount?`: Number of results to display
-- `isLoading?`: Loading state
-- `className?`: Additional CSS classes
-
-## Complete Example
-
-Here's a complete example showing how to use all components together:
-
-```tsx
-'use client'
-
 import { useState } from 'react'
-import { 
-  SearchFilters, 
-  LocationAutocomplete, 
-  MobileFilterToggle 
-} from '@/components/search'
-import { LocationBasedSearchFilters, LocationSearchResult } from '@/services/search'
+import { useQuery } from '@tanstack/react-query'
+import { searchService } from '@/services/search'
+import { SearchFilters, SearchResults } from '@/components/search'
 
 export default function SearchPage() {
-  const [filters, setFilters] = useState<LocationBasedSearchFilters>({
-    limit: 10,
-    offset: 0
+  const [filters, setFilters] = useState({})
+  
+  const { data: results, isLoading } = useQuery({
+    queryKey: ['search', filters],
+    queryFn: () => searchService.searchByLocation(filters)
   })
-  const [isLoading, setIsLoading] = useState(false)
-  const [resultCount, setResultCount] = useState(0)
-
-  const handleFiltersChange = (newFilters: Partial<LocationBasedSearchFilters>) => {
-    setFilters(prev => ({ ...prev, ...newFilters }))
-  }
-
-  const handleClearFilters = () => {
-    setFilters({ limit: 10, offset: 0 })
-  }
-
-  const handleLocationSelect = (location: LocationSearchResult | null) => {
-    if (location) {
-      switch (location.type) {
-        case 'city':
-          handleFiltersChange({ 
-            cityId: location.id,
-            provinceId: undefined,
-            countryCode: undefined,
-            locationQuery: location.name
-          })
-          break
-        case 'province':
-          handleFiltersChange({ 
-            provinceId: location.id,
-            cityId: undefined,
-            countryCode: undefined,
-            locationQuery: location.name
-          })
-          break
-        case 'country':
-          handleFiltersChange({ 
-            countryCode: location.id,
-            cityId: undefined,
-            provinceId: undefined,
-            locationQuery: location.name
-          })
-          break
-      }
-    } else {
-      handleFiltersChange({
-        cityId: undefined,
-        provinceId: undefined,
-        countryCode: undefined,
-        locationQuery: undefined
-      })
-    }
-  }
-
+  
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Search Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-4">Find Your Perfect Ride</h1>
-          <LocationAutocomplete
-            value={filters.locationQuery || ''}
-            onLocationSelect={handleLocationSelect}
-            placeholder="Where do you want to ride?"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Mobile Filter Toggle */}
-          <div className="lg:hidden">
-            <MobileFilterToggle
-              filters={filters}
-              onFiltersChange={handleFiltersChange}
-              onClearFilters={handleClearFilters}
-              isLoading={isLoading}
-              resultCount={resultCount}
-            />
-          </div>
-
-          {/* Main Content */}
-          <div className="lg:col-span-3">
-            {/* Search Results */}
-            <div className="space-y-4">
-              {/* Results would go here */}
-              <p className="text-gray-600">
-                Showing {resultCount} results
-              </p>
-            </div>
-          </div>
-
-          {/* Desktop Filters Sidebar */}
-          <div className="hidden lg:block">
-            <div className="sticky top-8">
-              <SearchFilters
-                filters={filters}
-                onFiltersChange={handleFiltersChange}
-                onClearFilters={handleClearFilters}
-                isLoading={isLoading}
-                resultCount={resultCount}
-              />
-            </div>
-          </div>
-        </div>
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="lg:col-span-1">
+        <SearchFilters
+          filters={filters}
+          onFiltersChange={setFilters}
+          onClearFilters={() => setFilters({})}
+        />
+      </div>
+      <div className="lg:col-span-3">
+        <SearchResults
+          results={results}
+          filters={filters}
+          onFiltersChange={setFilters}
+          isLoading={isLoading}
+        />
       </div>
     </div>
   )
 }
 ```
 
-## Styling
+### With URL Synchronization
+```tsx
+import { useSearchParams, useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 
-All components use Tailwind CSS and follow the design system established in the UI component library. They are fully responsive and include:
-
-- **Mobile-first design**: Optimized for mobile devices
-- **Accessibility**: WCAG 2.1 AA compliant
-- **Loading states**: Skeleton loaders and spinners
-- **Hover effects**: Interactive feedback
-- **Focus management**: Keyboard navigation support
-
-## Integration with Services
-
-The components integrate with the following services:
-
-- `motorcycleService.getFilterOptions()`: Fetches available filter options
-- `searchService.searchLocations()`: Location autocomplete
-- `searchService.getPopularSearchLocations()`: Popular destinations
-- `searchService.searchByLocation()`: Main search functionality
-
-## Testing
-
-The components include comprehensive unit tests covering:
-
-- Rendering and basic functionality
-- Filter interactions
-- Location selection
-- Mobile responsiveness
-- Loading states
-- Error handling
-
-Run tests with:
-
-```bash
-npm test -- --testPathPattern=search
+export default function SearchPageWithURL() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const [filters, setFilters] = useState({})
+  
+  // Initialize from URL
+  useEffect(() => {
+    const urlFilters = {}
+    if (searchParams.get('q')) urlFilters.query = searchParams.get('q')
+    if (searchParams.get('location')) urlFilters.locationQuery = searchParams.get('location')
+    setFilters(urlFilters)
+  }, [searchParams])
+  
+  // Update URL when filters change
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (filters.query) params.set('q', filters.query)
+    if (filters.locationQuery) params.set('location', filters.locationQuery)
+    
+    const newURL = params.toString() ? `?${params}` : ''
+    router.replace(newURL, { scroll: false })
+  }, [filters, router])
+  
+  // ... rest of component
+}
 ```
 
-## Performance
+## Dependencies
 
-- **Debounced search**: Location autocomplete uses 300ms debounce
-- **Query caching**: Results cached for 5 minutes
-- **Lazy loading**: Filter options loaded on demand
-- **Optimistic updates**: Immediate UI feedback
+- **React Query**: Data fetching and caching
+- **Heroicons**: Icon library
+- **Tailwind CSS**: Styling
+- **Next.js**: Routing and navigation
+- **UI Components**: Card, Button, Input, etc. from `@/components/ui`
 
-## Browser Support
+## Future Enhancements
 
-- Chrome 90+
-- Firefox 88+
-- Safari 14+
-- Edge 90+
-
-## Accessibility Features
-
-- **Screen reader support**: Proper ARIA labels and roles
-- **Keyboard navigation**: Full keyboard accessibility
-- **High contrast**: Supports high contrast mode
-- **Focus indicators**: Clear focus states
-- **Semantic HTML**: Proper heading hierarchy 
+- **Saved Searches**: Allow users to save and recall search criteria
+- **Search History**: Track and display recent searches
+- **Advanced Filters**: More granular filtering options
+- **Map Integration**: Geographic search with map interface
+- **Real-time Updates**: Live search results as user types
+- **Search Analytics**: Track popular searches and filters 

@@ -1,19 +1,17 @@
+import { Suspense } from 'react'
+import SearchPageContent from './SearchPageContent'
+
 export default function SearchPage() {
   return (
-    <div className="container-custom py-12">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">
-          Search Motorcycles
-        </h1>
-        <div className="card p-8 text-center">
-          <p className="text-gray-600 mb-4">
-            Search functionality coming soon! This page will feature advanced filtering and motorcycle listings.
-          </p>
-          <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-lg">
-            🚧 Under Development
-          </div>
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading search...</p>
         </div>
       </div>
-    </div>
+    }>
+      <SearchPageContent />
+    </Suspense>
   )
 } 
