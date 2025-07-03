@@ -142,7 +142,7 @@ export const STALE_TIMES = {
   
   // Stats stay fresh for 5 minutes
   STATS: 1000 * 60 * 5,
-} as const
+} as const 
 
 // Enhanced query options factory
 export function createQueryOptions<T>(

@@ -1,13 +1,20 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    typedRoutes: true,
+    // Temporarily disabled for MVP - will re-enable after all routes are created
+    // typedRoutes: true,
   },
   images: {
     domains: [
       'localhost',
       // Add Supabase storage domain
       'supabase.co',
+      // Add Unsplash for demo images
+      'images.unsplash.com',
+      // Add demo/example domains
+      'example.com',
+      'via.placeholder.com',
+      'picsum.photos',
       // Add other image domains as needed
     ],
     formats: ['image/webp', 'image/avif'],
