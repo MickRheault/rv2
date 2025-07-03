@@ -164,17 +164,17 @@ The system receives data via the template in `context/data_template.json`:
   - [x] 3.11 Create loading states and error handling components
   - [x] 3.12 Implement mobile-first responsive design across all components
 
-- [ ] 4.0 User Features & Authentication System
-  - [ ] 4.1 Set up Supabase Auth with social providers (Google, GitHub)
-  - [ ] 4.2 Create authentication components (login, signup, profile)
-  - [ ] 4.3 Implement favorites system for motorcycles and rental shops
-  - [ ] 4.4 Build favorites page with saved items management
-  - [ ] 4.5 Create motorcycle comparison functionality (up to 3 items)
-  - [ ] 4.6 Implement comparison page with side-by-side analysis
-  - [ ] 4.7 Add data flagging system with category selection
-  - [ ] 4.8 Create sharing functionality for listings (social, email, copy link)
-  - [ ] 4.9 Implement user session management and protected routes
-  - [ ] 4.10 Add user preferences and settings management
+- [SKIP] 4.0 User Features & Authentication System
+  - [SKIP] 4.1 Set up Supabase Auth with social providers (Google, GitHub)
+  - [SKIP] 4.2 Create authentication components (login, signup, profile)
+  - [SKIP] 4.3 Implement favorites system for motorcycles and rental shops
+  - [SKIP] 4.4 Build favorites page with saved items management
+  - [SKIP] 4.5 Create motorcycle comparison functionality (up to 3 items)
+  - [SKIP] 4.6 Implement comparison page with side-by-side analysis
+  - [SKIP] 4.7 Add data flagging system with category selection
+  - [SKIP] 4.8 Create sharing functionality for listings (social, email, copy link)
+  - [SKIP] 4.9 Implement user session management and protected routes
+  - [SKIP] 4.10 Add user preferences and settings management
 
 - [ ] 5.0 Admin Interface & Content Moderation
   - [ ] 5.1 Create admin authentication and role-based access control
