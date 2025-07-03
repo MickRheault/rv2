@@ -799,18 +799,75 @@ export type Database = {
         }
         Relationships: []
       }
+      role_permissions: {
+        Row: {
+          id: string
+          role: "admin" | "user"
+          permission: "content.moderate" | "premium.manage" | "analytics.view" | "system.manage"
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          role: "admin" | "user"
+          permission: "content.moderate" | "premium.manage" | "analytics.view" | "system.manage"
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          role?: "admin" | "user"
+          permission?: "content.moderate" | "premium.manage" | "analytics.view" | "system.manage"
+          created_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          user_id: string
+          role: "admin" | "user"
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          role: "admin" | "user"
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          role?: "admin" | "user"
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      authorize: {
+        Args: { requested_permission: "content.moderate" | "premium.manage" | "analytics.view" | "system.manage" }
+        Returns: boolean
+      }
       clear_all_data: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      custom_access_token_hook: {
+        Args: { event: unknown }
+        Returns: unknown
+      }
       generate_slug: {
         Args: { "": string }
         Returns: string
+      }
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
       }
       unaccent: {
         Args: { "": string }
