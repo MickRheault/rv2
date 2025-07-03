@@ -391,7 +391,7 @@ function ShopDemo() {
             ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
             : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
         }`}>
-          {mockShops.map((shop) => (
+          {mockShops.map((shop, index) => (
             <ShopCard
               key={shop.id}
               shop={shop}
@@ -400,6 +400,8 @@ function ShopDemo() {
               compact={viewMode === 'compact'}
               onFavoriteToggle={handleFavoriteToggle}
               isFavorited={favorites.has(shop.id)}
+              isPremium={index === 0 || index === 1} // Make first two shops premium
+              premiumType={index === 0 ? 'platinum' : index === 1 ? 'featured' : 'gold'}
             />
           ))}
         </div>

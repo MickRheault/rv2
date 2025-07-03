@@ -174,3 +174,116 @@ export function formatEngineCapacity(capacity: number | null): string {
   const liters = capacity / 1000
   return `${liters.toFixed(1)}L`
 } 
+
+// Premium Listing Utilities
+export type PremiumType = 'gold' | 'platinum' | 'featured'
+
+export interface PremiumListingConfig {
+  isPremium: boolean
+  premiumType?: PremiumType
+  boostScore?: number
+}
+
+/**
+ * Determines if a listing should be considered premium
+ * This is a placeholder function that would typically check against
+ * premium subscription data or featured listing flags
+ */
+export function getPremiumStatus(
+  // This could be shop data, motorcycle data, or subscription info
+  itemData: any,
+  premiumIds?: string[]
+): PremiumListingConfig {
+  // Example logic - in real implementation this would check:
+  // - Subscription status
+  // - Featured listing flags 
+  // - Payment history
+  // - Admin-set premium status
+  
+  if (premiumIds?.includes(itemData.id)) {
+    return {
+      isPremium: true,
+      premiumType: 'featured',
+      boostScore: 100
+    }
+  }
+  
+  // Check for other premium indicators
+  if (itemData.is_premium || itemData.premium_tier) {
+    const premiumType = itemData.premium_tier || 'gold'
+    return {
+      isPremium: true,
+      premiumType: premiumType as PremiumType,
+      boostScore: premiumType === 'platinum' ? 75 : 50
+    }
+  }
+  
+  return {
+    isPremium: false,
+    boostScore: 0
+  }
+}
+
+/**
+ * Sorts an array to prioritize premium listings while maintaining
+ * the original sorting criteria for items of the same premium level
+ */
+export function sortWithPremiumPriority<T extends { id: string }>(
+  items: T[],
+  premiumIds?: string[],
+  sortFn?: (a: T, b: T) => number
+): T[] {
+  return items.sort((a, b) => {
+    const aPremium = getPremiumStatus(a, premiumIds)
+    const bPremium = getPremiumStatus(b, premiumIds)
+    
+    // First priority: Premium status (featured > platinum > gold > regular)
+    const premiumOrder = {
+      featured: 3,
+      platinum: 2,
+      gold: 1
+    }
+    
+    const aScore = aPremium.isPremium ? (premiumOrder[aPremium.premiumType!] || 0) : 0
+    const bScore = bPremium.isPremium ? (premiumOrder[bPremium.premiumType!] || 0) : 0
+    
+    if (aScore !== bScore) {
+      return bScore - aScore // Higher premium score first
+    }
+    
+    // Second priority: Use provided sort function for same premium level
+    if (sortFn) {
+      return sortFn(a, b)
+    }
+    
+    return 0
+  })
+}
+
+/**
+ * Creates premium listing configuration for components
+ */
+export function createPremiumConfig(
+  itemId: string,
+  premiumIds?: string[],
+  itemData?: any
+): { isPremium: boolean; premiumType?: PremiumType } {
+  const status = getPremiumStatus(itemData || { id: itemId }, premiumIds)
+  return {
+    isPremium: status.isPremium,
+    premiumType: status.premiumType
+  }
+}
+
+/**
+ * Filter and enhance search results with premium information
+ */
+export function enhanceWithPremiumInfo<T extends { id: string }>(
+  items: T[],
+  premiumIds?: string[]
+): Array<T & PremiumListingConfig> {
+  return items.map(item => ({
+    ...item,
+    ...getPremiumStatus(item, premiumIds)
+  }))
+} 

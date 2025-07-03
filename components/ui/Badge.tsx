@@ -2,12 +2,19 @@ import { HTMLAttributes, forwardRef } from 'react'
 import { clsx } from 'clsx'
 
 interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
-  variant?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'info'
+  variant?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'info' | 'gold' | 'platinum' | 'featured'
   size?: 'sm' | 'md' | 'lg'
   removable?: boolean
   onRemove?: () => void
   children: React.ReactNode
 }
+
+// Add premium badge variants
+export const premiumBadgeVariants = {
+  gold: 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white border-0 shadow-lg',
+  platinum: 'bg-gradient-to-r from-gray-300 to-gray-500 text-white border-0 shadow-lg',
+  featured: 'bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 shadow-lg animate-pulse',
+} as const
 
 const Badge = forwardRef<HTMLSpanElement, BadgeProps>(
   ({ 
@@ -21,6 +28,7 @@ const Badge = forwardRef<HTMLSpanElement, BadgeProps>(
   }, ref) => {
     const baseClasses = 'inline-flex items-center font-medium rounded-full transition-colors'
     
+    // Add premium variant to existing variants
     const variants = {
       default: 'bg-gray-100 text-gray-800 hover:bg-gray-200',
       primary: 'bg-blue-100 text-blue-800 hover:bg-blue-200',
@@ -28,7 +36,10 @@ const Badge = forwardRef<HTMLSpanElement, BadgeProps>(
       success: 'bg-green-100 text-green-800 hover:bg-green-200',
       warning: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200',
       danger: 'bg-red-100 text-red-800 hover:bg-red-200',
-      info: 'bg-cyan-100 text-cyan-800 hover:bg-cyan-200'
+      info: 'bg-cyan-100 text-cyan-800 hover:bg-cyan-200',
+      gold: premiumBadgeVariants.gold,
+      platinum: premiumBadgeVariants.platinum,
+      featured: premiumBadgeVariants.featured,
     }
     
     const sizes = {

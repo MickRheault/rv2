@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import { 
   ChevronLeftIcon, 
@@ -24,6 +24,11 @@ interface MotorcycleGalleryProps {
 export default function MotorcycleGallery({ images, motorcycleName }: MotorcycleGalleryProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isZoomModalOpen, setIsZoomModalOpen] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
+  const [startX, setStartX] = useState(0)
+  const [translateX, setTranslateX] = useState(0)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const thumbnailsRef = useRef<HTMLDivElement>(null)
 
   if (!images || images.length === 0) {
     return (
@@ -55,11 +60,126 @@ export default function MotorcycleGallery({ images, motorcycleName }: Motorcycle
     setCurrentImageIndex(index)
   }
 
+  // Touch and mouse drag handlers
+  const handleStart = (clientX: number) => {
+    setIsDragging(true)
+    setStartX(clientX)
+    setTranslateX(0)
+  }
+
+  const handleMove = (clientX: number) => {
+    if (!isDragging) return
+    
+    const diff = clientX - startX
+    setTranslateX(diff)
+  }
+
+  const handleEnd = () => {
+    if (!isDragging) return
+    
+    const threshold = 50
+    if (Math.abs(translateX) > threshold) {
+      if (translateX > 0) {
+        prevImage()
+      } else {
+        nextImage()
+      }
+    }
+    
+    setIsDragging(false)
+    setTranslateX(0)
+  }
+
+  // Mouse events
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!hasMultipleImages) return
+    e.preventDefault()
+    handleStart(e.clientX)
+  }
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!hasMultipleImages) return
+    handleMove(e.clientX)
+  }
+
+  const handleMouseUp = () => {
+    if (!hasMultipleImages) return
+    handleEnd()
+  }
+
+  // Touch events
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!hasMultipleImages) return
+    handleStart(e.touches[0].clientX)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!hasMultipleImages) return
+    handleMove(e.touches[0].clientX)
+  }
+
+  const handleTouchEnd = () => {
+    if (!hasMultipleImages) return
+    handleEnd()
+  }
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!hasMultipleImages) return
+      
+      if (e.key === 'ArrowLeft') {
+        prevImage()
+      } else if (e.key === 'ArrowRight') {
+        nextImage()
+      } else if (e.key === 'Escape' && isZoomModalOpen) {
+        setIsZoomModalOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [hasMultipleImages, isZoomModalOpen])
+
+  // Auto-scroll thumbnails to keep current image visible
+  useEffect(() => {
+    if (thumbnailsRef.current && hasMultipleImages) {
+      const thumbnail = thumbnailsRef.current.children[currentImageIndex] as HTMLElement
+      if (thumbnail) {
+        thumbnail.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'center'
+        })
+      }
+    }
+  }, [currentImageIndex, hasMultipleImages])
+
   return (
     <div className="space-y-4">
       {/* Main Image */}
-      <div className="relative bg-gray-100 rounded-lg overflow-hidden group">
+      <div 
+        ref={containerRef}
+        className="relative bg-gray-100 rounded-lg overflow-hidden group select-none"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         <div className="aspect-[4/3] relative">
+          <div 
+            className={`w-full h-full transition-transform duration-200 ${
+              isDragging ? 'cursor-grabbing' : hasMultipleImages ? 'cursor-grab' : 'cursor-pointer'
+            }`}
+            style={{ 
+              transform: `translateX(${translateX}px)`,
+              transition: isDragging ? 'none' : 'transform 0.2s ease-out'
+            }}
+            onClick={() => !isDragging && setIsZoomModalOpen(true)}
+          >
           <Image
             src={currentImage.url}
             alt={currentImage.alt_text || `${motorcycleName} - Image ${currentImageIndex + 1}`}
@@ -67,30 +187,41 @@ export default function MotorcycleGallery({ images, motorcycleName }: Motorcycle
             className="object-cover"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             priority={currentImageIndex === 0}
+              draggable={false}
           />
+          </div>
           
           {/* Zoom button */}
           <button
-            onClick={() => setIsZoomModalOpen(true)}
-            className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => {
+              e.stopPropagation()
+              setIsZoomModalOpen(true)
+            }}
+            className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
             aria-label="Zoom image"
           >
             <MagnifyingGlassPlusIcon className="w-5 h-5" />
           </button>
 
-          {/* Navigation arrows for multiple images */}
+          {/* Navigation arrows for desktop */}
           {hasMultipleImages && (
             <>
               <button
-                onClick={prevImage}
-                className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  prevImage()
+                }}
+                className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10 hidden sm:block"
                 aria-label="Previous image"
               >
                 <ChevronLeftIcon className="w-5 h-5" />
               </button>
               <button
-                onClick={nextImage}
-                className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  nextImage()
+                }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10 hidden sm:block"
                 aria-label="Next image"
               >
                 <ChevronRightIcon className="w-5 h-5" />
@@ -104,17 +235,29 @@ export default function MotorcycleGallery({ images, motorcycleName }: Motorcycle
               {currentImageIndex + 1} / {images.length}
             </div>
           )}
+
+          {/* Swipe indicator for mobile */}
+          {hasMultipleImages && (
+            <div className="absolute bottom-4 right-4 bg-black/50 text-white px-2 py-1 rounded text-xs sm:hidden">
+              Swipe
+            </div>
+          )}
         </div>
       </div>
 
       {/* Thumbnail strip for multiple images */}
       {hasMultipleImages && (
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        <div className="relative">
+          <div 
+            ref={thumbnailsRef}
+            className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
           {images.map((image, index) => (
             <button
               key={image.id}
               onClick={() => goToImage(index)}
-              className={`relative flex-shrink-0 w-20 h-16 rounded border-2 overflow-hidden transition-all ${
+                className={`relative flex-shrink-0 w-20 h-16 rounded border-2 overflow-hidden transition-all snap-start ${
                 index === currentImageIndex 
                   ? 'border-blue-500 ring-2 ring-blue-200' 
                   : 'border-gray-200 hover:border-gray-300'
@@ -129,6 +272,7 @@ export default function MotorcycleGallery({ images, motorcycleName }: Motorcycle
               />
             </button>
           ))}
+          </div>
         </div>
       )}
 
