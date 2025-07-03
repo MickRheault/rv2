@@ -19,6 +19,27 @@ export interface MotorcycleWithDetails extends MotorcycleRental {
   }) | null
   brands: Brand | null
   categories: Category | null
+  motorcycle_images?: Array<{
+    image_id: string
+    motorcycle_id: string
+    sort_order: number | null
+    images: {
+      id: string
+      url: string
+      alt_text: string | null
+    } | null
+  }>
+  motorcycle_features?: Array<{
+    feature_id: string
+    motorcycle_id: string
+    features: {
+      id: string
+      name: string
+      description: string | null
+      created_at: string
+      updated_at: string
+    } | null
+  }>
 }
 
 export interface SearchFilters {
@@ -88,7 +109,12 @@ export const motorcycleService = {
         categories (*),
         motorcycle_features (
           feature_id,
+          motorcycle_id,
           features (*)
+        ),
+        motorcycle_images (
+          *,
+          images (*)
         )
       `, { count: 'exact' })
 
@@ -180,7 +206,7 @@ export const motorcycleService = {
       }
     } else {
       // No feature filtering - use normal pagination
-      const { data, error, count } = await query
+      const { data, error, count } = await query.range(offset, offset + limit - 1)
       
       if (error) {
         console.error('Error fetching motorcycles:', error)
@@ -217,7 +243,8 @@ export const motorcycleService = {
           images (*)
         ),
         motorcycle_features (
-          *,
+          feature_id,
+          motorcycle_id,
           features (*)
         )
       `)
