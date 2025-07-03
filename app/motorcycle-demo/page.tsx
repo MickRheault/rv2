@@ -406,6 +406,51 @@ function MotorcycleDemo() {
           </div>
         </div>
 
+        {/* Premium Badge Showcase */}
+        <div className="mb-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-center">Premium Listing Badge Examples</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap justify-center gap-4">
+                <div className="text-center">
+                  <div className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white px-3 py-1 rounded-full text-sm font-medium shadow-lg inline-flex items-center">
+                    <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    Premium
+                  </div>
+                  <p className="text-xs text-gray-600 mt-1">Gold Tier</p>
+                </div>
+                
+                <div className="text-center">
+                  <div className="bg-gradient-to-r from-gray-300 to-gray-500 text-white px-3 py-1 rounded-full text-sm font-medium shadow-lg inline-flex items-center">
+                    <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                    Premium+
+                  </div>
+                  <p className="text-xs text-gray-600 mt-1">Platinum Tier</p>
+                </div>
+                
+                <div className="text-center">
+                  <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-3 py-1 rounded-full text-sm font-medium shadow-lg inline-flex items-center animate-pulse">
+                    <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    Featured
+                  </div>
+                  <p className="text-xs text-gray-600 mt-1">Featured Tier</p>
+                </div>
+              </div>
+              <p className="text-sm text-gray-600 text-center mt-4">
+                Premium listings get enhanced visibility with special badges, border effects, and priority placement in search results.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Feature Highlights */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <Card>
@@ -455,7 +500,7 @@ function MotorcycleDemo() {
             ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
             : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
         }`}>
-          {mockMotorcycles.map((motorcycle) => (
+          {mockMotorcycles.map((motorcycle, index) => (
             <MotorcycleCard
               key={motorcycle.id}
               motorcycle={motorcycle}
@@ -464,6 +509,8 @@ function MotorcycleDemo() {
               compact={viewMode === 'compact'}
               onFavoriteToggle={handleFavoriteToggle}
               isFavorited={favorites.has(motorcycle.id)}
+              isPremium={index === 0 || index === 2} // Make first and third cards premium
+              premiumType={index === 0 ? 'featured' : index === 2 ? 'gold' : 'gold'}
             />
           ))}
         </div>
@@ -531,6 +578,8 @@ function MotorcycleDemo() {
   compact={false}
   onFavoriteToggle={handleFavorite}
   isFavorited={favorites.has(motorcycle.id)}
+  isPremium={true}
+  premiumType="featured" // 'gold' | 'platinum' | 'featured'
 />`}
                 </pre>
               </div>

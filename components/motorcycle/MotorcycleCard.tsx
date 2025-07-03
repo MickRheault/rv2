@@ -16,7 +16,7 @@ import {
   GlobeAltIcon
 } from '@heroicons/react/24/outline'
 import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid'
-import { Card, CardContent, CardFooter, CardHeader, Badge } from '@/components/ui'
+import { Card, CardContent, CardFooter, CardHeader, Badge, PremiumBadge } from '@/components/ui'
 import Button from '@/components/ui/Button'
 import { MotorcycleWithDetails } from '@/services/motorcycles'
 import { formatCurrency, formatEngineCapacity } from '@/lib/utils'
@@ -28,6 +28,8 @@ interface MotorcycleCardProps {
   compact?: boolean
   onFavoriteToggle?: (motorcycleId: string, isFavorited: boolean) => void
   isFavorited?: boolean
+  isPremium?: boolean
+  premiumType?: 'gold' | 'platinum' | 'featured'
   className?: string
 }
 
@@ -38,6 +40,8 @@ export default function MotorcycleCard({
   compact = false,
   onFavoriteToggle,
   isFavorited = false,
+  isPremium = false,
+  premiumType = 'gold',
   className 
 }: MotorcycleCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
@@ -71,7 +75,7 @@ export default function MotorcycleCard({
 
   // Get primary image
   const primaryImage = images[currentImageIndex] || images[0]
-  const fallbackImage = '/api/placeholder/400/300'
+  const fallbackImage = 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop&crop=center&auto=format&q=80'
 
   // Handle favorite toggle
   const handleFavoriteClick = (e: React.MouseEvent) => {
@@ -112,8 +116,21 @@ export default function MotorcycleCard({
       <Card className={clsx(
         'overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1',
         compact ? 'h-auto' : 'h-full',
+        isPremium && 'ring-2 ring-yellow-400 shadow-xl relative',
+        isPremium && premiumType === 'featured' && 'ring-blue-500 shadow-blue-200',
+        isPremium && premiumType === 'platinum' && 'ring-gray-400 shadow-gray-200',
         className
       )}>
+        {/* Premium border glow effect */}
+        {isPremium && (
+          <div className={clsx(
+            'absolute inset-0 rounded-2xl opacity-20 pointer-events-none',
+            premiumType === 'gold' && 'bg-gradient-to-br from-yellow-400 to-yellow-600',
+            premiumType === 'platinum' && 'bg-gradient-to-br from-gray-300 to-gray-500',
+            premiumType === 'featured' && 'bg-gradient-to-br from-blue-500 to-purple-600 animate-pulse'
+          )} />
+        )}
+        
         <CardHeader className="p-0 relative">
           {/* Motorcycle Image */}
           <div className={clsx(
@@ -169,14 +186,24 @@ export default function MotorcycleCard({
             {/* Overlays */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
             
-            {/* Top row: Category and Actions */}
+            {/* Top row: Category/Premium and Actions */}
             <div className="absolute top-3 left-3 right-3 flex justify-between items-start">
-              {/* Category Badge */}
-              {category && (
-                <Badge variant="primary" size="sm" className="bg-blue-600 text-white">
-                  {category.name}
-                </Badge>
-              )}
+              {/* Premium Badge or Category Badge */}
+              <div className="flex gap-1 flex-wrap">
+                {isPremium && (
+                  <PremiumBadge type={premiumType} className="shadow-lg" />
+                )}
+                {category && !isPremium && (
+                  <Badge variant="primary" size="sm" className="bg-blue-600 text-white">
+                    {category.name}
+                  </Badge>
+                )}
+                {category && isPremium && (
+                  <Badge variant="secondary" size="sm" className="bg-white/90 text-gray-700">
+                    {category.name}
+                  </Badge>
+                )}
+              </div>
               
               {/* Action buttons */}
               <div className="flex space-x-1">

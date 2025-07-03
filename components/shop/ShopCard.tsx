@@ -15,7 +15,7 @@ import {
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline'
 import { HeartIcon as HeartSolid, StarIcon as StarSolid } from '@heroicons/react/24/solid'
-import { Card, CardContent, CardFooter, CardHeader, Badge } from '@/components/ui'
+import { Card, CardContent, CardFooter, CardHeader, Badge, PremiumBadge } from '@/components/ui'
 import Button from '@/components/ui/Button'
 import { ShopWithDetails } from '@/services/shops'
 
@@ -26,6 +26,8 @@ interface ShopCardProps {
   compact?: boolean
   onFavoriteToggle?: (shopId: string, isFavorited: boolean) => void
   isFavorited?: boolean
+  isPremium?: boolean
+  premiumType?: 'gold' | 'platinum' | 'featured'
   className?: string
 }
 
@@ -36,6 +38,8 @@ export default function ShopCard({
   compact = false,
   onFavoriteToggle,
   isFavorited = false,
+  isPremium = false,
+  premiumType = 'gold',
   className 
 }: ShopCardProps) {
   const [showAllInclusions, setShowAllInclusions] = useState(false)
@@ -103,8 +107,21 @@ export default function ShopCard({
       <Card className={clsx(
         'overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1',
         compact ? 'h-auto' : 'h-full',
+        isPremium && 'ring-2 ring-yellow-400 shadow-xl relative',
+        isPremium && premiumType === 'featured' && 'ring-blue-500 shadow-blue-200',
+        isPremium && premiumType === 'platinum' && 'ring-gray-400 shadow-gray-200',
         className
       )}>
+        {/* Premium border glow effect */}
+        {isPremium && (
+          <div className={clsx(
+            'absolute inset-0 rounded-2xl opacity-20 pointer-events-none',
+            premiumType === 'gold' && 'bg-gradient-to-br from-yellow-400 to-yellow-600',
+            premiumType === 'platinum' && 'bg-gradient-to-br from-gray-300 to-gray-500',
+            premiumType === 'featured' && 'bg-gradient-to-br from-blue-500 to-purple-600 animate-pulse'
+          )} />
+        )}
+        
         <CardHeader className={clsx('relative', compact ? 'p-3' : 'p-4')}>
           {/* Header with name and actions */}
           <div className="flex justify-between items-start mb-2">
@@ -149,7 +166,11 @@ export default function ShopCard({
           </div>
 
           {/* Status badges */}
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            {isPremium && (
+              <PremiumBadge type={premiumType} className="shadow-lg" />
+            )}
+            
             {isVerified && (
               <Badge variant="success" size="sm" className="flex items-center gap-1">
                 <CheckCircleIcon className="w-3 h-3" />
