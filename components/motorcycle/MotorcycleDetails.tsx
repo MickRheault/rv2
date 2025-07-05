@@ -13,6 +13,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid'
 import { Card, CardHeader, CardTitle, CardContent, Badge, Button } from '@/components/ui'
+import { FlagButton } from '@/components/common/FlagButton'
 import { MotorcycleWithDetails } from '@/services/motorcycles'
 
 interface MotorcycleDetailsProps {
@@ -105,6 +106,15 @@ export default function MotorcycleDetails({ motorcycle }: MotorcycleDetailsProps
                 <span>{engine_capacity_cc}cc</span>
               </>
             )}
+          </div>
+          <div className="mt-3">
+            <FlagButton
+              contentType="motorcycle"
+              entityId={motorcycle.id}
+              entityData={motorcycle}
+              variant="link"
+              className="text-gray-500 hover:text-red-600"
+            />
           </div>
         </div>
         
