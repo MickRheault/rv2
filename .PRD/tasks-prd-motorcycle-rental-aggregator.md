@@ -178,7 +178,8 @@ The system receives data via the template in `context/data_template.json`:
 
 - [ ] 5.0 Admin Interface & Content Moderation
   - [x] 5.1 Create admin authentication and role-based access control
-  - [ ] 5.2 Build admin dashboard with flagged content overview
+  - [x] 5.2.1 Add data flagging system with category selection
+    [x] 5.2.2 Build admin dashboard with flagged content overview
   - [ ] 5.3 Implement flagged content management table with actions
   - [ ] 5.4 Add premium listing management system
   - [ ] 5.5 Create data freshness tracking and indicators

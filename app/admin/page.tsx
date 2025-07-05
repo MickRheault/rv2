@@ -42,7 +42,7 @@ function AdminDashboardContent() {
       value: '12',
       icon: ExclamationTriangleIcon,
       color: 'bg-red-500',
-      href: '/admin/moderation'
+      href: '/admin/flagged-content'
     }
   ];
 
@@ -51,7 +51,7 @@ function AdminDashboardContent() {
       name: 'Content Moderation',
       description: 'Review flagged content and manage reports',
       icon: ExclamationTriangleIcon,
-      href: '/admin/moderation',
+      href: '/admin/flagged-content',
       permission: 'content.moderate',
       color: 'border-red-200 hover:border-red-300'
     },

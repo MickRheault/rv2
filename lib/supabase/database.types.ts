@@ -105,6 +105,13 @@ export type Database = {
             foreignKeyName: "cities_province_id_fkey"
             columns: ["province_id"]
             isOneToOne: false
+            referencedRelation: "mv_location_motorcycle_counts"
+            referencedColumns: ["province_id"]
+          },
+          {
+            foreignKeyName: "cities_province_id_fkey"
+            columns: ["province_id"]
+            isOneToOne: false
             referencedRelation: "provinces"
             referencedColumns: ["id"]
           },
@@ -178,6 +185,113 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      flagged_content: {
+        Row: {
+          admin_notes: string | null
+          applied_at: string | null
+          applied_by_admin_id: string | null
+          content_type: Database["public"]["Enums"]["content_type"]
+          created_at: string | null
+          entity_id: string
+          flag_category: Database["public"]["Enums"]["flag_category"]
+          flag_reason: string
+          flagged_by_email: string | null
+          flagged_by_user_id: string | null
+          id: string
+          is_verified: boolean | null
+          original_data: Json
+          priority: number | null
+          proposed_data: Json
+          reviewed_at: string | null
+          reviewed_by_admin_id: string | null
+          status: Database["public"]["Enums"]["flag_status"]
+        }
+        Insert: {
+          admin_notes?: string | null
+          applied_at?: string | null
+          applied_by_admin_id?: string | null
+          content_type: Database["public"]["Enums"]["content_type"]
+          created_at?: string | null
+          entity_id: string
+          flag_category: Database["public"]["Enums"]["flag_category"]
+          flag_reason: string
+          flagged_by_email?: string | null
+          flagged_by_user_id?: string | null
+          id?: string
+          is_verified?: boolean | null
+          original_data: Json
+          priority?: number | null
+          proposed_data: Json
+          reviewed_at?: string | null
+          reviewed_by_admin_id?: string | null
+          status?: Database["public"]["Enums"]["flag_status"]
+        }
+        Update: {
+          admin_notes?: string | null
+          applied_at?: string | null
+          applied_by_admin_id?: string | null
+          content_type?: Database["public"]["Enums"]["content_type"]
+          created_at?: string | null
+          entity_id?: string
+          flag_category?: Database["public"]["Enums"]["flag_category"]
+          flag_reason?: string
+          flagged_by_email?: string | null
+          flagged_by_user_id?: string | null
+          id?: string
+          is_verified?: boolean | null
+          original_data?: Json
+          priority?: number | null
+          proposed_data?: Json
+          reviewed_at?: string | null
+          reviewed_by_admin_id?: string | null
+          status?: Database["public"]["Enums"]["flag_status"]
+        }
+        Relationships: []
+      }
+      flagged_content_changes: {
+        Row: {
+          change_type: string
+          created_at: string | null
+          field_name: string
+          field_path: string | null
+          flagged_content_id: string
+          id: string
+          is_critical: boolean | null
+          original_value: string | null
+          proposed_value: string
+        }
+        Insert: {
+          change_type?: string
+          created_at?: string | null
+          field_name: string
+          field_path?: string | null
+          flagged_content_id: string
+          id?: string
+          is_critical?: boolean | null
+          original_value?: string | null
+          proposed_value: string
+        }
+        Update: {
+          change_type?: string
+          created_at?: string | null
+          field_name?: string
+          field_path?: string | null
+          flagged_content_id?: string
+          id?: string
+          is_critical?: boolean | null
+          original_value?: string | null
+          proposed_value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flagged_content_changes_flagged_content_id_fkey"
+            columns: ["flagged_content_id"]
+            isOneToOne: false
+            referencedRelation: "flagged_content"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       images: {
         Row: {
@@ -507,6 +621,13 @@ export type Database = {
             referencedRelation: "countries"
             referencedColumns: ["code"]
           },
+          {
+            foreignKeyName: "provinces_country_code_fkey"
+            columns: ["country_code"]
+            isOneToOne: false
+            referencedRelation: "mv_location_motorcycle_counts"
+            referencedColumns: ["country_code"]
+          },
         ]
       }
       rental_rate_tiers: {
@@ -773,6 +894,13 @@ export type Database = {
             referencedRelation: "cities"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "rental_shops_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "mv_location_motorcycle_counts"
+            referencedColumns: ["city_id"]
+          },
         ]
       }
       required_document_types: {
@@ -801,56 +929,81 @@ export type Database = {
       }
       role_permissions: {
         Row: {
-          id: string
-          role: "admin" | "user"
-          permission: "content.moderate" | "premium.manage" | "analytics.view" | "system.manage"
           created_at: string
+          id: number
+          permission: Database["public"]["Enums"]["app_permission"]
+          role: Database["public"]["Enums"]["app_role"]
         }
         Insert: {
-          id?: string
-          role: "admin" | "user"
-          permission: "content.moderate" | "premium.manage" | "analytics.view" | "system.manage"
           created_at?: string
+          id?: number
+          permission: Database["public"]["Enums"]["app_permission"]
+          role: Database["public"]["Enums"]["app_role"]
         }
         Update: {
-          id?: string
-          role?: "admin" | "user"
-          permission?: "content.moderate" | "premium.manage" | "analytics.view" | "system.manage"
           created_at?: string
+          id?: number
+          permission?: Database["public"]["Enums"]["app_permission"]
+          role?: Database["public"]["Enums"]["app_role"]
         }
         Relationships: []
       }
       user_roles: {
         Row: {
-          id: string
-          user_id: string
-          role: "admin" | "user"
           created_at: string
+          id: number
+          role: Database["public"]["Enums"]["app_role"]
           updated_at: string
+          user_id: string
         }
         Insert: {
-          id?: string
-          user_id: string
-          role: "admin" | "user"
           created_at?: string
+          id?: number
+          role: Database["public"]["Enums"]["app_role"]
           updated_at?: string
+          user_id: string
         }
         Update: {
-          id?: string
-          user_id?: string
-          role?: "admin" | "user"
           created_at?: string
+          id?: number
+          role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
     }
     Views: {
-      [_ in never]: never
+      mv_location_motorcycle_counts: {
+        Row: {
+          avg_rating: number | null
+          city_id: string | null
+          city_name: string | null
+          country_code: string | null
+          country_name: string | null
+          max_price: number | null
+          min_price: number | null
+          motorcycle_count: number | null
+          province_id: string | null
+          province_name: string | null
+          shop_count: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      apply_flagged_content_changes: {
+        Args: { flagged_content_id: string; admin_id: string }
+        Returns: boolean
+      }
+      assign_admin_by_email: {
+        Args: { user_email: string }
+        Returns: string
+      }
       authorize: {
-        Args: { requested_permission: "content.moderate" | "premium.manage" | "analytics.view" | "system.manage" }
+        Args: {
+          requested_permission: Database["public"]["Enums"]["app_permission"]
+        }
         Returns: boolean
       }
       clear_all_data: {
@@ -858,16 +1011,54 @@ export type Database = {
         Returns: undefined
       }
       custom_access_token_hook: {
-        Args: { event: unknown }
-        Returns: unknown
+        Args: { event: Json }
+        Returns: Json
       }
       generate_slug: {
         Args: { "": string }
         Returns: string
       }
+      get_flagged_content_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          total_pending: number
+          total_under_review: number
+          total_approved: number
+          total_applied: number
+          total_rejected: number
+          critical_pending: number
+          motorcycle_flags: number
+          rental_shop_flags: number
+        }[]
+      }
+      get_query_performance_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          query_type: string
+          avg_duration_ms: number
+          total_calls: number
+          cache_hit_ratio: number
+        }[]
+      }
       is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      refresh_location_counts: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      search_locations_with_counts: {
+        Args: { search_query: string; result_limit?: number }
+        Returns: {
+          type: string
+          id: string
+          name: string
+          parent_name: string
+          full_name: string
+          motorcycle_count: number
+          shop_count: number
+        }[]
       }
       unaccent: {
         Args: { "": string }
@@ -879,7 +1070,37 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      app_permission:
+        | "content.moderate"
+        | "premium.manage"
+        | "analytics.view"
+        | "system.manage"
+      app_role: "admin" | "user"
+      content_type:
+        | "motorcycle"
+        | "rental_shop"
+        | "motorcycle_feature"
+        | "motorcycle_condition"
+        | "motorcycle_insurance"
+        | "rental_shop_inclusion"
+        | "rental_shop_tour"
+      flag_category:
+        | "incorrect_info"
+        | "outdated_info"
+        | "missing_info"
+        | "inappropriate_content"
+        | "pricing_error"
+        | "contact_error"
+        | "location_error"
+        | "specification_error"
+        | "availability_error"
+        | "other"
+      flag_status:
+        | "pending"
+        | "under_review"
+        | "approved"
+        | "rejected"
+        | "applied"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -994,6 +1215,42 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_permission: [
+        "content.moderate",
+        "premium.manage",
+        "analytics.view",
+        "system.manage",
+      ],
+      app_role: ["admin", "user"],
+      content_type: [
+        "motorcycle",
+        "rental_shop",
+        "motorcycle_feature",
+        "motorcycle_condition",
+        "motorcycle_insurance",
+        "rental_shop_inclusion",
+        "rental_shop_tour",
+      ],
+      flag_category: [
+        "incorrect_info",
+        "outdated_info",
+        "missing_info",
+        "inappropriate_content",
+        "pricing_error",
+        "contact_error",
+        "location_error",
+        "specification_error",
+        "availability_error",
+        "other",
+      ],
+      flag_status: [
+        "pending",
+        "under_review",
+        "approved",
+        "rejected",
+        "applied",
+      ],
+    },
   },
 } as const 

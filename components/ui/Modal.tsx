@@ -71,7 +71,7 @@ export default function Modal({
   }
 
   const modalContent = (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
@@ -79,25 +79,28 @@ export default function Modal({
         aria-hidden="true"
       />
 
-      {/* Modal */}
-      <div
-        ref={modalRef}
-        className={clsx(
-          'relative w-full bg-white rounded-2xl shadow-2xl',
-          'transform transition-all duration-300 ease-out',
-          'animate-scale-in',
-          sizeClasses[size],
-          className
-        )}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={title ? 'modal-title' : undefined}
-        aria-describedby={description ? 'modal-description' : undefined}
-        tabIndex={-1}
-      >
+      {/* Modal Container */}
+      <div className="flex min-h-full items-start justify-center p-4 pt-16 pb-16">
+        {/* Modal */}
+        <div
+          ref={modalRef}
+          className={clsx(
+            'relative w-full bg-white rounded-2xl shadow-2xl',
+            'transform transition-all duration-300 ease-out',
+            'animate-scale-in',
+            'max-h-[calc(100vh-8rem)] flex flex-col',
+            sizeClasses[size],
+            className
+          )}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={title ? 'modal-title' : undefined}
+          aria-describedby={description ? 'modal-description' : undefined}
+          tabIndex={-1}
+        >
         {/* Header */}
         {(title || showCloseButton) && (
-          <div className="flex items-center justify-between p-6 pb-4">
+          <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-100 flex-shrink-0">
             <div>
               {title && (
                 <h2 id="modal-title" className="text-xl font-semibold text-gray-900">
@@ -124,8 +127,12 @@ export default function Modal({
         )}
 
         {/* Content */}
-        <div className={clsx('px-6', title || showCloseButton ? 'pb-6' : 'py-6')}>
+        <div className={clsx(
+          'px-6 overflow-y-auto flex-1',
+          title || showCloseButton ? 'pb-6 pt-4' : 'py-6'
+        )}>
           {children}
+        </div>
         </div>
       </div>
     </div>
