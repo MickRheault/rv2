@@ -3,6 +3,7 @@
 import { AdminRoute } from '@/components/admin/AdminRoute';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { Card, Button } from '@/components/ui';
+import DataFreshnessCard from '@/components/admin/DataFreshnessCard';
 import { 
   ChartBarIcon, 
   ExclamationTriangleIcon, 
@@ -11,9 +12,11 @@ import {
   UsersIcon,
   BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
+import { useRouter } from 'next/navigation';
 
 function AdminDashboardContent() {
   const { user, signOut } = useAdminAuth();
+  const router = useRouter();
 
   const stats = [
     {
@@ -122,6 +125,15 @@ function AdminDashboardContent() {
               </Card>
             ))}
           </div>
+        </div>
+
+        {/* Data Freshness Monitoring */}
+        <div className="mb-8">
+          <DataFreshnessCard 
+            onViewDetails={() => {
+              router.push('/admin/data-freshness');
+            }}
+          />
         </div>
 
         {/* Quick Actions */}
