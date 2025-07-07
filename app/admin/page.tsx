@@ -4,6 +4,8 @@ import { AdminRoute } from '@/components/admin/AdminRoute';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { Card, Button } from '@/components/ui';
 import DataFreshnessCard from '@/components/admin/DataFreshnessCard';
+import { FlaggedContentService } from '@/services/flagged-content';
+import { PremiumListingsService } from '@/services/premium-listings';
 import { 
   ChartBarIcon, 
   ExclamationTriangleIcon, 
@@ -13,41 +15,70 @@ import {
   BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 function AdminDashboardContent() {
   const { user, signOut } = useAdminAuth();
   const router = useRouter();
-
-  const stats = [
+  const [stats, setStats] = useState([
     {
       name: 'Total Motorcycles',
-      value: '1,247',
+      value: '...',
       icon: ChartBarIcon,
       color: 'bg-blue-500',
       href: '/admin/motorcycles'
     },
     {
       name: 'Total Shops',
-      value: '89',
+      value: '...',
       icon: BuildingOfficeIcon,
       color: 'bg-green-500',
       href: '/admin/shops'
     },
     {
       name: 'Premium Listings',
-      value: '156',
+      value: '...',
       icon: StarIcon,
       color: 'bg-yellow-500',
       href: '/admin/premium-listings'
     },
     {
       name: 'Flagged Content',
-      value: '12',
+      value: '...',
       icon: ExclamationTriangleIcon,
       color: 'bg-red-500',
       href: '/admin/flagged-content'
     }
-  ];
+  ]);
+
+  // Load real statistics
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        // Load premium listings stats
+        const premiumStats = await PremiumListingsService.getDashboardStats();
+        
+        // Load flagged content stats  
+        const flaggedStats = await FlaggedContentService.getFlaggedContentStats();
+
+        // Update stats with real data
+        setStats(prevStats => prevStats.map(stat => {
+          switch (stat.name) {
+            case 'Premium Listings':
+              return { ...stat, value: premiumStats.total_active_listings.toString() };
+            case 'Flagged Content':
+              return { ...stat, value: flaggedStats.total_pending.toString() };
+            default:
+              return stat;
+          }
+        }));
+      } catch (error) {
+        console.error('Error loading dashboard stats:', error);
+      }
+    };
+
+    loadStats();
+  }, []);
 
   const quickActions = [
     {
@@ -112,7 +143,11 @@ function AdminDashboardContent() {
           <h2 className="text-lg font-medium text-gray-900 mb-4">Platform Overview</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {stats.map((stat) => (
-              <Card key={stat.name} className="p-6 hover:shadow-lg transition-shadow cursor-pointer">
+              <Card 
+                key={stat.name} 
+                className="p-6 hover:shadow-lg transition-shadow cursor-pointer"
+                onClick={() => router.push(stat.href)}
+              >
                 <div className="flex items-center">
                   <div className={`flex-shrink-0 p-3 rounded-lg ${stat.color}`}>
                     <stat.icon className="h-6 w-6 text-white" />
@@ -144,6 +179,7 @@ function AdminDashboardContent() {
               <Card 
                 key={action.name} 
                 className={`p-6 border-2 transition-all cursor-pointer hover:shadow-lg ${action.color}`}
+                onClick={() => router.push(action.href)}
               >
                 <div className="flex items-start">
                   <div className="flex-shrink-0">
