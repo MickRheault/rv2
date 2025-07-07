@@ -29,19 +29,8 @@ export default function Modal({
   showCloseButton = true,
 }: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null)
-  const previousFocusRef = useRef<HTMLElement | null>(null)
 
-  // Focus management
-  useEffect(() => {
-    if (isOpen) {
-      previousFocusRef.current = document.activeElement as HTMLElement
-      modalRef.current?.focus()
-    } else {
-      previousFocusRef.current?.focus()
-    }
-  }, [isOpen])
-
-  // Escape key handler
+  // Escape key handler and body scroll lock
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && isOpen) {
@@ -80,24 +69,23 @@ export default function Modal({
       />
 
       {/* Modal Container */}
-      <div className="flex min-h-full items-start justify-center p-4 pt-16 pb-16">
-        {/* Modal */}
-        <div
-          ref={modalRef}
-          className={clsx(
-            'relative w-full bg-white rounded-2xl shadow-2xl',
-            'transform transition-all duration-300 ease-out',
-            'animate-scale-in',
+      <div className="flex min-h-full items-start justify-center pt-16 pb-16">
+      {/* Modal */}
+      <div
+        ref={modalRef}
+        className={clsx(
+          'relative w-full bg-white rounded-2xl shadow-2xl',
+          'transform transition-all duration-300 ease-out',
+          'animate-scale-in',
             'max-h-[calc(100vh-8rem)] flex flex-col',
-            sizeClasses[size],
-            className
-          )}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby={title ? 'modal-title' : undefined}
-          aria-describedby={description ? 'modal-description' : undefined}
-          tabIndex={-1}
-        >
+          sizeClasses[size],
+          className
+        )}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? 'modal-title' : undefined}
+        aria-describedby={description ? 'modal-description' : undefined}
+      >
         {/* Header */}
         {(title || showCloseButton) && (
           <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-100 flex-shrink-0">
@@ -128,10 +116,12 @@ export default function Modal({
 
         {/* Content */}
         <div className={clsx(
-          'px-6 overflow-y-auto flex-1',
-          title || showCloseButton ? 'pb-6 pt-4' : 'py-6'
+          'overflow-y-auto flex-1 space-y-6',
+          title || showCloseButton ? 'p-6 pt-4' : 'p-6'
         )}>
+          <div className="break-words">
           {children}
+          </div>
         </div>
         </div>
       </div>

@@ -35,7 +35,7 @@ function AdminDashboardContent() {
       value: '156',
       icon: StarIcon,
       color: 'bg-yellow-500',
-      href: '/admin/premium'
+      href: '/admin/premium-listings'
     },
     {
       name: 'Flagged Content',
@@ -59,7 +59,7 @@ function AdminDashboardContent() {
       name: 'Premium Management',
       description: 'Manage premium listings and pricing',
       icon: StarIcon,
-      href: '/admin/premium',
+      href: '/admin/premium-listings',
       permission: 'premium.manage',
       color: 'border-yellow-200 hover:border-yellow-300'
     },

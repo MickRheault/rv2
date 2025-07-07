@@ -1,8 +1,10 @@
 import { supabase } from '@/lib/supabase/client'
 import { Database } from '@/lib/supabase/database.types'
 import { motorcycleService, SearchFilters as MotorcycleFilters } from './motorcycles'
-import { shopService, ShopSearchFilters } from './shops'
+import { shopService, ShopSearchFilters, ShopWithDetails } from './shops'
 import { locationService } from './locations'
+import { PremiumUtilsService } from './premium-listings'
+import { PremiumTier, PremiumFeatureConfig } from '@/types/premium-listings'
 
 type Country = Database['public']['Tables']['countries']['Row']
 type Province = Database['public']['Tables']['provinces']['Row']
@@ -28,7 +30,10 @@ export interface LocationBasedSearchFilters extends MotorcycleFilters {
 
 export interface SearchResults {
   motorcycles: Awaited<ReturnType<typeof motorcycleService.getMotorcycles>>
-  shops: Awaited<ReturnType<typeof shopService.getShops>>
+  shops: {
+    shops: (ShopWithDetails & { premium?: PremiumFeatureConfig })[]
+    total: number
+  }
   locations: LocationSearchResult[]
   totalResults: number
 }
@@ -85,7 +90,6 @@ export const searchService = {
       cityId,
       provinceId,
       countryCode,
-      includeNearby = false,
       ...otherFilters
     } = filters
 
@@ -146,6 +150,69 @@ export const searchService = {
       })
     ])
 
+    // Get premium information for shops
+    const shopIds = shopResults.shops.map(shop => shop.id)
+    console.log('=== SEARCH PREMIUM DEBUG ===')
+    console.log('Shop IDs for premium lookup:', shopIds)
+    console.log('Entity IDs that will be searched for:', shopIds)
+    console.log('Entity ID types:', shopIds.map(id => typeof id))
+    console.log('About to call getPremiumEntities with:')
+    console.log('  - content_type:', 'rental_shop')
+    console.log('  - entity_ids array:', shopIds)
+    console.log('  - entity_ids array length:', shopIds.length)
+    shopIds.forEach((id, index) => {
+      console.log(`  - entity_ids[${index}]: ${id}`)
+      console.log(`  - searching for entity_id: ${id}`)
+    })
+    
+    const premiumMap = await PremiumUtilsService.getPremiumEntities('rental_shop', shopIds)
+    console.log('Premium map result:', premiumMap)
+    console.log('Premium map size:', premiumMap.size)
+    console.log('Premium map keys:', Array.from(premiumMap.keys()))
+    console.log('Premium map entries:', Array.from(premiumMap.entries()))
+    console.log('Exact entity IDs searched for in premium query:', shopIds)
+
+    // Enhance shop results with premium information
+    const enhancedShops = shopResults.shops.map(shop => {
+      const premiumInfo = premiumMap.get(shop.id)
+      console.log(`=== SEARCH SHOP PREMIUM DEBUG ===`)
+      console.log(`Shop ${shop.provider_name} (Entity ID: ${shop.id}):`, premiumInfo)
+      console.log(`Premium map has entity ID ${shop.id}?`, premiumMap.has(shop.id))
+      console.log(`Premium info for entity ID ${shop.id}:`, premiumInfo)
+      if (premiumInfo) {
+        console.log(`Premium found, setting isPremium to true with type: ${premiumInfo.tier}`)
+      } else {
+        console.log(`No premium info found, setting isPremium to false`)
+      }
+      
+      return {
+        ...shop,
+        premium: premiumInfo ? {
+          isPremium: true,
+          premiumType: premiumInfo.tier,
+          boostScore: premiumInfo.boostScore
+        } : {
+          isPremium: false
+        }
+      }
+    })
+
+    // Sort shops with premium priority
+    const sortedShops = PremiumUtilsService.sortWithPremiumPriority(
+      enhancedShops,
+      premiumMap,
+      (a, b) => {
+        // Apply original sort logic for same premium level
+        switch (otherFilters.sortBy) {
+          case 'rating_desc':
+            return (b.rating || 0) - (a.rating || 0)
+          case 'newest':
+          default:
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        }
+      }
+    )
+
     // Get location suggestions if locationQuery was provided
     const locationSuggestions = locationQuery 
       ? await this.searchLocations(locationQuery, 5)
@@ -153,7 +220,10 @@ export const searchService = {
 
     return {
       motorcycles: motorcycleResults,
-      shops: shopResults,
+      shops: {
+        ...shopResults,
+        shops: sortedShops
+      },
       locations: locationSuggestions,
       totalResults: motorcycleResults.total + shopResults.total
     }

@@ -17,12 +17,14 @@ import { Card, CardHeader, CardTitle, CardContent, Badge, Button } from '@/compo
 import { ShopWithMotorcycles } from '@/services/shops'
 import MotorcycleCard from '@/components/motorcycle/MotorcycleCard'
 import GoogleMap from './GoogleMap'
+import { PremiumFeatureConfig } from '@/types/premium-listings'
 
 interface ShopDetailsProps {
   shop: ShopWithMotorcycles
+  premium?: PremiumFeatureConfig
 }
 
-export default function ShopDetails({ shop }: ShopDetailsProps) {
+export default function ShopDetails({ shop, premium }: ShopDetailsProps) {
   const {
     provider_name,
     business_description,
@@ -77,13 +79,30 @@ export default function ShopDetails({ shop }: ShopDetailsProps) {
   return (
     <div className="space-y-8">
       {/* Shop Header */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
+      <div className={`bg-white rounded-lg shadow-sm border p-6 ${premium?.isPremium ? 'ring-2 ring-yellow-400 shadow-lg' : ''}`}>
         <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
           <div className="flex-1">
-            <div className="flex items-center gap-3 mb-3">
+            <div className="flex items-center gap-3 mb-3 flex-wrap">
               <h1 className="text-3xl font-bold text-gray-900">{provider_name}</h1>
+              
+              {premium?.isPremium && (
+                <Badge variant={premium.premiumType} size="md" className="shadow-lg">
+                  {premium.premiumType === 'gold' && '⭐ Premium'}
+                  {premium.premiumType === 'platinum' && '💎 Premium+'}
+                  {premium.premiumType === 'featured' && '🌟 Featured'}
+                </Badge>
+              )}
+              
               {getBusinessStatusBadge()}
             </div>
+            
+            {premium?.isPremium && premium.daysRemaining && premium.daysRemaining <= 7 && (
+              <div className="mb-3">
+                <Badge variant="warning" size="sm">
+                  ⏰ Premium expires in {premium.daysRemaining} day{premium.daysRemaining > 1 ? 's' : ''}
+                </Badge>
+              </div>
+            )}
             
             <div className="flex items-center gap-2 text-gray-600 mb-4">
               <MapPinIcon className="w-5 h-5" />
@@ -267,6 +286,57 @@ export default function ShopDetails({ shop }: ShopDetailsProps) {
 
         {/* Sidebar */}
         <div className="space-y-6">
+          {/* Premium Status */}
+          {premium?.isPremium && (
+            <Card className="border-yellow-200 bg-gradient-to-br from-yellow-50 to-orange-50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <span className="text-yellow-600">
+                    {premium.premiumType === 'gold' && '⭐'}
+                    {premium.premiumType === 'platinum' && '💎'}
+                    {premium.premiumType === 'featured' && '🌟'}
+                  </span>
+                  Premium Shop
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Tier</span>
+                  {premium.premiumType && (
+                    <Badge variant={premium.premiumType} size="sm">
+                      {premium.premiumType.charAt(0).toUpperCase() + premium.premiumType.slice(1)}
+                    </Badge>
+                  )}
+                </div>
+                
+                {premium.boostScore && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Boost Score</span>
+                    <span className="font-medium text-yellow-600">+{premium.boostScore}%</span>
+                  </div>
+                )}
+                
+                {premium.daysRemaining && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Days Remaining</span>
+                    <span className={`font-medium ${premium.daysRemaining <= 7 ? 'text-red-600' : 'text-green-600'}`}>
+                      {premium.daysRemaining}
+                    </span>
+                  </div>
+                )}
+                
+                {premium.endDate && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Expires</span>
+                    <span className="font-medium text-gray-900">
+                      {new Date(premium.endDate).toLocaleDateString()}
+                    </span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Location & Map */}
           <Card>
             <CardHeader>
