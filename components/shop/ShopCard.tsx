@@ -18,6 +18,7 @@ import { HeartIcon as HeartSolid, StarIcon as StarSolid } from '@heroicons/react
 import { Card, CardContent, CardFooter, CardHeader, Badge, PremiumBadge } from '@/components/ui'
 import Button from '@/components/ui/Button'
 import { ShopWithDetails } from '@/services/shops'
+import { PremiumTier, PremiumStatus, PremiumFeatureConfig } from '@/types/premium-listings'
 
 interface ShopCardProps {
   shop: ShopWithDetails
@@ -26,8 +27,7 @@ interface ShopCardProps {
   compact?: boolean
   onFavoriteToggle?: (shopId: string, isFavorited: boolean) => void
   isFavorited?: boolean
-  isPremium?: boolean
-  premiumType?: 'gold' | 'platinum' | 'featured'
+  premium?: PremiumFeatureConfig
   className?: string
 }
 
@@ -38,8 +38,7 @@ export default function ShopCard({
   compact = false,
   onFavoriteToggle,
   isFavorited = false,
-  isPremium = false,
-  premiumType = 'gold',
+  premium,
   className 
 }: ShopCardProps) {
   const [showAllInclusions, setShowAllInclusions] = useState(false)
@@ -57,6 +56,12 @@ export default function ShopCard({
   const tours = shop.rental_shop_tours || []
   const serviceLocations = shop.rental_shop_service_locations || []
   const inclusions = shop.rental_shop_inclusions || []
+
+  // Premium status
+  const isPremium = premium?.isPremium ?? false
+  const premiumType = premium?.premiumType ?? 'gold'
+  
+
 
   // Handle favorite toggle
   const handleFavoriteClick = (e: React.MouseEvent) => {
@@ -107,20 +112,8 @@ export default function ShopCard({
       <Card className={clsx(
         'overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1',
         compact ? 'h-auto' : 'h-full',
-        isPremium && 'ring-2 ring-yellow-400 shadow-xl relative',
-        isPremium && premiumType === 'featured' && 'ring-blue-500 shadow-blue-200',
-        isPremium && premiumType === 'platinum' && 'ring-gray-400 shadow-gray-200',
         className
       )}>
-        {/* Premium border glow effect */}
-        {isPremium && (
-          <div className={clsx(
-            'absolute inset-0 rounded-2xl opacity-20 pointer-events-none',
-            premiumType === 'gold' && 'bg-gradient-to-br from-yellow-400 to-yellow-600',
-            premiumType === 'platinum' && 'bg-gradient-to-br from-gray-300 to-gray-500',
-            premiumType === 'featured' && 'bg-gradient-to-br from-blue-500 to-purple-600 animate-pulse'
-          )} />
-        )}
         
         <CardHeader className={clsx('relative', compact ? 'p-3' : 'p-4')}>
           {/* Header with name and actions */}
@@ -167,8 +160,20 @@ export default function ShopCard({
 
           {/* Status badges */}
           <div className="flex items-center gap-2 mb-3 flex-wrap">
+            {/* Premium badge */}
             {isPremium && (
-              <PremiumBadge type={premiumType} className="shadow-lg" />
+              <div className="flex items-center gap-1">
+                <Badge variant={premiumType} size="sm">
+                  {premiumType === 'gold' && '⭐ Premium'}
+                  {premiumType === 'platinum' && '💎 Premium+'}
+                  {premiumType === 'featured' && '🌟 Featured'}
+                </Badge>
+                {premium?.daysRemaining && premium.daysRemaining <= 7 && (
+                  <Badge variant="warning" size="sm">
+                    {premium.daysRemaining}d left
+                  </Badge>
+                )}
+              </div>
             )}
             
             {isVerified && (
@@ -191,6 +196,7 @@ export default function ShopCard({
                 Tours
               </Badge>
             )}
+
             
             {serviceLocations.length > 1 && (
               <Badge variant="secondary" size="sm" className="flex items-center gap-1">

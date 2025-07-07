@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase/client'
 import { Database } from '@/lib/supabase/database.types'
+import { PremiumFeatureConfig } from '@/types/premium-listings'
 
 type RentalShop = Database['public']['Tables']['rental_shops']['Row']
 type City = Database['public']['Tables']['cities']['Row']
@@ -24,6 +25,7 @@ export interface ShopWithDetails extends RentalShop {
   rental_shop_tours: RentalShopTour[]
   rental_shop_service_locations: RentalShopServiceLocation[]
   motorcycle_count?: number
+  premium?: PremiumFeatureConfig
 }
 
 export interface ShopWithMotorcycles extends ShopWithDetails {
@@ -375,6 +377,21 @@ export const shopService = {
       topRatedShop: topRated.data,
       shopsWithRatings: ratings.length
     }
+  },
+
+  // Get all shops for dropdown selection (simple list)
+  async getAllShopsForDropdown() {
+    const { data, error } = await supabase
+      .from('rental_shops')
+      .select('id, provider_name, location_name, full_address')
+      .order('provider_name', { ascending: true })
+
+    if (error) {
+      console.error('Error fetching shops for dropdown:', error)
+      throw error
+    }
+
+    return data || []
   }
 }
 

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import ShopCard from '@/components/shop/ShopCard'
 import { Card, CardHeader, CardTitle, CardContent, Button } from '@/components/ui'
 import { ShopWithDetails } from '@/services/shops'
+import { PremiumTier } from '@/types/premium-listings'
 
 // Create a query client for this demo
 const queryClient = new QueryClient({
@@ -391,7 +392,17 @@ function ShopDemo() {
             ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
             : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
         }`}>
-          {mockShops.map((shop, index) => (
+          {mockShops.map((shop, index) => {
+            // Create premium config for first two shops
+            const premium = (index === 0 || index === 1) ? {
+              isPremium: true,
+              premiumType: (index === 0 ? 'platinum' : 'featured') as PremiumTier,
+              boostScore: index === 0 ? 75 : 100,
+              daysRemaining: index === 0 ? 15 : 3,
+              endDate: new Date(Date.now() + (index === 0 ? 15 : 3) * 24 * 60 * 60 * 1000).toISOString()
+            } : undefined
+            
+            return (
             <ShopCard
               key={shop.id}
               shop={shop}
@@ -400,10 +411,10 @@ function ShopDemo() {
               compact={viewMode === 'compact'}
               onFavoriteToggle={handleFavoriteToggle}
               isFavorited={favorites.has(shop.id)}
-              isPremium={index === 0 || index === 1} // Make first two shops premium
-              premiumType={index === 0 ? 'platinum' : index === 1 ? 'featured' : 'gold'}
+                premium={premium}
             />
-          ))}
+            )
+          })}
         </div>
 
         {/* Features Documentation */}

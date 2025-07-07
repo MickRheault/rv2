@@ -7,6 +7,31 @@ export type Json =
   | Json[]
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          operationName?: string
+          query?: string
+          variables?: Json
+          extensions?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       brands: {
@@ -591,6 +616,148 @@ export type Database = {
           },
         ]
       }
+      premium_analytics: {
+        Row: {
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          metric_type: Database["public"]["Enums"]["premium_metric_type"]
+          metric_value: number
+          premium_listing_id: string
+          recorded_date: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          metric_type: Database["public"]["Enums"]["premium_metric_type"]
+          metric_value?: number
+          premium_listing_id: string
+          recorded_date: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          metric_type?: Database["public"]["Enums"]["premium_metric_type"]
+          metric_value?: number
+          premium_listing_id?: string
+          recorded_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "premium_analytics_premium_listing_id_fkey"
+            columns: ["premium_listing_id"]
+            isOneToOne: false
+            referencedRelation: "premium_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      premium_listings: {
+        Row: {
+          admin_notes: string | null
+          auto_renew: boolean | null
+          content_type: Database["public"]["Enums"]["premium_content_type"]
+          created_at: string | null
+          created_by: string | null
+          currency: string | null
+          end_date: string
+          entity_id: string
+          id: string
+          premium_tier: Database["public"]["Enums"]["premium_tier"]
+          price_paid: number | null
+          pricing_plan_id: string | null
+          start_date: string
+          status: Database["public"]["Enums"]["premium_status"]
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          auto_renew?: boolean | null
+          content_type: Database["public"]["Enums"]["premium_content_type"]
+          created_at?: string | null
+          created_by?: string | null
+          currency?: string | null
+          end_date: string
+          entity_id: string
+          id?: string
+          premium_tier: Database["public"]["Enums"]["premium_tier"]
+          price_paid?: number | null
+          pricing_plan_id?: string | null
+          start_date: string
+          status?: Database["public"]["Enums"]["premium_status"]
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          auto_renew?: boolean | null
+          content_type?: Database["public"]["Enums"]["premium_content_type"]
+          created_at?: string | null
+          created_by?: string | null
+          currency?: string | null
+          end_date?: string
+          entity_id?: string
+          id?: string
+          premium_tier?: Database["public"]["Enums"]["premium_tier"]
+          price_paid?: number | null
+          pricing_plan_id?: string | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["premium_status"]
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "premium_listings_pricing_plan_id_fkey"
+            columns: ["pricing_plan_id"]
+            isOneToOne: false
+            referencedRelation: "premium_pricing_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      premium_pricing_plans: {
+        Row: {
+          created_at: string | null
+          currency: string
+          description: string | null
+          duration_days: number
+          features: Json | null
+          id: string
+          is_active: boolean | null
+          price: number
+          tier: Database["public"]["Enums"]["premium_tier"]
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          currency?: string
+          description?: string | null
+          duration_days: number
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          price: number
+          tier: Database["public"]["Enums"]["premium_tier"]
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          currency?: string
+          description?: string | null
+          duration_days?: number
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          price?: number
+          tier?: Database["public"]["Enums"]["premium_tier"]
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       provinces: {
         Row: {
           country_code: string
@@ -996,10 +1163,6 @@ export type Database = {
         Args: { flagged_content_id: string; admin_id: string }
         Returns: boolean
       }
-      assign_admin_by_email: {
-        Args: { user_email: string }
-        Returns: string
-      }
       authorize: {
         Args: {
           requested_permission: Database["public"]["Enums"]["app_permission"]
@@ -1013,6 +1176,10 @@ export type Database = {
       custom_access_token_hook: {
         Args: { event: Json }
         Returns: Json
+      }
+      expire_premium_listings: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       generate_slug: {
         Args: { "": string }
@@ -1031,6 +1198,30 @@ export type Database = {
           rental_shop_flags: number
         }[]
       }
+      get_premium_analytics_summary: {
+        Args: {
+          p_listing_id: string
+          p_start_date?: string
+          p_end_date?: string
+        }
+        Returns: {
+          metric_type: Database["public"]["Enums"]["premium_metric_type"]
+          total_value: number
+          avg_daily_value: number
+          days_tracked: number
+        }[]
+      }
+      get_premium_dashboard_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          total_active_listings: number
+          total_expired_listings: number
+          expiring_soon: number
+          revenue_this_month: number
+          revenue_last_month: number
+          new_listings_this_month: number
+        }[]
+      }
       get_query_performance_stats: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -1044,9 +1235,17 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      make_user_admin: {
+        Args: { user_email: string }
+        Returns: boolean
+      }
       refresh_location_counts: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      remove_user_admin: {
+        Args: { user_email: string }
+        Returns: boolean
       }
       search_locations_with_counts: {
         Args: { search_query: string; result_limit?: number }
@@ -1101,6 +1300,15 @@ export type Database = {
         | "approved"
         | "rejected"
         | "applied"
+      premium_content_type: "motorcycle" | "rental_shop"
+      premium_metric_type:
+        | "views"
+        | "clicks"
+        | "inquiries"
+        | "conversions"
+        | "favorites"
+      premium_status: "active" | "expired" | "paused" | "cancelled"
+      premium_tier: "gold" | "platinum" | "featured"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1214,6 +1422,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_permission: [
@@ -1251,6 +1462,17 @@ export const Constants = {
         "rejected",
         "applied",
       ],
+      premium_content_type: ["motorcycle", "rental_shop"],
+      premium_metric_type: [
+        "views",
+        "clicks",
+        "inquiries",
+        "conversions",
+        "favorites",
+      ],
+      premium_status: ["active", "expired", "paused", "cancelled"],
+      premium_tier: ["gold", "platinum", "featured"],
     },
   },
-} as const 
+} as const
+
