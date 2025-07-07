@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { 
   PlusIcon, 
   MagnifyingGlassIcon, 
@@ -227,11 +227,13 @@ function PremiumListingRow({
 interface PremiumListingsDashboardProps {
   onCreateListing?: () => void
   onEditListing?: (listing: PremiumListingWithDetails) => void
+  onRefresh?: (refreshFn: () => void) => void
 }
 
 export default function PremiumListingsDashboard({ 
   onCreateListing, 
-  onEditListing 
+  onEditListing,
+  onRefresh
 }: PremiumListingsDashboardProps = {}) {
   const [listings, setListings] = useState<PremiumListingWithDetails[]>([])
   const [stats, setStats] = useState<PremiumDashboardStats | null>(null)
@@ -262,12 +264,8 @@ export default function PremiumListingsDashboard({
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false)
   const [editingListing, setEditingListing] = useState<PremiumListingWithDetails | null>(null)
   
-  // Load data
-  useEffect(() => {
-    loadData()
-  }, [currentPage, perPage, searchTerm, filters])
-
-  const loadData = async () => {
+  // Load data function with useCallback for stability
+  const loadData = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -300,7 +298,19 @@ export default function PremiumListingsDashboard({
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentPage, perPage, searchTerm, filters])
+
+  // Load data when dependencies change
+  useEffect(() => {
+    loadData()
+  }, [loadData])
+
+  // Expose refresh function to parent
+  useEffect(() => {
+    if (onRefresh) {
+      onRefresh(loadData)
+    }
+  }, [onRefresh, loadData])
 
   const handleSearch = (term: string) => {
     setSearchTerm(term)
