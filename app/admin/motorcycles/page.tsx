@@ -5,13 +5,15 @@ import { useState, useEffect, useCallback } from 'react';
 import { motorcycleService, MotorcycleWithDetails } from '@/services/motorcycles';
 import { shopService } from '@/services/shops';
 import { Card, Button, Input, Modal, Alert, Select, Spinner, Checkbox } from '@/components/ui';
+import { MotorcycleConditionsModal } from '@/components/admin/MotorcycleConditionsModal';
 import { 
   PlusIcon, 
   PencilIcon, 
   TrashIcon, 
   MagnifyingGlassIcon,
   ChevronLeftIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  AdjustmentsHorizontalIcon
 } from '@heroicons/react/24/outline';
 import { Database } from '@/lib/supabase/database.types';
 
@@ -46,6 +48,8 @@ function MotorcyclesAdminContent() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingMotorcycle, setEditingMotorcycle] = useState<MotorcycleWithDetails | null>(null);
+  const [showConditionsModal, setShowConditionsModal] = useState(false);
+  const [conditionsMotorcycle, setConditionsMotorcycle] = useState<MotorcycleWithDetails | null>(null);
   
   // Form data
   const [formData, setFormData] = useState<Partial<MotorcycleInsert>>({});
@@ -220,6 +224,16 @@ function MotorcyclesAdminContent() {
     setFormData({});
     setError(null);
     setSuccess(null);
+  };
+
+  const handleManageConditions = (motorcycle: MotorcycleWithDetails) => {
+    setConditionsMotorcycle(motorcycle);
+    setShowConditionsModal(true);
+  };
+
+  const handleCloseConditionsModal = () => {
+    setShowConditionsModal(false);
+    setConditionsMotorcycle(null);
   };
 
   // Selection handlers
@@ -514,7 +528,16 @@ function MotorcyclesAdminContent() {
                               <Button 
                                 variant="ghost" 
                                 size="sm"
+                                onClick={() => handleManageConditions(motorcycle)}
+                                title="Manage Conditions"
+                              >
+                                <AdjustmentsHorizontalIcon className="w-4 h-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
                                 onClick={() => handleEdit(motorcycle)}
+                                title="Edit Motorcycle"
                               >
                                 <PencilIcon className="w-4 h-4" />
                               </Button>
@@ -523,6 +546,7 @@ function MotorcyclesAdminContent() {
                                 size="sm"
                                 onClick={() => handleDelete(motorcycle.id)}
                                 className="text-red-600 hover:text-red-700"
+                                title="Delete Motorcycle"
                               >
                                 <TrashIcon className="w-4 h-4" />
                               </Button>
@@ -754,6 +778,17 @@ function MotorcyclesAdminContent() {
           </div>
         </form>
       </Modal>
+
+      {/* Motorcycle Conditions Modal */}
+      {conditionsMotorcycle && (
+        <MotorcycleConditionsModal
+          isOpen={showConditionsModal}
+          onClose={handleCloseConditionsModal}
+          motorcycleId={conditionsMotorcycle.id}
+          motorcycleModel={conditionsMotorcycle.model}
+          motorcycleBrand={conditionsMotorcycle.brands?.name || 'Unknown'}
+        />
+      )}
     </div>
   );
 }
