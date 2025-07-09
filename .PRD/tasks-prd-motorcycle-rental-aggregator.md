@@ -20,8 +20,8 @@
 - `app/compare/page.tsx` - Motorcycle comparison page
 - `app/favorites/page.tsx` - User favorites page
 - `app/admin/page.tsx` - Admin dashboard for content moderation (Updated - Real motorcycle and shop statistics, data management navigation)
-- `app/admin/motorcycles/page.tsx` - Admin page for managing motorcycles with CRUD operations (Created - Full CRUD interface)
-- `app/admin/shops/page.tsx` - Admin page for managing rental shops with CRUD operations (Created - Full CRUD interface)
+- `app/admin/motorcycles/page.tsx` - Admin page for managing motorcycles with CRUD operations and conditions management (Created - Full CRUD interface with conditions modal)
+- `app/admin/shops/page.tsx` - Admin page for managing rental shops with CRUD operations and conditions management (Created - Full CRUD interface with conditions modal)
 - `app/admin/brands/page.tsx` - Admin page for managing motorcycle brands with CRUD operations (Created - Full CRUD interface)
 - `app/admin/categories/page.tsx` - Admin page for managing motorcycle categories with CRUD operations (Created - Full CRUD interface)
 - `app/admin/features/page.tsx` - Admin page for managing motorcycle features with CRUD operations (Created - Full CRUD interface)
@@ -38,26 +38,30 @@
 - `components/motorcycle/MotorcycleCard.tsx` - Motorcycle listing card component
 - `components/motorcycle/MotorcycleCard.test.tsx` - Unit tests for MotorcycleCard
 - `components/motorcycle/MotorcycleGallery.tsx` - Image gallery component
-- `components/motorcycle/MotorcycleDetails.tsx` - Detailed motorcycle information
+- `components/motorcycle/MotorcycleDetails.tsx` - Detailed motorcycle information with conditions display (Updated - Added database conditions display)
 - `components/shop/ShopCard.tsx` - Rental shop listing card
-- `components/shop/ShopDetails.tsx` - Detailed shop information with Google Maps
+- `components/shop/ShopDetails.tsx` - Detailed shop information with Google Maps and conditions display (Updated - Added database conditions display)
 - `components/shop/GoogleMap.tsx` - Google Maps integration component
 - `components/common/Header.tsx` - Main navigation header
 - `components/common/Footer.tsx` - Site footer
 - `components/common/FlagButton.tsx` - Data flagging functionality
 - `components/admin/FlaggedContentTable.tsx` - Admin table for managing flagged content
+- `components/admin/MotorcycleConditionsModal.tsx` - Modal for managing motorcycle conditions with full CRUD operations (Created)
+- `components/admin/RentalShopConditionsModal.tsx` - Modal for managing rental shop conditions with full CRUD operations (Created)
 - `hooks/useAuth.ts` - Custom hook for authentication
 - `hooks/useAuth.test.ts` - Unit tests for useAuth hook
 - `hooks/useFavorites.ts` - Custom hook for favorites management
 - `hooks/useSearch.ts` - Custom hook for search functionality
 - `hooks/useSearch.test.ts` - Unit tests for useSearch hook
-- `services/motorcycles.ts` - API service for motorcycle data (Updated - Added CRUD operations for admin)
+- `services/motorcycles.ts` - API service for motorcycle data (Updated - Added CRUD operations for admin and conditions support)
 - `services/motorcycles.test.ts` - Unit tests for motorcycle service
-- `services/shops.ts` - API service for rental shop data (Updated - Added CRUD operations for admin)
+- `services/shops.ts` - API service for rental shop data (Updated - Added CRUD operations for admin and conditions support)
 - `services/brands.ts` - API service for motorcycle brands data with CRUD operations (Created - Full CRUD interface)
 - `services/categories.ts` - API service for motorcycle categories data with CRUD operations (Created - Full CRUD interface)
 - `services/features.ts` - API service for motorcycle features data with CRUD operations (Created - Full CRUD interface)
 - `services/business-statuses.ts` - API service for business statuses data with CRUD operations (Created - Full CRUD interface)
+- `services/motorcycle-conditions.ts` - API service for motorcycle conditions management with CRUD operations (Created - Full conditions management system)
+- `services/rental-shop-conditions.ts` - API service for rental shop conditions management with CRUD operations (Created - Full conditions management system)
 - `services/locations.ts` - API service for location data
 - `types/index.ts` - Custom TypeScript type definitions
 - `app/api/motorcycles/route.ts` - API route for motorcycle data
