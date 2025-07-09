@@ -9,7 +9,8 @@ import {
   ShieldCheckIcon, 
   PhoneIcon, 
   GlobeAltIcon, 
-  ArrowTopRightOnSquareIcon 
+  ArrowTopRightOnSquareIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline'
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid'
 import { Card, CardHeader, CardTitle, CardContent, Badge, Button } from '@/components/ui'
@@ -32,6 +33,7 @@ export default function MotorcycleDetails({ motorcycle }: MotorcycleDetailsProps
     categories,
     rental_shops,
     motorcycle_features,
+    motorcycle_conditions,
     specifications_details,
     conditions_details
   } = motorcycle
@@ -218,10 +220,53 @@ export default function MotorcycleDetails({ motorcycle }: MotorcycleDetailsProps
           )}
 
           {/* Rental Conditions */}
-          {conditions && Object.keys(conditions).length > 0 && (
+          {motorcycle_conditions && motorcycle_conditions.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Rental Conditions</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <DocumentTextIcon className="w-5 h-5" />
+                  Rental Conditions
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {motorcycle_conditions.map((condition) => (
+                    <div key={condition.id} className="border border-gray-200 rounded-lg p-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900 text-sm">
+                            {condition.condition_types?.name}
+                          </h4>
+                          {condition.condition_types?.description && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              {condition.condition_types.description}
+                            </p>
+                          )}
+                          <p className="text-sm text-gray-700 mt-1 font-medium">
+                            {condition.condition_value}
+                          </p>
+                          {condition.notes && (
+                            <p className="text-xs text-gray-600 mt-1">
+                              {condition.notes}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Legacy Conditions (Fallback) */}
+          {(!motorcycle_conditions || motorcycle_conditions.length === 0) && conditions && Object.keys(conditions).length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DocumentTextIcon className="w-5 h-5" />
+                  Rental Conditions
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3 text-sm">

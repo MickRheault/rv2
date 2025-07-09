@@ -10,6 +10,8 @@ type BusinessStatus = Database['public']['Tables']['business_statuses']['Row']
 type RentalShopInclusion = Database['public']['Tables']['rental_shop_inclusions']['Row']
 type RentalShopTour = Database['public']['Tables']['rental_shop_tours']['Row']
 type RentalShopServiceLocation = Database['public']['Tables']['rental_shop_service_locations']['Row']
+type RentalShopCondition = Database['public']['Tables']['rental_shop_conditions']['Row']
+type ConditionType = Database['public']['Tables']['condition_types']['Row']
 type MotorcycleRental = Database['public']['Tables']['motorcycle_rentals']['Row']
 type Brand = Database['public']['Tables']['brands']['Row']
 type Category = Database['public']['Tables']['categories']['Row']
@@ -24,6 +26,9 @@ export interface ShopWithDetails extends RentalShop {
   rental_shop_inclusions: RentalShopInclusion[]
   rental_shop_tours: RentalShopTour[]
   rental_shop_service_locations: RentalShopServiceLocation[]
+  rental_shop_conditions?: (RentalShopCondition & {
+    condition_types: ConditionType | null
+  })[]
   motorcycle_count?: number
   premium?: PremiumFeatureConfig
 }
@@ -199,6 +204,10 @@ export const shopService = {
         rental_shop_inclusions (*),
         rental_shop_tours (*),
         rental_shop_service_locations (*),
+        rental_shop_conditions (
+          *,
+          condition_types (*)
+        ),
         motorcycle_rentals (
           *,
           brands (*),

@@ -1,6 +1,7 @@
 'use client';
 
 import { AdminRoute } from '@/components/admin/AdminRoute';
+import { RentalShopConditionsModal } from '@/components/admin/RentalShopConditionsModal';
 import { useState, useEffect, useCallback } from 'react';
 import { shopService, ShopWithDetails } from '@/services/shops';
 import { Card, Button, Input, Modal, Alert, Select, Spinner, Checkbox, Textarea } from '@/components/ui';
@@ -12,7 +13,8 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   MapPinIcon,
-  StarIcon
+  StarIcon,
+  AdjustmentsHorizontalIcon
 } from '@heroicons/react/24/outline';
 import { Database } from '@/lib/supabase/database.types';
 
@@ -50,6 +52,8 @@ function ShopsAdminContent() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingShop, setEditingShop] = useState<ShopWithDetails | null>(null);
+  const [showConditionsModal, setShowConditionsModal] = useState(false);
+  const [conditionsShop, setConditionsShop] = useState<{ id: string; name: string } | null>(null);
   
   // Form data
   const [formData, setFormData] = useState<Partial<ShopInsert>>({});
@@ -228,6 +232,16 @@ function ShopsAdminContent() {
     setFormData({});
     setError(null);
     setSuccess(null);
+  };
+
+  const handleManageConditions = (shop: ShopWithDetails) => {
+    setConditionsShop({ id: shop.id, name: shop.provider_name });
+    setShowConditionsModal(true);
+  };
+
+  const handleCloseConditionsModal = () => {
+    setShowConditionsModal(false);
+    setConditionsShop(null);
   };
 
   // Selection handlers
@@ -533,6 +547,14 @@ function ShopsAdminContent() {
                               <Button 
                                 variant="ghost" 
                                 size="sm"
+                                onClick={() => handleManageConditions(shop)}
+                                title="Manage Conditions"
+                              >
+                                <AdjustmentsHorizontalIcon className="w-4 h-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
                                 onClick={() => handleEdit(shop)}
                               >
                                 <PencilIcon className="w-4 h-4" />
@@ -818,6 +840,15 @@ function ShopsAdminContent() {
           </div>
         </form>
       </Modal>
+
+      {/* Rental Shop Conditions Modal */}
+      {conditionsShop && (
+        <RentalShopConditionsModal
+          isOpen={showConditionsModal}
+          onClose={handleCloseConditionsModal}
+          shop={conditionsShop}
+        />
+      )}
     </div>
   );
 }
