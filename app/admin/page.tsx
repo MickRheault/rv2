@@ -12,10 +12,15 @@ import {
   StarIcon, 
   CogIcon,
   UsersIcon,
-  BuildingOfficeIcon
+  BuildingOfficeIcon,
+  TagIcon,
+  FolderIcon,
+  CheckCircleIcon
 } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { motorcycleService } from '@/services/motorcycles';
+import { shopService } from '@/services/shops';
 
 function AdminDashboardContent() {
   const { user, signOut } = useAdminAuth();
@@ -61,9 +66,19 @@ function AdminDashboardContent() {
         // Load flagged content stats  
         const flaggedStats = await FlaggedContentService.getFlaggedContentStats();
 
+        // Load motorcycle and shop stats
+        const [motorcycleResult, shopResult] = await Promise.all([
+          motorcycleService.getMotorcyclesForAdmin({ limit: 0 }), // Get count only
+          shopService.getShopsForAdmin({ limit: 0 }) // Get count only
+        ]);
+
         // Update stats with real data
         setStats(prevStats => prevStats.map(stat => {
           switch (stat.name) {
+            case 'Total Motorcycles':
+              return { ...stat, value: motorcycleResult.total.toString() };
+            case 'Total Shops':
+              return { ...stat, value: shopResult.total.toString() };
             case 'Premium Listings':
               return { ...stat, value: premiumStats.total_active_listings.toString() };
             case 'Flagged Content':
@@ -112,6 +127,41 @@ function AdminDashboardContent() {
       href: '/admin/settings',
       permission: 'system.manage',
       color: 'border-gray-200 hover:border-gray-300'
+    }
+  ];
+
+  const dataManagementActions = [
+    {
+      name: 'Brands',
+      description: 'Manage motorcycle brands and manufacturers',
+      icon: BuildingOfficeIcon,
+      href: '/admin/brands',
+      permission: 'system.manage',
+      color: 'border-blue-200 hover:border-blue-300'
+    },
+    {
+      name: 'Categories',
+      description: 'Manage motorcycle categories and types',
+      icon: ChartBarIcon,
+      href: '/admin/categories',
+      permission: 'system.manage',
+      color: 'border-green-200 hover:border-green-300'
+    },
+    {
+      name: 'Features',
+      description: 'Manage motorcycle features and capabilities',
+      icon: CogIcon,
+      href: '/admin/features',
+      permission: 'system.manage',
+      color: 'border-purple-200 hover:border-purple-300'
+    },
+    {
+      name: 'Business Statuses',
+      description: 'Manage rental shop business status codes',
+      icon: ExclamationTriangleIcon,
+      href: '/admin/business-statuses',
+      permission: 'system.manage',
+      color: 'border-orange-200 hover:border-orange-300'
     }
   ];
 
@@ -191,6 +241,35 @@ function AdminDashboardContent() {
                     <div className="mt-3">
                       <Button variant="outline" size="sm">
                         Access →
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* Data Management */}
+        <div className="mb-8">
+          <h2 className="text-lg font-medium text-gray-900 mb-4">Data Management</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {dataManagementActions.map((action) => (
+              <Card 
+                key={action.name} 
+                className={`p-6 border-2 transition-all cursor-pointer hover:shadow-lg ${action.color}`}
+                onClick={() => router.push(action.href)}
+              >
+                <div className="flex flex-col items-center text-center">
+                  <div className="flex-shrink-0 mb-3">
+                    <action.icon className="h-8 w-8 text-gray-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-900">{action.name}</h3>
+                    <p className="mt-1 text-xs text-gray-600">{action.description}</p>
+                    <div className="mt-2">
+                      <Button variant="outline" size="sm">
+                        Manage
                       </Button>
                     </div>
                   </div>

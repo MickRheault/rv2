@@ -44,17 +44,25 @@ export async function isCurrentUserAdmin(): Promise<boolean> {
  */
 export async function getUserPermissions(role: AppRole): Promise<AppPermission[]> {
   try {
-    const { data, error } = await supabase
-      .from('role_permissions')
-      .select('permission')
-      .eq('role', role);
-
-    if (error) {
-      console.error('Error fetching permissions:', error);
-      return [];
+    // For admin role, return all admin permissions
+    // Since we know the JWT contains the correct role, we can trust it
+    if (role === 'admin') {
+      const adminPermissions: AppPermission[] = [
+        'content.moderate',
+        'premium.manage',
+        'analytics.view',
+        'system.manage'
+      ];
+      
+      // Verify user actually has these permissions by testing one
+      const canManage = await hasPermission('system.manage');
+      if (canManage) {
+        return adminPermissions;
+      }
     }
-
-    return data?.map(item => item.permission) || [];
+    
+    // For non-admin roles or if permission check fails, return empty array
+    return [];
   } catch (error) {
     console.error('Error fetching user permissions:', error);
     return [];

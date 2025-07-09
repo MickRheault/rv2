@@ -19,7 +19,13 @@
 - `app/shop/[id]/page.tsx` - Rental shop detail page
 - `app/compare/page.tsx` - Motorcycle comparison page
 - `app/favorites/page.tsx` - User favorites page
-- `app/admin/page.tsx` - Admin dashboard for content moderation
+- `app/admin/page.tsx` - Admin dashboard for content moderation (Updated - Real motorcycle and shop statistics, data management navigation)
+- `app/admin/motorcycles/page.tsx` - Admin page for managing motorcycles with CRUD operations (Created - Full CRUD interface)
+- `app/admin/shops/page.tsx` - Admin page for managing rental shops with CRUD operations (Created - Full CRUD interface)
+- `app/admin/brands/page.tsx` - Admin page for managing motorcycle brands with CRUD operations (Created - Full CRUD interface)
+- `app/admin/categories/page.tsx` - Admin page for managing motorcycle categories with CRUD operations (Created - Full CRUD interface)
+- `app/admin/features/page.tsx` - Admin page for managing motorcycle features with CRUD operations (Created - Full CRUD interface)
+- `app/admin/business-statuses/page.tsx` - Admin page for managing business statuses with CRUD operations (Created - Full CRUD interface)
 - `components/ui/Button.tsx` - Reusable button component
 - `components/ui/Button.test.tsx` - Unit tests for Button component
 - `components/ui/Input.tsx` - Reusable input component
@@ -45,9 +51,13 @@
 - `hooks/useFavorites.ts` - Custom hook for favorites management
 - `hooks/useSearch.ts` - Custom hook for search functionality
 - `hooks/useSearch.test.ts` - Unit tests for useSearch hook
-- `services/motorcycles.ts` - API service for motorcycle data
+- `services/motorcycles.ts` - API service for motorcycle data (Updated - Added CRUD operations for admin)
 - `services/motorcycles.test.ts` - Unit tests for motorcycle service
-- `services/shops.ts` - API service for rental shop data
+- `services/shops.ts` - API service for rental shop data (Updated - Added CRUD operations for admin)
+- `services/brands.ts` - API service for motorcycle brands data with CRUD operations (Created - Full CRUD interface)
+- `services/categories.ts` - API service for motorcycle categories data with CRUD operations (Created - Full CRUD interface)
+- `services/features.ts` - API service for motorcycle features data with CRUD operations (Created - Full CRUD interface)
+- `services/business-statuses.ts` - API service for business statuses data with CRUD operations (Created - Full CRUD interface)
 - `services/locations.ts` - API service for location data
 - `types/index.ts` - Custom TypeScript type definitions
 - `app/api/motorcycles/route.ts` - API route for motorcycle data
@@ -184,7 +194,7 @@ The system receives data via the template in `context/data_template.json`:
   - [x] 5.4 Add premium listing management system
   - [x] 5.5 Create data freshness tracking and indicators
   - [SKIP] 5.6 Implement admin notifications for new flags via Supabase Realtime
-  - [ ] 5.6.x Create a data management system to add, edit, delete the content.
+  - [x] 5.6.x Create a data management system to add, edit, delete the content.
   - [ ] 5.7 Add bulk actions for content moderation
   - [ ] 5.8 Create admin reporting and analytics dashboard
   - [ ] 5.9 Implement content approval/rejection workflow
