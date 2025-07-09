@@ -58,7 +58,7 @@ export async function getUserPermissions(role: AppRole): Promise<AppPermission[]
       const canManage = await hasPermission('system.manage');
       if (canManage) {
         return adminPermissions;
-      }
+    }
     }
     
     // For non-admin roles or if permission check fails, return empty array

@@ -162,6 +162,14 @@ function AdminDashboardContent() {
       href: '/admin/business-statuses',
       permission: 'system.manage',
       color: 'border-orange-200 hover:border-orange-300'
+    },
+    {
+      name: 'Condition Types',
+      description: 'Manage rental and motorcycle condition types',
+      icon: CogIcon,
+      href: '/admin/condition-types',
+      permission: 'system.manage',
+      color: 'border-indigo-200 hover:border-indigo-300'
     }
   ];
 
