@@ -10,6 +10,7 @@ type Province = Database['public']['Tables']['provinces']['Row']
 type Country = Database['public']['Tables']['countries']['Row']
 type MotorcycleCondition = Database['public']['Tables']['motorcycle_conditions']['Row']
 type ConditionType = Database['public']['Tables']['condition_types']['Row']
+type RentalRateTier = Database['public']['Tables']['rental_rate_tiers']['Row']
 
 export interface MotorcycleWithDetails extends MotorcycleRental {
   rental_shops: (RentalShop & {
@@ -43,13 +44,12 @@ export interface MotorcycleWithDetails extends MotorcycleRental {
     } | null
   }>
   motorcycle_conditions?: Array<{
-    id: string
     motorcycle_id: string
     condition_type_id: string
-    condition_value: string
     notes: string | null
     condition_types: ConditionType | null
   }>
+  rental_rate_tiers?: RentalRateTier[]
 }
 
 export interface SearchFilters {
@@ -260,6 +260,9 @@ export const motorcycleService = {
         motorcycle_conditions (
           *,
           condition_types (*)
+        ),
+        rental_rate_tiers (
+          *
         )
       `)
       .eq('id', id)

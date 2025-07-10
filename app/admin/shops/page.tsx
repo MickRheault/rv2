@@ -2,6 +2,7 @@
 
 import { AdminRoute } from '@/components/admin/AdminRoute';
 import { RentalShopConditionsModal } from '@/components/admin/RentalShopConditionsModal';
+import { RentalShopToursModal } from '@/components/admin/RentalShopToursModal';
 import { useState, useEffect, useCallback } from 'react';
 import { shopService, ShopWithDetails } from '@/services/shops';
 import { Card, Button, Input, Modal, Alert, Select, Spinner, Checkbox, Textarea } from '@/components/ui';
@@ -54,6 +55,8 @@ function ShopsAdminContent() {
   const [editingShop, setEditingShop] = useState<ShopWithDetails | null>(null);
   const [showConditionsModal, setShowConditionsModal] = useState(false);
   const [conditionsShop, setConditionsShop] = useState<{ id: string; name: string } | null>(null);
+  const [showToursModal, setShowToursModal] = useState(false);
+  const [toursShop, setToursShop] = useState<{ id: string; name: string } | null>(null);
   
   // Form data
   const [formData, setFormData] = useState<Partial<ShopInsert>>({});
@@ -242,6 +245,16 @@ function ShopsAdminContent() {
   const handleCloseConditionsModal = () => {
     setShowConditionsModal(false);
     setConditionsShop(null);
+  };
+
+  const handleManageTours = (shop: ShopWithDetails) => {
+    setToursShop({ id: shop.id, name: shop.provider_name });
+    setShowToursModal(true);
+  };
+
+  const handleCloseToursModal = () => {
+    setShowToursModal(false);
+    setToursShop(null);
   };
 
   // Selection handlers
@@ -555,6 +568,14 @@ function ShopsAdminContent() {
                               <Button 
                                 variant="ghost" 
                                 size="sm"
+                                onClick={() => handleManageTours(shop)}
+                                title="Manage Tours"
+                              >
+                                🚗
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
                                 onClick={() => handleEdit(shop)}
                               >
                                 <PencilIcon className="w-4 h-4" />
@@ -847,6 +868,16 @@ function ShopsAdminContent() {
           isOpen={showConditionsModal}
           onClose={handleCloseConditionsModal}
           shop={conditionsShop}
+        />
+      )}
+
+      {/* Rental Shop Tours Modal */}
+      {toursShop && (
+        <RentalShopToursModal
+          isOpen={showToursModal}
+          onClose={handleCloseToursModal}
+          shopId={toursShop.id}
+          shopName={toursShop.name}
         />
       )}
     </div>
