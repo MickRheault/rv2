@@ -472,15 +472,6 @@ function MotorcyclesAdminContent() {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Shop
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Specs
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Price
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
-                        </th>
                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Actions
                         </th>
@@ -506,36 +497,12 @@ function MotorcyclesAdminContent() {
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="text-sm text-gray-900">
+                            <div className="text-sm text-gray-900 flex items-center">
                               {motorcycle.rental_shops?.provider_name}
                             </div>
                             <div className="text-sm text-gray-500">
                               {motorcycle.rental_shops?.cities?.name}, {motorcycle.rental_shops?.cities?.provinces?.name}
                             </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="text-sm text-gray-900">
-                              {motorcycle.engine_capacity_cc ? `${motorcycle.engine_capacity_cc}cc` : 'N/A'}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="text-sm text-gray-900">
-                              {motorcycle.rental_rate_per_day 
-                                ? `${motorcycle.rental_rate_per_day} ${motorcycle.rental_rate_currency || 'USD'}/day`
-                                : 'N/A'
-                              }
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              motorcycle.availability_status === 'available' 
-                                ? 'bg-green-100 text-green-800'
-                                : motorcycle.availability_status === 'unavailable'
-                                ? 'bg-red-100 text-red-800'
-                                : 'bg-gray-100 text-gray-800'
-                            }`}>
-                              {motorcycle.availability_status || 'Unknown'}
-                            </span>
                           </td>
                           <td className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end gap-2">

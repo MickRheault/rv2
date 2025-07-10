@@ -469,15 +469,6 @@ function ShopsAdminContent() {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Location
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Contact
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Rating
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
-                        </th>
                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Actions
                         </th>
@@ -514,47 +505,6 @@ function ShopsAdminContent() {
                               {shop.cities?.provinces?.countries?.name}
                             </div>
                           </td>
-                          <td className="px-6 py-4">
-                            <div className="text-sm text-gray-900">
-                              {shop.phone || 'No phone'}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {shop.website ? (
-                                <a 
-                                  href={shop.website} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="text-blue-600 hover:text-blue-800"
-                                >
-                                  Website
-                                </a>
-                              ) : 'No website'}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center">
-                              <StarIcon className="w-4 h-4 text-yellow-400 mr-1" />
-                              <span className="text-sm text-gray-900">
-                                {shop.rating ? shop.rating.toFixed(1) : 'N/A'}
-                              </span>
-                              {shop.review_count && (
-                                <span className="text-sm text-gray-500 ml-1">
-                                  ({shop.review_count})
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              shop.business_statuses?.status_code === 'active' 
-                                ? 'bg-green-100 text-green-800'
-                                : shop.business_statuses?.status_code === 'inactive'
-                                ? 'bg-red-100 text-red-800'
-                                : 'bg-gray-100 text-gray-800'
-                            }`}>
-                              {shop.business_statuses?.status_code || 'Unknown'}
-                            </span>
-                          </td>
                           <td className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end gap-2">
                               <Button 
@@ -571,7 +521,7 @@ function ShopsAdminContent() {
                                 onClick={() => handleManageTours(shop)}
                                 title="Manage Tours"
                               >
-                                🚗
+                                🗺️
                               </Button>
                               <Button 
                                 variant="ghost" 

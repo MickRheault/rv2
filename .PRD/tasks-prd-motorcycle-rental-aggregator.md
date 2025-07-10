@@ -203,7 +203,7 @@ The system receives data via the template in `context/data_template.json`:
   - [x] 5.5 Create data freshness tracking and indicators
   - [SKIP] 5.6 Implement admin notifications for new flags via Supabase Realtime
   - [x] 5.6.x Create a data management system to add, edit, delete the content.
-  - [ ] 5.7 Add bulk actions for content moderation
+  - [SKIP] 5.7 Add bulk actions for content moderation
   - [ ] 5.8 Create admin reporting and analytics dashboard
   - [ ] 5.9 Implement content approval/rejection workflow
   - [ ] 5.10 Add admin user management functionality
