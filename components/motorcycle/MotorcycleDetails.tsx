@@ -10,7 +10,8 @@ import {
   PhoneIcon, 
   GlobeAltIcon, 
   ArrowTopRightOnSquareIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  CurrencyDollarIcon
 } from '@heroicons/react/24/outline'
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid'
 import { Card, CardHeader, CardTitle, CardContent, Badge, Button } from '@/components/ui'
@@ -34,6 +35,7 @@ export default function MotorcycleDetails({ motorcycle }: MotorcycleDetailsProps
     rental_shops,
     motorcycle_features,
     motorcycle_conditions,
+    rental_rate_tiers,
     specifications_details,
     conditions_details
   } = motorcycle
@@ -82,6 +84,42 @@ export default function MotorcycleDetails({ motorcycle }: MotorcycleDetailsProps
   const specifications = specifications_details as any || {}
   const conditions = conditions_details as any || {}
 
+  // Get the best (lowest) daily rate from rate tiers or fallback to base rate
+  const getBestRate = () => {
+    if (rental_rate_tiers && rental_rate_tiers.length > 0) {
+      // Find the rate with min_days = 1 (daily rate) or the lowest rate
+      const dailyRate = rental_rate_tiers.find(tier => tier.min_days === 1)
+      if (dailyRate) {
+        return { amount: dailyRate.rate_per_day, currency: dailyRate.currency }
+      }
+      // If no daily rate, get the lowest rate
+      const lowestRate = rental_rate_tiers.reduce((prev, current) => 
+        prev.rate_per_day < current.rate_per_day ? prev : current
+      )
+      return { amount: lowestRate.rate_per_day, currency: lowestRate.currency }
+    }
+    return { amount: rental_rate_per_day, currency: rental_rate_currency }
+  }
+
+  const bestRate = getBestRate()
+
+  // Format duration text for rate tiers
+  const formatDuration = (minDays: number, maxDays: number | null) => {
+    if (minDays === 1 && (!maxDays || maxDays === 1)) {
+      return 'Daily'
+    }
+    if (minDays === 7 && (!maxDays || maxDays === 7)) {
+      return 'Weekly'
+    }
+    if (minDays === 30 && (!maxDays || maxDays === 30)) {
+      return 'Monthly'
+    }
+    if (maxDays) {
+      return `${minDays}-${maxDays} days`
+    }
+    return `${minDays}+ days`
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -122,9 +160,11 @@ export default function MotorcycleDetails({ motorcycle }: MotorcycleDetailsProps
         
         <div className="text-right">
           <div className="text-3xl font-bold text-blue-600">
-            {formatCurrency(rental_rate_per_day, rental_rate_currency)}
+            {formatCurrency(bestRate.amount, bestRate.currency)}
           </div>
-          <div className="text-gray-600">per day</div>
+          <div className="text-gray-600">
+            {rental_rate_tiers && rental_rate_tiers.length > 0 ? 'starting from' : 'per day'}
+          </div>
         </div>
       </div>
 
@@ -187,6 +227,87 @@ export default function MotorcycleDetails({ motorcycle }: MotorcycleDetailsProps
             </CardContent>
           </Card>
 
+          {/* Rental Rates */}
+          {rental_rate_tiers && rental_rate_tiers.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CurrencyDollarIcon className="w-5 h-5" />
+                  Rental Rates
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {rental_rate_tiers
+                    .sort((a, b) => a.min_days - b.min_days) // Sort by duration
+                    .map((rateTier, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {formatDuration(rateTier.min_days, rateTier.max_days)}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {rateTier.max_days 
+                              ? `${rateTier.min_days} to ${rateTier.max_days} days`
+                              : `${rateTier.min_days}+ days`
+                            }
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-bold text-lg text-blue-600">
+                            {formatCurrency(rateTier.rate_per_day, rateTier.currency)}
+                          </div>
+                          <div className="text-xs text-gray-500">per day</div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+                
+                {/* Fallback message if only basic rate exists */}
+                {rental_rate_per_day && (
+                  <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center gap-2">
+                      <div className="text-sm text-blue-800">
+                        💡 <strong>Note:</strong> Additional pricing tiers may be available. Contact the rental shop for long-term rates and special offers.
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Fallback Basic Rate (when no rate tiers) */}
+          {(!rental_rate_tiers || rental_rate_tiers.length === 0) && rental_rate_per_day && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CurrencyDollarIcon className="w-5 h-5" />
+                  Rental Rate
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50">
+                  <div>
+                    <div className="font-medium text-gray-900">Daily Rate</div>
+                    <div className="text-sm text-gray-600">Standard pricing</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold text-2xl text-blue-600">
+                      {formatCurrency(rental_rate_per_day, rental_rate_currency)}
+                    </div>
+                    <div className="text-sm text-gray-500">per day</div>
+                  </div>
+                </div>
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="text-sm text-blue-800">
+                    💡 <strong>Tip:</strong> Contact the rental shop for weekly, monthly rates and special discounts for longer rentals.
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Features */}
           {features.length > 0 && (
             <Card>
@@ -230,8 +351,8 @@ export default function MotorcycleDetails({ motorcycle }: MotorcycleDetailsProps
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {motorcycle_conditions.map((condition) => (
-                    <div key={condition.id} className="border border-gray-200 rounded-lg p-3">
+                  {motorcycle_conditions.map((condition, index) => (
+                    <div key={`${condition.condition_type_id}-${index}`} className="border border-gray-200 rounded-lg p-3">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <h4 className="font-medium text-gray-900 text-sm">
@@ -242,11 +363,8 @@ export default function MotorcycleDetails({ motorcycle }: MotorcycleDetailsProps
                               {condition.condition_types.description}
                             </p>
                           )}
-                          <p className="text-sm text-gray-700 mt-1 font-medium">
-                            {condition.condition_value}
-                          </p>
                           {condition.notes && (
-                            <p className="text-xs text-gray-600 mt-1">
+                            <p className="text-sm text-gray-700 mt-1">
                               {condition.notes}
                             </p>
                           )}

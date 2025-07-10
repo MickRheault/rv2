@@ -6,6 +6,7 @@ import { motorcycleService, MotorcycleWithDetails } from '@/services/motorcycles
 import { shopService } from '@/services/shops';
 import { Card, Button, Input, Modal, Alert, Select, Spinner, Checkbox } from '@/components/ui';
 import { MotorcycleConditionsModal } from '@/components/admin/MotorcycleConditionsModal';
+import { RentalRateTiersModal } from '@/components/admin/RentalRateTiersModal';
 import { 
   PlusIcon, 
   PencilIcon, 
@@ -13,7 +14,8 @@ import {
   MagnifyingGlassIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  AdjustmentsHorizontalIcon
+  AdjustmentsHorizontalIcon,
+  CurrencyDollarIcon
 } from '@heroicons/react/24/outline';
 import { Database } from '@/lib/supabase/database.types';
 
@@ -50,6 +52,8 @@ function MotorcyclesAdminContent() {
   const [editingMotorcycle, setEditingMotorcycle] = useState<MotorcycleWithDetails | null>(null);
   const [showConditionsModal, setShowConditionsModal] = useState(false);
   const [conditionsMotorcycle, setConditionsMotorcycle] = useState<MotorcycleWithDetails | null>(null);
+  const [showRateTiersModal, setShowRateTiersModal] = useState(false);
+  const [rateTiersMotorcycle, setRateTiersMotorcycle] = useState<MotorcycleWithDetails | null>(null);
   
   // Form data
   const [formData, setFormData] = useState<Partial<MotorcycleInsert>>({});
@@ -234,6 +238,16 @@ function MotorcyclesAdminContent() {
   const handleCloseConditionsModal = () => {
     setShowConditionsModal(false);
     setConditionsMotorcycle(null);
+  };
+
+  const handleManageRateTiers = (motorcycle: MotorcycleWithDetails) => {
+    setRateTiersMotorcycle(motorcycle);
+    setShowRateTiersModal(true);
+  };
+
+  const handleCloseRateTiersModal = () => {
+    setShowRateTiersModal(false);
+    setRateTiersMotorcycle(null);
   };
 
   // Selection handlers
@@ -536,6 +550,14 @@ function MotorcyclesAdminContent() {
                               <Button 
                                 variant="ghost" 
                                 size="sm"
+                                onClick={() => handleManageRateTiers(motorcycle)}
+                                title="Manage Rate Tiers"
+                              >
+                                <CurrencyDollarIcon className="w-4 h-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
                                 onClick={() => handleEdit(motorcycle)}
                                 title="Edit Motorcycle"
                               >
@@ -787,6 +809,21 @@ function MotorcyclesAdminContent() {
           motorcycleId={conditionsMotorcycle.id}
           motorcycleModel={conditionsMotorcycle.model}
           motorcycleBrand={conditionsMotorcycle.brands?.name || 'Unknown'}
+        />
+      )}
+
+      {/* Rental Rate Tiers Modal */}
+      {rateTiersMotorcycle && (
+        <RentalRateTiersModal
+          isOpen={showRateTiersModal}
+          onClose={handleCloseRateTiersModal}
+          motorcycle={{
+            id: rateTiersMotorcycle.id,
+            model: rateTiersMotorcycle.model,
+            brand: rateTiersMotorcycle.brands?.name || 'Unknown',
+            baseDailyRate: rateTiersMotorcycle.rental_rate_per_day || undefined,
+            currency: rateTiersMotorcycle.rental_rate_currency || undefined
+          }}
         />
       )}
     </div>
