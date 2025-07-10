@@ -204,8 +204,17 @@ The system receives data via the template in `context/data_template.json`:
   - [SKIP] 5.6 Implement admin notifications for new flags via Supabase Realtime
   - [x] 5.6.x Create a data management system to add, edit, delete the content.
   - [SKIP] 5.7 Add bulk actions for content moderation
-  - [ ] 5.8 Create admin reporting and analytics dashboard
-  - [ ] 5.9 Implement content approval/rejection workflow
+  - [x] 5.8 Create admin reporting and analytics dashboard
+    - [x] 5.8.1 Create analytics service to aggregate platform data
+    - [x] 5.8.2 Build analytics dashboard page with key metrics
+    - [x] 5.8.3 Add navigation link to the analytics dashboard from the main admin page
+    - [x] 5.8.4 Test analytics dashboard and update documentation
+    - [ ] 5.8.5 Implement historical analytics data storage
+      - [x] 5.8.5.1 Design and create database schema for storing analytics snapshots
+      - [x] 5.8.5.2 Create a scheduled job to capture and store daily analytics
+      - [x] 5.8.5.3 Update analytics service to fetch and process historical data
+      - [x] 5.8.5.4 (Optional) Visualize historical data on the analytics dashboard
+  - [SKIP] 5.9 Implement content approval/rejection workflow
   - [ ] 5.10 Add admin user management functionality
 
 - [ ] 6.0 Performance Optimization & SEO Implementation

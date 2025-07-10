@@ -34,6 +34,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      analytics_snapshots: {
+        Row: {
+          created_at: string
+          data: Json
+          id: number
+          snapshot_date: string
+        }
+        Insert: {
+          created_at?: string
+          data: Json
+          id?: number
+          snapshot_date?: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: number
+          snapshot_date?: string
+        }
+        Relationships: []
+      }
       brands: {
         Row: {
           created_at: string
@@ -1212,6 +1233,10 @@ export type Database = {
         Args: { days_since_update: number }
         Returns: Database["public"]["Enums"]["freshness_status"]
       }
+      capture_daily_analytics_snapshot: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       clear_all_data: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -1227,6 +1252,24 @@ export type Database = {
       generate_slug: {
         Args: { "": string }
         Returns: string
+      }
+      get_brand_distribution: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          brand: string
+          count: number
+          avg_price: number
+          avg_engine_size: number
+        }[]
+      }
+      get_category_distribution: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          category: string
+          count: number
+          avg_price: number
+          avg_engine_size: number
+        }[]
       }
       get_data_freshness_stats: {
         Args: Record<PropertyKey, never>
@@ -1279,6 +1322,14 @@ export type Database = {
           rental_shop_flags: number
         }[]
       }
+      get_geographic_distribution: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          country: string
+          city: string
+          shop_count: number
+        }[]
+      }
       get_premium_analytics_summary: {
         Args: {
           p_listing_id: string
@@ -1311,6 +1362,10 @@ export type Database = {
           total_calls: number
           cache_hit_ratio: number
         }[]
+      }
+      insert_daily_snapshot: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       is_admin: {
         Args: Record<PropertyKey, never>
