@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { AdminRoute } from '@/components/admin/AdminRoute';
 import { Card, Button, Input, Modal, Alert, Spinner, Checkbox, Textarea, Badge } from '@/components/ui';
+import { ArrowLeftIcon, PlusIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon, CogIcon } from '@heroicons/react/24/outline';
+import Link from 'next/link';
 import {
   getConditionTypes,
   createConditionType,
@@ -277,9 +279,17 @@ export default function ConditionTypesPage() {
       <div className="p-6">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Condition Types</h1>
-            <p className="text-gray-600">Manage rental and motorcycle condition types</p>
+          <div className="flex items-center">
+            <Link href="/admin" className="mr-4">
+              <Button variant="outline" size="sm">
+                <ArrowLeftIcon className="h-4 w-4 mr-2" />
+                Back to Dashboard
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Condition Types</h1>
+              <p className="text-gray-600">Manage rental and motorcycle condition types</p>
+            </div>
           </div>
           <Button
             onClick={() => setShowCreateModal(true)}
