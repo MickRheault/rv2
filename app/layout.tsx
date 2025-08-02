@@ -4,6 +4,8 @@ import './globals.css'
 import QueryProvider from '@/lib/providers/QueryProvider'
 import Header from '@/components/common/Header'
 import Footer from '@/components/common/Footer'
+import GoogleAnalytics from '@/components/analytics/GoogleAnalytics'
+import CookieConsentBanner from '@/components/analytics/CookieConsentBanner'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -33,11 +35,13 @@ export default function RootLayout({
     <html lang="en" className="scroll-smooth">
       <body className={`${inter.className} bg-white text-gray-900 antialiased min-h-screen flex flex-col`}>
         <QueryProvider>
+          <GoogleAnalytics />
           <Header />
           <main className="flex-1">
             {children}
           </main>
           <Footer />
+          <CookieConsentBanner />
         </QueryProvider>
       </body>
     </html>
