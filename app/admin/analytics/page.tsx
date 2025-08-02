@@ -1,9 +1,11 @@
 import { getAnalyticsData, AnalyticsData } from '@/services/analytics';
 import { AdminRoute } from '@/components/admin/AdminRoute';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Button } from '@/components/ui';
 import Badge from '@/components/ui/Badge';
 import Link from 'next/link';
 import HistoricalAnalyticsCharts from '@/components/admin/HistoricalAnalyticsCharts';
+import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 
 const StatCard = ({ label, value }: { label: string; value: string | number }) => (
   <Card>
@@ -32,7 +34,15 @@ const AnalyticsDashboardPage = async () => {
   return (
     <AdminRoute>
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6">Analytics Dashboard</h1>
+        <div className="flex items-center mb-6">
+          <Link href="/admin" className="mr-4">
+            <Button variant="outline" size="sm">
+              <ArrowLeftIcon className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Button>
+          </Link>
+          <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
+        </div>
 
         {/* Business Overview */}
         <section>

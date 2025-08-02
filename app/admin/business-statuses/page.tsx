@@ -11,8 +11,10 @@ import {
   MagnifyingGlassIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  ArrowLeftIcon
 } from '@heroicons/react/24/outline';
+import Link from 'next/link';
 import { Database } from '@/lib/supabase/database.types';
 
 type BusinessStatusInsert = Database['public']['Tables']['business_statuses']['Insert'];
@@ -210,11 +212,19 @@ function BusinessStatusesAdminContent() {
       <div className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Business Statuses Management</h1>
-              <p className="mt-1 text-sm text-gray-600">
-                Manage rental shop business status codes
-              </p>
+            <div className="flex items-center">
+              <Link href="/admin" className="mr-4">
+                <Button variant="outline" size="sm">
+                  <ArrowLeftIcon className="h-4 w-4 mr-2" />
+                  Back to Dashboard
+                </Button>
+              </Link>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Business Statuses Management</h1>
+                <p className="mt-1 text-sm text-gray-600">
+                  Manage rental shop business status codes
+                </p>
+              </div>
             </div>
             <Button onClick={handleCreate} className="flex items-center">
               <PlusIcon className="w-4 h-4 mr-2" />

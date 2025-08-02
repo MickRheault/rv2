@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import QueryProvider from '@/lib/providers/QueryProvider'
-import { DevTools } from '@/components/debug'
 import Header from '@/components/common/Header'
 import Footer from '@/components/common/Footer'
 
@@ -39,7 +38,6 @@ export default function RootLayout({
             {children}
           </main>
           <Footer />
-          <DevTools />
         </QueryProvider>
       </body>
     </html>

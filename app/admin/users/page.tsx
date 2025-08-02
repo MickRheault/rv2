@@ -22,8 +22,9 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator
 } from '@/components/ui';
-import { PlusIcon, UserGroupIcon, EllipsisVerticalIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, UserGroupIcon, EllipsisVerticalIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { supabase } from '@/lib/supabase/client';
+import Link from 'next/link';
 
 interface AppUser {
   id: string;
@@ -242,9 +243,17 @@ function UserManagement() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
-          <p className="text-gray-600 mt-1">Manage user accounts and permissions</p>
+        <div className="flex items-center">
+          <Link href="/admin" className="mr-4">
+            <Button variant="outline" size="sm">
+              <ArrowLeftIcon className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
+            <p className="text-gray-600 mt-1">Manage user accounts and permissions</p>
+          </div>
         </div>
         <Button onClick={() => setShowInviteForm(true)}>
           <PlusIcon className="w-4 h-4 mr-2" />

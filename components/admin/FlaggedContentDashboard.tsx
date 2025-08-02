@@ -9,8 +9,10 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   MagnifyingGlassIcon,
-  FunnelIcon
+  FunnelIcon,
+  ArrowLeftIcon
 } from '@heroicons/react/24/outline';
+import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
@@ -637,9 +639,17 @@ export const FlaggedContentDashboard: React.FC<FlaggedContentDashboardProps> = (
 
   return (
     <div className="max-w-7xl mx-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Flagged Content Dashboard</h1>
-        <p className="text-gray-600">Review and manage user-reported content issues</p>
+      <div className="mb-6 flex items-center">
+        <Link href="/admin" className="mr-4">
+          <Button variant="outline" size="sm">
+            <ArrowLeftIcon className="h-4 w-4 mr-2" />
+            Back to Dashboard
+          </Button>
+        </Link>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Flagged Content Dashboard</h1>
+          <p className="text-gray-600">Review and manage user-reported content issues</p>
+        </div>
       </div>
 
       {error && (

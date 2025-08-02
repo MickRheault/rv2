@@ -3,7 +3,6 @@
 import { AdminRoute } from '@/components/admin/AdminRoute';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { Card, Button } from '@/components/ui';
-import DataFreshnessCard from '@/components/admin/DataFreshnessCard';
 import { FlaggedContentService } from '@/services/flagged-content';
 import { PremiumListingsService } from '@/services/premium-listings';
 import { 
@@ -15,7 +14,8 @@ import {
   BuildingOfficeIcon,
   TagIcon,
   FolderIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  ClockIcon
 } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -129,6 +129,14 @@ function AdminDashboardContent() {
       color: 'border-green-200 hover:border-green-300'
     },
     {
+      name: 'Data Freshness',
+      description: 'Monitor data quality and freshness',
+      icon: ClockIcon,
+      href: '/admin/data-freshness',
+      permission: 'analytics.view',
+      color: 'border-purple-200 hover:border-purple-300'
+    },
+    {
       name: 'System Settings',
       description: 'Configure platform settings',
       icon: CogIcon,
@@ -226,15 +234,6 @@ function AdminDashboardContent() {
               </Card>
             ))}
           </div>
-        </div>
-
-        {/* Data Freshness Monitoring */}
-        <div className="mb-8">
-          <DataFreshnessCard 
-            onViewDetails={() => {
-              router.push('/admin/data-freshness');
-            }}
-          />
         </div>
 
         {/* Quick Actions */}
