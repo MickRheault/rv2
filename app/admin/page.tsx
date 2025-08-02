@@ -121,6 +121,14 @@ function AdminDashboardContent() {
       color: 'border-blue-200 hover:border-blue-300'
     },
     {
+      name: 'User Management',
+      description: 'Manage user accounts and permissions',
+      icon: UsersIcon,
+      href: '/admin/users',
+      permission: 'system.manage',
+      color: 'border-green-200 hover:border-green-300'
+    },
+    {
       name: 'System Settings',
       description: 'Configure platform settings',
       icon: CogIcon,

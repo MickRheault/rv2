@@ -1,9 +1,11 @@
 import Link from 'next/link'
 import { MagnifyingGlassIcon, MapPinIcon, CurrencyDollarIcon, ShieldCheckIcon } from '@heroicons/react/24/outline'
+import AuthTokenDetector from '@/components/auth/AuthTokenDetector'
 
 export default function Home() {
   return (
     <>
+      <AuthTokenDetector />
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-blue-50 via-white to-purple-50 py-20 lg:py-32">
         <div className="container-custom">
