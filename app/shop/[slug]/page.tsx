@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import { shopService } from '@/services/shops'
 import { PremiumUtilsService } from '@/services/premium-listings'
 import ShopDetails from '@/components/shop/ShopDetails'
+import { generateMetadata as generateSEOMetadata, generateShopSEO } from '@/lib/seo/config'
+import { StructuredData, generateRentalShopSchema } from '@/lib/seo/structured-data'
 
 interface ShopPageProps {
   params: {
@@ -18,16 +20,20 @@ export async function generateMetadata({ params }: ShopPageProps): Promise<Metad
       `${shop.cities.name}, ${shop.cities.provinces?.name || ''}, ${shop.cities.provinces?.countries?.name || ''}`.replace(/,\s*,/g, ',').replace(/,$/, '') :
       shop.full_address
 
-    return {
-      title: `${shop.provider_name} - Motorcycle Rental | RideVault`,
-      description: shop.business_description || 
-        `Rent motorcycles from ${shop.provider_name} in ${location}. ${shop.motorcycle_rentals.length} motorcycles available. ${shop.rating ? `${shop.rating}/5 rating` : ''}.`,
-      openGraph: {
-        title: `${shop.provider_name} - Motorcycle Rental`,
-        description: shop.business_description || `Rent motorcycles from ${shop.provider_name} in ${location}`,
-        type: 'website',
-      },
-    }
+    const seoConfig = generateShopSEO({
+      id: shop.id,
+      name: shop.provider_name,
+      location: location,
+      city: shop.cities?.name || undefined,
+      country: shop.cities?.provinces?.countries?.name || undefined,
+      description: shop.business_description || undefined,
+      rating: shop.rating || undefined,
+    })
+
+    return generateSEOMetadata({
+      ...seoConfig,
+      url: `/shop/${params.slug}`,
+    })
   } catch (error) {
     return {
       title: 'Shop Not Found | RideVault',
@@ -86,12 +92,31 @@ export default async function ShopPage({ params }: ShopPageProps) {
       premium = { isPremium: false }
     }
 
+    // Generate structured data for the shop
+    const shopSchema = generateRentalShopSchema({
+      id: shop.id,
+      name: shop.provider_name,
+      description: shop.business_description || undefined,
+      address: shop.full_address || undefined,
+      city: shop.cities?.name || undefined,
+      country: shop.cities?.provinces?.countries?.name || undefined,
+      phone: shop.phone || undefined,
+      website: shop.website || undefined,
+      latitude: shop.latitude || undefined,
+      longitude: shop.longitude || undefined,
+      rating: shop.rating || undefined,
+      reviewCount: shop.review_count || undefined,
+    })
+
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <ShopDetails shop={shop} premium={premium} />
+      <>
+        <StructuredData schema={shopSchema} />
+        <div className="min-h-screen bg-gray-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <ShopDetails shop={shop} premium={premium} />
+          </div>
         </div>
-      </div>
+      </>
     )
   } catch (error) {
     console.error('Error loading shop:', error)

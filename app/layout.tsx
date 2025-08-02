@@ -6,25 +6,12 @@ import Header from '@/components/common/Header'
 import Footer from '@/components/common/Footer'
 import GoogleAnalytics from '@/components/analytics/GoogleAnalytics'
 import CookieConsentBanner from '@/components/analytics/CookieConsentBanner'
+import { generateMetadata as generateSEOMetadata, PAGE_CONFIGS } from '@/lib/seo/config'
+import { StructuredData, generateOrganizationSchema, generateWebsiteSchema } from '@/lib/seo/structured-data'
 
 const inter = Inter({ subsets: ['latin'] })
 
-export const metadata: Metadata = {
-  title: 'RideVault - Global Motorcycle Rental Platform',
-  description: 'Discover and compare motorcycle rentals worldwide. Find the perfect bike for your adventure.',
-  keywords: ['motorcycle rental', 'bike rental', 'travel', 'adventure'],
-  authors: [{ name: 'RideVault' }],
-  openGraph: {
-    title: 'RideVault - Global Motorcycle Rental Platform',
-    description: 'Discover and compare motorcycle rentals worldwide. Find the perfect bike for your adventure.',
-    type: 'website',
-    locale: 'en_US',
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
-}
+export const metadata: Metadata = generateSEOMetadata(PAGE_CONFIGS.home)
 
 export default function RootLayout({
   children,
@@ -36,6 +23,11 @@ export default function RootLayout({
       <body className={`${inter.className} bg-white text-gray-900 antialiased min-h-screen flex flex-col`}>
         <QueryProvider>
           <GoogleAnalytics />
+          
+          {/* Structured Data for SEO */}
+          <StructuredData schema={generateOrganizationSchema()} />
+          <StructuredData schema={generateWebsiteSchema()} />
+          
           <Header />
           <main className="flex-1">
             {children}

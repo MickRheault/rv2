@@ -4,30 +4,33 @@ import { motorcycleService } from '@/services/motorcycles'
 import MotorcycleGallery from '@/components/motorcycle/MotorcycleGallery'
 import MotorcycleDetails from '@/components/motorcycle/MotorcycleDetails'
 import MotorcycleCard from '@/components/motorcycle/MotorcycleCard'
+import { generateMetadata as generateSEOMetadata, generateMotorcycleSEO } from '@/lib/seo/config'
+import { StructuredData, generateMotorcycleSchema } from '@/lib/seo/structured-data'
 
 interface PageProps {
   params: { id: string }
 }
 
-// Generate metadata for SEO
+// Generate enhanced metadata for SEO
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   try {
     const motorcycle = await motorcycleService.getMotorcycleById(params.id)
-    const title = `${motorcycle.brands?.name} ${motorcycle.model} (${motorcycle.year}) - Motorcycle Rental`
-    const description = `Rent a ${motorcycle.brands?.name} ${motorcycle.model} from ${motorcycle.rental_shops?.provider_name}. ${motorcycle.engine_capacity_cc}cc ${motorcycle.categories?.name}. Starting from ${motorcycle.rental_rate_currency} ${motorcycle.rental_rate_per_day}/day.`
     
-    return {
-      title,
-      description,
-      openGraph: {
-        title,
-        description,
-        type: 'website',
-        images: motorcycle.motorcycle_images?.[0]?.images?.url 
-          ? [{ url: motorcycle.motorcycle_images[0].images.url }] 
-          : []
-      }
-    }
+    const seoConfig = generateMotorcycleSEO({
+      id: motorcycle.id,
+      model: motorcycle.model || undefined,
+      brand: motorcycle.brands?.name || undefined,
+      location: motorcycle.rental_shops?.location_name || motorcycle.rental_shops?.cities?.name || undefined,
+      pricePerDay: motorcycle.rental_rate_per_day || undefined,
+      year: motorcycle.year || undefined,
+      category: motorcycle.categories?.name || undefined,
+      image: motorcycle.motorcycle_images?.[0]?.images?.url || undefined,
+    })
+    
+    return generateSEOMetadata({
+      ...seoConfig,
+      url: `/motorcycle/${params.id}`,
+    })
   } catch (error) {
     return {
       title: 'Motorcycle Not Found',
@@ -56,9 +59,28 @@ export default async function MotorcycleDetailPage({ params }: PageProps) {
 
     const motorcycleName = `${motorcycle.brands?.name} ${motorcycle.model}`
 
+    // Generate structured data for rich snippets
+    const structuredData = generateMotorcycleSchema({
+      id: motorcycle.id,
+      model: motorcycle.model || undefined,
+      brand: motorcycle.brands?.name || undefined,
+      year: motorcycle.year || undefined,
+      category: motorcycle.categories?.name || undefined,
+      description: `${motorcycle.brands?.name || ''} ${motorcycle.model || ''} motorcycle rental`.trim(),
+      pricePerDay: motorcycle.rental_rate_per_day || undefined,
+      currency: motorcycle.rental_rate_currency || undefined,
+      image: motorcycle.motorcycle_images?.[0]?.images?.url || undefined,
+      location: motorcycle.rental_shops?.location_name || motorcycle.rental_shops?.cities?.name || undefined,
+      features: motorcycle.motorcycle_features?.map(f => f.features?.name).filter(Boolean),
+      engineSize: motorcycle.engine_capacity_cc || undefined,
+      availability: true,
+    })
+
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <>
+        <StructuredData schema={structuredData} />
+        <div className="min-h-screen bg-gray-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             {/* Image Gallery */}
             <div>
@@ -81,8 +103,9 @@ export default async function MotorcycleDetailPage({ params }: PageProps) {
             categoryId={motorcycle.category_id}
             brandId={motorcycle.brand_id}
           />
+          </div>
         </div>
-      </div>
+      </>
     )
   } catch (error) {
     console.error('Error loading motorcycle:', error)
