@@ -10,7 +10,9 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "sitemap": "next-sitemap",
+    "postbuild": "next-sitemap"
   },
   "keywords": [
     "motorcycle",
@@ -31,6 +33,7 @@
     "clsx": "^2.1.1",
     "jwt-decode": "^4.0.0",
     "next": "14.2.30",
+    "next-sitemap": "^4.2.3",
     "react": "^18",
     "react-dom": "^18",
     "react-hook-form": "^7.54.0",
