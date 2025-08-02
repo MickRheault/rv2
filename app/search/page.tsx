@@ -1,5 +1,9 @@
 import { Suspense } from 'react'
+import { Metadata } from 'next'
 import SearchPageContent from './SearchPageContent'
+import { generateMetadata as generateSEOMetadata, PAGE_CONFIGS } from '@/lib/seo/config'
+
+export const metadata: Metadata = generateSEOMetadata(PAGE_CONFIGS.search)
 
 export default function SearchPage() {
   return (

@@ -1,3 +1,8 @@
+import { Metadata } from 'next'
+import { generateMetadata as generateSEOMetadata, PAGE_CONFIGS } from '@/lib/seo/config'
+
+export const metadata: Metadata = generateSEOMetadata(PAGE_CONFIGS.about)
+
 export default function AboutPage() {
   return (
     <div className="container-custom py-12">
