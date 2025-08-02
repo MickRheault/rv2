@@ -66,8 +66,15 @@
 - `services/rental-shop-conditions.ts` - API service for rental shop conditions management with CRUD operations (Created - Full conditions management system)
 - `services/rental-rate-tiers.ts` - API service for rental rate tiers management with CRUD operations (Created - Full rate tiers management system)
 - `services/rental-shop-tours.ts` - API service for rental shop tours management with CRUD operations (Created - Full tours management system)
+- `services/users.ts` - API service for comprehensive user management using Supabase Admin API (list, invite, update roles, soft delete) (Created - Full user management system)
 - `services/locations.ts` - API service for location data
 - `types/index.ts` - Custom TypeScript type definitions
+- `app/admin/users/page.tsx` - Admin page for user management with comprehensive CRUD operations and user statistics (Created - Full user management interface)
+- `app/api/admin/users/route.ts` - API route for user listing and invitation with admin authentication (Created - Secure user management endpoints)
+- `app/api/admin/users/[id]/route.ts` - API route for individual user operations (get, update role, delete) with admin authentication (Created - Individual user management)
+- `app/api/admin/users/stats/route.ts` - API route for user statistics with admin authentication (Created - User analytics endpoint)
+- `components/ui/Table.tsx` - Reusable table component with Header, Body, Row, Head, Cell subcomponents (Created - Data display component)
+- `components/ui/DropdownMenu.tsx` - Reusable dropdown menu component with MenuItem and Separator subcomponents (Created - Action menu component)
 - `app/api/motorcycles/route.ts` - API route for motorcycle data
 - `app/api/shops/route.ts` - API route for shop data
 - `app/api/search/route.ts` - API route for search functionality
@@ -215,7 +222,7 @@ The system receives data via the template in `context/data_template.json`:
       - [x] 5.8.5.3 Update analytics service to fetch and process historical data
       - [x] 5.8.5.4 (Optional) Visualize historical data on the analytics dashboard
   - [SKIP] 5.9 Implement content approval/rejection workflow
-  - [ ] 5.10 Add admin user management functionality
+  - [x] 5.10 Add admin user management functionality
 
 - [ ] 6.0 Performance Optimization & SEO Implementation
   - [ ] 6.1 Configure Google Analytics 4 and Google Tag Manager
