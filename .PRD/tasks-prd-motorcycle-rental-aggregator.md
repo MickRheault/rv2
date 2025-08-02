@@ -227,7 +227,7 @@ The system receives data via the template in `context/data_template.json`:
 - [ ] 6.0 Performance Optimization & SEO Implementation
   - [x] 6.1 Configure Google Analytics 4 and Google Tag Manager
   - [x] 6.2 Implement SEO meta tags and Open Graph for all pages
-  - [ ] 6.3 Set up automatic sitemap generation with next-sitemap
+  - [x] 6.3 Set up automatic sitemap generation with next-sitemap
   - [ ] 6.4 Add structured data markup for search engines
   - [ ] 6.5 Optimize images with Next.js Image component and WebP conversion
   - [SKIP] 6.6 Implement caching strategy with React Query and Vercel Edge
