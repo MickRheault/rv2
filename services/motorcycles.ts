@@ -8,6 +8,9 @@ type Category = Database['public']['Tables']['categories']['Row']
 type City = Database['public']['Tables']['cities']['Row']
 type Province = Database['public']['Tables']['provinces']['Row']
 type Country = Database['public']['Tables']['countries']['Row']
+type MotorcycleCondition = Database['public']['Tables']['motorcycle_conditions']['Row']
+type ConditionType = Database['public']['Tables']['condition_types']['Row']
+type RentalRateTier = Database['public']['Tables']['rental_rate_tiers']['Row']
 
 export interface MotorcycleWithDetails extends MotorcycleRental {
   rental_shops: (RentalShop & {
@@ -40,6 +43,13 @@ export interface MotorcycleWithDetails extends MotorcycleRental {
       updated_at: string
     } | null
   }>
+  motorcycle_conditions?: Array<{
+    motorcycle_id: string
+    condition_type_id: string
+    notes: string | null
+    condition_types: ConditionType | null
+  }>
+  rental_rate_tiers?: RentalRateTier[]
 }
 
 export interface SearchFilters {
@@ -246,6 +256,13 @@ export const motorcycleService = {
           feature_id,
           motorcycle_id,
           features (*)
+        ),
+        motorcycle_conditions (
+          *,
+          condition_types (*)
+        ),
+        rental_rate_tiers (
+          *
         )
       `)
       .eq('id', id)
@@ -545,23 +562,207 @@ export const motorcycleService = {
     const modelCounts: Record<string, { brandName: string; count: number }> = {}
     
     data?.forEach(item => {
-      const model = item.model
-      const brandName = (item as any).brands.name
-      const key = `${model}|${brandName}`
+      const { model, brands } = item as any
+      const key = `${model}-${brands.name}`
       
       if (!modelCounts[key]) {
-        modelCounts[key] = { brandName, count: 0 }
+        modelCounts[key] = { brandName: brands.name, count: 0 }
       }
       modelCounts[key].count++
     })
 
-    return Object.entries(modelCounts)
-      .map(([key, value]) => ({
-        model: key.split('|')[0],
-        brandName: value.brandName,
-        count: value.count
-      }))
-      .sort((a, b) => b.count - a.count)
+    return Object.entries(modelCounts).map(([key, data]) => ({
+      model: key.split('-')[0],
+      brandName: data.brandName,
+      count: data.count
+    }))
+  },
+
+  // ADMIN CRUD OPERATIONS
+  
+  // Create new motorcycle
+  async createMotorcycle(motorcycleData: Database['public']['Tables']['motorcycle_rentals']['Insert']) {
+    const { data, error } = await supabase
+      .from('motorcycle_rentals')
+      .insert(motorcycleData)
+      .select(`
+        *,
+        rental_shops (
+          *,
+          cities (
+            *,
+            provinces (
+              *,
+              countries (*)
+            )
+          )
+        ),
+        brands (*),
+        categories (*)
+      `)
+      .single()
+
+    if (error) {
+      console.error('Error creating motorcycle:', error)
+      throw error
+    }
+
+    return data as MotorcycleWithDetails
+  },
+
+  // Update existing motorcycle
+  async updateMotorcycle(id: string, updates: Database['public']['Tables']['motorcycle_rentals']['Update']) {
+    const { data, error } = await supabase
+      .from('motorcycle_rentals')
+      .update(updates)
+      .eq('id', id)
+      .select(`
+        *,
+        rental_shops (
+          *,
+          cities (
+            *,
+            provinces (
+              *,
+              countries (*)
+            )
+          )
+        ),
+        brands (*),
+        categories (*)
+      `)
+      .single()
+
+    if (error) {
+      console.error('Error updating motorcycle:', error)
+      throw error
+    }
+
+    return data as MotorcycleWithDetails
+  },
+
+  // Delete motorcycle
+  async deleteMotorcycle(id: string) {
+    const { error } = await supabase
+      .from('motorcycle_rentals')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      console.error('Error deleting motorcycle:', error)
+      throw error
+    }
+
+    return true
+  },
+
+  // Bulk delete motorcycles
+  async deleteMotorcycles(ids: string[]) {
+    const { error } = await supabase
+      .from('motorcycle_rentals')
+      .delete()
+      .in('id', ids)
+
+    if (error) {
+      console.error('Error bulk deleting motorcycles:', error)
+      throw error
+    }
+
+    return true
+  },
+
+  // Get motorcycles for admin management (with pagination and search)
+  async getMotorcyclesForAdmin(filters: {
+    search?: string
+    brandId?: string
+    categoryId?: string
+    shopId?: string
+    sortBy?: 'created_at' | 'model' | 'brand' | 'shop' | 'price'
+    sortOrder?: 'asc' | 'desc'
+    limit?: number
+    offset?: number
+  } = {}) {
+    const {
+      search,
+      brandId,
+      categoryId,
+      shopId,
+      sortBy = 'created_at',
+      sortOrder = 'desc',
+      limit = 20,
+      offset = 0
+    } = filters
+
+    let query = supabase
+      .from('motorcycle_rentals')
+      .select(`
+        *,
+        rental_shops!inner (
+          id,
+          provider_name,
+          slug,
+          cities (
+            name,
+            provinces (
+              name,
+              countries (
+                name
+              )
+            )
+          )
+        ),
+        brands (*),
+        categories (*)
+      `, { count: 'exact' })
+
+    // Apply search filter
+    if (search) {
+      query = query.or(`model.ilike.%${search}%,brands.name.ilike.%${search}%,rental_shops.provider_name.ilike.%${search}%`)
+    }
+
+    // Apply filters
+    if (brandId) {
+      query = query.eq('brand_id', brandId)
+    }
+    if (categoryId) {
+      query = query.eq('category_id', categoryId)
+    }
+    if (shopId) {
+      query = query.eq('shop_id', shopId)
+    }
+
+    // Apply sorting
+    switch (sortBy) {
+      case 'model':
+        query = query.order('model', { ascending: sortOrder === 'asc' })
+        break
+      case 'brand':
+        query = query.order('brands.name', { ascending: sortOrder === 'asc' })
+        break
+      case 'shop':
+        query = query.order('rental_shops.provider_name', { ascending: sortOrder === 'asc' })
+        break
+      case 'price':
+        query = query.order('rental_rate_per_day', { ascending: sortOrder === 'asc', nullsFirst: false })
+        break
+      case 'created_at':
+      default:
+        query = query.order('created_at', { ascending: sortOrder === 'asc' })
+        break
+    }
+
+    // Apply pagination
+    const { data, error, count } = await query.range(offset, offset + limit - 1)
+
+    if (error) {
+      console.error('Error fetching motorcycles for admin:', error)
+      throw error
+    }
+
+    return {
+      motorcycles: (data || []) as MotorcycleWithDetails[],
+      total: count || 0
+    }
   },
 
   // Get structured filter options with counts based on current filters

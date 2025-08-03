@@ -19,7 +19,13 @@
 - `app/shop/[id]/page.tsx` - Rental shop detail page
 - `app/compare/page.tsx` - Motorcycle comparison page
 - `app/favorites/page.tsx` - User favorites page
-- `app/admin/page.tsx` - Admin dashboard for content moderation
+- `app/admin/page.tsx` - Admin dashboard for content moderation (Updated - Real motorcycle and shop statistics, data management navigation)
+- `app/admin/motorcycles/page.tsx` - Admin page for managing motorcycles with CRUD operations, conditions management, and rate tiers management (Created - Full CRUD interface with conditions modal and rate tiers modal)
+- `app/admin/shops/page.tsx` - Admin page for managing rental shops with CRUD operations and conditions management (Created - Full CRUD interface with conditions modal)
+- `app/admin/brands/page.tsx` - Admin page for managing motorcycle brands with CRUD operations (Created - Full CRUD interface)
+- `app/admin/categories/page.tsx` - Admin page for managing motorcycle categories with CRUD operations (Created - Full CRUD interface)
+- `app/admin/features/page.tsx` - Admin page for managing motorcycle features with CRUD operations (Created - Full CRUD interface)
+- `app/admin/business-statuses/page.tsx` - Admin page for managing business statuses with CRUD operations (Created - Full CRUD interface)
 - `components/ui/Button.tsx` - Reusable button component
 - `components/ui/Button.test.tsx` - Unit tests for Button component
 - `components/ui/Input.tsx` - Reusable input component
@@ -32,24 +38,43 @@
 - `components/motorcycle/MotorcycleCard.tsx` - Motorcycle listing card component
 - `components/motorcycle/MotorcycleCard.test.tsx` - Unit tests for MotorcycleCard
 - `components/motorcycle/MotorcycleGallery.tsx` - Image gallery component
-- `components/motorcycle/MotorcycleDetails.tsx` - Detailed motorcycle information
+- `components/motorcycle/MotorcycleDetails.tsx` - Detailed motorcycle information with conditions display and rental rate tiers (Updated - Added database conditions and multiple rate tiers display)
 - `components/shop/ShopCard.tsx` - Rental shop listing card
-- `components/shop/ShopDetails.tsx` - Detailed shop information with Google Maps
+- `components/shop/ShopDetails.tsx` - Detailed shop information with Google Maps and conditions display (Updated - Added database conditions display)
 - `components/shop/GoogleMap.tsx` - Google Maps integration component
 - `components/common/Header.tsx` - Main navigation header
 - `components/common/Footer.tsx` - Site footer
 - `components/common/FlagButton.tsx` - Data flagging functionality
 - `components/admin/FlaggedContentTable.tsx` - Admin table for managing flagged content
+- `components/admin/MotorcycleConditionsModal.tsx` - Modal for managing motorcycle conditions with full CRUD operations (Created)
+- `components/admin/RentalShopConditionsModal.tsx` - Modal for managing rental shop conditions with full CRUD operations (Created)
+- `components/admin/RentalRateTiersModal.tsx` - Modal for managing rental rate tiers with full CRUD operations (Created)
+- `components/admin/RentalShopToursModal.tsx` - Modal for managing rental shop tours with full CRUD operations (Created)
 - `hooks/useAuth.ts` - Custom hook for authentication
 - `hooks/useAuth.test.ts` - Unit tests for useAuth hook
 - `hooks/useFavorites.ts` - Custom hook for favorites management
 - `hooks/useSearch.ts` - Custom hook for search functionality
 - `hooks/useSearch.test.ts` - Unit tests for useSearch hook
-- `services/motorcycles.ts` - API service for motorcycle data
+- `services/motorcycles.ts` - API service for motorcycle data (Updated - Added CRUD operations for admin, conditions support, and rental rate tiers support)
 - `services/motorcycles.test.ts` - Unit tests for motorcycle service
-- `services/shops.ts` - API service for rental shop data
+- `services/shops.ts` - API service for rental shop data (Updated - Added CRUD operations for admin and conditions support)
+- `services/brands.ts` - API service for motorcycle brands data with CRUD operations (Created - Full CRUD interface)
+- `services/categories.ts` - API service for motorcycle categories data with CRUD operations (Created - Full CRUD interface)
+- `services/features.ts` - API service for motorcycle features data with CRUD operations (Created - Full CRUD interface)
+- `services/business-statuses.ts` - API service for business statuses data with CRUD operations (Created - Full CRUD interface)
+- `services/motorcycle-conditions.ts` - API service for motorcycle conditions management with CRUD operations (Created - Full conditions management system)
+- `services/rental-shop-conditions.ts` - API service for rental shop conditions management with CRUD operations (Created - Full conditions management system)
+- `services/rental-rate-tiers.ts` - API service for rental rate tiers management with CRUD operations (Created - Full rate tiers management system)
+- `services/rental-shop-tours.ts` - API service for rental shop tours management with CRUD operations (Created - Full tours management system)
+- `services/users.ts` - API service for comprehensive user management using Supabase Admin API (list, invite, update roles, soft delete) (Created - Full user management system)
 - `services/locations.ts` - API service for location data
 - `types/index.ts` - Custom TypeScript type definitions
+- `app/admin/users/page.tsx` - Admin page for user management with comprehensive CRUD operations and user statistics (Created - Full user management interface)
+- `app/api/admin/users/route.ts` - API route for user listing and invitation with admin authentication (Created - Secure user management endpoints)
+- `app/api/admin/users/[id]/route.ts` - API route for individual user operations (get, update role, delete) with admin authentication (Created - Individual user management)
+- `app/api/admin/users/stats/route.ts` - API route for user statistics with admin authentication (Created - User analytics endpoint)
+- `components/ui/Table.tsx` - Reusable table component with Header, Body, Row, Head, Cell subcomponents (Created - Data display component)
+- `components/ui/DropdownMenu.tsx` - Reusable dropdown menu component with MenuItem and Separator subcomponents (Created - Action menu component)
 - `app/api/motorcycles/route.ts` - API route for motorcycle data
 - `app/api/shops/route.ts` - API route for shop data
 - `app/api/search/route.ts` - API route for search functionality
@@ -164,40 +189,51 @@ The system receives data via the template in `context/data_template.json`:
   - [x] 3.11 Create loading states and error handling components
   - [x] 3.12 Implement mobile-first responsive design across all components
 
-- [ ] 4.0 User Features & Authentication System
-  - [ ] 4.1 Set up Supabase Auth with social providers (Google, GitHub)
-  - [ ] 4.2 Create authentication components (login, signup, profile)
-  - [ ] 4.3 Implement favorites system for motorcycles and rental shops
-  - [ ] 4.4 Build favorites page with saved items management
-  - [ ] 4.5 Create motorcycle comparison functionality (up to 3 items)
-  - [ ] 4.6 Implement comparison page with side-by-side analysis
-  - [ ] 4.7 Add data flagging system with category selection
-  - [ ] 4.8 Create sharing functionality for listings (social, email, copy link)
-  - [ ] 4.9 Implement user session management and protected routes
-  - [ ] 4.10 Add user preferences and settings management
+- [SKIP] 4.0 User Features & Authentication System
+  - [SKIP] 4.1 Set up Supabase Auth with social providers (Google, GitHub)
+  - [SKIP] 4.2 Create authentication components (login, signup, profile)
+  - [SKIP] 4.3 Implement favorites system for motorcycles and rental shops
+  - [SKIP] 4.4 Build favorites page with saved items management
+  - [SKIP] 4.5 Create motorcycle comparison functionality (up to 3 items)
+  - [SKIP] 4.6 Implement comparison page with side-by-side analysis
+  - [SKIP] 4.7 Add data flagging system with category selection
+  - [SKIP] 4.8 Create sharing functionality for listings (social, email, copy link)
+  - [SKIP] 4.9 Implement user session management and protected routes
+  - [SKIP] 4.10 Add user preferences and settings management
 
 - [ ] 5.0 Admin Interface & Content Moderation
-  - [ ] 5.1 Create admin authentication and role-based access control
-  - [ ] 5.2 Build admin dashboard with flagged content overview
-  - [ ] 5.3 Implement flagged content management table with actions
-  - [ ] 5.4 Add premium listing management system
-  - [ ] 5.5 Create data freshness tracking and indicators
-  - [ ] 5.6 Implement admin notifications for new flags via Supabase Realtime
-  - [ ] 5.7 Add bulk actions for content moderation
-  - [ ] 5.8 Create admin reporting and analytics dashboard
-  - [ ] 5.9 Implement content approval/rejection workflow
-  - [ ] 5.10 Add admin user management functionality
+  - [x] 5.1 Create admin authentication and role-based access control
+  - [x] 5.2.1 Add data flagging system with category selection
+    [x] 5.2.2 Build admin dashboard with flagged content overview
+  - [x] 5.3 Implement flagged content management table with actions
+  - [x] 5.4 Add premium listing management system
+  - [x] 5.5 Create data freshness tracking and indicators
+  - [SKIP] 5.6 Implement admin notifications for new flags via Supabase Realtime
+  - [x] 5.6.x Create a data management system to add, edit,5.10 delete the content.
+  - [SKIP] 5.7 Add bulk actions for content moderation
+  - [x] 5.8 Create admin reporting and analytics dashboard
+    - [x] 5.8.1 Create analytics service to aggregate platform data
+    - [x] 5.8.2 Build analytics dashboard page with key metrics
+    - [x] 5.8.3 Add navigation link to the analytics dashboard from the main admin page
+    - [x] 5.8.4 Test analytics dashboard and update documentation
+    - [ ] 5.8.5 Implement historical analytics data storage
+      - [x] 5.8.5.1 Design and create database schema for storing analytics snapshots
+      - [x] 5.8.5.2 Create a scheduled job to capture and store daily analytics
+      - [x] 5.8.5.3 Update analytics service to fetch and process historical data
+      - [x] 5.8.5.4 (Optional) Visualize historical data on the analytics dashboard
+  - [SKIP] 5.9 Implement content approval/rejection workflow
+  - [x] 5.10 Add admin user management functionality
 
 - [ ] 6.0 Performance Optimization & SEO Implementation
-  - [ ] 6.1 Configure Google Analytics 4 and Google Tag Manager
-  - [ ] 6.2 Implement SEO meta tags and Open Graph for all pages
-  - [ ] 6.3 Set up automatic sitemap generation with next-sitemap
-  - [ ] 6.4 Add structured data markup for search engines
-  - [ ] 6.5 Optimize images with Next.js Image component and WebP conversion
-  - [ ] 6.6 Implement caching strategy with React Query and Vercel Edge
-  - [ ] 6.7 Set up performance monitoring with Vercel Analytics
-  - [ ] 6.8 Configure uptime monitoring with external service
-  - [ ] 6.9 Implement error boundaries and graceful error handling
+  - [x] 6.1 Configure Google Analytics 4 and Google Tag Manager
+  - [x] 6.2 Implement SEO meta tags and Open Graph for all pages
+  - [x] 6.3 Set up automatic sitemap generation with next-sitemap
+  - [x] 6.4 Add structured data markup for search engines
+  - [SKIP] 6.5 Optimize images with Next.js Image component and WebP conversion
+  - [SKIP] 6.6 Implement caching strategy with React Query and Vercel Edge
+  - [SKIP] 6.7 Set up performance monitoring with Vercel Analytics
+  - [SKIP] 6.8 Configure uptime monitoring with external service
+  - [x] 6.9 Implement error boundaries and graceful error handling
   - [ ] 6.10 Add internationalization framework preparation (next-intl)
   - [ ] 6.11 Optimize bundle size and implement code splitting
   - [ ] 6.12 Conduct performance audit and implement improvements 

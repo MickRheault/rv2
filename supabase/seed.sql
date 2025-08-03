@@ -1,0 +1,5 @@
+-- Development seed intentionally contains no authentication records.
+-- Create local test users through Supabase Studio with a unique password.
+-- Assign development administrator roles to those local users as needed.
+-- Never seed personal accounts, passwords, identities, or session tokens.
+-- Add only synthetic application data to this file.

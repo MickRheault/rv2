@@ -31,6 +31,23 @@ export {
   ModalFooter 
 } from './Modal'
 
+// Data Display Components
+export {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell
+} from './Table'
+
+// Action Components  
+export {
+  DropdownMenu,
+  DropdownMenuItem,
+  DropdownMenuSeparator
+} from './DropdownMenu'
+
 // Loading States and Error Handling
 export {
   SkeletonText,

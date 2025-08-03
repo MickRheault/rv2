@@ -2,28 +2,17 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import QueryProvider from '@/lib/providers/QueryProvider'
-import { DevTools } from '@/components/debug'
 import Header from '@/components/common/Header'
 import Footer from '@/components/common/Footer'
+import GoogleAnalytics from '@/components/analytics/GoogleAnalytics'
+import CookieConsentBanner from '@/components/analytics/CookieConsentBanner'
+import { ErrorBoundary } from '@/components/common/ErrorBoundary'
+import { generateMetadata as generateSEOMetadata, PAGE_CONFIGS } from '@/lib/seo/config'
+import { StructuredData, generateOrganizationSchema, generateWebsiteSchema } from '@/lib/seo/structured-data'
 
 const inter = Inter({ subsets: ['latin'] })
 
-export const metadata: Metadata = {
-  title: 'RideVault - Global Motorcycle Rental Platform',
-  description: 'Discover and compare motorcycle rentals worldwide. Find the perfect bike for your adventure.',
-  keywords: ['motorcycle rental', 'bike rental', 'travel', 'adventure'],
-  authors: [{ name: 'RideVault' }],
-  openGraph: {
-    title: 'RideVault - Global Motorcycle Rental Platform',
-    description: 'Discover and compare motorcycle rentals worldwide. Find the perfect bike for your adventure.',
-    type: 'website',
-    locale: 'en_US',
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
-}
+export const metadata: Metadata = generateSEOMetadata(PAGE_CONFIGS.home)
 
 export default function RootLayout({
   children,
@@ -34,12 +23,26 @@ export default function RootLayout({
     <html lang="en" className="scroll-smooth">
       <body className={`${inter.className} bg-white text-gray-900 antialiased min-h-screen flex flex-col`}>
         <QueryProvider>
-          <Header />
+          <GoogleAnalytics />
+          
+          {/* Structured Data for SEO */}
+          <StructuredData schema={generateOrganizationSchema()} />
+          <StructuredData schema={generateWebsiteSchema()} />
+          
+          <ErrorBoundary level="section" name="Header">
+            <Header />
+          </ErrorBoundary>
+          
           <main className="flex-1">
-            {children}
+            <ErrorBoundary level="page" name="Main Content">
+              {children}
+            </ErrorBoundary>
           </main>
-          <Footer />
-          <DevTools />
+          
+          <ErrorBoundary level="section" name="Footer">
+            <Footer />
+          </ErrorBoundary>
+          <CookieConsentBanner />
         </QueryProvider>
       </body>
     </html>

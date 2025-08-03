@@ -194,10 +194,10 @@ export default function MotorcycleCard({
                   <PremiumBadge type={premiumType} className="shadow-lg" />
                 )}
                 {category && !isPremium && (
-                  <Badge variant="primary" size="sm" className="bg-blue-600 text-white">
-                    {category.name}
-                  </Badge>
-                )}
+                <Badge variant="primary" size="sm" className="bg-blue-600 text-white">
+                  {category.name}
+                </Badge>
+              )}
                 {category && isPremium && (
                   <Badge variant="secondary" size="sm" className="bg-white/90 text-gray-700">
                     {category.name}

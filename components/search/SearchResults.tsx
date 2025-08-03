@@ -305,6 +305,7 @@ export default function SearchResults({
                   key={shop.id}
                   shop={shop}
                   compact={viewMode === 'list'}
+                  premium={shop.premium}
                 />
               ))}
             </div>
