@@ -22,6 +22,8 @@ public/
 └── robots.txt         # Search engine directives
 ```
 
+**⚠️ Important**: These files are auto-generated and should **NOT** be committed to Git. They are automatically excluded via `.gitignore` and regenerated during each build.
+
 ## ⚙️ **Configuration**
 
 The sitemap is configured in `next-sitemap.config.js`:
