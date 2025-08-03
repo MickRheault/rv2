@@ -264,13 +264,13 @@ The component uses Tailwind CSS with the following design system:
 - **Shadows**: Elevation on hover for depth
 - **Borders**: Subtle borders and rounded corners
 
-#### Demo
+#### Usage
 
-Visit `/motorcycle-demo` to see the component in action with:
-- Multiple motorcycle examples
-- Grid and compact view modes
-- Interactive features demonstration
-- Feature documentation
+The MotorcycleCard component is used throughout the application to display motorcycle listings in:
+- Search results pages
+- Shop detail pages  
+- Browse/category pages
+- Related motorcycles sections
 
 #### Dependencies
 

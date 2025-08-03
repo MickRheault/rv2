@@ -142,12 +142,13 @@ The component uses Tailwind CSS classes and follows the design system:
 - **Color Contrast**: Meets WCAG 2.1 AA standards
 - **Focus Management**: Clear focus indicators for keyboard users
 
-### Demo
+### Usage
 
-Visit `/shop-demo` to see the ShopCard component in action with:
-- Grid and compact view modes
-- Interactive favorite toggles
-- Various shop examples with different features
+The ShopCard component is used throughout the application to display rental shop listings in:
+- Search results pages
+- Browse/location pages
+- Shop directory listings
+- Related shops sections
 - Comprehensive feature documentation
 
 ### Technical Notes

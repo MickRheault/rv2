@@ -75,7 +75,7 @@ The following routes are excluded from sitemaps:
 - `/admin` and `/admin/*` - Administrative interface
 - `/api/*` - API endpoints
 - `/auth/*` - Authentication pages
-- `/test-*` - Development/testing pages
+- `/admin/*` - Admin pages (requires authentication)
 - `/_next/*` - Next.js internal files
 
 ## 🤖 **Robots.txt**
@@ -89,7 +89,6 @@ Disallow: /admin
 Disallow: /admin/*
 Disallow: /api/*
 Disallow: /auth/*
-Disallow: /test-*
 Disallow: /_next/*
 
 Host: https://yourdomain.com

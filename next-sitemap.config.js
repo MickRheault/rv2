@@ -8,11 +8,6 @@ module.exports = {
   exclude: [
     '/admin',
     '/admin/*',
-    '/test-*',
-    '/ui-demo',
-    '/motorcycle-demo',
-    '/shop-demo',
-    '/search-demo',
     '/auth/*',
     '/_not-found',
     '/api/*'
@@ -27,7 +22,6 @@ module.exports = {
           '/admin/*',
           '/api/*',
           '/auth/*',
-          '/test-*',
           '/_next/*',
         ],
       },

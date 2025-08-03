@@ -371,6 +371,10 @@ npm test components/ui/Button.test.tsx
 4. Write comprehensive tests
 5. Update documentation
 
-## Demo
+## Component Usage
 
-Visit `/ui-demo` to see all components in action with interactive examples. 
+All UI components are imported from `@/components/ui` and used throughout the application:
+- Forms use Input, Button, Select, Checkbox, etc.
+- Data display uses Card, Badge, Table components
+- Navigation uses Pagination component
+- Feedback uses Alert, Spinner, Modal components 
