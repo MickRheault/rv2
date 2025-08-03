@@ -181,6 +181,13 @@ export type Database = {
             foreignKeyName: "cities_province_id_fkey"
             columns: ["province_id"]
             isOneToOne: false
+            referencedRelation: "mv_geographic_stats"
+            referencedColumns: ["province_id"]
+          },
+          {
+            foreignKeyName: "cities_province_id_fkey"
+            columns: ["province_id"]
+            isOneToOne: false
             referencedRelation: "mv_location_motorcycle_counts"
             referencedColumns: ["province_id"]
           },
@@ -906,6 +913,13 @@ export type Database = {
             foreignKeyName: "provinces_country_code_fkey"
             columns: ["country_code"]
             isOneToOne: false
+            referencedRelation: "mv_geographic_stats"
+            referencedColumns: ["country_code"]
+          },
+          {
+            foreignKeyName: "provinces_country_code_fkey"
+            columns: ["country_code"]
+            isOneToOne: false
             referencedRelation: "mv_location_motorcycle_counts"
             referencedColumns: ["country_code"]
           },
@@ -1179,6 +1193,13 @@ export type Database = {
             foreignKeyName: "rental_shops_city_id_fkey"
             columns: ["city_id"]
             isOneToOne: false
+            referencedRelation: "mv_geographic_stats"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "rental_shops_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
             referencedRelation: "mv_location_motorcycle_counts"
             referencedColumns: ["city_id"]
           },
@@ -1255,6 +1276,30 @@ export type Database = {
       }
     }
     Views: {
+      mv_geographic_stats: {
+        Row: {
+          avg_daily_rate: number | null
+          avg_shop_rating: number | null
+          brand_count: number | null
+          category_count: number | null
+          city_id: string | null
+          city_name: string | null
+          city_slug: string | null
+          country_code: string | null
+          country_name: string | null
+          country_slug: string | null
+          max_daily_rate: number | null
+          min_daily_rate: number | null
+          most_common_brand: string | null
+          most_common_category: string | null
+          motorcycle_count: number | null
+          province_id: string | null
+          province_name: string | null
+          rated_shop_count: number | null
+          shop_count: number | null
+        }
+        Relationships: []
+      }
       mv_location_motorcycle_counts: {
         Row: {
           avg_rating: number | null
@@ -1429,6 +1474,10 @@ export type Database = {
         Args: { user_email: string }
         Returns: boolean
       }
+      refresh_all_location_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       refresh_data_freshness: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -1437,6 +1486,10 @@ export type Database = {
           stale_count: number
           very_stale_count: number
         }[]
+      }
+      refresh_geographic_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       refresh_location_counts: {
         Args: Record<PropertyKey, never>
@@ -1465,6 +1518,14 @@ export type Database = {
       unaccent_init: {
         Args: { "": unknown }
         Returns: unknown
+      }
+      validate_geographic_data: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          issue_type: string
+          issue_count: number
+          description: string
+        }[]
       }
     }
     Enums: {
