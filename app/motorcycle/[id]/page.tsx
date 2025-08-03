@@ -5,7 +5,7 @@ import MotorcycleGallery from '@/components/motorcycle/MotorcycleGallery'
 import MotorcycleDetails from '@/components/motorcycle/MotorcycleDetails'
 import MotorcycleCard from '@/components/motorcycle/MotorcycleCard'
 import { generateMetadata as generateSEOMetadata, generateMotorcycleSEO } from '@/lib/seo/config'
-import { StructuredData, generateMotorcycleSchema } from '@/lib/seo/structured-data'
+import { StructuredData, generateEnhancedMotorcycleSchema } from '@/lib/seo/structured-data'
 
 interface PageProps {
   params: { id: string }
@@ -59,21 +59,38 @@ export default async function MotorcycleDetailPage({ params }: PageProps) {
 
     const motorcycleName = `${motorcycle.brands?.name} ${motorcycle.model}`
 
-    // Generate structured data for rich snippets
-    const structuredData = generateMotorcycleSchema({
+    // Generate enhanced structured data for rich snippets
+    const structuredData = generateEnhancedMotorcycleSchema({
       id: motorcycle.id,
       model: motorcycle.model || undefined,
       brand: motorcycle.brands?.name || undefined,
       year: motorcycle.year || undefined,
       category: motorcycle.categories?.name || undefined,
       description: `${motorcycle.brands?.name || ''} ${motorcycle.model || ''} motorcycle rental`.trim(),
-      pricePerDay: motorcycle.rental_rate_per_day || undefined,
-      currency: motorcycle.rental_rate_currency || undefined,
       image: motorcycle.motorcycle_images?.[0]?.images?.url || undefined,
-      location: motorcycle.rental_shops?.location_name || motorcycle.rental_shops?.cities?.name || undefined,
       features: motorcycle.motorcycle_features?.map(f => f.features?.name).filter(Boolean),
       engineSize: motorcycle.engine_capacity_cc || undefined,
       availability: true,
+      // Enhanced data from rental rate tiers
+      rentalRates: motorcycle.rental_rate_tiers?.map(tier => ({
+        rateText: `${tier.min_days}-${tier.max_days || '+'} day rate`,
+        minDays: tier.min_days,
+        maxDays: tier.max_days || undefined,
+        ratePerDay: tier.rate_per_day || undefined,
+        currency: tier.currency || motorcycle.rental_rate_currency || undefined,
+      })) || (motorcycle.rental_rate_per_day ? [{
+        rateText: 'Standard Rate',
+        minDays: 1,
+        maxDays: undefined,
+        ratePerDay: motorcycle.rental_rate_per_day,
+        currency: motorcycle.rental_rate_currency || undefined,
+      }] : []),
+      // Parse specifications from JSON if available
+      specifications: motorcycle.specifications_details ? 
+        (typeof motorcycle.specifications_details === 'object' ? 
+          motorcycle.specifications_details : 
+          undefined
+        ) : undefined,
     })
 
     return (

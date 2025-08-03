@@ -4,7 +4,7 @@ import { shopService } from '@/services/shops'
 import { PremiumUtilsService } from '@/services/premium-listings'
 import ShopDetails from '@/components/shop/ShopDetails'
 import { generateMetadata as generateSEOMetadata, generateShopSEO } from '@/lib/seo/config'
-import { StructuredData, generateRentalShopSchema } from '@/lib/seo/structured-data'
+import { StructuredData, generateRentalShopSchema, generateRentalServiceSchema, generateTourSchema, generateEnhancedMotorcycleSchema } from '@/lib/seo/structured-data'
 
 interface ShopPageProps {
   params: {
@@ -108,9 +108,63 @@ export default async function ShopPage({ params }: ShopPageProps) {
       reviewCount: shop.review_count || undefined,
     })
 
+    // Generate rental service schema
+    const serviceSchema = generateRentalServiceSchema({
+      shopId: shop.slug,
+      shopName: shop.provider_name,
+      rentalInclusions: shop.rental_shop_inclusions?.map(inc => inc.inclusion_text).filter(Boolean),
+      serviceLocations: shop.rental_shop_service_locations?.map(loc => loc.location_name).filter(Boolean),
+    })
+
+    // Generate tour schemas if tours are available
+    const tourSchemas = shop.rental_shop_tours?.map(tour => 
+      generateTourSchema([{
+        name: tour.name,
+        durationText: tour.duration_text || undefined,
+        distanceKm: tour.distance_km || undefined,
+        priceText: tour.price_text || undefined,
+        currency: tour.currency || undefined,
+      }])
+    ).flat() || []
+
+    // Generate enhanced motorcycle schemas for all motorcycles offered by this shop
+    const motorcycleSchemas = shop.motorcycle_rentals?.map(motorcycle => 
+      generateEnhancedMotorcycleSchema({
+        id: motorcycle.id,
+        model: motorcycle.model || undefined,
+        brand: motorcycle.brands?.name || undefined,
+        year: motorcycle.year || undefined,
+        category: motorcycle.categories?.name || undefined,
+        description: `${motorcycle.brands?.name || ''} ${motorcycle.model || ''} motorcycle rental at ${shop.provider_name}`.trim(),
+        engineSize: motorcycle.engine_capacity_cc || undefined,
+        availability: motorcycle.availability_status === 'available',
+        // Basic rental rates from shop's motorcycle rentals
+        rentalRates: motorcycle.rental_rate_per_day ? [{
+          rateText: 'Daily Rate',
+          minDays: 1,
+          maxDays: undefined,
+          ratePerDay: motorcycle.rental_rate_per_day,
+          currency: motorcycle.rental_rate_currency || undefined,
+        }] : [],
+        // Parse specifications from JSON if available
+        specifications: motorcycle.specifications_details ? 
+          (typeof motorcycle.specifications_details === 'object' ? 
+            motorcycle.specifications_details : 
+            undefined
+          ) : undefined,
+      })
+    ) || []
+
     return (
       <>
         <StructuredData schema={shopSchema} />
+        <StructuredData schema={serviceSchema} />
+        {tourSchemas.map((tourSchema, index) => (
+          <StructuredData key={`tour-${index}`} schema={tourSchema} />
+        ))}
+        {motorcycleSchemas.map((motorcycleSchema, index) => (
+          <StructuredData key={`motorcycle-${index}`} schema={motorcycleSchema} />
+        ))}
         <div className="min-h-screen bg-gray-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <ShopDetails shop={shop} premium={premium} />
