@@ -102,7 +102,7 @@
 - `lib/seo/geographic-meta.ts` - SEO meta tag generation for geographic pages (Create)
 - `lib/seo/geographic-structured-data.ts` - Structured data markup for geographic and LocalBusiness content (Create)
 - `supabase/migrations/20250106130000_add_geographic_content_fields.sql` - Database migration for country and city content fields (Created - Adds title, description, keywords, general_information, and location-specific content fields to countries and cities tables)
-- `supabase/migrations/YYYYMMDD_add_geographic_indexes.sql` - Database migration for location-based query optimization indexes (Create)
+- `supabase/migrations/20250106140000_add_geographic_indexes.sql` - Database migration for location-based query optimization indexes (Created - Adds specialized indexes for geo-first URL structure and geographic queries, materialized views for statistics)
 
 ## Existing Database Schema & Data Structure
 
@@ -265,7 +265,7 @@ The system receives data via the template in `context/data_template.json`:
 - [ ] 7.0 Phase 1 Extension: Geo-First URL Structure & Location Landing Pages
   - [ ] 7.1 Database Schema & Service Layer Setup for Geographic Content
     - [x] 7.1.1 Add fields for country and city SEO content in database schema
-    - [ ] 7.1.2 Create indexes on location relationships for fast geographic queries
+    - [x] 7.1.2 Create indexes on location relationships for fast geographic queries
     - [ ] 7.1.3 Create geographic content aggregation service functions
     - [ ] 7.1.4 Implement database queries for location-based content retrieval
     - [ ] 7.1.5 Add geographic statistics calculation functions
