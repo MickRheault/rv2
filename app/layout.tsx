@@ -6,6 +6,7 @@ import Header from '@/components/common/Header'
 import Footer from '@/components/common/Footer'
 import GoogleAnalytics from '@/components/analytics/GoogleAnalytics'
 import CookieConsentBanner from '@/components/analytics/CookieConsentBanner'
+import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { generateMetadata as generateSEOMetadata, PAGE_CONFIGS } from '@/lib/seo/config'
 import { StructuredData, generateOrganizationSchema, generateWebsiteSchema } from '@/lib/seo/structured-data'
 
@@ -28,11 +29,19 @@ export default function RootLayout({
           <StructuredData schema={generateOrganizationSchema()} />
           <StructuredData schema={generateWebsiteSchema()} />
           
-          <Header />
+          <ErrorBoundary level="section" name="Header">
+            <Header />
+          </ErrorBoundary>
+          
           <main className="flex-1">
-            {children}
+            <ErrorBoundary level="page" name="Main Content">
+              {children}
+            </ErrorBoundary>
           </main>
-          <Footer />
+          
+          <ErrorBoundary level="section" name="Footer">
+            <Footer />
+          </ErrorBoundary>
           <CookieConsentBanner />
         </QueryProvider>
       </body>
