@@ -3,13 +3,48 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
-import { Input, Button, Card, CardContent } from '@/components/ui'
+import { Input, Button, Card, CardContent, Spinner } from '@/components/ui'
 import { searchService, LocationBasedSearchFilters } from '@/services/search'
-import SearchFilters from '@/components/search/SearchFilters'
-import SearchResults from '@/components/search/SearchResults'
-import LocationAutocomplete from '@/components/search/LocationAutocomplete'
-import MobileFilterToggle from '@/components/search/MobileFilterToggle'
+
+// Dynamic imports for heavy search components
+const SearchFilters = dynamic(() => import('@/components/search/SearchFilters'), {
+  loading: () => (
+    <div className="w-full h-96 bg-gray-100 animate-pulse rounded-lg flex items-center justify-center">
+      <div className="text-center">
+        <Spinner className="mx-auto mb-2" />
+        <p className="text-sm text-gray-600">Loading filters...</p>
+      </div>
+    </div>
+  ),
+  ssr: false
+})
+
+const SearchResults = dynamic(() => import('@/components/search/SearchResults'), {
+  loading: () => (
+    <div className="space-y-4">
+      {Array(5).fill(0).map((_, i) => (
+        <div key={i} className="h-48 bg-gray-100 animate-pulse rounded-lg" />
+      ))}
+    </div>
+  ),
+  ssr: false
+})
+
+const LocationAutocomplete = dynamic(() => import('@/components/search/LocationAutocomplete'), {
+  loading: () => (
+    <div className="w-full h-10 bg-gray-100 animate-pulse rounded-md" />
+  ),
+  ssr: false
+})
+
+const MobileFilterToggle = dynamic(() => import('@/components/search/MobileFilterToggle'), {
+  loading: () => (
+    <div className="h-10 w-20 bg-gray-100 animate-pulse rounded-md" />
+  ),
+  ssr: false
+})
 
 const DEFAULT_FILTERS: LocationBasedSearchFilters = {
   limit: 20,
