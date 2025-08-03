@@ -80,6 +80,30 @@
 - `app/api/search/route.ts` - API route for search functionality
 - `app/api/flag/route.ts` - API route for content flagging
 
+### Phase 1 Extension: Geographic URL Structure Files
+
+- `app/[country]/page.tsx` - Country landing page with shops and motorcycles overview (Create)
+- `app/[country]/[city]/page.tsx` - City landing page with local overview and quick actions (Create)  
+- `app/[country]/[city]/motorcycle-rental/page.tsx` - City motorcycle rental shops listing page (Create)
+- `app/[country]/[city]/motorcycle/page.tsx` - City motorcycles listing page (Create)
+- `app/[country]/[city]/motorcycle-rental/[shop-name]/page.tsx` - Individual shop page with new URL structure (Create)
+- `components/geographic/CountryPageContent.tsx` - Country page content component with statistics and featured content (Create)
+- `components/geographic/CityPageContent.tsx` - City page content component with local overview (Create)
+- `components/geographic/CityMotorcycleRentalContent.tsx` - City shop listings component with map integration (Create)
+- `components/geographic/CityMotorcycleContent.tsx` - City motorcycle listings component with filtering (Create)
+- `components/geographic/GeographicFilters.tsx` - Location-specific filtering component (Create)
+- `components/geographic/EmptyStateWithSuggestions.tsx` - Empty state component with nearby location suggestions (Create)
+- `components/geographic/LocalStatistics.tsx` - Component for displaying location-specific statistics (Create)
+- `components/navigation/BreadcrumbNavigation.tsx` - Geographic hierarchy breadcrumb component (Create)
+- `services/geographic.ts` - Service for geographic content aggregation and location-based queries (Create)
+- `services/geographic.test.ts` - Unit tests for geographic service (Create)
+- `lib/utils/geographic-slugs.ts` - Utilities for generating and parsing geographic URL slugs (Create)
+- `lib/utils/geographic-slugs.test.ts` - Unit tests for geographic slug utilities (Create)
+- `lib/seo/geographic-meta.ts` - SEO meta tag generation for geographic pages (Create)
+- `lib/seo/geographic-structured-data.ts` - Structured data markup for geographic and LocalBusiness content (Create)
+- `supabase/migrations/YYYYMMDD_add_geographic_seo_fields.sql` - Database migration for country and city SEO content fields (Create)
+- `supabase/migrations/YYYYMMDD_add_geographic_indexes.sql` - Database migration for location-based query optimization indexes (Create)
+
 ## Existing Database Schema & Data Structure
 
 **IMPORTANT**: All development must be based on the existing Supabase database schema and data structure detailed below.
@@ -236,4 +260,56 @@ The system receives data via the template in `context/data_template.json`:
   - [x] 6.9 Implement error boundaries and graceful error handling
   - [ ] 6.10 Add internationalization framework preparation (next-intl)
   - [ ] 6.11 Optimize bundle size and implement code splitting
-  - [ ] 6.12 Conduct performance audit and implement improvements 
+  - [ ] 6.12 Conduct performance audit and implement improvements
+
+- [ ] 7.0 Phase 1 Extension: Geo-First URL Structure & Location Landing Pages
+  - [ ] 7.1 Database Schema & Service Layer Setup for Geographic Content
+    - [ ] 7.1.1 Add fields for country and city SEO content in database schema
+    - [ ] 7.1.2 Create indexes on location relationships for fast geographic queries
+    - [ ] 7.1.3 Create geographic content aggregation service functions
+    - [ ] 7.1.4 Implement database queries for location-based content retrieval
+    - [ ] 7.1.5 Add geographic statistics calculation functions
+    - [ ] 7.1.6 Create location slug generation utilities
+  - [ ] 7.2 Dynamic Routing Implementation for Geographic URL Structure
+    - [ ] 7.2.1 Create `app/[country]/page.tsx` for country landing pages
+    - [ ] 7.2.2 Create `app/[country]/[city]/page.tsx` for city landing pages
+    - [ ] 7.2.3 Create `app/[country]/[city]/motorcycle-rental/page.tsx` for city shop listings
+    - [ ] 7.2.4 Create `app/[country]/[city]/motorcycle/page.tsx` for city motorcycle listings
+    - [ ] 7.2.5 Implement generateStaticParams for ISR optimization
+    - [ ] 7.2.6 Add URL parameter validation and error handling
+    - [ ] 7.2.7 Implement breadcrumb navigation component
+  - [ ] 7.3 Geographic Landing Page Components Development
+    - [ ] 7.3.1 Create CountryPageContent component with hero section and statistics
+    - [ ] 7.3.2 Create CityPageContent component with local overview and quick actions
+    - [ ] 7.3.3 Create CityMotorcycleRentalContent component with shop listings and map
+    - [ ] 7.3.4 Create CityMotorcycleContent component with motorcycle listings and filtering
+    - [ ] 7.3.5 Implement geographic filtering components for location-specific pages
+    - [ ] 7.3.6 Create empty state components with suggestions for nearby locations
+    - [ ] 7.3.7 Add local statistics display components
+  - [ ] 7.4 Shop URL Structure Refactoring & Migration
+    - [ ] 7.4.1 Create new shop page at `app/[country]/[city]/motorcycle-rental/[shop-name]/page.tsx`
+    - [ ] 7.4.2 Update shop service to support geographic URL resolution
+    - [ ] 7.4.3 Refactor all internal links to use new shop URL structure
+    - [ ] 7.4.4 Update search results to link to new geographic shop URLs
+    - [ ] 7.4.5 Remove old `/shop/[id]/page.tsx` route
+    - [ ] 7.4.6 Update navigation components to use geographic URLs
+  - [ ] 7.5 SEO Optimization & Content Management for Geographic Pages
+    - [ ] 7.5.1 Generate location-specific meta titles and descriptions
+    - [ ] 7.5.2 Implement structured data markup for LocalBusiness and geographic content
+    - [ ] 7.5.3 Update sitemap generation to include geographic page variations
+    - [ ] 7.5.4 Create SEO content placeholders for countries and cities
+    - [ ] 7.5.5 Implement caching strategies for geographic page content
+    - [ ] 7.5.6 Add performance optimization for location-based queries 
+
+
+
+This would list the shops
+shops/[country]/                    
+shops/[country]/[city]/            
+shops/[country]/[city]/[shopname]
+
+This would list the motorcycle
+motorcycle/[country]/                   
+motorcycle/[country]/[city]/            
+motorcycle/[country]/[city]/[shop]/
+motorcycle/[country]/[city]/[shop]/[specific-motorcycle]          

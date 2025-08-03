@@ -313,14 +313,171 @@ The core value proposition is to provide users with information that is not avai
 - Google Maps costs significantly reduced since only used for display
 - Consider Enterprise plans when reaching significant scale
 
-## Future Enhancements (Post-Initial Release)
+## Phase 1 Extension: Geo-First URL Structure & Location Landing Pages
+
+### Overview
+This extension implements a geographic-first URL structure to optimize local SEO and improve user navigation through location-based content discovery. The new structure prioritizes location hierarchy and provides dedicated landing pages for countries and cities, enhancing the platform's discoverability for location-specific motorcycle rental searches.
+
+### Goals
+1. **SEO Optimization**: Implement geo-first URL structure for superior local search ranking
+2. **User Navigation**: Create intuitive location-based browsing experience
+3. **Content Organization**: Establish clear geographic content hierarchy
+4. **Local Authority**: Build location-specific page authority for targeted geographic markets
+
+### New URL Structure
+
+#### **Geographic Landing Pages**
+- `/[country]/` - Country overview with all shops and motorcycles
+- `/[country]/[city]/` - City overview with all shops and motorcycles  
+- `/[country]/[city]/motorcycle-rental/` - All rental shops in the city
+- `/[country]/[city]/motorcycle/` - All motorcycles available in the city
+
+#### **Refactored Shop Pages**
+- **OLD**: `/shop/[shop-name]/`
+- **NEW**: `/[country]/[city]/motorcycle-rental/[shop-name]/`
+
+#### **Unchanged Individual Motorcycle Pages**
+- `/motorcycle/[id]/` - Keep existing structure with ID-based URLs for now.
+
+### Functional Requirements
+
+#### Geographic Landing Pages
+41. The system must create dynamic country landing pages displaying all rental shops and motorcycles in that country
+42. The system must create dynamic city landing pages displaying all rental shops and motorcycles in that city
+43. The system must provide dedicated motorcycle rental shop listing pages per city at `/[country]/[city]/motorcycle-rental/`
+44. The system must provide dedicated motorcycle listing pages per city at `/[country]/[city]/motorcycles/`
+45. The system must display location-specific statistics (total shops, motorcycles, popular categories) on geographic pages
+46. The system must include SEO-optimized placeholder content sections for local riding information and city descriptions
+47. The system must implement breadcrumb navigation showing the full geographic hierarchy
+
+#### Enhanced Filtering on Geographic Pages
+48. The system must provide simplified filtering options (brand, category, price range) on all geographic landing pages
+49. The system must pre-filter results by the current geographic location automatically
+50. The system must maintain filter state when navigating between geographic pages
+51. The system must show empty state with suggestions to nearby cities when no results are available
+
+#### URL Structure & Routing
+52. The system must completely replace the `/shop/[shop-name]/` URL structure with `/[country]/[city]/motorcycle-rental/[shop-name]/`
+53. The system must generate SEO-friendly slugs for countries and cities based on database location data
+54. The system must ensure all internal links use the new geographic URL structure
+55. The system must update search results to link to the new geographic URL structure
+56. The system must handle URL parameters and maintain backward compatibility for bookmarked motorcycle pages
+
+#### Content Management for Geographic Pages
+57. The system must include fields for country descriptions, local riding information, and seasonal details
+58. The system must support city-specific content including popular routes, attractions, and local regulations
+59. The system must display riding season information and weather considerations per location
+60. The system must show local requirements such as license types, insurance needs, and documentation
+
+### Page Content Structure
+
+#### Country Pages (`/[country]/`)
+- **Hero Section**: Country overview with featured image and key statistics
+- **Popular Cities**: Grid of major cities with motorcycle rental availability
+- **Featured Shops**: Highlighted rental shops across the country
+- **SEO Content**: Country-specific riding information and travel tips
+
+#### City Pages (`/[country]/[city]/`)
+- **City Overview**: Local statistics and rental shop count
+- **Quick Actions**: Direct links to motorcycle rentals and specific motorcycles
+- **Featured Shops**: Top-rated rental shops in the city
+- **SEO Content**: City-specific riding information, attractions, regulations
+
+#### City Motorcycle Rental Pages (`/[country]/[city]/motorcycle-rental/`)
+- **All Rental Shops**: Complete listing of shops in the city
+- **Filtering Options**: Basic filters for services, ratings, and features
+- **Map Integration**: Visual map showing all shop locations
+- **Comparison Tools**: Side-by-side shop comparison functionality
+
+#### City Motorcycles Pages (`/[country]/[city]/motorcycles/`)
+- **All Available Motorcycles**: Complete inventory from all shops in the city
+- **Category Filtering**: Filter by motorcycle type, brand, engine size
+- **Price Comparison**: Cross-shop price comparison for similar motorcycles
+
+### Technical Implementation Requirements
+
+#### Dynamic Routing Structure
+61. The system must implement Next.js dynamic routing for `[country]/[city]/page.tsx` structure
+62. The system must create optimized database queries for location-based content aggregation
+63. The system must implement efficient caching strategies for geographic page content
+64. The system must generate static paths for SEO optimization using ISR (Incremental Static Regeneration)
+
+#### Database Schema Enhancements
+65. The system must add fields for country and city SEO content in the database
+66. The system must create indexes on location relationships for fast geographic queries
+
+#### SEO & Performance Optimization
+69. The system must generate location-specific meta titles and descriptions for all geographic pages
+70. The system must implement structured data markup for LocalBusiness and geographic content
+71. The system must create XML sitemaps including all geographic page variations
+72. The system must optimize images and content loading for geographic landing pages
+
+### Migration & Implementation Strategy
+
+#### Phase 1A: URL Structure Setup (Week 1-2)
+- Implement new dynamic routing structure
+- Create database queries for geographic content aggregation
+- Set up basic page templates for countries and cities
+
+#### Phase 1B: Content Implementation (Week 3-4)
+- Build country and city landing page components
+- Implement filtering and search functionality for geographic pages
+- Add breadcrumb navigation and SEO optimization
+
+#### Phase 1C: Shop URL Refactoring (Week 5-6)
+- Refactor all shop pages to use new URL structure
+- Update all internal links and navigation
+- Implement proper meta tags and structured data
+
+#### Phase 1D: Testing & Optimization (Week 7-8)
+- Performance testing and query optimization
+- SEO audit and structured data validation
+- Empty state handling and error page implementation
+
+### Success Metrics for Phase 1 Extension
+
+#### SEO Performance
+- **Local Search Ranking**: Track ranking improvements for city + "motorcycle rental" searches
+- **Geographic Organic Traffic**: Monitor organic traffic growth to location-specific pages
+- **Page Authority**: Measure domain authority improvements for geographic content
+
+#### User Engagement
+- **Geographic Page Views**: Track usage of country and city landing pages
+- **Navigation Patterns**: Monitor user flow through geographic hierarchy
+- **Local Conversion**: Measure clicks to contact info on city-specific pages
+
+#### Technical Performance
+- **Page Load Speed**: Maintain fast loading times for location-based pages
+- **Database Query Performance**: Optimize location-based content aggregation queries
+- **Cache Efficiency**: Monitor cache hit rates for geographic content
+
+### Content Framework for Geographic Pages
+
+#### Required Local Content (SEO) Fields
+- **Country Information**: General riding regulations, license requirements, seasonal information
+- **City Details**: Local attractions, popular riding routes, specific regulations
+- **Weather Data**: Best riding seasons, climate considerations
+- **Legal Requirements**: Documentation needed, insurance requirements, age restrictions
+- **Cultural Information**: Local riding customs, safety considerations, emergency contacts
+
+#### SEO Content Placeholders
+- Location-specific riding guides and safety tips
+- Popular motorcycle touring routes and destinations
+- Local motorcycle events and community information
+- Seasonal riding recommendations and weather considerations
+- Comparison with nearby cities and regions
+
+---
+
+## Future Enhancements (Post-Phase 1 Extension)
 
 ### Phase 2 Features
 - **Full-Text Search**: Implement PostgreSQL full-text search for motorcycle models and descriptions
 - **Advanced Search**: Add text-based search across all motorcycle and rental shop data
 - **Search Analytics**: Track popular search terms and improve filtering
 - **Elasticsearch Integration**: Consider for advanced search capabilities if needed
+- **Individual Motorcycle Geographic URLs**: Consider implementing `/[country]/[city]/motorcycles/[motorcycle-slug]/` for complete geo-first structure
 
 ---
 
-*This PRD emphasizes a simplified, structured approach for the initial release, focusing on dropdown-based filtering and location search without full-text search complexity. This enables faster development while maintaining core functionality for users to discover and filter motorcycle rentals effectively.*
+*This PRD emphasizes a comprehensive geographic-first approach that prioritizes local SEO while maintaining the existing core functionality. The new URL structure provides clear content hierarchy and improved discoverability for location-based motorcycle rental searches.*
