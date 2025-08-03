@@ -10,19 +10,22 @@ import {
   CheckIcon,
   TruckIcon,
   MapIcon,
-  BuildingStorefrontIcon
+  BuildingStorefrontIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline'
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid'
 import { Card, CardHeader, CardTitle, CardContent, Badge, Button } from '@/components/ui'
 import { ShopWithMotorcycles } from '@/services/shops'
 import MotorcycleCard from '@/components/motorcycle/MotorcycleCard'
 import GoogleMap from './GoogleMap'
+import { PremiumFeatureConfig } from '@/types/premium-listings'
 
 interface ShopDetailsProps {
   shop: ShopWithMotorcycles
+  premium?: PremiumFeatureConfig
 }
 
-export default function ShopDetails({ shop }: ShopDetailsProps) {
+export default function ShopDetails({ shop, premium }: ShopDetailsProps) {
   const {
     provider_name,
     business_description,
@@ -40,6 +43,7 @@ export default function ShopDetails({ shop }: ShopDetailsProps) {
     rental_shop_inclusions,
     rental_shop_tours,
     rental_shop_service_locations,
+    rental_shop_conditions,
     motorcycle_rentals
   } = shop
 
@@ -77,13 +81,30 @@ export default function ShopDetails({ shop }: ShopDetailsProps) {
   return (
     <div className="space-y-8">
       {/* Shop Header */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
+      <div className={`bg-white rounded-lg shadow-sm border p-6 ${premium?.isPremium ? 'ring-2 ring-yellow-400 shadow-lg' : ''}`}>
         <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
           <div className="flex-1">
-            <div className="flex items-center gap-3 mb-3">
+            <div className="flex items-center gap-3 mb-3 flex-wrap">
               <h1 className="text-3xl font-bold text-gray-900">{provider_name}</h1>
+              
+              {premium?.isPremium && (
+                <Badge variant={premium.premiumType} size="md" className="shadow-lg">
+                  {premium.premiumType === 'gold' && '⭐ Premium'}
+                  {premium.premiumType === 'platinum' && '💎 Premium+'}
+                  {premium.premiumType === 'featured' && '🌟 Featured'}
+                </Badge>
+              )}
+              
               {getBusinessStatusBadge()}
             </div>
+            
+            {premium?.isPremium && premium.daysRemaining && premium.daysRemaining <= 7 && (
+              <div className="mb-3">
+                <Badge variant="warning" size="sm">
+                  ⏰ Premium expires in {premium.daysRemaining} day{premium.daysRemaining > 1 ? 's' : ''}
+                </Badge>
+              </div>
+            )}
             
             <div className="flex items-center gap-2 text-gray-600 mb-4">
               <MapPinIcon className="w-5 h-5" />
@@ -167,6 +188,46 @@ export default function ShopDetails({ shop }: ShopDetailsProps) {
                     <div key={inclusion.id} className="flex items-center gap-2">
                       <CheckIcon className="w-4 h-4 text-green-600 flex-shrink-0" />
                       <span className="text-gray-700">{inclusion.inclusion_text}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Rental Conditions */}
+          {rental_shop_conditions && rental_shop_conditions.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DocumentTextIcon className="w-5 h-5" />
+                  Rental Conditions
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {rental_shop_conditions.map((condition) => (
+                    <div key={condition.id} className="border border-gray-200 rounded-lg p-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900 text-sm">
+                            {condition.condition_types?.name}
+                          </h4>
+                          {condition.condition_types?.description && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              {condition.condition_types.description}
+                            </p>
+                          )}
+                          <p className="text-sm text-gray-700 mt-1 font-medium">
+                            {condition.condition_value}
+                          </p>
+                          {condition.notes && (
+                            <p className="text-xs text-gray-600 mt-1">
+                              {condition.notes}
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -267,6 +328,57 @@ export default function ShopDetails({ shop }: ShopDetailsProps) {
 
         {/* Sidebar */}
         <div className="space-y-6">
+          {/* Premium Status */}
+          {premium?.isPremium && (
+            <Card className="border-yellow-200 bg-gradient-to-br from-yellow-50 to-orange-50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <span className="text-yellow-600">
+                    {premium.premiumType === 'gold' && '⭐'}
+                    {premium.premiumType === 'platinum' && '💎'}
+                    {premium.premiumType === 'featured' && '🌟'}
+                  </span>
+                  Premium Shop
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Tier</span>
+                  {premium.premiumType && (
+                    <Badge variant={premium.premiumType} size="sm">
+                      {premium.premiumType.charAt(0).toUpperCase() + premium.premiumType.slice(1)}
+                    </Badge>
+                  )}
+                </div>
+                
+                {premium.boostScore && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Boost Score</span>
+                    <span className="font-medium text-yellow-600">+{premium.boostScore}%</span>
+                  </div>
+                )}
+                
+                {premium.daysRemaining && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Days Remaining</span>
+                    <span className={`font-medium ${premium.daysRemaining <= 7 ? 'text-red-600' : 'text-green-600'}`}>
+                      {premium.daysRemaining}
+                    </span>
+                  </div>
+                )}
+                
+                {premium.endDate && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Expires</span>
+                    <span className="font-medium text-gray-900">
+                      {new Date(premium.endDate).toLocaleDateString()}
+                    </span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Location & Map */}
           <Card>
             <CardHeader>

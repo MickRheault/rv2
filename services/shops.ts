@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase/client'
 import { Database } from '@/lib/supabase/database.types'
+import { PremiumFeatureConfig } from '@/types/premium-listings'
 
 type RentalShop = Database['public']['Tables']['rental_shops']['Row']
 type City = Database['public']['Tables']['cities']['Row']
@@ -9,6 +10,8 @@ type BusinessStatus = Database['public']['Tables']['business_statuses']['Row']
 type RentalShopInclusion = Database['public']['Tables']['rental_shop_inclusions']['Row']
 type RentalShopTour = Database['public']['Tables']['rental_shop_tours']['Row']
 type RentalShopServiceLocation = Database['public']['Tables']['rental_shop_service_locations']['Row']
+type RentalShopCondition = Database['public']['Tables']['rental_shop_conditions']['Row']
+type ConditionType = Database['public']['Tables']['condition_types']['Row']
 type MotorcycleRental = Database['public']['Tables']['motorcycle_rentals']['Row']
 type Brand = Database['public']['Tables']['brands']['Row']
 type Category = Database['public']['Tables']['categories']['Row']
@@ -23,7 +26,11 @@ export interface ShopWithDetails extends RentalShop {
   rental_shop_inclusions: RentalShopInclusion[]
   rental_shop_tours: RentalShopTour[]
   rental_shop_service_locations: RentalShopServiceLocation[]
+  rental_shop_conditions?: (RentalShopCondition & {
+    condition_types: ConditionType | null
+  })[]
   motorcycle_count?: number
+  premium?: PremiumFeatureConfig
 }
 
 export interface ShopWithMotorcycles extends ShopWithDetails {
@@ -197,6 +204,10 @@ export const shopService = {
         rental_shop_inclusions (*),
         rental_shop_tours (*),
         rental_shop_service_locations (*),
+        rental_shop_conditions (
+          *,
+          condition_types (*)
+        ),
         motorcycle_rentals (
           *,
           brands (*),
@@ -375,6 +386,246 @@ export const shopService = {
       topRatedShop: topRated.data,
       shopsWithRatings: ratings.length
     }
+  },
+
+  // Get all shops for dropdown selection (simple name/id pairs)
+  async getAllShopsForDropdown() {
+    const { data, error } = await supabase
+      .from('rental_shops')
+      .select(`
+        id,
+        provider_name,
+        full_address,
+        cities (
+          name,
+          provinces (
+            name,
+            countries (
+              name
+            )
+          )
+        )
+      `)
+      .order('provider_name')
+
+    if (error) {
+      console.error('Error fetching shops for dropdown:', error)
+      throw error
+    }
+
+    return (data || []).map(shop => ({
+      id: shop.id,
+      provider_name: shop.provider_name,
+      location_name: shop.cities ? `${shop.cities.name}, ${shop.cities.provinces?.name || ''}, ${shop.cities.provinces?.countries?.name || ''}` : null,
+      full_address: shop.full_address || ''
+    }))
+  },
+
+  // ADMIN CRUD OPERATIONS
+  
+  // Create new rental shop
+  async createShop(shopData: Database['public']['Tables']['rental_shops']['Insert']) {
+    const { data, error } = await supabase
+      .from('rental_shops')
+      .insert(shopData)
+      .select(`
+        *,
+        cities (
+          *,
+          provinces (
+            *,
+            countries (*)
+          )
+        ),
+        business_statuses (*),
+        rental_shop_inclusions (*),
+        rental_shop_tours (*),
+        rental_shop_service_locations (*)
+      `)
+      .single()
+
+    if (error) {
+      console.error('Error creating shop:', error)
+      throw error
+    }
+
+    return data as ShopWithDetails
+  },
+
+  // Update existing rental shop
+  async updateShop(id: string, updates: Database['public']['Tables']['rental_shops']['Update']) {
+    const { data, error } = await supabase
+      .from('rental_shops')
+      .update(updates)
+      .eq('id', id)
+      .select(`
+        *,
+        cities (
+          *,
+          provinces (
+            *,
+            countries (*)
+          )
+        ),
+        business_statuses (*),
+        rental_shop_inclusions (*),
+        rental_shop_tours (*),
+        rental_shop_service_locations (*)
+      `)
+      .single()
+
+    if (error) {
+      console.error('Error updating shop:', error)
+      throw error
+    }
+
+    return data as ShopWithDetails
+  },
+
+  // Delete rental shop
+  async deleteShop(id: string) {
+    const { error } = await supabase
+      .from('rental_shops')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      console.error('Error deleting shop:', error)
+      throw error
+    }
+
+    return true
+  },
+
+  // Bulk delete rental shops
+  async deleteShops(ids: string[]) {
+    const { error } = await supabase
+      .from('rental_shops')
+      .delete()
+      .in('id', ids)
+
+    if (error) {
+      console.error('Error bulk deleting shops:', error)
+      throw error
+    }
+
+    return true
+  },
+
+  // Get shops for admin management (with pagination and search)
+  async getShopsForAdmin(filters: {
+    search?: string
+    cityId?: string
+    provinceId?: string
+    countryCode?: string
+    businessStatusId?: number
+    sortBy?: 'created_at' | 'provider_name' | 'rating' | 'location'
+    sortOrder?: 'asc' | 'desc'
+    limit?: number
+    offset?: number
+  } = {}) {
+    const {
+      search,
+      cityId,
+      provinceId,
+      countryCode,
+      businessStatusId,
+      sortBy = 'created_at',
+      sortOrder = 'desc',
+      limit = 20,
+      offset = 0
+    } = filters
+
+    let query = supabase
+      .from('rental_shops')
+      .select(`
+        *,
+        cities (
+          *,
+          provinces (
+            *,
+            countries (*)
+          )
+        ),
+        business_statuses (*)
+      `, { count: 'exact' })
+
+    // Apply search filter
+    if (search) {
+      query = query.or(`provider_name.ilike.%${search}%,business_description.ilike.%${search}%,full_address.ilike.%${search}%`)
+    }
+
+    // Apply location filters
+    if (cityId) {
+      query = query.eq('city_id', cityId)
+    } else if (provinceId) {
+      query = query.eq('cities.province_id', provinceId)
+    } else if (countryCode) {
+      query = query.eq('cities.provinces.country_code', countryCode)
+    }
+
+    // Apply other filters
+    if (businessStatusId !== undefined) {
+      query = query.eq('business_status_id', businessStatusId)
+    }
+
+    // Apply sorting
+    switch (sortBy) {
+      case 'provider_name':
+        query = query.order('provider_name', { ascending: sortOrder === 'asc' })
+        break
+      case 'rating':
+        query = query.order('rating', { ascending: sortOrder === 'asc', nullsFirst: false })
+        break
+      case 'location':
+        query = query.order('cities.name', { ascending: sortOrder === 'asc' })
+        break
+      case 'created_at':
+      default:
+        query = query.order('created_at', { ascending: sortOrder === 'asc' })
+        break
+    }
+
+    // Apply pagination
+    const { data, error, count } = await query.range(offset, offset + limit - 1)
+
+    if (error) {
+      console.error('Error fetching shops for admin:', error)
+      throw error
+    }
+
+    return {
+      shops: (data || []) as ShopWithDetails[],
+      total: count || 0
+    }
+  },
+
+  // Get all cities for dropdown selection
+  async getAllCitiesForDropdown() {
+    const { data, error } = await supabase
+      .from('cities')
+      .select(`
+        id,
+        name,
+        provinces (
+          name,
+          countries (
+            name
+          )
+        )
+      `)
+      .order('name')
+
+    if (error) {
+      console.error('Error fetching cities for dropdown:', error)
+      throw error
+    }
+
+    return (data || []).map(city => ({
+      id: city.id,
+      name: city.name,
+      fullName: `${city.name}, ${city.provinces?.name || ''}, ${city.provinces?.countries?.name || ''}`
+    }))
   }
 }
 
