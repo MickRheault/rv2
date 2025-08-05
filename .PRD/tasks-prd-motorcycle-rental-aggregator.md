@@ -67,7 +67,7 @@
 - `services/rental-rate-tiers.ts` - API service for rental rate tiers management with CRUD operations (Created - Full rate tiers management system)
 - `services/rental-shop-tours.ts` - API service for rental shop tours management with CRUD operations (Created - Full tours management system)
 - `services/users.ts` - API service for comprehensive user management using Supabase Admin API (list, invite, update roles, soft delete) (Created - Full user management system)
-- `services/locations.ts` - API service for location data with country name resolution function (Updated - Added getCountryByName for dynamic routing)
+- `services/locations.ts` - API service for location data with country and city name resolution functions (Updated - Added `getCountryByName` and `getCityByName` for dynamic routing)
 - `types/index.ts` - Custom TypeScript type definitions including page parameter interfaces for dynamic routes (Updated - Added CountryPageParams, CityPageParams, CountryPageProps, CityPageProps)
 - `app/admin/users/page.tsx` - Admin page for user management with comprehensive CRUD operations and user statistics (Created - Full user management interface)
 - `app/api/admin/users/route.ts` - API route for user listing and invitation with admin authentication (Created - Secure user management endpoints)
@@ -82,7 +82,8 @@
 - `app/[country]/page.tsx` - Country-specific shop listing page with data fetching, country validation, dynamic metadata generation, and error handling (Created - Location-based shop browsing)
 - `app/[country]/CountryShopsGrid.tsx` - Client component for displaying shop cards in a responsive grid with empty states, loading states, and result counts (Updated - Enhanced with loading and error states)
 - `app/[country]/ShopCardSkeleton.tsx` - Loading skeleton component for shop cards during data fetching (Created - Loading state component)
-- `app/[country]/[city]/page.tsx` - City-specific shop listing page with parameter validation, URL sanitization, 404 handling, and formatted display names (Created - Location-based shop browsing)
+- `app/[country]/[city]/page.tsx` - City-specific shop listing page with data fetching, city validation, dynamic metadata generation, error handling, and formatted display names (Updated - Complete city page implementation)
+- `app/[country]/[city]/CityShopsGrid.tsx` - Client component for displaying city shop cards with loading states, empty states, and result counts (Created - City shop display component)
 
 ## Existing Database Schema & Data Structure
 
@@ -254,21 +255,21 @@ The system receives data via the template in `context/data_template.json`:
     - [x] 7.2.3 Display shop cards using existing `ShopCard` component from search results
     - [x] 7.2.4 Add loading state and error handling for country pages
     - [SKIP] 7.2.5 Include link/button to access search functionality for that country location
-  - [ ] 7.3 Create city listing page component with shop displays
-    - [ ] 7.3.1 Implement city page component with dynamic page title (e.g., "Motorcycle Rental Shops in Montreal, Canada")
-    - [ ] 7.3.2 Add data fetching logic to get all shops for a specific city using existing services
-    - [ ] 7.3.3 Display shop cards using existing `ShopCard` component with consistent styling
-    - [ ] 7.3.4 Add loading state and error handling for city pages
+  - [x] 7.3 Create city listing page component with shop displays
+    - [x] 7.3.1 Implement city page component with dynamic page title (e.g., "Motorcycle Rental Shops in Montreal, Canada")
+    - [x] 7.3.2 Add data fetching logic to get all shops for a specific city using existing services
+    - [x] 7.3.3 Display shop cards using existing `ShopCard` component with consistent styling
+    - [x] 7.3.4 Add loading state and error handling for city pages
     - [SKIP] 7.3.5 Include link/button to access search functionality for that city location
   - [ ] 7.4 Extend location-based data filtering services
     - [x] 7.4.1 Add function to existing `services/locations.ts` to validate and resolve country names
-    - [ ] 7.4.2 Add function to existing `services/locations.ts` to validate and resolve city names within countries
+    - [x] 7.4.2 Add function to existing `services/locations.ts` to validate and resolve city names within countries
     - [x] 7.4.3 Extend existing `services/shops.ts` to support country-based shop filtering
-    - [ ] 7.4.4 Extend existing `services/shops.ts` to support city-based shop filtering
+    - [x] 7.4.4 Extend existing `services/shops.ts` to support city-based shop filtering
     - [ ] 7.4.5 Add error handling for invalid country/city combinations
   - [ ] 7.5 Add SEO metadata and error handling for location pages
     - [x] 7.5.1 Implement dynamic meta tags and page titles for country pages
-    - [ ] 7.5.2 Implement dynamic meta tags and page titles for city pages
+    - [x] 7.5.2 Implement dynamic meta tags and page titles for city pages
     - [ ] 7.5.3 Add 404 error handling for non-existent countries or cities
     - [ ] 7.5.4 Add empty state handling when no shops exist in a location
     - [ ] 7.5.5 Test and verify proper URL structure and SEO metadata generation 
