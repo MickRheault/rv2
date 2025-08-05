@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { clsx } from 'clsx'
 import {
@@ -42,6 +42,7 @@ export default function ShopCard({
   className 
 }: ShopCardProps) {
   const [showAllInclusions, setShowAllInclusions] = useState(false)
+  const router = useRouter()
   
   // Get location string
   const location = shop.cities 
@@ -62,6 +63,21 @@ export default function ShopCard({
   const premiumType = premium?.premiumType ?? 'gold'
   
 
+
+  // Handle card click for navigation
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't navigate if clicking on interactive elements
+    const target = e.target as HTMLElement
+    if (
+      target.closest('button') ||
+      target.closest('a') ||
+      target.tagName === 'BUTTON' ||
+      target.tagName === 'A'
+    ) {
+      return
+    }
+    router.push(`/shop/${shop.slug}`)
+  }
 
   // Handle favorite toggle
   const handleFavoriteClick = (e: React.MouseEvent) => {
@@ -108,12 +124,14 @@ export default function ShopCard({
   }
 
   return (
-    <Link href={`/shop/${shop.slug}`} className="block group">
-      <Card className={clsx(
-        'overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1',
+    <Card 
+      className={clsx(
+        'overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer group',
         compact ? 'h-auto' : 'h-full',
         className
-      )}>
+      )}
+      onClick={handleCardClick}
+    >
         
         <CardHeader className={clsx('relative', compact ? 'p-3' : 'p-4')}>
           {/* Header with name and actions */}
@@ -364,7 +382,6 @@ export default function ShopCard({
             </div>
           </CardFooter>
         )}
-      </Card>
-    </Link>
+    </Card>
   )
 } 

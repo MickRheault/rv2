@@ -94,7 +94,32 @@ export const shopService = {
     } else if (provinceId) {
       shopQuery = shopQuery.eq('cities.province_id', provinceId)
     } else if (countryCode) {
-      shopQuery = shopQuery.eq('cities.provinces.country_code', countryCode)
+      // For country filtering, we need to get city IDs through provinces for reliable filtering
+      const { data: provinces } = await supabase
+        .from('provinces')
+        .select('id')
+        .eq('country_code', countryCode)
+      
+      if (provinces && provinces.length > 0) {
+        const provinceIds = provinces.map(p => p.id)
+        
+        // Get city IDs for these provinces
+        const { data: cities } = await supabase
+          .from('cities')
+          .select('id')
+          .in('province_id', provinceIds)
+        
+        if (cities && cities.length > 0) {
+          const cityIds = cities.map(c => c.id)
+          shopQuery = shopQuery.in('city_id', cityIds)
+        } else {
+          // No cities found for this country, return empty result
+          return { shops: [], total: 0 }
+        }
+      } else {
+        // No provinces found for this country, return empty result
+        return { shops: [], total: 0 }
+      }
     }
 
     // Apply shop-specific filters
