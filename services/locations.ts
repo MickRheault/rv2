@@ -321,6 +321,29 @@ export const locationService = {
       totalCities: cities.count || 0,
       citiesWithShops: citiesWithShops.count || 0
     }
+  },
+
+  // Get country by name (for dynamic routing)
+  async getCountryByName(countryName: string) {
+    // Convert country name slug to search term (e.g., "new-zealand" -> "new zealand")
+    const searchName = countryName.replace(/-/g, ' ')
+    
+    const { data, error } = await supabase
+      .from('countries')
+      .select('*')
+      .ilike('name', searchName)
+      .single()
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No rows returned
+        return null
+      }
+      console.error('Error fetching country by name:', error)
+      throw error
+    }
+
+    return data as Country
   }
 }
 
