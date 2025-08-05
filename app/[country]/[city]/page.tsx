@@ -2,10 +2,11 @@ import { Suspense } from 'react'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { CityPageProps } from '@/types'
-import { validateLocationParam, formatLocationName } from '@/lib/utils'
+import { validateLocationParam, formatLocationName, validateCountryCityCombo, isReservedRoute } from '@/lib/utils'
 import { locationService } from '@/services/locations'
 import { shopService } from '@/services/shops'
 import { PageLoading, ErrorState } from '@/components/ui/LoadingStates'
+import { StructuredData, generateLocationShopListingSchema } from '@/lib/seo/structured-data'
 import CityShopsGrid from './CityShopsGrid'
 
 // Generate dynamic metadata based on city and country parameters
@@ -52,12 +53,24 @@ export default async function CityPage({ params }: CityPageProps) {
   // Extract and validate parameters
   const { country: rawCountry, city: rawCity } = params
   
+  // Check for reserved routes first
+  if (isReservedRoute(rawCountry) || isReservedRoute(rawCity)) {
+    notFound()
+  }
+  
   // Validate and sanitize the parameters
   const country = validateLocationParam(rawCountry)
   const city = validateLocationParam(rawCity)
   
   // Return 404 for invalid parameters
   if (!country || !city) {
+    notFound()
+  }
+
+  // Enhanced validation for country/city combination
+  const comboValidation = validateCountryCityCombo(country, city)
+  if (!comboValidation.isValid) {
+    console.warn(`Invalid country/city combination: ${country}/${city} - ${comboValidation.error}`)
     notFound()
   }
   
@@ -92,10 +105,20 @@ export default async function CityPage({ params }: CityPageProps) {
 
     const shops = shopsResult.shops || []
 
+    // Generate JSON-LD structured data for the shop listings
+    const currentUrl = `https://ridevault.com/${country}/${city}/`
+    const structuredData = generateLocationShopListingSchema({
+      location: `${cityDisplayName}, ${countryDisplayName}`,
+      locationType: 'city',
+      shops: shops,
+      url: currentUrl,
+    })
+
     return (
       <Suspense fallback={
         <PageLoading message={`Loading motorcycle rental shops in ${cityDisplayName}, ${countryDisplayName}...`} />
       }>
+        <StructuredData schema={structuredData} />
         <main className="min-h-screen bg-gray-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-8">
