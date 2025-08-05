@@ -2,10 +2,11 @@ import { Suspense } from 'react'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { CountryPageProps } from '@/types'
-import { validateLocationParam, formatLocationName } from '@/lib/utils'
+import { validateLocationParam, formatLocationName, isReservedRoute } from '@/lib/utils'
 import { locationService } from '@/services/locations'
 import { shopService } from '@/services/shops'
 import { PageLoading, ErrorState } from '@/components/ui/LoadingStates'
+import { StructuredData, generateLocationShopListingSchema } from '@/lib/seo/structured-data'
 import CountryShopsGrid from './CountryShopsGrid'
 
 // Generate dynamic metadata based on country parameter
@@ -51,6 +52,11 @@ export default async function CountryPage({ params }: CountryPageProps) {
   // Extract and validate country parameter
   const { country: rawCountry } = params
   
+  // Check for reserved routes first
+  if (isReservedRoute(rawCountry)) {
+    notFound()
+  }
+  
   // Validate and sanitize the country parameter
   const country = validateLocationParam(rawCountry)
   
@@ -80,10 +86,20 @@ export default async function CountryPage({ params }: CountryPageProps) {
 
     const shops = shopsResult.shops || []
 
+    // Generate JSON-LD structured data for the shop listings
+    const currentUrl = `https://ridevault.com/${country}/`
+    const structuredData = generateLocationShopListingSchema({
+      location: countryDisplayName,
+      locationType: 'country',
+      shops: shops,
+      url: currentUrl,
+    })
+
     return (
       <Suspense fallback={
         <PageLoading message={`Loading motorcycle rental shops in ${countryDisplayName}...`} />
       }>
+        <StructuredData schema={structuredData} />
         <main className="min-h-screen bg-gray-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-8">

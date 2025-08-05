@@ -319,4 +319,76 @@ export function formatLocationName(param: string): string {
     .split('-')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ')
+}
+
+// Enhanced validation for country/city combinations
+export function validateCountryCityCombo(country: string, city: string): {
+  isValid: boolean
+  error?: string
+  suggestion?: string
+} {
+  // Basic parameter validation
+  if (!country || !city) {
+    return {
+      isValid: false,
+      error: 'Both country and city parameters are required'
+    }
+  }
+
+  // Check for common invalid patterns
+  const invalidPatterns = [
+    /^(admin|api|auth|test|demo)$/i,
+    /^(www|http|https)$/i,
+    /^(\d+)$/,
+    /^(null|undefined|none)$/i
+  ]
+
+  for (const pattern of invalidPatterns) {
+    if (pattern.test(country) || pattern.test(city)) {
+      return {
+        isValid: false,
+        error: 'Invalid location parameter format'
+      }
+    }
+  }
+
+  // Check for suspicious combinations (same country and city name)
+  if (country.toLowerCase() === city.toLowerCase()) {
+    return {
+      isValid: false,
+      error: 'City name cannot be the same as country name',
+      suggestion: `Try a specific city within ${formatLocationName(country)}`
+    }
+  }
+
+  // Check for minimum reasonable length
+  if (country.length < 2 || city.length < 2) {
+    return {
+      isValid: false,
+      error: 'Location names must be at least 2 characters long'
+    }
+  }
+
+  // Check for maximum reasonable length
+  if (country.length > 50 || city.length > 50) {
+    return {
+      isValid: false,
+      error: 'Location names cannot exceed 50 characters'
+    }
+  }
+
+  return { isValid: true }
+}
+
+// Check if a location parameter looks like a reserved route
+export function isReservedRoute(param: string): boolean {
+  const reservedRoutes = [
+    'admin', 'api', 'auth', 'browse', 'search', 'compare', 'favorites',
+    'about', 'contact', 'help', 'privacy', 'terms', 'careers', 'safety',
+    'how-it-works', 'report', 'cookies', 'motorcycle-demo', 'search-demo',
+    'shop-demo', 'ui-demo', 'test-errors', 'test-location-search',
+    'test-search-url-state', 'test-services', 'test-url-params'
+  ]
+  
+  return reservedRoutes.includes(param.toLowerCase())
 } 
