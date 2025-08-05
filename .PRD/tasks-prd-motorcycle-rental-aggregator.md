@@ -10,7 +10,7 @@
 - `app/globals.css` - Global CSS styles for the application (Created - Basic global styles)
 - `lib/supabase/client.ts` - Supabase client configuration (Created - Full client with auth helpers)
 - `lib/supabase/database.types.ts` - Generated TypeScript types from Supabase (Created - Generated from live DB schema)
-- `lib/utils/index.ts` - Utility functions for data processing and formatting (Created - Comprehensive utilities)
+- `lib/utils/index.ts` - Utility functions for data processing and formatting including parameter validation functions (Created - Comprehensive utilities, added validateLocationParam and formatLocationName for dynamic routes)
 - `lib/utils/index.test.ts` - Unit tests for utility functions
 - `app/layout.tsx` - Root layout component with global styles and providers
 - `app/page.tsx` - Home page component with search and featured listings
@@ -68,7 +68,7 @@
 - `services/rental-shop-tours.ts` - API service for rental shop tours management with CRUD operations (Created - Full tours management system)
 - `services/users.ts` - API service for comprehensive user management using Supabase Admin API (list, invite, update roles, soft delete) (Created - Full user management system)
 - `services/locations.ts` - API service for location data
-- `types/index.ts` - Custom TypeScript type definitions
+- `types/index.ts` - Custom TypeScript type definitions including page parameter interfaces for dynamic routes (Updated - Added CountryPageParams, CityPageParams, CountryPageProps, CityPageProps)
 - `app/admin/users/page.tsx` - Admin page for user management with comprehensive CRUD operations and user statistics (Created - Full user management interface)
 - `app/api/admin/users/route.ts` - API route for user listing and invitation with admin authentication (Created - Secure user management endpoints)
 - `app/api/admin/users/[id]/route.ts` - API route for individual user operations (get, update role, delete) with admin authentication (Created - Individual user management)
@@ -79,8 +79,8 @@
 - `app/api/shops/route.ts` - API route for shop data
 - `app/api/search/route.ts` - API route for search functionality
 - `app/api/flag/route.ts` - API route for content flagging
-- `app/[country]/page.tsx` - Country-specific shop listing page (Created - Location-based shop browsing)
-- `app/[country]/[city]/page.tsx` - City-specific shop listing page (Created - Location-based shop browsing)
+- `app/[country]/page.tsx` - Country-specific shop listing page with parameter validation, URL sanitization, 404 handling, and formatted display names (Created - Location-based shop browsing)
+- `app/[country]/[city]/page.tsx` - City-specific shop listing page with parameter validation, URL sanitization, 404 handling, and formatted display names (Created - Location-based shop browsing)
 
 ## Existing Database Schema & Data Structure
 
@@ -241,11 +241,11 @@ The system receives data via the template in `context/data_template.json`:
   - [SKIP] 6.12 Conduct performance audit and implement improvements
 
 - [ ] 7.0 Phase 1 Extension: Location-Based Shop Listings
-  - [ ] 7.1 Set up dynamic routing structure for country and city pages
-    - [ ] 7.1.1 Create `app/[country]/page.tsx` file with proper Next.js App Router structure
-    - [ ] 7.1.2 Create `app/[country]/[city]/page.tsx` file with nested dynamic routing
-    - [ ] 7.1.3 Add TypeScript interfaces for page params (country and city parameters)
-    - [ ] 7.1.4 Implement basic parameter extraction and validation in both route files
+  - [x] 7.1 Set up dynamic routing structure for country and city pages
+    - [x] 7.1.1 Create `app/[country]/page.tsx` file with proper Next.js App Router structure
+    - [x] 7.1.2 Create `app/[country]/[city]/page.tsx` file with nested dynamic routing
+    - [x] 7.1.3 Add TypeScript interfaces for page params (country and city parameters)
+    - [x] 7.1.4 Implement basic parameter extraction and validation in both route files
   - [ ] 7.2 Create country listing page component with shop displays
     - [ ] 7.2.1 Implement country page component with dynamic page title (e.g., "Motorcycle Rental Shops in Canada")
     - [ ] 7.2.2 Add data fetching logic to get all shops for a specific country using existing services

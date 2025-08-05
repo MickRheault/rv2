@@ -117,6 +117,24 @@ export interface FormState<T> {
   isDirty: boolean
 }
 
+// Page parameter interfaces for dynamic routes
+export interface CountryPageParams {
+  country: string
+}
+
+export interface CityPageParams {
+  country: string
+  city: string
+}
+
+export interface CountryPageProps {
+  params: CountryPageParams
+}
+
+export interface CityPageProps {
+  params: CityPageParams
+}
+
 // Component props interfaces
 export interface BaseComponentProps {
   className?: string

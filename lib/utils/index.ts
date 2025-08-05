@@ -286,4 +286,37 @@ export function enhanceWithPremiumInfo<T extends { id: string }>(
     ...item,
     ...getPremiumStatus(item, premiumIds)
   }))
+}
+
+// Parameter validation functions for dynamic routes
+export function validateLocationParam(param: string): string | null {
+  if (!param || typeof param !== 'string') {
+    return null
+  }
+
+  // URL decode the parameter
+  const decoded = decodeURIComponent(param)
+  
+  // Basic validation: alphanumeric, hyphens, and spaces only
+  const sanitized = decoded
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '') // Remove invalid characters
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single
+    .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
+
+  // Check if result is reasonable (between 2-50 characters)
+  if (sanitized.length < 2 || sanitized.length > 50) {
+    return null
+  }
+
+  return sanitized
+}
+
+export function formatLocationName(param: string): string {
+  return param
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
 } 
