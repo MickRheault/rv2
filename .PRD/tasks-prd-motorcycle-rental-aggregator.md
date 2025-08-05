@@ -79,6 +79,8 @@
 - `app/api/shops/route.ts` - API route for shop data
 - `app/api/search/route.ts` - API route for search functionality
 - `app/api/flag/route.ts` - API route for content flagging
+- `app/[country]/page.tsx` - Country-specific shop listing page (Created - Location-based shop browsing)
+- `app/[country]/[city]/page.tsx` - City-specific shop listing page (Created - Location-based shop browsing)
 
 ## Existing Database Schema & Data Structure
 
@@ -236,4 +238,35 @@ The system receives data via the template in `context/data_template.json`:
   - [x] 6.9 Implement error boundaries and graceful error handling
   - [SKIP] 6.10 Add internationalization framework preparation (next-intl)
   - [SKIP] 6.11 Optimize bundle size and implement code splitting
-  - [SKIP] 6.12 Conduct performance audit and implement improvements 
+  - [SKIP] 6.12 Conduct performance audit and implement improvements
+
+- [ ] 7.0 Phase 1 Extension: Location-Based Shop Listings
+  - [ ] 7.1 Set up dynamic routing structure for country and city pages
+    - [ ] 7.1.1 Create `app/[country]/page.tsx` file with proper Next.js App Router structure
+    - [ ] 7.1.2 Create `app/[country]/[city]/page.tsx` file with nested dynamic routing
+    - [ ] 7.1.3 Add TypeScript interfaces for page params (country and city parameters)
+    - [ ] 7.1.4 Implement basic parameter extraction and validation in both route files
+  - [ ] 7.2 Create country listing page component with shop displays
+    - [ ] 7.2.1 Implement country page component with dynamic page title (e.g., "Motorcycle Rental Shops in Canada")
+    - [ ] 7.2.2 Add data fetching logic to get all shops for a specific country using existing services
+    - [ ] 7.2.3 Display shop cards using existing `ShopCard` component from search results
+    - [ ] 7.2.4 Add loading state and error handling for country pages
+    - [ ] 7.2.5 Include link/button to access search functionality for that country location
+  - [ ] 7.3 Create city listing page component with shop displays
+    - [ ] 7.3.1 Implement city page component with dynamic page title (e.g., "Motorcycle Rental Shops in Montreal, Canada")
+    - [ ] 7.3.2 Add data fetching logic to get all shops for a specific city using existing services
+    - [ ] 7.3.3 Display shop cards using existing `ShopCard` component with consistent styling
+    - [ ] 7.3.4 Add loading state and error handling for city pages
+    - [ ] 7.3.5 Include link/button to access search functionality for that city location
+  - [ ] 7.4 Extend location-based data filtering services
+    - [ ] 7.4.1 Add function to existing `services/locations.ts` to validate and resolve country names
+    - [ ] 7.4.2 Add function to existing `services/locations.ts` to validate and resolve city names within countries
+    - [ ] 7.4.3 Extend existing `services/shops.ts` to support country-based shop filtering
+    - [ ] 7.4.4 Extend existing `services/shops.ts` to support city-based shop filtering
+    - [ ] 7.4.5 Add error handling for invalid country/city combinations
+  - [ ] 7.5 Add SEO metadata and error handling for location pages
+    - [ ] 7.5.1 Implement dynamic meta tags and page titles for country pages
+    - [ ] 7.5.2 Implement dynamic meta tags and page titles for city pages
+    - [ ] 7.5.3 Add 404 error handling for non-existent countries or cities
+    - [ ] 7.5.4 Add empty state handling when no shops exist in a location
+    - [ ] 7.5.5 Test and verify proper URL structure and SEO metadata generation 
