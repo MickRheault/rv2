@@ -344,6 +344,40 @@ export const locationService = {
     }
 
     return data as Country
+  },
+
+  // Get city by name within a specific country (for dynamic routing)
+  async getCityByName(cityName: string, countryCode: string) {
+    // Convert city name slug to search term (e.g., "new-york" -> "new york")
+    const searchName = cityName.replace(/-/g, ' ')
+    
+    const { data, error } = await supabase
+      .from('cities')
+      .select(`
+        *,
+        provinces!inner (
+          *,
+          countries!inner (*)
+        )
+      `)
+      .ilike('name', searchName)
+      .eq('provinces.countries.code', countryCode)
+      .single()
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No rows returned
+        return null
+      }
+      console.error('Error fetching city by name:', error)
+      throw error
+    }
+
+    return data as City & {
+      provinces: Province & {
+        countries: Country
+      }
+    }
   }
 }
 
