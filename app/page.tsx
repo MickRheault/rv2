@@ -1,52 +1,60 @@
 import Link from 'next/link'
 import { MagnifyingGlassIcon, MapPinIcon, CurrencyDollarIcon, ShieldCheckIcon } from '@heroicons/react/24/outline'
 import AuthTokenDetector from '@/components/auth/AuthTokenDetector'
+import HeroSearchForm from '@/components/search/HeroSearchForm'
 
 export default function Home() {
   return (
     <>
       <AuthTokenDetector />
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-blue-50 via-white to-purple-50 py-20 lg:py-32">
-        <div className="container-custom">
-          <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 text-balance">
-              Find Your Perfect
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600"> Ride</span>
-            </h1>
-            <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-              Discover and compare motorcycle rentals from trusted providers worldwide. 
-              From city scooters to adventure bikes, find the perfect motorcycle for your journey.
-            </p>
-            
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Link href="/search" className="btn-primary">
-                Start Your Search
-              </Link>
-              <Link href="/browse" className="btn-secondary">
-                Browse Locations
-              </Link>
-            </div>
+      <section className="relative min-h-[600px] flex items-center justify-center overflow-hidden">
+        {/* Background Image */}
+        <div 
+          className="absolute inset-0 z-0"
+          style={{
+            backgroundImage: `url('https://images.unsplash.com/photo-1558980664-10e7170b5df9?q=80&w=1742&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+          }}
+        >
+          {/* Overlay */}
+          <div className="absolute inset-0 bg-black/40"></div>
+        </div>
 
-            {/* Quick Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mt-16">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600 mb-2">1000+</div>
-                <div className="text-sm text-gray-600">Motorcycles</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-purple-600 mb-2">50+</div>
-                <div className="text-sm text-gray-600">Countries</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-green-600 mb-2">500+</div>
-                <div className="text-sm text-gray-600">Rental Shops</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-orange-600 mb-2">24/7</div>
-                <div className="text-sm text-gray-600">Support</div>
-              </div>
+        <div className="container-custom relative z-10">
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 text-balance">
+              Where do you want to ride?
+            </h1>
+
+            
+            {/* Search Form */}
+            <HeroSearchForm />
+          </div>
+        </div>
+      </section>
+
+      {/* Quick Stats */}
+      <section className="py-16 bg-gray-50">
+        <div className="container-custom">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
+            <div className="text-center">
+              <div className="text-3xl font-bold text-blue-600 mb-2">1000+</div>
+              <div className="text-sm text-gray-600">Motorcycles</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-purple-600 mb-2">50+</div>
+              <div className="text-sm text-gray-600">Countries</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-green-600 mb-2">500+</div>
+              <div className="text-sm text-gray-600">Rental Shops</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-orange-600 mb-2">24/7</div>
+              <div className="text-sm text-gray-600">Support</div>
             </div>
           </div>
         </div>
@@ -127,4 +135,4 @@ export default function Home() {
       </section>
     </>
   )
-} 
+}
