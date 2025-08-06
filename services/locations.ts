@@ -202,7 +202,7 @@ export const locationService = {
     }
   },
 
-  // Get locations with rental shops (only locations that have shops)
+
   async getLocationsWithShops() {
     const { data, error } = await supabase
       .from('cities')
