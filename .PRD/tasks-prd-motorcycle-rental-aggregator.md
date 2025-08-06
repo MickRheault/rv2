@@ -88,6 +88,8 @@
 - `app/[country]/[city]/not-found.tsx` - Custom 404 page for invalid cities with URL format help and popular city suggestions (Created - Enhanced error handling)
 - `app/test-location-routing/page.tsx` - Comprehensive test page for URL validation, SEO metadata, and error handling verification (Created - Testing and validation tool)
 - `lib/utils/index.ts` - Enhanced parameter validation with country/city combination validation and reserved route detection (Updated - Advanced validation functions)
+- `app/browse/page.tsx` - Browse page with countries and cities directory listing (Updated - Location directory with simple list)
+- `services/locations.ts` - API service for location data with shop counts (Updated - Added `getLocationsWithShopCounts` for browse page)
 
 ## Existing Database Schema & Data Structure
 
@@ -276,4 +278,12 @@ The system receives data via the template in `context/data_template.json`:
     - [x] 7.5.2 Implement dynamic meta tags and page titles for city pages
     - [x] 7.5.3 Add 404 error handling for non-existent countries or cities
     - [x] 7.5.4 Add empty state handling when no shops exist in a location
-    - [x] 7.5.5 Test and verify proper URL structure and SEO metadata generation 
+    - [x] 7.5.5 Test and verify proper URL structure and SEO metadata generation
+
+- [ ] 8.0 Browse Page Enhancement: Location Directory
+  - [ ] 8.1 Update browse page with countries and cities listing
+    - [ ] 8.1.1 Replace placeholder content in `app/browse/page.tsx` with location directory
+    - [x] 8.1.2 Add data fetching to get all countries with rental shops using existing `services/locations.ts`
+    - [x] 8.1.3 Add data fetching to get all cities with rental shops using existing database queries
+    - [x] 8.1.4 Display countries list with shop counts and links to country pages (e.g., `/thailand`)
+    - [x] 8.1.5 Display cities list grouped by country and links to city pages (e.g., `/thailand/bangkok`)

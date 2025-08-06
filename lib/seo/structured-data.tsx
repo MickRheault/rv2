@@ -641,3 +641,64 @@ export function StructuredData({ schema }: { schema: object }): JSX.Element {
     },
   });
 }
+
+// Browse page schema for country listings
+export function generateBrowsePageSchema(countries: Array<{
+  country: {
+    code: string;
+    name: string;
+  };
+  provinces: Record<string, {
+    cities: Array<{
+      id: string;
+      name: string;
+    }>
+  }>
+}>) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: 'Browse Motorcycle Rentals by Location',
+    description: 'Explore motorcycle rental shops by country and city. Find the best rental locations worldwide.',
+    url: `${SITE_CONFIG.url}/browse`,
+    mainEntity: {
+      '@type': 'ItemList',
+      itemListElement: countries.map((c, index) => {
+        const countryUrlName = c.country.name.toLowerCase().replace(/\s+/g, '-');
+        const cities = Object.values(c.provinces).flatMap(p => p.cities);
+
+        return {
+          '@type': 'ListItem',
+          position: index + 1,
+          item: {
+            '@type': 'Country',
+            name: c.country.name,
+            url: `${SITE_CONFIG.url}/${countryUrlName}`,
+            containsPlace: cities.map(city => ({
+              '@type': 'City',
+              name: city.name,
+              url: `${SITE_CONFIG.url}/${countryUrlName}/${city.name.toLowerCase().replace(/\s+/g, '-')}`,
+            })),
+          },
+        }
+      }),
+    },
+    breadcrumb: {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+            {
+                '@type': 'ListItem',
+                position: 1,
+                name: 'Home',
+                item: SITE_CONFIG.url,
+            },
+            {
+                '@type': 'ListItem',
+                position: 2,
+                name: 'Browse Locations',
+                item: `${SITE_CONFIG.url}/browse`,
+            }
+        ]
+    }
+  };
+}

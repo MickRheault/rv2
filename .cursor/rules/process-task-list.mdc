@@ -34,5 +34,7 @@ When working with task lists, the AI must:
    - Mark the **parent task** `[x]` once **all** its subtasks are `[x]`.
 3. Add newly discovered tasks.
 4. Keep “Relevant Files” accurate and up to date.
-5. Before starting work, check which sub‑task is next.
-6. After implementing a sub‑task, update the file and then pause for user approval.
+5. Before starting work, make sure to not do the work planned in the future tasks. 
+6. If you see that some simple requirements would need a lot of work, please explain me and ask me to confirm.
+7. I would like you to run `npm run build` at the end of each tsk to make sure you don't break anything.
+8. After implementing a sub‑task, update the file and then pause for user approval.
