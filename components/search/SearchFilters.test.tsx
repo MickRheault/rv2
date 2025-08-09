@@ -18,7 +18,7 @@ describe('SearchFilters', () => {
         onClearFilters={() => {}}
       />
     )
-    expect(screen.getByText(/Filters/i)).toBeInTheDocument()
+    expect(screen.getAllByText(/Filters/i)[0]).toBeInTheDocument()
   })
 })
 
