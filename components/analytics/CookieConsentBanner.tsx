@@ -76,7 +76,7 @@ export default function CookieConsentBanner() {
               </h3>
               <p className="text-sm text-gray-600">
                 We use cookies and similar technologies to improve your browsing experience, 
-                analyze site traffic, and provide personalized content. By clicking "Accept All", 
+                  analyze site traffic, and provide personalized content. By clicking &quot;Accept All&quot;, 
                 you consent to our use of cookies.{' '}
                 <a href="/privacy" className="text-blue-600 hover:underline">
                   Learn more in our Privacy Policy

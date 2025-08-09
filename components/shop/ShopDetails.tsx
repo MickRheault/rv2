@@ -179,7 +179,7 @@ export default function ShopDetails({ shop, premium }: ShopDetailsProps) {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CheckIcon className="w-5 h-5" />
-                  What's Included
+                  What&apos;s Included
                 </CardTitle>
               </CardHeader>
               <CardContent>
