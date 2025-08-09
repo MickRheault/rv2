@@ -255,6 +255,29 @@ export default function ShopCard({
         </CardHeader>
 
         <CardContent className={clsx('space-y-3', compact ? 'p-3 pt-0' : 'p-4 pt-0')}>
+          {/* Bike types (categories) */}
+          {(() => {
+            const categoryNames = shop.category_names || []
+            if (!categoryNames || categoryNames.length === 0 || compact) return null
+            const maxToShow = 5
+            const shown = categoryNames.slice(0, maxToShow)
+            const remaining = categoryNames.length - shown.length
+            return (
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-gray-900">Bike types</h4>
+                <div className="flex flex-wrap gap-2">
+                  {shown.map((name) => (
+                    <Badge key={name} variant="secondary" size="sm">
+                      {name}
+                    </Badge>
+                  ))}
+                  {remaining > 0 && (
+                    <Badge variant="secondary" size="sm">+{remaining} more</Badge>
+                  )}
+                </div>
+              </div>
+            )
+          })()}
           {/* Business description */}
           {shop.business_description && !compact && (
             <p className="text-sm text-gray-600 line-clamp-2">
