@@ -136,7 +136,7 @@ export default function SearchResults({
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">No results found</h3>
             <p className="text-gray-600 mb-4">
-              Try adjusting your search criteria or filters to find what you're looking for.
+              Try adjusting your search criteria or filters to find what you&apos;re looking for.
             </p>
             <Button 
               variant="outline"

@@ -116,7 +116,7 @@ export default function TestErrorsPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Error Testing Dashboard</h1>
           <p className="text-gray-600">
-            Use this page to test different types of errors and see how they're handled.
+            Use this page to test different types of errors and see how they&apos;re handled.
             <br />
             <strong>Open your browser DevTools (F12) and check the Console tab to see error logs!</strong>
           </p>
@@ -197,24 +197,24 @@ export default function TestErrorsPage() {
             <div className="space-y-4 text-sm">
               <div>
                 <h3 className="font-medium text-blue-800 mb-2">1. Open Browser DevTools</h3>
-                <p className="text-blue-700">Press F12 or right-click → "Inspect" → Go to "Console" tab</p>
+                <p className="text-blue-700">Press F12 or right-click → &quot;Inspect&quot; → Go to &quot;Console&quot; tab</p>
               </div>
               
               <div>
                 <h3 className="font-medium text-blue-800 mb-2">2. Test Error Boundaries</h3>
                 <ul className="list-disc list-inside space-y-1 text-blue-700">
-                  <li>Click "Break Component A" - see component-level error UI</li>
-                  <li>Click "Break Section Item 1" - see section-level error UI</li>
-                  <li>Click "💥 Crash Entire Page" - see page-level error page</li>
+                  <li>Click &quot;Break Component A&quot; - see component-level error UI</li>
+                  <li>Click &quot;Break Section Item 1&quot; - see section-level error UI</li>
+                  <li>Click &quot;💥 Crash Entire Page&quot; - see page-level error page</li>
                 </ul>
               </div>
               
               <div>
                 <h3 className="font-medium text-blue-800 mb-2">3. Test Global Error Handlers</h3>
                 <ul className="list-disc list-inside space-y-1 text-blue-700">
-                  <li>Click "Async Error" - check console for error log</li>
-                  <li>Click "Promise Rejection" - check console for promise rejection</li>
-                  <li>Click "Resource Error" - check console for resource loading error</li>
+                  <li>Click &quot;Async Error&quot; - check console for error log</li>
+                  <li>Click &quot;Promise Rejection&quot; - check console for promise rejection</li>
+                  <li>Click &quot;Resource Error&quot; - check console for resource loading error</li>
                 </ul>
               </div>
               
@@ -229,7 +229,7 @@ export default function TestErrorsPage() {
               <div>
                 <h3 className="font-medium text-blue-800 mb-2">5. Test Retry Functionality</h3>
                 <ul className="list-disc list-inside space-y-1 text-blue-700">
-                  <li>After breaking a component, click the "Retry" button</li>
+                  <li>After breaking a component, click the &quot;Retry&quot; button</li>
                   <li>The component should reset and work normally again</li>
                 </ul>
               </div>

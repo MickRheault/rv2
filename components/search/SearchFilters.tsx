@@ -240,7 +240,7 @@ export default function SearchFilters({
                   {filters.locationQuery && (
                     <div className="flex items-center justify-between p-2 bg-blue-50 rounded-lg">
                       <span className="text-sm text-blue-900">
-                        Search: "{filters.locationQuery}"
+                        Search: &quot;{filters.locationQuery}&quot;
                       </span>
                       <button
                         onClick={() => onFiltersChange({ locationQuery: undefined })}
