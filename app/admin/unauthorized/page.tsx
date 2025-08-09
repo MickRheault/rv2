@@ -91,7 +91,7 @@ export default function AdminUnauthorizedPage() {
 
             <div className="mt-4 text-xs text-gray-500 space-y-1">
               <p>• Contact your system administrator to request access</p>
-              <p>• Ensure you're signed in with the correct admin account</p>
+              <p>• Ensure you&apos;re signed in with the correct admin account</p>
               <p>• Some areas require specific permissions beyond basic admin access</p>
             </div>
           </div>

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { Button, Input, Card, Alert } from '@/components/ui';
+import Image from 'next/image';
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
@@ -110,12 +111,15 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
-          <img
+          <Image
             className="mx-auto h-12 w-auto"
             src="/logo.svg"
             alt="RideVault"
+            width={48}
+            height={48}
             onError={(e) => {
-              e.currentTarget.style.display = 'none';
+              const target = e.currentTarget as unknown as HTMLImageElement;
+              target.style.display = 'none';
             }}
           />
           <h2 className="mt-6 text-3xl font-bold text-gray-900">Reset Your Password</h2>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Modal, Button, Alert, Spinner, Select, Textarea, Badge } from '@/components/ui';
 import { TrashIcon, PlusIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import {
@@ -49,13 +49,7 @@ export function MotorcycleConditionsModal({
   const [editNotes, setEditNotes] = useState<string>('');
 
   // Load data when modal opens
-  useEffect(() => {
-    if (isOpen && motorcycleId) {
-      loadData();
-    }
-  }, [isOpen, motorcycleId]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -78,7 +72,13 @@ export function MotorcycleConditionsModal({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [motorcycleId]);
+
+  useEffect(() => {
+    if (isOpen && motorcycleId) {
+      loadData();
+    }
+  }, [isOpen, motorcycleId, loadData]);
 
   const handleAddCondition = async () => {
     if (!addFormData.condition_type_id) {

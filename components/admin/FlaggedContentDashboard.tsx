@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   FlagIcon, 
   CheckCircleIcon, 
@@ -59,12 +59,7 @@ export const FlaggedContentDashboard: React.FC<FlaggedContentDashboardProps> = (
   const itemsPerPage = 20;
 
   // Load flagged content and stats
-  useEffect(() => {
-    loadFlaggedContent();
-    loadStats();
-  }, [currentPage, statusFilter, contentTypeFilter]);
-
-  const loadFlaggedContent = async () => {
+  const loadFlaggedContent = useCallback(async () => {
     setLoading(true);
     setError(null);
     
@@ -84,16 +79,21 @@ export const FlaggedContentDashboard: React.FC<FlaggedContentDashboardProps> = (
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, statusFilter, contentTypeFilter]);
 
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       const statsData = await FlaggedContentService.getFlaggedContentStats();
       setStats(statsData);
     } catch (err) {
       console.error('Failed to load stats:', err);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadFlaggedContent();
+    loadStats();
+  }, [loadFlaggedContent, loadStats]);
 
   const handleStatusUpdate = async (id: string, status: FlagStatus, notes?: string) => {
     try {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { MapPinIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
 import { Button } from '@/components/ui'
 
@@ -31,23 +31,7 @@ export default function GoogleMap({
   const hasCoordinates = latitude !== null && longitude !== null && 
                         typeof latitude === 'number' && typeof longitude === 'number'
 
-  useEffect(() => {
-    // Only try to load map if we have coordinates and Google Maps is available
-    if (!hasCoordinates || !mapRef.current) {
-      return
-    }
-
-    // Check if Google Maps API is loaded
-    if (typeof window !== 'undefined' && window.google && window.google.maps) {
-      initializeMap()
-    } else {
-      // For now, we'll skip Google Maps API loading to avoid API key requirements
-      // In production, you would load the Google Maps API here
-      setMapError(true)
-    }
-  }, [hasCoordinates, latitude, longitude])
-
-  const initializeMap = () => {
+  const initializeMap = useCallback(() => {
     if (!mapRef.current || !hasCoordinates) return
 
     try {
@@ -59,7 +43,6 @@ export default function GoogleMap({
         fullscreenControl: false,
       })
 
-      // Add marker for the shop
       new window.google.maps.Marker({
         position: { lat: latitude!, lng: longitude! },
         map: map,
@@ -79,7 +62,23 @@ export default function GoogleMap({
       console.error('Error initializing Google Map:', error)
       setMapError(true)
     }
-  }
+  }, [hasCoordinates, latitude, longitude, shopName])
+
+  useEffect(() => {
+    // Only try to load map if we have coordinates and Google Maps is available
+    if (!hasCoordinates || !mapRef.current) {
+      return
+    }
+
+    // Check if Google Maps API is loaded
+    if (typeof window !== 'undefined' && window.google && window.google.maps) {
+      initializeMap()
+    } else {
+      // For now, we'll skip Google Maps API loading to avoid API key requirements
+      // In production, you would load the Google Maps API here
+      setMapError(true)
+    }
+  }, [hasCoordinates, initializeMap])
 
   // Generate Google Maps URL for external link
   const getGoogleMapsLink = () => {

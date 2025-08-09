@@ -63,7 +63,7 @@ export default function LocationAutocomplete({
     if (value !== query) {
       setQuery(value)
     }
-  }, [value])
+  }, [value, query])
 
   // Handle input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
