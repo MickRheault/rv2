@@ -3,7 +3,7 @@ export const revalidate = 0
 export const fetchCache = 'force-no-store'
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { usersService, CreateUserRequest } from '@/services/users';
 
@@ -21,14 +21,19 @@ async function isAdmin(request: NextRequest): Promise<boolean> {
     const token = authHeader.replace('Bearer ', '');
     
     // Create supabase client with the token
+    const cookieStore = cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          get() { return undefined; },
-          set() {},
-          remove() {},
+          get(name: string) { return cookieStore.get(name)?.value },
+          set(name: string, value: string, options: CookieOptions) {
+            try { cookieStore.set({ name, value, ...options }) } catch {}
+          },
+          remove(name: string, options: CookieOptions) {
+            try { cookieStore.set({ name, value: '', ...options }) } catch {}
+          },
         },
         global: {
           headers: {

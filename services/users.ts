@@ -1,17 +1,30 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '@/lib/supabase/database.types';
 
-// Admin client with service role for user management operations
-const supabaseAdmin = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
+// Lazily initialized admin client to avoid requiring keys at build time
+let supabaseAdminSingleton: SupabaseClient<Database> | null = null;
+
+function getSupabaseAdmin(): SupabaseClient<Database> {
+  if (supabaseAdminSingleton) return supabaseAdminSingleton;
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error(
+      'SUPABASE_SERVICE_ROLE_KEY and NEXT_PUBLIC_SUPABASE_URL are required for admin operations.'
+    );
+  }
+
+  supabaseAdminSingleton = createClient<Database>(supabaseUrl, serviceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false
     }
-  }
-);
+  });
+
+  return supabaseAdminSingleton;
+}
 
 export type AppUser = {
   id: string;
@@ -45,6 +58,7 @@ export class UsersService {
    */
   async getUsers(): Promise<AppUser[]> {
     try {
+      const supabaseAdmin = getSupabaseAdmin();
       // Get all users from auth.users using admin client
       const { data: usersData, error: usersError } = await supabaseAdmin.auth.admin.listUsers();
       
@@ -91,6 +105,7 @@ export class UsersService {
    */
   async inviteUser(request: CreateUserRequest): Promise<{ success: boolean; user?: AppUser; error?: string }> {
     try {
+      const supabaseAdmin = getSupabaseAdmin();
       const { email, role = 'user', sendEmail = true } = request;
 
       // Invite user using admin API
@@ -150,6 +165,7 @@ export class UsersService {
    */
   async updateUserRole(userId: string, newRole: 'admin' | 'user'): Promise<{ success: boolean; error?: string }> {
     try {
+      const supabaseAdmin = getSupabaseAdmin();
       // Remove existing roles first
       await supabaseAdmin
         .from('user_roles')
@@ -183,6 +199,7 @@ export class UsersService {
    */
   async deleteUser(userId: string): Promise<{ success: boolean; error?: string }> {
     try {
+      const supabaseAdmin = getSupabaseAdmin();
       // Soft delete by updating user metadata to mark as deleted
       const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
         user_metadata: { 
@@ -223,6 +240,7 @@ export class UsersService {
    */
   async getUser(userId: string): Promise<AppUser | null> {
     try {
+      const supabaseAdmin = getSupabaseAdmin();
       const { data, error } = await supabaseAdmin.auth.admin.getUserById(userId);
       
       if (error || !data.user) {
