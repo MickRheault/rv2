@@ -39,10 +39,10 @@
 - `components/motorcycle/MotorcycleCard.test.tsx` - Unit tests for MotorcycleCard
 - `components/motorcycle/MotorcycleGallery.tsx` - Image gallery component
 - `components/motorcycle/MotorcycleDetails.tsx` - Detailed motorcycle information with conditions display and rental rate tiers (Updated - Added database conditions and multiple rate tiers display)
-- `components/shop/ShopCard.tsx` - Rental shop listing card
+- `components/shop/ShopCard.tsx` - Rental shop listing card (Updated - Added bike type pills from motorcycle categories when available)
 - `components/shop/ShopDetails.tsx` - Detailed shop information with Google Maps and conditions display (Updated - Added database conditions display)
 - `components/shop/GoogleMap.tsx` - Google Maps integration component
-- `components/common/Header.tsx` - Main navigation header
+- `components/common/Header.tsx` - Main navigation header (Updated - Renamed "Browse" to "Countries")
 - `components/common/Footer.tsx` - Site footer
 - `components/common/FlagButton.tsx` - Data flagging functionality
 - `components/admin/FlaggedContentTable.tsx` - Admin table for managing flagged content
@@ -288,3 +288,6 @@ The system receives data via the template in `context/data_template.json`:
     - [x] 8.1.4 Display countries list with shop counts and links to country pages (e.g., `/thailand`)
     - [x] 8.1.5 Display cities list grouped by country and links to city pages (e.g., `/thailand/bangkok`)
     - [x] 8.1.6 Update the Browse link on the homepage to display "Countries" instead.
+    - [x] 8.1.7 On the ShopCard component (`components/shop/ShopCard.tsx`) please add the type of bikes available for rent as pills components
+
+  
