@@ -417,17 +417,25 @@ The implementation prioritizes simplicity and reuses existing components and ser
 
 ---
 
-## Phase 1 Extension: Admin-Configurable ShopCard Display
+## Phase 1 Extension: Admin-Configurable ShopCard Display (Keep It Simple)
 
 ### Introduction/Overview
 
-Provide an admin UX to configure which information blocks are shown on the `ShopCard` component across the site. This enables non-developers to tailor what data appears on listing cards without code changes. Defaults match the current `ShopCard` presentation.
+Provide an admin UX to configure which information blocks are shown on the `ShopCard` component across the site. This enables non-developers to tailor what data appears on listing cards without code changes. Defaults match the current `ShopCard` presentation. Emphasis: smallest possible surface area, minimal schema, zero new dependencies, and straightforward UI.
 
 ### Goals
 
 1. **Operational Goal**: Allow admins to toggle `ShopCard` sections on/off globally.
 2. **UX Consistency Goal**: Default configuration mirrors the current `ShopCard` layout and content.
-3. **Simplicity Goal**: Ship a single, global configuration with a clean UI and minimal backend changes.
+3. **Simplicity Goal**: Ship a single, global configuration with a clean UI and minimal backend changes (no per-shop/per-page overrides, no advanced layout controls).
+
+### Simplicity Principles
+
+- Single toggle set applied platform-wide (no environment-specific or scope-specific variants)
+- One small settings table, one admin page, one fetch path; prefer defaults when in doubt
+- No reordering, renaming, or custom copy—toggles only (on/off)
+- No new libraries or infrastructure; reuse current auth, UI, and data layer
+- Fail-safe: if settings unavailable, render with current defaults
 
 ### Baseline (Current ShopCard Sections)
 
@@ -445,12 +453,12 @@ The following sections are the baseline toggles (current defaults = ON unless na
 
 ### Functional Requirements
 
-1. Admin page: `Admin → Display Settings` at `/admin/display-settings` with a list of toggle switches for each section above.
-2. Each toggle immediately updates a global configuration used by all `ShopCard` instances (country/city pages and elsewhere).
+1. Admin page: `Admin → Display Settings` at `/admin/display-settings` with simple toggle switches for each section above.
+2. Each toggle updates a single global configuration used by all `ShopCard` instances (country/city pages and elsewhere).
 3. Provide “Reset to Defaults” action that restores the baseline configuration.
 4. Restrict access to users with `admin` role (reuse existing admin auth/RBAC).
 5. Changes take effect without redeploy; config is read at render time.
-6. Include a right-side preview panel that shows a live `ShopCard` sample reflecting current toggles (sample can use mock or selected real data).
+6. Optional inline preview that shows a basic `ShopCard` sample reflecting current toggles (use mock data; no live coupling). If preview fails, do not block saving.
 7. If a section is toggled ON but the data is missing for a specific shop, the section remains hidden for that shop (no empty placeholders).
 
 ### Non-Goals (Out of Scope)
@@ -460,7 +468,7 @@ The following sections are the baseline toggles (current defaults = ON unless na
 3. A/B testing or multi-variant experiments
 4. Complex role-based variations beyond admin-only management
 
-### Technical Considerations
+### Technical Considerations (Minimalist)
 
 - Data Model: Minimal settings table (single row) e.g., `shop_card_display_settings` with boolean columns:
   - `show_premium_badge`, `show_verification_badge`, `show_rating`, `show_location`,
@@ -473,6 +481,7 @@ The following sections are the baseline toggles (current defaults = ON unless na
 - UI Integration: `ShopCard` accepts a `display` prop (set of booleans). Listing pages pass the resolved config to each card; `ShopCard` conditionally renders sections based on these flags.
 - Performance: Single settings read per request (not per card). No N+1 calls.
 - No New Dependencies: Reuse existing stack and admin shell.
+\- Migration impact: one table, one RLS policy block; keep SQL concise
 
 ### Error Handling
 
