@@ -6,7 +6,13 @@ jest.mock('@/services/search', () => ({ searchService: { searchByLocation: jest.
 
 describe('SearchResults', () => {
   it('renders empty state without crashing', () => {
-    render(<SearchResults filters={{ offset: 0, limit: 20 } as any} />)
+    render(
+      <SearchResults 
+        results={null}
+        filters={{ offset: 0, limit: 20 } as any}
+        onFiltersChange={() => {}}
+      />
+    )
   })
 })
 
