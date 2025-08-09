@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Modal, Button, Input, Card, Alert, Spinner, Textarea, Select } from '@/components/ui';
 import { PlusIcon, TrashIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { 
@@ -53,13 +53,7 @@ export function RentalShopToursModal({
   const [selectedSuggestions, setSelectedSuggestions] = useState<Set<number>>(new Set());
 
   // Load existing tours when modal opens
-  useEffect(() => {
-    if (isOpen && shopId) {
-      loadTours();
-    }
-  }, [isOpen, shopId]);
-
-  const loadTours = async () => {
+  const loadTours = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -80,7 +74,13 @@ export function RentalShopToursModal({
     } finally {
       setLoading(false);
     }
-  };
+  }, [shopId]);
+
+  useEffect(() => {
+    if (isOpen && shopId) {
+      loadTours();
+    }
+  }, [isOpen, shopId, loadTours]);
 
   const addNewTour = () => {
     setTours(prev => [...prev, {
@@ -421,7 +421,7 @@ export function RentalShopToursModal({
             <div className="text-sm text-gray-500 space-y-1">
               <p>• Tour name is required for each tour</p>
               <p>• Distance should be in kilometers</p>
-              <p>• Price text can be flexible (e.g., "Starting from $50" or "Contact for pricing")</p>
+              <p>• Price text can be flexible (e.g., &quot;Starting from $50&quot; or &quot;Contact for pricing&quot;)</p>
               <p>• Use suggestions to quickly add common tour types</p>
             </div>
           </>

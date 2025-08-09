@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useLocationSearch, useLocationAutocomplete } from '@/hooks/useLocationSearch'
 import { LocationSearchResult } from '@/services/search'
 import { motorcycleService, FilterOptions } from '@/services/motorcycles'
@@ -24,18 +24,10 @@ export default function TestLocationSearchPage() {
   const autocomplete = useLocationAutocomplete()
 
   // Load filter options when component mounts or when location changes
-  useEffect(() => {
-    loadFilterOptions()
-    // Pre-load some popular locations for autocomplete
-    preloadAutocomplete()
-  }, [selectedLocation])
-
-  const loadFilterOptions = async () => {
+  const loadFilterOptions = useCallback(async () => {
     setLoadingFilterOptions(true)
     try {
       const currentFilters: any = {}
-      
-      // Add location filters
       if (selectedLocation) {
         switch (selectedLocation.type) {
           case 'city':
@@ -49,18 +41,9 @@ export default function TestLocationSearchPage() {
             break
         }
       }
-      
-      // Add other current filters
-      if (locationSearch.filters.brandId) {
-        currentFilters.brandId = locationSearch.filters.brandId
-      }
-      if (locationSearch.filters.categoryId) {
-        currentFilters.categoryId = locationSearch.filters.categoryId
-      }
-      if (locationSearch.filters.model) {
-        currentFilters.model = locationSearch.filters.model
-      }
-
+      if (locationSearch.filters.brandId) currentFilters.brandId = locationSearch.filters.brandId
+      if (locationSearch.filters.categoryId) currentFilters.categoryId = locationSearch.filters.categoryId
+      if (locationSearch.filters.model) currentFilters.model = locationSearch.filters.model
       const options = await motorcycleService.getFilterOptions(currentFilters)
       setFilterOptions(options)
     } catch (error) {
@@ -68,21 +51,25 @@ export default function TestLocationSearchPage() {
     } finally {
       setLoadingFilterOptions(false)
     }
-  }
+  }, [selectedLocation, locationSearch.filters.brandId, locationSearch.filters.categoryId, locationSearch.filters.model])
 
-  const preloadAutocomplete = async () => {
+  const preloadAutocomplete = useCallback(async () => {
     try {
-      // Pre-load some popular locations to show immediately
       if (!autocomplete.query) {
-        autocomplete.setQuery('Thailand') // This will trigger the autocomplete
+        autocomplete.setQuery('Thailand')
         setTimeout(() => {
-          autocomplete.setQuery('') // Clear after loading suggestions
+          autocomplete.setQuery('')
         }, 1000)
       }
     } catch (error) {
       console.error('Error pre-loading autocomplete:', error)
     }
-  }
+  }, [autocomplete])
+
+  useEffect(() => {
+    loadFilterOptions()
+    preloadAutocomplete()
+  }, [loadFilterOptions, preloadAutocomplete])
 
   const handleLocationSelect = (location: LocationSearchResult) => {
     setSelectedLocation(location)

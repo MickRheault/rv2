@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { CheckIcon, CurrencyDollarIcon, ClockIcon, StarIcon } from '@heroicons/react/24/outline'
 import { Button, Input, Select, Textarea, Card, CardContent, Badge, Alert } from '@/components/ui'
 import { PremiumPricingService, PremiumListingsService } from '@/services/premium-listings'
@@ -60,15 +60,43 @@ export default function PremiumUpgradeForm({
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   // Load initial data
+  const loadRentalShops = useCallback(async () => {
+    try {
+      setLoadingShops(true)
+      const shops = await shopService.getAllShopsForDropdown()
+      setRentalShops(shops)
+    } catch (error) {
+      console.error('Error loading rental shops:', error)
+    } finally {
+      setLoadingShops(false)
+    }
+  }, [])
+
+  const loadPricingPlans = useCallback(async () => {
+    try {
+      setLoadingPlans(true)
+      const plans = await PremiumPricingService.getPricingPlansByTier(formData.premium_tier)
+      setPricingPlans(plans)
+      if (plans.length > 0) {
+        const defaultPlan = plans.find(p => p.duration_days === formData.duration_days) || plans[0]
+        setSelectedPlan(defaultPlan)
+      }
+    } catch (error) {
+      console.error('Error loading pricing plans:', error)
+    } finally {
+      setLoadingPlans(false)
+    }
+  }, [formData.premium_tier, formData.duration_days])
+
   useEffect(() => {
     loadRentalShops()
     loadPricingPlans()
-  }, [])
+  }, [loadRentalShops, loadPricingPlans])
 
   // Load pricing plans when tier changes
   useEffect(() => {
     loadPricingPlans()
-  }, [formData.premium_tier])
+  }, [loadPricingPlans])
 
   // Update price when plan changes
   useEffect(() => {
@@ -82,35 +110,7 @@ export default function PremiumUpgradeForm({
     }
   }, [selectedPlan])
 
-  const loadRentalShops = async () => {
-    try {
-      setLoadingShops(true)
-      const shops = await shopService.getAllShopsForDropdown()
-      setRentalShops(shops)
-    } catch (error) {
-      console.error('Error loading rental shops:', error)
-    } finally {
-      setLoadingShops(false)
-    }
-  }
-
-  const loadPricingPlans = async () => {
-    try {
-      setLoadingPlans(true)
-      const plans = await PremiumPricingService.getPricingPlansByTier(formData.premium_tier)
-      setPricingPlans(plans)
-      
-      // Auto-select the first plan if available
-      if (plans.length > 0) {
-        const defaultPlan = plans.find(p => p.duration_days === formData.duration_days) || plans[0]
-        setSelectedPlan(defaultPlan)
-      }
-    } catch (error) {
-      console.error('Error loading pricing plans:', error)
-    } finally {
-      setLoadingPlans(false)
-    }
-  }
+  // (Removed duplicate non-memoized loadRentalShops/loadPricingPlans)
 
   const handleInputChange = (field: keyof PremiumUpgradeFormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -335,7 +335,7 @@ export default function PremiumUpgradeForm({
         {/* Custom Pricing */}
         <Card>
           <CardContent className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Custom Pricing (Optional)</h3>
+             <h3 className="text-lg font-semibold mb-4">Custom Pricing (Optional)</h3>
             <p className="text-sm text-gray-600 mb-4">
               Override the default pricing plan with custom values
             </p>
@@ -395,7 +395,7 @@ export default function PremiumUpgradeForm({
         {/* Additional Options */}
         <Card>
           <CardContent className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Additional Options</h3>
+             <h3 className="text-lg font-semibold mb-4">Additional Options</h3>
             
             <div className="space-y-4">
               <div className="flex items-center">
@@ -415,10 +415,10 @@ export default function PremiumUpgradeForm({
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Admin Notes
                 </label>
-                <Textarea
+                 <Textarea
                   value={formData.admin_notes}
                   onChange={(e) => handleInputChange('admin_notes', e.target.value)}
-                  placeholder="Add any notes or special instructions..."
+                   placeholder="Add any notes or special instructions..."
                   rows={3}
                 />
               </div>

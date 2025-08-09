@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { 
   ChevronLeftIcon, 
@@ -33,13 +33,13 @@ function MotorcycleGalleryInner({ images, motorcycleName }: MotorcycleGalleryPro
   const currentImage = images[currentImageIndex]
   const hasMultipleImages = images.length > 1
 
-  const nextImage = () => {
+  const nextImage = useCallback(() => {
     setCurrentImageIndex((prev) => (prev + 1) % images.length)
-  }
+  }, [images.length])
 
-  const prevImage = () => {
+  const prevImage = useCallback(() => {
     setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)
-  }
+  }, [images.length])
 
   const goToImage = (index: number) => {
     setCurrentImageIndex(index)
@@ -124,7 +124,7 @@ function MotorcycleGalleryInner({ images, motorcycleName }: MotorcycleGalleryPro
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [hasMultipleImages, isZoomModalOpen])
+  }, [hasMultipleImages, isZoomModalOpen, nextImage, prevImage])
 
   // Auto-scroll thumbnails to keep current image visible
   useEffect(() => {
