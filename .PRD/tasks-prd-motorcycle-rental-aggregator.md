@@ -287,3 +287,4 @@ The system receives data via the template in `context/data_template.json`:
     - [x] 8.1.3 Add data fetching to get all cities with rental shops using existing database queries
     - [x] 8.1.4 Display countries list with shop counts and links to country pages (e.g., `/thailand`)
     - [x] 8.1.5 Display cities list grouped by country and links to city pages (e.g., `/thailand/bangkok`)
+    - [x] 8.1.6 Update the Browse link on the homepage to display "Countries" instead.

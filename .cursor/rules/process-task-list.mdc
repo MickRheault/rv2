@@ -35,6 +35,6 @@ When working with task lists, the AI must:
 3. Add newly discovered tasks.
 4. Keep “Relevant Files” accurate and up to date.
 5. Before starting work, make sure to not do the work planned in the future tasks. 
-6. If you see that some simple requirements would need a lot of work, please explain me and ask me to confirm.
+6. If you see that some simple requirements would need a lot of work, or that you consider over-engineering, please explain me the situation and ask me to confirm.
 7. I would like you to run `npm run build` at the end of each tsk to make sure you don't break anything.
 8. After implementing a sub‑task, update the file and then pause for user approval.

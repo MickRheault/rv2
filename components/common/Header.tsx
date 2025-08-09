@@ -11,7 +11,7 @@ export default function Header() {
 
   const navigation = [
     { name: 'Search', href: '/search' },
-    { name: 'Browse', href: '/browse' },
+    { name: 'Countries', href: '/browse' },
     { name: 'Compare', href: '/compare' },
   ]
 
