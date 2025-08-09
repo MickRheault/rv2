@@ -417,6 +417,76 @@ The implementation prioritizes simplicity and reuses existing components and ser
 
 ---
 
+## Phase 1 Extension: Admin-Configurable ShopCard Display
+
+### Introduction/Overview
+
+Provide an admin UX to configure which information blocks are shown on the `ShopCard` component across the site. This enables non-developers to tailor what data appears on listing cards without code changes. Defaults match the current `ShopCard` presentation.
+
+### Goals
+
+1. **Operational Goal**: Allow admins to toggle `ShopCard` sections on/off globally.
+2. **UX Consistency Goal**: Default configuration mirrors the current `ShopCard` layout and content.
+3. **Simplicity Goal**: Ship a single, global configuration with a clean UI and minimal backend changes.
+
+### Baseline (Current ShopCard Sections)
+
+The following sections are the baseline toggles (current defaults = ON unless naturally absent in data):
+- Premium badge (gold/platinum/featured)
+- Verification/status badges (e.g., verified/active)
+- Rating and review count
+- Location (city, province)
+- Business description (short)
+- Contact info: phone, website
+- Services summary: tours, delivery
+- Inclusions (first 3 with “+N more”)
+- Bike types (categories) pills
+- CTAs: “View Details”, “Browse Bikes”
+
+### Functional Requirements
+
+1. Admin page: `Admin → Display Settings` at `/admin/display-settings` with a list of toggle switches for each section above.
+2. Each toggle immediately updates a global configuration used by all `ShopCard` instances (country/city pages and elsewhere).
+3. Provide “Reset to Defaults” action that restores the baseline configuration.
+4. Restrict access to users with `admin` role (reuse existing admin auth/RBAC).
+5. Changes take effect without redeploy; config is read at render time.
+6. Include a right-side preview panel that shows a live `ShopCard` sample reflecting current toggles (sample can use mock or selected real data).
+7. If a section is toggled ON but the data is missing for a specific shop, the section remains hidden for that shop (no empty placeholders).
+
+### Non-Goals (Out of Scope)
+
+1. Per-shop overrides and per-page overrides (global only in v1)
+2. Scheduling or time-based configurations
+3. A/B testing or multi-variant experiments
+4. Complex role-based variations beyond admin-only management
+
+### Technical Considerations
+
+- Data Model: Minimal settings table (single row) e.g., `shop_card_display_settings` with boolean columns:
+  - `show_premium_badge`, `show_verification_badge`, `show_rating`, `show_location`,
+    `show_description`, `show_contact_phone`, `show_contact_website`, `show_services`,
+    `show_inclusions`, `show_bike_types`, `show_cta_view_details`, `show_cta_browse_bikes`.
+- Access Control: RLS policies allow read for `anon`/`authenticated`, write for `admin` only.
+- Fetching: Add `settingsService` with `getShopCardSettings` and `updateShopCardSettings`.
+  - Server-side pages (e.g., country/city listings) fetch settings once and pass to child components.
+  - Add short TTL caching (e.g., 5 minutes) with graceful fallback to defaults on error.
+- UI Integration: `ShopCard` accepts a `display` prop (set of booleans). Listing pages pass the resolved config to each card; `ShopCard` conditionally renders sections based on these flags.
+- Performance: Single settings read per request (not per card). No N+1 calls.
+- No New Dependencies: Reuse existing stack and admin shell.
+
+### Error Handling
+
+- If settings cannot be fetched, use the baseline defaults and log a warning in the admin console.
+- Validation ensures only known keys/booleans are persisted.
+
+### Success Metrics
+
+- Admins can modify `ShopCard` presentation without code changes.
+- Changes are reflected immediately across listing pages.
+- No noticeable performance regressions (settings fetch < 10ms cached, negligible render overhead).
+
+---
+
 ## Future Enhancements (Post-Initial Release)
 
 ### Phase 2 Features
