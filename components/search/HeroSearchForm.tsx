@@ -31,6 +31,9 @@ export default function HeroSearchForm() {
   const [selectedCity, setSelectedCity] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [loading, setLoading] = useState(true)
+  const countrySelectId = 'hero-country'
+  const citySelectId = 'hero-city'
+  const categorySelectId = 'hero-category'
 
   useEffect(() => {
     const loadData = async () => {
@@ -182,10 +185,11 @@ export default function HeroSearchForm() {
         {/* Mobile: Stack all fields vertically, Desktop: Row layout */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
+            <label htmlFor={countrySelectId} className="block text-sm font-medium text-gray-700">
               Country
             </label>
             <select
+              id={countrySelectId}
               value={selectedCountry}
               onChange={(e) => handleCountryChange(e.target.value)}
               className="w-full px-3 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none"
@@ -200,10 +204,11 @@ export default function HeroSearchForm() {
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
+            <label htmlFor={citySelectId} className="block text-sm font-medium text-gray-700">
               City
             </label>
             <select
+              id={citySelectId}
               value={selectedCity}
               onChange={(e) => handleCityChange(e.target.value)}
               className="w-full px-3 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none"
@@ -218,10 +223,11 @@ export default function HeroSearchForm() {
           </div>
 
           <div className="space-y-2 sm:col-span-2 lg:col-span-1">
-            <label className="block text-sm font-medium text-gray-700">
+            <label htmlFor={categorySelectId} className="block text-sm font-medium text-gray-700">
               Style
             </label>
             <select
+              id={categorySelectId}
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="w-full px-3 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none"

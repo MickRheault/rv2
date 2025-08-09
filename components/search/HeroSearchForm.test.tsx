@@ -12,10 +12,10 @@ jest.mock('@/services/locations', () => ({
 jest.mock('@/services/categories', () => ({ categoryService: { getCategories: jest.fn(() => Promise.resolve([])) } }))
 
 describe('HeroSearchForm', () => {
-  it('renders basic fields', () => {
+  it('renders basic fields', async () => {
     render(<HeroSearchForm />)
-    expect(screen.getByText(/Country/i)).toBeInTheDocument()
-    expect(screen.getByText(/City/i)).toBeInTheDocument()
+    expect(await screen.findByLabelText(/Country/i)).toBeInTheDocument()
+    expect(await screen.findByLabelText(/City/i)).toBeInTheDocument()
   })
 })
 
