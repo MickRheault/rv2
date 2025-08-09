@@ -11,7 +11,13 @@ jest.mock('@tanstack/react-query', () => ({
 
 describe('SearchFilters', () => {
   it('renders header', () => {
-    render(<SearchFilters filters={{} as any} />)
+    render(
+      <SearchFilters 
+        filters={{} as any}
+        onFiltersChange={() => {}}
+        onClearFilters={() => {}}
+      />
+    )
     expect(screen.getByText(/Filters/i)).toBeInTheDocument()
   })
 })
