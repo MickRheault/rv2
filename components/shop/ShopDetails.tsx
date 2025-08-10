@@ -62,21 +62,7 @@ export default function ShopDetails({ shop, premium }: ShopDetailsProps) {
     return parts.join(', ')
   }
 
-  const getBusinessStatusBadge = () => {
-    if (!business_statuses) return null
-    
-    const status = business_statuses.status_code.toLowerCase()
-    switch (status) {
-      case 'active':
-        return <Badge variant="success">Active</Badge>
-      case 'temporarily_closed':
-        return <Badge variant="warning">Temporarily Closed</Badge>
-      case 'permanently_closed':
-        return <Badge variant="danger">Permanently Closed</Badge>
-      default:
-        return <Badge variant="secondary">{business_statuses.status_code}</Badge>
-    }
-  }
+  // Operational status badge removed per UI cleanup
 
   return (
     <div className="space-y-8">
@@ -95,7 +81,7 @@ export default function ShopDetails({ shop, premium }: ShopDetailsProps) {
                 </Badge>
               )}
               
-              {getBusinessStatusBadge()}
+              {/* Operational status removed per UI cleanup */}
             </div>
             
             {premium?.isPremium && premium.daysRemaining && premium.daysRemaining <= 7 && (
@@ -138,7 +124,7 @@ export default function ShopDetails({ shop, premium }: ShopDetailsProps) {
           </div>
 
           {/* Contact Actions */}
-          <div className="lg:min-w-[240px] space-y-3">
+          <div className="lg:min-w-[240px] space-y-4">
             {phone && (
               <a href={`tel:${phone}`} className="w-full">
                 <Button variant="primary" className="w-full flex items-center gap-2">
@@ -163,11 +149,41 @@ export default function ShopDetails({ shop, premium }: ShopDetailsProps) {
               </a>
             )}
 
-            <Button variant="outline" className="w-full">
-              Share Shop
-            </Button>
+            {/* Removed Share Shop per UI cleanup */}
           </div>
         </div>
+        {/* Available Motorcycles moved under header */}
+        {motorcycle_rentals.length > 0 && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BuildingStorefrontIcon className="w-5 h-5" />
+                Motorcycles Available ({motorcycle_rentals.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {motorcycle_rentals.slice(0, 6).map((motorcycle) => (
+                  <MotorcycleCard 
+                    key={motorcycle.id} 
+                    motorcycle={motorcycle as any}
+                    showShopInfo={false}
+                    compact={true}
+                  />
+                ))}
+              </div>
+              {motorcycle_rentals.length > 6 && (
+                <div className="mt-6 text-center">
+                  <Link href={`/search?shop=${shop.id}`}>
+                    <Button variant="outline">
+                      View All {motorcycle_rentals.length} Motorcycles
+                    </Button>
+                  </Link>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -291,39 +307,7 @@ export default function ShopDetails({ shop, premium }: ShopDetailsProps) {
             </Card>
           )}
 
-          {/* Available Motorcycles */}
-          {motorcycle_rentals.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BuildingStorefrontIcon className="w-5 h-5" />
-                  Available Motorcycles ({motorcycle_rentals.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {motorcycle_rentals.slice(0, 6).map((motorcycle) => (
-                    <MotorcycleCard 
-                      key={motorcycle.id} 
-                      motorcycle={motorcycle as any}
-                      showShopInfo={false}
-                      compact={true}
-                    />
-                  ))}
-                </div>
-                
-                {motorcycle_rentals.length > 6 && (
-                  <div className="mt-6 text-center">
-                    <Link href={`/search?shop=${shop.id}`}>
-                      <Button variant="outline">
-                        View All {motorcycle_rentals.length} Motorcycles
-                      </Button>
-                    </Link>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
+          {/* Available Motorcycles moved to the top under header per UI cleanup */}
         </div>
 
         {/* Sidebar */}
@@ -435,42 +419,7 @@ export default function ShopDetails({ shop, premium }: ShopDetailsProps) {
             </CardContent>
           </Card>
 
-          {/* Quick Stats */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Stats</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Motorcycles</span>
-                <span className="font-medium">{motorcycle_rentals.length}</span>
-              </div>
-              
-              {rating && (
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Rating</span>
-                  <span className="font-medium">{rating.toFixed(1)}/5</span>
-                </div>
-              )}
-              
-              {review_count && (
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Reviews</span>
-                  <span className="font-medium">{review_count}</span>
-                </div>
-              )}
-              
-              <div className="flex justify-between">
-                <span className="text-gray-600">Tours</span>
-                <span className="font-medium">{rental_shop_tours.length}</span>
-              </div>
-              
-              <div className="flex justify-between">
-                <span className="text-gray-600">Service Locations</span>
-                <span className="font-medium">{rental_shop_service_locations.length}</span>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Quick Stats removed per UI cleanup */}
         </div>
       </div>
     </div>

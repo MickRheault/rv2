@@ -307,8 +307,8 @@ The system receives data via the template in `context/data_template.json`:
     - [x] 8.1.7 On the ShopCard component (`components/shop/ShopCard.tsx`) please add the type of bikes available for rent as pills components
 
   
-- [ ] 10.0 UI Clean up
-  - [ ] 10.1 Homepage
+- [x] 10.0 UI Clean up
+  - [x] 10.1 Homepage
     - [x] 10.1.1 Remove the compare button (move feature to idea roadmap)
     - [x] 10.1.2 Remove the favorite button (move feature to idea roadmap)
     - [x] 10.1.3 Remove the "style" box from the hero search on homepage (move to idea roadmap)
@@ -320,17 +320,17 @@ The system receives data via the template in `context/data_template.json`:
     - [x] 10.1.8 Remove corresponding pages/routes and navigation entries for the removed footer links
     - [x] 10.1.9 Validate Cookie Policy; if legally sound, add details to `app/cookies/page.tsx`
     - [x] 10.1.10 Remove the compare page route (`app/compare/page.tsx`)
-  - [ ] 10.2 Motorcycle Card
-    - [ ] 10.2.1 Remove features list from the card
-    - [ ] 10.2.2 Remove the availability pill
-    - [ ] 10.2.3 Remove the shareable icon in the top-right
-  - [ ] 10.3 Shop Card
-    - [ ] 10.3.1 Remove the shareable icon in the top-right
-  - [ ] 10.4 Motorcycle Page
-    - [ ] 10.4.1 Align layout with Shop page template; place model name and basic info at the top
-    - [ ] 10.4.2 Remove the "availability" pill
-  - [ ] 10.5 Shop Page
-    - [ ] 10.5.1 Remove the "operational" status
-    - [ ] 10.5.2 Add spacing between "Call shop" and "Visit website" buttons
-    - [ ] 10.5.3 Move "Motorcycles available" section to the top, under the header block
-    - [ ] 10.5.4 Remove quick stats
+  - [x] 10.2 Motorcycle Card
+    - [x] 10.2.1 Remove features list from the card
+    - [x] 10.2.2 Remove the availability pill
+    - [x] 10.2.3 Remove the shareable icon in the top-right
+  - [x] 10.3 Shop Card
+    - [x] 10.3.1 Remove the shareable icon in the top-right
+  - [x] 10.4 Motorcycle Page
+    - [x] 10.4.1 Align layout with Shop page template; place model name and basic info at the top
+    - [x] 10.4.2 Remove the "availability" pill
+  - [x] 10.5 Shop Page
+    - [x] 10.5.1 Remove the "operational" status
+    - [x] 10.5.2 Add spacing between "Call shop" and "Visit website" buttons
+    - [x] 10.5.3 Move "Motorcycles available" section to the top, under the header block
+    - [x] 10.5.4 Remove quick stats

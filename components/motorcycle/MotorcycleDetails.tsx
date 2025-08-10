@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { 
   MapPinIcon, 
   StarIcon, 
@@ -67,18 +68,7 @@ export default function MotorcycleDetails({ motorcycle }: MotorcycleDetailsProps
     return parts.join(', ')
   }
 
-  const getAvailabilityBadge = () => {
-    switch (availability_status?.toLowerCase()) {
-      case 'available':
-        return <Badge variant="success">Available</Badge>
-      case 'rented':
-        return <Badge variant="danger">Currently Rented</Badge>
-      case 'maintenance':
-        return <Badge variant="warning">Under Maintenance</Badge>
-      default:
-        return <Badge variant="secondary">Status Unknown</Badge>
-    }
-  }
+  // Availability badge removed per UI cleanup
 
   const features = motorcycle_features?.filter(mf => mf.features).map(mf => mf.features!) || []
   const specifications = specifications_details as any || {}
@@ -129,7 +119,6 @@ export default function MotorcycleDetails({ motorcycle }: MotorcycleDetailsProps
             <h1 className="text-3xl font-bold text-gray-900">
               {brands?.name} {model}
             </h1>
-            {getAvailabilityBadge()}
           </div>
           <div className="flex items-center gap-2 text-gray-600">
             <CalendarIcon className="w-4 h-4" />
@@ -167,6 +156,26 @@ export default function MotorcycleDetails({ motorcycle }: MotorcycleDetailsProps
           </div>
         </div>
       </div>
+
+      {/* Gallery under header */}
+      {motorcycle.motorcycle_images && motorcycle.motorcycle_images.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {motorcycle.motorcycle_images
+            .filter(mi => mi.images?.url)
+            .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+            .slice(0, 6)
+            .map((mi) => (
+              <div key={mi.images!.id} className="relative w-full h-48 bg-gray-100 rounded-lg overflow-hidden">
+                <Image
+                  src={mi.images!.url!}
+                  alt={mi.images!.alt_text || `${brands?.name || ''} ${model || 'Motorcycle'}`}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            ))}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Details */}
