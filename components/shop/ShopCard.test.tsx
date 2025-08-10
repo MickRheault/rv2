@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import ShopCard from './ShopCard'
 
-jest.mock('next/image', () => ({ __esModule: true, default: (props: any) => <img {...props} /> }))
+jest.mock('next/image', () => ({ __esModule: true, default: (props: any) => <span data-testid="next-image" {...props} /> }))
 
 const shop: any = {
   id: 's1', slug: 'shop-1', provider_name: 'Shop 1', full_address: 'Addr',
