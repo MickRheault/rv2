@@ -9,8 +9,21 @@ export const metadata: Metadata = {
     'Explore motorcycle rental shops by country and city. Find the best rental locations worldwide.',
 };
 
+type LocationsByCountry = Record<string, {
+  country: { code: string; name: string }
+  provinces: Record<string, {
+    province: { id: string; name: string }
+    cities: Array<{ id: string; name: string }>
+  }>
+}>
+
 export default async function BrowsePage() {
-  const locationsByCountry = await locationService.getLocationsWithShops();
+  const locationsByCountry: LocationsByCountry = await locationService
+    .getLocationsWithShops()
+    .catch((error) => {
+      console.warn('BrowsePage: failed to fetch locations during build, rendering empty list.', error)
+      return {} as LocationsByCountry
+    });
   const countries = Object.values(locationsByCountry).sort((a, b) =>
     a.country.name.localeCompare(b.country.name)
   );
