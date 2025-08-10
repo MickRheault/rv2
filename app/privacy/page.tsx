@@ -16,7 +16,7 @@ export default function PrivacyPage() {
             <strong>Last updated:</strong> {new Date().toLocaleDateString()}
             <br />
             This is a basic privacy policy template. Please consult with legal professionals 
-            for a complete privacy policy that meets your jurisdiction's requirements.
+            for a complete privacy policy that meets your jurisdiction&apos;s requirements.
           </p>
         </div>
 

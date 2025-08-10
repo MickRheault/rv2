@@ -29,7 +29,7 @@ export default function AdminUnauthorizedPage() {
             </h3>
             
             <div className="text-sm text-gray-600 mb-6 space-y-2">
-              <p>You don't have the required permissions to access this admin area.</p>
+              <p>You don&apos;t have the required permissions to access this admin area.</p>
               
               {user ? (
                 <div className="mt-4 p-3 bg-gray-50 rounded-md text-left">
@@ -91,7 +91,7 @@ export default function AdminUnauthorizedPage() {
 
             <div className="mt-4 text-xs text-gray-500 space-y-1">
               <p>• Contact your system administrator to request access</p>
-              <p>• Ensure you're signed in with the correct admin account</p>
+              <p>• Ensure you&apos;re signed in with the correct admin account</p>
               <p>• Some areas require specific permissions beyond basic admin access</p>
             </div>
           </div>

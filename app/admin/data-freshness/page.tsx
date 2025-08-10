@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { AdminRoute } from '@/components/admin/AdminRoute'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
@@ -46,7 +46,7 @@ function DataFreshnessDetailsContent() {
     total_pages: 0
   })
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setError(null)
       const [freshnessStats, entitiesResponse] = await Promise.all([
@@ -66,7 +66,7 @@ function DataFreshnessDetailsContent() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filters])
 
   const handleRefreshFreshness = async () => {
     try {
@@ -96,7 +96,7 @@ function DataFreshnessDetailsContent() {
 
   useEffect(() => {
     loadData()
-  }, [filters])
+  }, [loadData])
 
   const getFreshnessDistribution = () => {
     if (!stats) return []

@@ -310,7 +310,7 @@ export const FlagContentForm: React.FC<FlagContentFormProps> = ({
           className="w-full"
         />
         <p className="text-xs text-gray-500 mt-1">
-          We'll use this to contact you if we need clarification about your report.
+          We&apos;ll use this to contact you if we need clarification about your report.
         </p>
       </div>
 

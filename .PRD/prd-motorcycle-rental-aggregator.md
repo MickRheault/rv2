@@ -313,6 +313,189 @@ The core value proposition is to provide users with information that is not avai
 - Google Maps costs significantly reduced since only used for display
 - Consider Enterprise plans when reaching significant scale
 
+## Phase 1 Extension: Location-Based Shop Listings
+
+### Introduction/Overview
+
+This extension adds dedicated listing pages for rental shops organized by geographic location. Users will be able to browse all rental shops within a specific country or city through simple, clean URLs like `/canada/` and `/canada/montreal/`. This feature enhances discoverability by providing direct access to location-based shop listings without requiring search filters.
+
+The implementation prioritizes simplicity and reuses existing components and services to minimize development time while providing valuable location-based navigation for users.
+
+### Goals
+
+1. **Location Discovery Goal**: Enable users to easily browse all rental shops in a specific country or city
+2. **SEO Enhancement Goal**: Create location-specific landing pages to improve search engine visibility
+3. **User Navigation Goal**: Provide an alternative browsing method complementary to the existing search functionality
+4. **Implementation Goal**: Deliver a simple, maintainable solution that reuses existing components and services
+
+### User Stories
+
+#### Location Browsing Stories
+- **As a traveler planning a trip to Canada**, I want to visit `/canada/` to see all rental shops available in the country so that I can get an overview of options
+- **As a user interested in Montreal**, I want to visit `/canada/montreal/` to see all rental shops in that specific city so that I can focus on local options
+- **As a user browsing shop listings**, I want to click through to individual shop detail pages so that I can get more information about specific rental providers
+
+#### Navigation Stories
+- **As a user on a country page**, I want to access the main search functionality so that I can search for specific motorcycles in that location
+- **As a user viewing shops in a city**, I want to see the same shop information I would see in search results so that the experience is consistent
+
+### Functional Requirements
+
+#### URL Structure & Routing
+1. The system must provide country listing pages accessible via `/{country}/` URLs (e.g., `/canada/`, `/thailand/`)
+2. The system must provide city listing pages accessible via `/{country}/{city}/` URLs (e.g., `/canada/montreal/`, `/thailand/bangkok/`)
+3. The system must use lowercase country and city names in URLs for consistency
+4. The system must handle URL routing using Next.js dynamic routes with the existing App Router structure
+
+#### Page Content & Display
+5. Country pages must display a page title indicating the country name (e.g., "Motorcycle Rental Shops in Canada")
+6. City pages must display a page title indicating both city and country (e.g., "Motorcycle Rental Shops in Montreal, Canada")
+7. Both page types must display all rental shops using the existing shop card component from search results
+8. Shop cards must include the same information as search results: shop name, address, rating, contact details, and premium badges if applicable
+
+#### Data & Performance
+9. The system must reuse existing shop data services and components without creating new database queries or services
+10. The system must display all shops for the location on a single page without pagination or infinite scroll
+11. The system must load and display shop data within 3 seconds for reasonable numbers of shops per location
+
+#### Integration & Navigation
+12. Both country and city pages must include a link or button to access the main search functionality for that location
+13. Shop cards must link to existing individual shop detail pages using the current URL structure
+14. The system must maintain the existing shop card layout and styling for consistency
+
+### Non-Goals (Out of Scope)
+
+1. **No Filtering Options**: Location pages will not include filtering by price, rating, or other criteria
+2. **No Sorting Controls**: Pages will display shops in default database order without user-controlled sorting
+3. **No Pagination**: All shops will be displayed on a single page regardless of quantity
+4. **No Breadcrumb Navigation**: Simple page titles without breadcrumb components
+5. **No Maps Integration**: Location pages will not include map displays
+6. **No Advanced SEO**: Basic meta tags only, no complex structured data for these pages
+7. **No Custom Database Queries**: No new database functions, materialized views, or complex SQL optimizations
+8. **No URL Variations**: No support for alternate URL formats or case variations
+
+### Technical Considerations
+
+#### Implementation Approach
+- **Route Structure**: Use Next.js App Router with dynamic routes `[country]/page.tsx` and `[country]/[city]/page.tsx`
+- **Data Fetching**: Leverage existing shop services and database queries filtered by location
+- **Component Reuse**: Utilize existing `ShopCard` components and layout patterns from search results
+- **Database Queries**: Simple location-based filtering using existing country/city relationships
+
+#### Database Integration
+- **Location Lookup**: Use existing `countries`, `provinces`, and `cities` tables to validate and resolve location parameters
+- **Shop Filtering**: Filter `rental_shops` by `city_id` for city pages, aggregate by country for country pages
+- **Performance**: Rely on existing database indexes without additional optimization
+
+#### SEO & Metadata
+- **Page Titles**: Dynamic titles based on location (e.g., "Motorcycle Rental Shops in [Location]")
+- **Meta Descriptions**: Basic descriptions indicating the location and shop count
+- **URL Structure**: Clean, SEO-friendly URLs following the specified pattern
+
+#### Error Handling
+- **Invalid Locations**: Return 404 for non-existent countries or cities
+- **Empty Results**: Display appropriate message when no shops exist in a location
+- **Graceful Degradation**: Maintain functionality even if some shop data is missing
+
+### Success Metrics
+
+#### User Engagement Metrics
+- **Page Views**: Track visits to country and city listing pages
+- **Click-Through Rate**: Measure clicks from location pages to individual shop detail pages
+- **Time on Location Pages**: Monitor user engagement time on country/city listing pages
+- **Search Conversion**: Track users who navigate from location pages to main search functionality
+
+#### SEO Metrics
+- **Search Engine Indexing**: Monitor indexing of new location-based URLs
+- **Organic Traffic**: Track organic search traffic to location pages
+- **Location-Based Keywords**: Monitor ranking for location + "motorcycle rental" keyword combinations
+
+#### Technical Metrics
+- **Page Load Performance**: Maintain sub-3-second load times for location pages
+- **Database Performance**: Ensure location-based queries don't impact overall system performance
+- **Error Rates**: Monitor 404 rates and other errors on location pages
+
+---
+
+## Phase 1 Extension: Admin-Configurable ShopCard Display (Keep It Simple)
+
+### Introduction/Overview
+
+Provide an admin UX to configure which information blocks are shown on the `ShopCard` component across the site. This enables non-developers to tailor what data appears on listing cards without code changes. Defaults match the current `ShopCard` presentation. Emphasis: smallest possible surface area, minimal schema, zero new dependencies, and straightforward UI.
+
+### Goals
+
+1. **Operational Goal**: Allow admins to toggle `ShopCard` sections on/off globally.
+2. **UX Consistency Goal**: Default configuration mirrors the current `ShopCard` layout and content.
+3. **Simplicity Goal**: Ship a single, global configuration with a clean UI and minimal backend changes (no per-shop/per-page overrides, no advanced layout controls).
+
+### Simplicity Principles
+
+- Single toggle set applied platform-wide (no environment-specific or scope-specific variants)
+- One small settings table, one admin page, one fetch path; prefer defaults when in doubt
+- No reordering, renaming, or custom copy—toggles only (on/off)
+- No new libraries or infrastructure; reuse current auth, UI, and data layer
+- Fail-safe: if settings unavailable, render with current defaults
+
+### Baseline (Current ShopCard Sections)
+
+The following sections are the baseline toggles (current defaults = ON unless naturally absent in data):
+- Premium badge (gold/platinum/featured)
+- Verification/status badges (e.g., verified/active)
+- Rating and review count
+- Location (city, province)
+- Business description (short)
+- Contact info: phone, website
+- Services summary: tours, delivery
+- Inclusions (first 3 with “+N more”)
+- Bike types (categories) pills
+- CTAs: “View Details”, “Browse Bikes”
+
+### Functional Requirements
+
+1. Admin page: `Admin → Display Settings` at `/admin/display-settings` with simple toggle switches for each section above.
+2. Each toggle updates a single global configuration used by all `ShopCard` instances (country/city pages and elsewhere).
+3. Provide “Reset to Defaults” action that restores the baseline configuration.
+4. Restrict access to users with `admin` role (reuse existing admin auth/RBAC).
+5. Changes take effect without redeploy; config is read at render time.
+6. Optional inline preview that shows a basic `ShopCard` sample reflecting current toggles (use mock data; no live coupling). If preview fails, do not block saving.
+7. If a section is toggled ON but the data is missing for a specific shop, the section remains hidden for that shop (no empty placeholders).
+
+### Non-Goals (Out of Scope)
+
+1. Per-shop overrides and per-page overrides (global only in v1)
+2. Scheduling or time-based configurations
+3. A/B testing or multi-variant experiments
+4. Complex role-based variations beyond admin-only management
+
+### Technical Considerations (Minimalist)
+
+- Data Model: Minimal settings table (single row) e.g., `shop_card_display_settings` with boolean columns:
+  - `show_premium_badge`, `show_verification_badge`, `show_rating`, `show_location`,
+    `show_description`, `show_contact_phone`, `show_contact_website`, `show_services`,
+    `show_inclusions`, `show_bike_types`, `show_cta_view_details`, `show_cta_browse_bikes`.
+- Access Control: RLS policies allow read for `anon`/`authenticated`, write for `admin` only.
+- Fetching: Add `settingsService` with `getShopCardSettings` and `updateShopCardSettings`.
+  - Server-side pages (e.g., country/city listings) fetch settings once and pass to child components.
+  - Add short TTL caching (e.g., 5 minutes) with graceful fallback to defaults on error.
+- UI Integration: `ShopCard` accepts a `display` prop (set of booleans). Listing pages pass the resolved config to each card; `ShopCard` conditionally renders sections based on these flags.
+- Performance: Single settings read per request (not per card). No N+1 calls.
+- No New Dependencies: Reuse existing stack and admin shell.
+\- Migration impact: one table, one RLS policy block; keep SQL concise
+
+### Error Handling
+
+- If settings cannot be fetched, use the baseline defaults and log a warning in the admin console.
+- Validation ensures only known keys/booleans are persisted.
+
+### Success Metrics
+
+- Admins can modify `ShopCard` presentation without code changes.
+- Changes are reflected immediately across listing pages.
+- No noticeable performance regressions (settings fetch < 10ms cached, negligible render overhead).
+
+---
+
 ## Future Enhancements (Post-Initial Release)
 
 ### Phase 2 Features

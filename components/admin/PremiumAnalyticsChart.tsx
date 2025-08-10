@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui'
 import { 
   ChartBarIcon, 
@@ -33,11 +33,7 @@ export default function PremiumAnalyticsChart({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadAnalytics()
-  }, [premiumListingId, startDate, endDate])
-
-  const loadAnalytics = async () => {
+  const loadAnalytics = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -55,7 +51,11 @@ export default function PremiumAnalyticsChart({
     } finally {
       setLoading(false)
     }
-  }
+  }, [premiumListingId, startDate, endDate])
+
+  useEffect(() => {
+    loadAnalytics()
+  }, [loadAnalytics])
 
   const getMetricIcon = (metricType: PremiumMetricType) => {
     switch (metricType) {

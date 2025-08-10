@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AdminRoute } from '@/components/admin/AdminRoute';
 import { 
   Card, 
@@ -73,7 +73,7 @@ function UserManagement() {
   };
 
   // Fetch users and stats
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -104,7 +104,7 @@ function UserManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Invite user
   const handleInviteUser = async (e: React.FormEvent) => {
@@ -229,7 +229,7 @@ function UserManagement() {
   // Load data on component mount
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   if (loading) {
     return (

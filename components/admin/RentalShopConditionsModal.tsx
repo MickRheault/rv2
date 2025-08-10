@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, ChangeEvent } from 'react';
+import { useState, useEffect, ChangeEvent, useCallback } from 'react';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -50,13 +50,7 @@ export function RentalShopConditionsModal({ isOpen, onClose, shop }: RentalShopC
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Load data when modal opens
-  useEffect(() => {
-    if (isOpen && shop) {
-      loadData();
-    }
-  }, [isOpen, shop]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -73,16 +67,22 @@ export function RentalShopConditionsModal({ isOpen, onClose, shop }: RentalShopC
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [shop.id]);
 
-  const refreshData = async () => {
+  useEffect(() => {
+    if (isOpen && shop) {
+      loadData();
+    }
+  }, [isOpen, shop, loadData]);
+
+  const refreshData = useCallback(async () => {
     setIsRefreshing(true);
     try {
       await loadData();
     } finally {
       setIsRefreshing(false);
     }
-  };
+  }, [loadData]);
 
   const handleEdit = (condition: RentalShopConditionWithDetails) => {
     setEditingCondition(condition.id);

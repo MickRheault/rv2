@@ -330,7 +330,7 @@ export function NetworkStatus({
     <div className={clsx('fixed top-0 left-0 right-0 bg-red-600 text-white text-center py-2 text-sm z-50', className)}>
       <div className="flex items-center justify-center space-x-2">
         <WifiIcon className="w-4 h-4" />
-        <span>You're offline. Check your connection.</span>
+        <span>You&apos;re offline. Check your connection.</span>
       </div>
     </div>
   )
