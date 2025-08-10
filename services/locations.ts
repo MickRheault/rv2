@@ -202,7 +202,7 @@ export const locationService = {
     }
   },
 
-  // Get locations with rental shops (only locations that have shops)
+
   async getLocationsWithShops() {
     const { data, error } = await supabase
       .from('cities')
@@ -320,6 +320,63 @@ export const locationService = {
       totalProvinces: provinces.count || 0,
       totalCities: cities.count || 0,
       citiesWithShops: citiesWithShops.count || 0
+    }
+  },
+
+  // Get country by name (for dynamic routing)
+  async getCountryByName(countryName: string) {
+    // Convert country name slug to search term (e.g., "new-zealand" -> "new zealand")
+    const searchName = countryName.replace(/-/g, ' ')
+    
+    const { data, error } = await supabase
+      .from('countries')
+      .select('*')
+      .ilike('name', searchName)
+      .single()
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No rows returned
+        return null
+      }
+      console.error('Error fetching country by name:', error)
+      throw error
+    }
+
+    return data as Country
+  },
+
+  // Get city by name within a specific country (for dynamic routing)
+  async getCityByName(cityName: string, countryCode: string) {
+    // Convert city name slug to search term (e.g., "new-york" -> "new york")
+    const searchName = cityName.replace(/-/g, ' ')
+    
+    const { data, error } = await supabase
+      .from('cities')
+      .select(`
+        *,
+        provinces!inner (
+          *,
+          countries!inner (*)
+        )
+      `)
+      .ilike('name', searchName)
+      .eq('provinces.countries.code', countryCode)
+      .single()
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No rows returned
+        return null
+      }
+      console.error('Error fetching city by name:', error)
+      throw error
+    }
+
+    return data as City & {
+      provinces: Province & {
+        countries: Country
+      }
     }
   }
 }

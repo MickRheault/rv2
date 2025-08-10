@@ -31,6 +31,7 @@ export interface ShopWithDetails extends RentalShop {
   })[]
   motorcycle_count?: number
   premium?: PremiumFeatureConfig
+  category_names?: string[]
 }
 
 export interface ShopWithMotorcycles extends ShopWithDetails {
@@ -94,7 +95,32 @@ export const shopService = {
     } else if (provinceId) {
       shopQuery = shopQuery.eq('cities.province_id', provinceId)
     } else if (countryCode) {
-      shopQuery = shopQuery.eq('cities.provinces.country_code', countryCode)
+      // For country filtering, we need to get city IDs through provinces for reliable filtering
+      const { data: provinces } = await supabase
+        .from('provinces')
+        .select('id')
+        .eq('country_code', countryCode)
+      
+      if (provinces && provinces.length > 0) {
+        const provinceIds = provinces.map(p => p.id)
+        
+        // Get city IDs for these provinces
+        const { data: cities } = await supabase
+          .from('cities')
+          .select('id')
+          .in('province_id', provinceIds)
+        
+        if (cities && cities.length > 0) {
+          const cityIds = cities.map(c => c.id)
+          shopQuery = shopQuery.in('city_id', cityIds)
+        } else {
+          // No cities found for this country, return empty result
+          return { shops: [], total: 0 }
+        }
+      } else {
+        // No provinces found for this country, return empty result
+        return { shops: [], total: 0 }
+      }
     }
 
     // Apply shop-specific filters
@@ -139,7 +165,7 @@ export const shopService = {
     }
 
     // Filter by tours/service locations if specified (post-query filtering)
-    let filteredData = data || []
+    let filteredData = (data || []) as ShopWithDetails[]
     if (hasTours) {
       filteredData = filteredData.filter(shop => shop.rental_shop_tours.length > 0)
     }
@@ -147,8 +173,35 @@ export const shopService = {
       filteredData = filteredData.filter(shop => shop.rental_shop_service_locations.length > 0)
     }
 
+    // Augment with category names per shop for UI pills using a single batched query
+    try {
+      const shopIds = filteredData.map(s => s.id)
+      if (shopIds.length > 0) {
+        const { data: rentalsWithCats } = await supabase
+          .from('motorcycle_rentals')
+          .select('shop_id, categories ( name )')
+          .in('shop_id', shopIds)
+
+        const shopIdToCategoryNames = new Map<string, Set<string>>()
+        for (const row of rentalsWithCats || []) {
+          const sid = (row as any).shop_id as string
+          const catName = (row as any).categories?.name as string | null
+          if (!sid || !catName) continue
+          if (!shopIdToCategoryNames.has(sid)) shopIdToCategoryNames.set(sid, new Set<string>())
+          shopIdToCategoryNames.get(sid)!.add(catName)
+        }
+
+        filteredData = filteredData.map(s => ({
+          ...s,
+          category_names: Array.from(shopIdToCategoryNames.get(s.id) || new Set<string>())
+        }))
+      }
+    } catch (e) {
+      console.warn('Warning: failed to augment shops with category names', e)
+    }
+
     return {
-      shops: filteredData as ShopWithDetails[],
+      shops: filteredData,
       total: count || 0
     }
   },

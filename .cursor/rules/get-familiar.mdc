@@ -1,0 +1,15 @@
+---
+description: Used to get the AI familiar with the current task. 
+globs:
+alwaysApply: false
+---
+
+# Getting Familiar with the project
+
+I want you to get familiar with the current project I will ask you to work on
+
+## Context
+
+Please read the project PRD in this file `.PRD/prd-motorcycle-rental-aggregator.mdc`
+Please read the set of tasks for this project in this file `.PRD/tasks-prd-motorcycle-rental-aggregator.mdc`
+You must, it's important, work on the tasks using this guideline file `.PRD/process-task-list.mdc`

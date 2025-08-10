@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { Spinner } from '@/components/ui';
@@ -156,13 +157,15 @@ function AuthCallbackContent() {
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
-          <img
+          <Image
             className="mx-auto h-12 w-auto"
             src="/logo.svg"
             alt="RideVault"
+            width={48}
+            height={48}
             onError={(e) => {
-              // Hide logo if not found
-              e.currentTarget.style.display = 'none';
+              const target = e.currentTarget as unknown as HTMLImageElement;
+              target.style.display = 'none';
             }}
           />
           <h2 className="mt-6 text-3xl font-bold text-gray-900">

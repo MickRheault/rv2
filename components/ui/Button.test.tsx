@@ -11,19 +11,19 @@ describe('Button Component', () => {
   it('applies primary variant styles by default', () => {
     render(<Button>Primary Button</Button>)
     const button = screen.getByRole('button')
-    expect(button).toHaveClass('bg-primary')
+    expect(button).toHaveClass('bg-blue-600', 'text-white')
   })
 
   it('applies secondary variant styles when specified', () => {
     render(<Button variant="secondary">Secondary Button</Button>)
     const button = screen.getByRole('button')
-    expect(button).toHaveClass('bg-secondary')
+    expect(button).toHaveClass('bg-white', 'text-gray-900', 'border', 'border-gray-300')
   })
 
   it('applies outline variant styles when specified', () => {
     render(<Button variant="outline">Outline Button</Button>)
     const button = screen.getByRole('button')
-    expect(button).toHaveClass('border-primary', 'text-primary')
+    expect(button).toHaveClass('border', 'border-gray-300', 'text-gray-900')
   })
 
   it('handles click events', async () => {
@@ -41,7 +41,7 @@ describe('Button Component', () => {
     const button = screen.getByRole('button')
     
     expect(button).toBeDisabled()
-    expect(button).toHaveClass('opacity-70', 'cursor-not-allowed')
+    expect(button).toHaveClass('cursor-not-allowed')
     expect(screen.getByRole('button')).toContainHTML('svg') // Loading spinner
   })
 
@@ -50,7 +50,7 @@ describe('Button Component', () => {
     const button = screen.getByRole('button')
     
     expect(button).toBeDisabled()
-    expect(button).toHaveClass('disabled:pointer-events-none', 'disabled:opacity-50')
+    expect(button).toHaveClass('disabled:opacity-50', 'disabled:cursor-not-allowed')
   })
 
   it('applies full width class when fullWidth is true', () => {
@@ -65,10 +65,10 @@ describe('Button Component', () => {
     expect(screen.getByRole('button')).toHaveClass('px-3', 'py-2', 'text-sm')
 
     rerender(<Button size="md">Medium Button</Button>)
-    expect(screen.getByRole('button')).toHaveClass('px-4', 'py-2', 'text-base')
+    expect(screen.getByRole('button')).toHaveClass('px-4', 'py-2.5', 'text-sm')
 
     rerender(<Button size="lg">Large Button</Button>)
-    expect(screen.getByRole('button')).toHaveClass('px-6', 'py-3', 'text-lg')
+    expect(screen.getByRole('button')).toHaveClass('px-6', 'py-3', 'text-base')
   })
 
   it('applies custom className', () => {

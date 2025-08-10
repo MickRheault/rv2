@@ -1,3 +1,7 @@
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+export const fetchCache = 'force-no-store'
+
 import { getAnalyticsData, AnalyticsData } from '@/services/analytics';
 import { AdminRoute } from '@/components/admin/AdminRoute';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';

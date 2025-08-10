@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AdminRoute } from '@/components/admin/AdminRoute';
 import { Card, Button, Input, Modal, Alert, Spinner, Checkbox, Textarea, Badge } from '@/components/ui';
 import { ArrowLeftIcon, PlusIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon, CogIcon } from '@heroicons/react/24/outline';
@@ -55,7 +55,7 @@ export default function ConditionTypesPage() {
   const [isAllSelected, setIsAllSelected] = useState(false);
 
   // Load condition types
-  const loadConditionTypes = async () => {
+  const loadConditionTypes = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -75,11 +75,11 @@ export default function ConditionTypesPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentPage, searchTerm]);
 
   useEffect(() => {
     loadConditionTypes();
-  }, [currentPage, searchTerm]);
+  }, [loadConditionTypes]);
 
   // Handle search
   const handleSearch = (value: string) => {

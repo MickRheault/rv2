@@ -220,6 +220,127 @@ export function generateRentalShopSchema(shop: {
   };
 }
 
+// Location-based shop listings schema
+export function generateLocationShopListingSchema(params: {
+  location: string;
+  locationType: 'country' | 'city';
+  shops: Array<{
+    id: string;
+    provider_name: string;
+    slug: string;
+    full_address?: string | null;
+    phone?: string | null;
+    website?: string | null;
+    rating?: number | null;
+    cities?: {
+      name: string;
+      provinces?: {
+        name: string;
+        countries?: {
+          name: string;
+          code: string;
+        } | null;
+      } | null;
+    } | null;
+  }>;
+  url: string;
+}) {
+  const { location, locationType, shops, url } = params;
+  
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    '@id': url,
+    name: `Motorcycle Rental Shops in ${location}`,
+    description: `Find and compare motorcycle rental shops in ${location}. Browse ${shops.length} rental businesses offering bikes, scooters, and motorcycle rentals.`,
+    url,
+    mainEntity: {
+      '@type': 'ItemList',
+      name: `Motorcycle Rental Shops in ${location}`,
+      description: `Complete list of motorcycle rental businesses in ${location}`,
+      numberOfItems: shops.length,
+      itemListElement: shops.map((shop, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        item: {
+          '@type': 'LocalBusiness',
+          '@id': `${SITE_CONFIG.url}/shop/${shop.slug}`,
+          name: shop.provider_name,
+          url: `${SITE_CONFIG.url}/shop/${shop.slug}`,
+          telephone: shop.phone || undefined,
+          sameAs: shop.website ? [shop.website] : undefined,
+          address: {
+            '@type': 'PostalAddress',
+            streetAddress: shop.full_address || undefined,
+            addressLocality: shop.cities?.name,
+            addressRegion: shop.cities?.provinces?.name,
+            addressCountry: shop.cities?.provinces?.countries?.name,
+          },
+          aggregateRating: shop.rating ? {
+            '@type': 'AggregateRating',
+            ratingValue: shop.rating,
+          } : undefined,
+          serviceType: 'Motorcycle Rental',
+          areaServed: {
+            '@type': locationType === 'city' ? 'City' : 'Country',
+            name: locationType === 'city' ? shop.cities?.name : shop.cities?.provinces?.countries?.name,
+          },
+        },
+      })),
+    },
+    breadcrumb: {
+      '@type': 'BreadcrumbList',
+      itemListElement: locationType === 'city' 
+        ? [
+            {
+              '@type': 'ListItem',
+              position: 1,
+              name: 'Home',
+              item: SITE_CONFIG.url,
+            },
+            {
+              '@type': 'ListItem',
+              position: 2,
+              name: 'Browse Locations',
+              item: `${SITE_CONFIG.url}/browse`,
+            },
+            {
+              '@type': 'ListItem',
+              position: 3,
+              name: shops[0]?.cities?.provinces?.countries?.name || 'Country',
+              item: `${SITE_CONFIG.url}/${shops[0]?.cities?.provinces?.countries?.name?.toLowerCase().replace(/\s+/g, '-')}/`,
+            },
+            {
+              '@type': 'ListItem',
+              position: 4,
+              name: `${location} Motorcycle Rentals`,
+              item: url,
+            },
+          ]
+        : [
+            {
+              '@type': 'ListItem',
+              position: 1,
+              name: 'Home',
+              item: SITE_CONFIG.url,
+            },
+            {
+              '@type': 'ListItem',
+              position: 2,
+              name: 'Browse Locations',
+              item: `${SITE_CONFIG.url}/browse`,
+            },
+            {
+              '@type': 'ListItem',
+              position: 3,
+              name: `${location} Motorcycle Rentals`,
+              item: url,
+            },
+          ],
+    },
+  };
+}
+
 // Breadcrumb schema
 export function generateBreadcrumbSchema(breadcrumbs: { name: string; url: string }[]) {
   return {
@@ -519,4 +640,65 @@ export function StructuredData({ schema }: { schema: object }): JSX.Element {
       __html: JSON.stringify(schema),
     },
   });
+}
+
+// Browse page schema for country listings
+export function generateBrowsePageSchema(countries: Array<{
+  country: {
+    code: string;
+    name: string;
+  };
+  provinces: Record<string, {
+    cities: Array<{
+      id: string;
+      name: string;
+    }>
+  }>
+}>) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: 'Browse Motorcycle Rentals by Location',
+    description: 'Explore motorcycle rental shops by country and city. Find the best rental locations worldwide.',
+    url: `${SITE_CONFIG.url}/browse`,
+    mainEntity: {
+      '@type': 'ItemList',
+      itemListElement: countries.map((c, index) => {
+        const countryUrlName = c.country.name.toLowerCase().replace(/\s+/g, '-');
+        const cities = Object.values(c.provinces).flatMap(p => p.cities);
+
+        return {
+          '@type': 'ListItem',
+          position: index + 1,
+          item: {
+            '@type': 'Country',
+            name: c.country.name,
+            url: `${SITE_CONFIG.url}/${countryUrlName}`,
+            containsPlace: cities.map(city => ({
+              '@type': 'City',
+              name: city.name,
+              url: `${SITE_CONFIG.url}/${countryUrlName}/${city.name.toLowerCase().replace(/\s+/g, '-')}`,
+            })),
+          },
+        }
+      }),
+    },
+    breadcrumb: {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+            {
+                '@type': 'ListItem',
+                position: 1,
+                name: 'Home',
+                item: SITE_CONFIG.url,
+            },
+            {
+                '@type': 'ListItem',
+                position: 2,
+                name: 'Browse Locations',
+                item: `${SITE_CONFIG.url}/browse`,
+            }
+        ]
+    }
+  };
 }

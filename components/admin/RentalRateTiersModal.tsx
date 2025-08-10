@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, ChangeEvent } from 'react';
+import { useState, useEffect, ChangeEvent, useCallback } from 'react';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -48,13 +48,7 @@ export function RentalRateTiersModal({ isOpen, onClose, motorcycle }: RentalRate
   });
 
   // Load rate tiers when modal opens
-  useEffect(() => {
-    if (isOpen && motorcycle.id) {
-      loadRateTiers();
-    }
-  }, [isOpen, motorcycle.id]);
-
-  const loadRateTiers = async () => {
+  const loadRateTiers = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -65,7 +59,13 @@ export function RentalRateTiersModal({ isOpen, onClose, motorcycle }: RentalRate
     } finally {
       setLoading(false);
     }
-  };
+  }, [motorcycle.id]);
+
+  useEffect(() => {
+    if (isOpen && motorcycle.id) {
+      loadRateTiers();
+    }
+  }, [isOpen, motorcycle.id, loadRateTiers]);
 
   const handleAddTier = async () => {
     try {

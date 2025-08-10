@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { clsx } from 'clsx'
 import {
@@ -33,8 +33,8 @@ interface ShopCardProps {
 
 export default function ShopCard({ 
   shop, 
-  showServices = true,
-  showInclusions = true,
+  showServices = false,
+  showInclusions = false,
   compact = false,
   onFavoriteToggle,
   isFavorited = false,
@@ -42,6 +42,7 @@ export default function ShopCard({
   className 
 }: ShopCardProps) {
   const [showAllInclusions, setShowAllInclusions] = useState(false)
+  const router = useRouter()
   
   // Get location string
   const location = shop.cities 
@@ -62,6 +63,21 @@ export default function ShopCard({
   const premiumType = premium?.premiumType ?? 'gold'
   
 
+
+  // Handle card click for navigation
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't navigate if clicking on interactive elements
+    const target = e.target as HTMLElement
+    if (
+      target.closest('button') ||
+      target.closest('a') ||
+      target.tagName === 'BUTTON' ||
+      target.tagName === 'A'
+    ) {
+      return
+    }
+    router.push(`/shop/${shop.slug}`)
+  }
 
   // Handle favorite toggle
   const handleFavoriteClick = (e: React.MouseEvent) => {
@@ -108,16 +124,18 @@ export default function ShopCard({
   }
 
   return (
-    <Link href={`/shop/${shop.slug}`} className="block group">
-      <Card className={clsx(
-        'overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1',
+    <Card 
+      className={clsx(
+        'overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer group',
         compact ? 'h-auto' : 'h-full',
         className
-      )}>
+      )}
+      onClick={handleCardClick}
+    >
         
         <CardHeader className={clsx('relative', compact ? 'p-3' : 'p-4')}>
           {/* Header with name and actions */}
-          <div className="flex justify-between items-start mb-2">
+          <div className="flex justify-between items-start mb-1">
             <div className="flex-1 min-w-0">
               <h3 className={clsx(
                 'font-semibold text-gray-900 line-clamp-1',
@@ -125,11 +143,7 @@ export default function ShopCard({
               )}>
                 {shop.provider_name}
               </h3>
-              {shop.location_name && shop.location_name !== shop.provider_name && (
-                <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">
-                  {shop.location_name}
-                </p>
-              )}
+              {/* Removed secondary location/slug line under the title */}
             </div>
             
             {/* Action buttons */}
@@ -159,9 +173,9 @@ export default function ShopCard({
           </div>
 
           {/* Status badges */}
-          <div className="flex items-center gap-2 mb-3 flex-wrap">
-            {/* Premium badge */}
-            {isPremium && (
+          {/* Keep only Premium badge; render container only when present to avoid extra spacing */}
+          {isPremium && (
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
               <div className="flex items-center gap-1">
                 <Badge variant={premiumType} size="sm">
                   {premiumType === 'gold' && '⭐ Premium'}
@@ -174,37 +188,8 @@ export default function ShopCard({
                   </Badge>
                 )}
               </div>
-            )}
-            
-            {isVerified && (
-              <Badge variant="success" size="sm" className="flex items-center gap-1">
-                <CheckCircleIcon className="w-3 h-3" />
-                Verified
-              </Badge>
-            )}
-            
-            {businessStatus && !isVerified && (
-              <Badge variant="secondary" size="sm" className="flex items-center gap-1">
-                <ExclamationTriangleIcon className="w-3 h-3" />
-                {businessStatus.status_code}
-              </Badge>
-            )}
-            
-            {tours.length > 0 && (
-              <Badge variant="primary" size="sm" className="flex items-center gap-1">
-                <MapIcon className="w-3 h-3" />
-                Tours
-              </Badge>
-            )}
-
-            
-            {serviceLocations.length > 1 && (
-              <Badge variant="secondary" size="sm" className="flex items-center gap-1">
-                <TruckIcon className="w-3 h-3" />
-                Delivery
-              </Badge>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Rating and location */}
           <div className="space-y-2">
@@ -237,6 +222,29 @@ export default function ShopCard({
         </CardHeader>
 
         <CardContent className={clsx('space-y-3', compact ? 'p-3 pt-0' : 'p-4 pt-0')}>
+          {/* Bike types (categories) */}
+          {(() => {
+            const categoryNames = shop.category_names || []
+            if (!categoryNames || categoryNames.length === 0 || compact) return null
+            const maxToShow = 5
+            const shown = categoryNames.slice(0, maxToShow)
+            const remaining = categoryNames.length - shown.length
+            return (
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-gray-900">Bike types</h4>
+                <div className="flex flex-wrap gap-2">
+                  {shown.map((name) => (
+                    <Badge key={name} variant="secondary" size="sm">
+                      {name}
+                    </Badge>
+                  ))}
+                  {remaining > 0 && (
+                    <Badge variant="secondary" size="sm">+{remaining} more</Badge>
+                  )}
+                </div>
+              </div>
+            )
+          })()}
           {/* Business description */}
           {shop.business_description && !compact && (
             <p className="text-sm text-gray-600 line-clamp-2">
@@ -275,65 +283,7 @@ export default function ShopCard({
             )}
           </div>
 
-          {/* Services */}
-          {showServices && (tours.length > 0 || serviceLocations.length > 0) && !compact && (
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium text-gray-900">Services</h4>
-              <div className="space-y-1">
-                {tours.length > 0 && (
-                  <div className="flex items-center space-x-2 text-sm text-gray-600">
-                    <MapIcon className="w-4 h-4" />
-                    <span>{tours.length} tour{tours.length > 1 ? 's' : ''} available</span>
-                  </div>
-                )}
-                
-                {serviceLocations.length > 0 && (
-                  <div className="flex items-center space-x-2 text-sm text-gray-600">
-                    <TruckIcon className="w-4 h-4" />
-                    <span>
-                      {serviceLocations.length > 1 
-                        ? `${serviceLocations.length} pickup locations`
-                        : 'Pickup available'
-                      }
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Inclusions */}
-          {showInclusions && inclusions.length > 0 && !compact && (
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium text-gray-900">Included</h4>
-              <div className="space-y-1">
-                {inclusions
-                  .slice(0, showAllInclusions ? inclusions.length : 3)
-                  .map((inclusion) => (
-                    <div key={inclusion.id} className="flex items-center space-x-2 text-sm text-gray-600">
-                      <CheckCircleIcon className="w-3 h-3 text-green-500 flex-shrink-0" />
-                      <span className="line-clamp-1">{inclusion.inclusion_text}</span>
-                    </div>
-                  ))}
-                
-                {inclusions.length > 3 && (
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      setShowAllInclusions(!showAllInclusions)
-                    }}
-                    className="text-xs text-blue-600 hover:text-blue-800 transition-colors"
-                  >
-                    {showAllInclusions 
-                      ? 'Show less' 
-                      : `+${inclusions.length - 3} more`
-                    }
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
+          {/* Services and Inclusions removed per design update */}
 
           {/* Compact view summary */}
           {compact && (inclusions.length > 0 || tours.length > 0) && (
@@ -354,17 +304,27 @@ export default function ShopCard({
         {!compact && (
           <CardFooter className="p-4 pt-0">
             <div className="flex w-full gap-2">
-              <Button variant="outline" size="sm" className="flex-1">
-                View Details
-              </Button>
-              
-              <Button variant="primary" size="sm" className="flex-1">
-                Browse Bikes
-              </Button>
+              <a
+                href={`/shop/${shop.slug}`}
+                onClick={(e) => e.stopPropagation()}
+                className="flex-1"
+              >
+                <Button variant="outline" size="sm" className="w-full">
+                  View Details
+                </Button>
+              </a>
+              <a
+                href={`/shop/${shop.slug}`}
+                onClick={(e) => e.stopPropagation()}
+                className="flex-1"
+              >
+                <Button variant="primary" size="sm" className="w-full">
+                  Browse Bikes
+                </Button>
+              </a>
             </div>
           </CardFooter>
         )}
-      </Card>
-    </Link>
+    </Card>
   )
 } 
