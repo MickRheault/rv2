@@ -204,24 +204,50 @@ export const locationService = {
 
 
   async getLocationsWithShops() {
-    const { data, error } = await supabase
+    // In some environments (e.g. production with stricter RLS), performing an
+    // inner join from cities -> rental_shops may yield zero rows even if data
+    // exists. To make this robust, first fetch distinct city_ids from
+    // rental_shops, then fetch those cities with their hierarchy.
+
+    // 1) Get distinct city IDs that have at least one shop
+    const { data: shopCityRows, error: shopCityError } = await supabase
+      .from('rental_shops')
+      .select('city_id')
+      .not('city_id', 'is', null)
+
+    if (shopCityError) {
+      console.error('Error fetching shop city ids:', shopCityError)
+      throw shopCityError
+    }
+
+    const cityIds = Array.from(
+      new Set((shopCityRows || []).map((row: any) => row.city_id).filter(Boolean))
+    ) as string[]
+
+    if (cityIds.length === 0) {
+      // No cities with shops
+      return {}
+    }
+
+    // 2) Fetch those cities with province and country info
+    const { data: cities, error: citiesError } = await supabase
       .from('cities')
       .select(`
         *,
         provinces (
           *,
           countries (*)
-        ),
-        rental_shops!inner (id)
+        )
       `)
+      .in('id', cityIds)
       .order('name')
 
-    if (error) {
-      console.error('Error fetching locations with shops:', error)
-      throw error
+    if (citiesError) {
+      console.error('Error fetching cities by ids:', citiesError)
+      throw citiesError
     }
 
-    // Group by country and province for organized display
+    // 3) Group by country and province for organized display
     const locationsByCountry: Record<string, {
       country: Country
       provinces: Record<string, {
@@ -230,13 +256,12 @@ export const locationService = {
       }>
     }> = {}
 
-    data?.forEach(city => {
+    cities?.forEach(city => {
       if (!city.provinces?.countries) return
 
       const countryCode = city.provinces.countries.code
       const provinceId = city.provinces.id
 
-      // Initialize country if not exists
       if (!locationsByCountry[countryCode]) {
         locationsByCountry[countryCode] = {
           country: city.provinces.countries,
@@ -244,7 +269,6 @@ export const locationService = {
         }
       }
 
-      // Initialize province if not exists
       if (!locationsByCountry[countryCode].provinces[provinceId]) {
         locationsByCountry[countryCode].provinces[provinceId] = {
           province: city.provinces,
@@ -252,7 +276,6 @@ export const locationService = {
         }
       }
 
-      // Add city
       locationsByCountry[countryCode].provinces[provinceId].cities.push(city as CityWithLocation)
     })
 
