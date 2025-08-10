@@ -91,6 +91,22 @@
 - `app/browse/page.tsx` - Browse page with countries and cities directory listing (Updated - Location directory with simple list)
 - `services/locations.ts` - API service for location data with shop counts (Updated - Added `getLocationsWithShopCounts` for browse page)
 
+// Newly relevant for upcoming UI cleanup tasks
+- `components/common/Footer.tsx` - Update footer links to remove deprecated pages from navigation
+- `app/page.tsx` - Homepage hero and sections cleanup per UI tasks
+- `components/motorcycle/MotorcycleCard.tsx` - Remove features/availability/share UI elements
+- `components/shop/ShopCard.tsx` - Remove share icon and adjust spacing if needed
+- `app/motorcycle/[id]/page.tsx` - Align motorcycle detail template with shop page, adjust header block
+- `components/motorcycle/MotorcycleDetails.tsx` - Support detail layout updates and removing availability pill
+- `app/shop/[slug]/page.tsx` - Shop page UI adjustments (status removal, spacing, block order)
+- `components/shop/ShopDetails.tsx` - Support shop detail layout changes
+- `app/compare/page.tsx` - Remove/redirect deprecated page from site
+- `app/how-it-works/page.tsx` - Remove/redirect deprecated page from site
+- `app/help/page.tsx` - Remove/redirect deprecated page from site
+- `app/report/page.tsx` - Remove/redirect deprecated page from site
+- `app/careers/page.tsx` - Remove/redirect deprecated page from site
+- `app/cookies/page.tsx` - Add validated cookie policy content once confirmed
+
 ## Existing Database Schema & Data Structure
 
 **IMPORTANT**: All development must be based on the existing Supabase database schema and data structure detailed below.
@@ -280,9 +296,9 @@ The system receives data via the template in `context/data_template.json`:
     - [x] 7.5.4 Add empty state handling when no shops exist in a location
     - [x] 7.5.5 Test and verify proper URL structure and SEO metadata generation
 
-- [ ] 8.0 Browse Page Enhancement: Location Directory
-  - [ ] 8.1 Update browse page with countries and cities listing
-    - [ ] 8.1.1 Replace placeholder content in `app/browse/page.tsx` with location directory
+- [x] 8.0 Browse Page Enhancement: Location Directory
+  - [x] 8.1 Update browse page with countries and cities listing
+    - [x] 8.1.1 Replace placeholder content in `app/browse/page.tsx` with location directory
     - [x] 8.1.2 Add data fetching to get all countries with rental shops using existing `services/locations.ts`
     - [x] 8.1.3 Add data fetching to get all cities with rental shops using existing database queries
     - [x] 8.1.4 Display countries list with shop counts and links to country pages (e.g., `/thailand`)
@@ -291,3 +307,28 @@ The system receives data via the template in `context/data_template.json`:
     - [x] 8.1.7 On the ShopCard component (`components/shop/ShopCard.tsx`) please add the type of bikes available for rent as pills components
 
   
+- [ ] 10.0 UI Clean up
+  - [ ] 10.1 Homepage
+    - [ ] Remove the compare button (move feature to idea roadmap)
+    - [ ] Remove the favorite button (move feature to idea roadmap)
+    - [ ] Remove the "style" box from the hero search on homepage (move to idea roadmap)
+    - [ ] Remove the counts under the hero search (defer until more data)
+    - [ ] Replace the "Why choose RideVault" section with updated copy/content
+    - [ ] Remove the "Ready to Start Your Adventure?" section
+    - [ ] Footer: remove links to Compare Rentals, How it works, Help Center, Report Issue, Careers
+    - [ ] Remove corresponding pages/routes and navigation entries for the removed footer links
+    - [ ] Validate Cookie Policy implementation; if legally sound, add details to `app/cookies/page.tsx`
+  - [ ] 10.2 Motorcycle Card
+    - [ ] Remove features list from the card
+    - [ ] Remove the availability pill
+    - [ ] Remove the shareable icon in the top-right
+  - [ ] 10.3 Shop Card
+    - [ ] Remove the shareable icon in the top-right
+  - [ ] 10.4 Motorcycle Page
+    - [ ] Align layout with Shop page template; place model name and basic info at the top
+    - [ ] Remove the "availability" pill
+  - [ ] 10.5 Shop Page
+    - [ ] Remove the "operational" status
+    - [ ] Add spacing between "Call shop" and "Visit website" buttons
+    - [ ] Move "Motorcycles available" section to the top, under the header block
+    - [ ] Remove quick stats
