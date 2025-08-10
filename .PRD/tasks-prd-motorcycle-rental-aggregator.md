@@ -309,26 +309,26 @@ The system receives data via the template in `context/data_template.json`:
   
 - [ ] 10.0 UI Clean up
   - [ ] 10.1 Homepage
-    - [ ] Remove the compare button (move feature to idea roadmap)
-    - [ ] Remove the favorite button (move feature to idea roadmap)
-    - [ ] Remove the "style" box from the hero search on homepage (move to idea roadmap)
-    - [ ] Remove the counts under the hero search (defer until more data)
-    - [ ] Replace the "Why choose RideVault" section with updated copy/content
-    - [ ] Remove the "Ready to Start Your Adventure?" section
-    - [ ] Footer: remove links to Compare Rentals, How it works, Help Center, Report Issue, Careers
-    - [ ] Remove corresponding pages/routes and navigation entries for the removed footer links
-    - [ ] Validate Cookie Policy implementation; if legally sound, add details to `app/cookies/page.tsx`
+    - [ ] 10.1.1 Remove the compare button (move feature to idea roadmap)
+    - [ ] 10.1.2 Remove the favorite button (move feature to idea roadmap)
+    - [ ] 10.1.3 Remove the "style" box from the hero search on homepage (move to idea roadmap)
+    - [ ] 10.1.4 Remove the counts under the hero search (defer until more data)
+    - [ ] 10.1.5 Replace the "Why choose RideVault" section with updated copy/content
+    - [ ] 10.1.6 Remove the "Ready to Start Your Adventure?" section
+    - [ ] 10.1.7 Footer: remove links to Compare Rentals, How it works, Help Center, Report Issue, Careers
+    - [ ] 10.1.8 Remove corresponding pages/routes and navigation entries for the removed footer links
+    - [ ] 10.1.9 Validate Cookie Policy implementation; if legally sound, add details to `app/cookies/page.tsx`
   - [ ] 10.2 Motorcycle Card
-    - [ ] Remove features list from the card
-    - [ ] Remove the availability pill
-    - [ ] Remove the shareable icon in the top-right
+    - [ ] 10.2.1 Remove features list from the card
+    - [ ] 10.2.2 Remove the availability pill
+    - [ ] 10.2.3 Remove the shareable icon in the top-right
   - [ ] 10.3 Shop Card
-    - [ ] Remove the shareable icon in the top-right
+    - [ ] 10.3.1 Remove the shareable icon in the top-right
   - [ ] 10.4 Motorcycle Page
-    - [ ] Align layout with Shop page template; place model name and basic info at the top
-    - [ ] Remove the "availability" pill
+    - [ ] 10.4.1 Align layout with Shop page template; place model name and basic info at the top
+    - [ ] 10.4.2 Remove the "availability" pill
   - [ ] 10.5 Shop Page
-    - [ ] Remove the "operational" status
-    - [ ] Add spacing between "Call shop" and "Visit website" buttons
-    - [ ] Move "Motorcycles available" section to the top, under the header block
-    - [ ] Remove quick stats
+    - [ ] 10.5.1 Remove the "operational" status
+    - [ ] 10.5.2 Add spacing between "Call shop" and "Visit website" buttons
+    - [ ] 10.5.3 Move "Motorcycles available" section to the top, under the header block
+    - [ ] 10.5.4 Remove quick stats
