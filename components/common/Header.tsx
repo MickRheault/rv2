@@ -12,7 +12,6 @@ export default function Header() {
   const navigation = [
     { name: 'Search', href: '/search' },
     { name: 'Countries', href: '/browse' },
-    { name: 'Compare', href: '/compare' },
   ]
 
   const isActive = (href: string) => pathname === href
@@ -56,18 +55,15 @@ export default function Header() {
               <MagnifyingGlassIcon className="w-5 h-5" />
             </Link>
 
-            {/* Favorites */}
+            {/* User Menu → link to admin login */}
             <Link
-              href="/favorites"
+              href="/admin/login"
               className="p-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-lg transition-colors"
+              aria-label="Admin Login"
+              title="Admin Login"
             >
-              <HeartIcon className="w-5 h-5" />
-            </Link>
-
-            {/* User Menu */}
-            <button className="p-2 text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-lg transition-colors">
               <UserIcon className="w-5 h-5" />
-            </button>
+            </Link>
 
             {/* Mobile Menu Button */}
             <button
