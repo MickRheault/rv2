@@ -205,7 +205,7 @@ CREATE POLICY "Allow anonymous users to read motorcycle features" ON public.moto
 DROP POLICY IF EXISTS "Allow authenticated users to read motorcycle features" ON public.motorcycle_features;
 CREATE POLICY "Allow authenticated users to read motorcycle features" ON public.motorcycle_features FOR SELECT TO authenticated USING (true);
 DROP POLICY IF EXISTS "Allow admins to create motorcycle features" ON public.motorcycle_features;
-CREATE POLICY "Allow admins to create motorcycle features" ON public.motorcycle_features FOR INSERT TO authenticated WITH CHECK (is_admin()));
+CREATE POLICY "Allow admins to create motorcycle features" ON public.motorcycle_features FOR INSERT TO authenticated WITH CHECK (is_admin());
 DROP POLICY IF EXISTS "Allow admins to delete motorcycle features" ON public.motorcycle_features;
 CREATE POLICY "Allow admins to delete motorcycle features" ON public.motorcycle_features FOR DELETE TO authenticated USING (is_admin());
 
@@ -236,7 +236,7 @@ CREATE POLICY "Allow admins to delete motorcycle insurance details" ON public.mo
 -- Motorcycle required documents
 ALTER TABLE public.motorcycle_required_documents ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow anonymous users to read motorcycle required documents" ON public.motorcycle_required_documents;
-CREATE POLICY "Allow anonymous users to read motorcycle required documents" ON public.motorcycle_required_documents FOR SELECT TO anon USING (true));
+CREATE POLICY "Allow anonymous users to read motorcycle required documents" ON public.motorcycle_required_documents FOR SELECT TO anon USING (true);
 DROP POLICY IF EXISTS "Allow authenticated users to read motorcycle required documents" ON public.motorcycle_required_documents;
 CREATE POLICY "Allow authenticated users to read motorcycle required documents" ON public.motorcycle_required_documents FOR SELECT TO authenticated USING (true);
 DROP POLICY IF EXISTS "Allow admins to create motorcycle required documents" ON public.motorcycle_required_documents;
