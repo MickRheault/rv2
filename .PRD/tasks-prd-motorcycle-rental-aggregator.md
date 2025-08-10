@@ -309,15 +309,17 @@ The system receives data via the template in `context/data_template.json`:
   
 - [ ] 10.0 UI Clean up
   - [ ] 10.1 Homepage
-    - [ ] 10.1.1 Remove the compare button (move feature to idea roadmap)
-    - [ ] 10.1.2 Remove the favorite button (move feature to idea roadmap)
-    - [ ] 10.1.3 Remove the "style" box from the hero search on homepage (move to idea roadmap)
-    - [ ] 10.1.4 Remove the counts under the hero search (defer until more data)
-    - [ ] 10.1.5 Replace the "Why choose RideVault" section with updated copy/content
-    - [ ] 10.1.6 Remove the "Ready to Start Your Adventure?" section
-    - [ ] 10.1.7 Footer: remove links to Compare Rentals, How it works, Help Center, Report Issue, Careers
-    - [ ] 10.1.8 Remove corresponding pages/routes and navigation entries for the removed footer links
-    - [ ] 10.1.9 Validate Cookie Policy implementation; if legally sound, add details to `app/cookies/page.tsx`
+    - [x] 10.1.1 Remove the compare button (move feature to idea roadmap)
+    - [x] 10.1.2 Remove the favorite button (move feature to idea roadmap)
+    - [x] 10.1.3 Remove the "style" box from the hero search on homepage (move to idea roadmap)
+    - [x] 10.1.4 Remove the counts under the hero search (defer until more data)
+    - [x] 10.1.5 Replace the "Why choose RideVault" section with updated copy/content
+    - [x] 10.1.6 Remove the "Ready to Start Your Adventure?" section
+    - [x] 10.1.7 Footer: remove links to Compare Rentals, How it works, Help Center, Report Issue, Careers
+    - [x] 10.1.7.a Update user icon to link to admin login page
+    - [x] 10.1.8 Remove corresponding pages/routes and navigation entries for the removed footer links
+    - [x] 10.1.9 Validate Cookie Policy; if legally sound, add details to `app/cookies/page.tsx`
+    - [x] 10.1.10 Remove the compare page route (`app/compare/page.tsx`)
   - [ ] 10.2 Motorcycle Card
     - [ ] 10.2.1 Remove features list from the card
     - [ ] 10.2.2 Remove the availability pill

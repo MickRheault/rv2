@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import locationService from '@/services/locations'
-import { categoryService } from '@/services/categories'
 
 interface Country {
   code: string
@@ -17,35 +16,25 @@ interface City {
   countryCode: string
 }
 
-interface Category {
-  id: string
-  name: string
-}
-
 export default function HeroSearchForm() {
   const router = useRouter()
   const [countries, setCountries] = useState<Country[]>([])
   const [cities, setCities] = useState<City[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
   const [selectedCountry, setSelectedCountry] = useState('')
   const [selectedCity, setSelectedCity] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('')
   const [loading, setLoading] = useState(true)
   const countrySelectId = 'hero-country'
   const citySelectId = 'hero-city'
-  const categorySelectId = 'hero-category'
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [countriesData, categoriesData, locationsData] = await Promise.all([
+        const [countriesData, locationsData] = await Promise.all([
           locationService.getCountries(),
-          categoryService.getCategories(),
           locationService.getLocationsWithShops()
         ])
         
         setCountries(countriesData)
-        setCategories(categoriesData)
         
         // Extract all cities from locations data with country mapping
         const allCities = Object.values(locationsData)
@@ -104,14 +93,7 @@ export default function HeroSearchForm() {
         const countrySlug = selectedCountryData.name.toLowerCase().replace(/\s+/g, '-')
         const citySlug = selectedCityData.name.toLowerCase().replace(/\s+/g, '-')
         
-        // Add category as query param if selected
-        const searchParams = new URLSearchParams()
-        if (selectedCategory) {
-          searchParams.set('categoryId', selectedCategory)
-        }
-        
-        const queryString = searchParams.toString()
-        const url = `/${countrySlug}/${citySlug}${queryString ? `?${queryString}` : ''}`
+        const url = `/${countrySlug}/${citySlug}`
         router.push(url)
         return
       }
@@ -123,15 +105,7 @@ export default function HeroSearchForm() {
       
       if (selectedCountryData) {
         const countrySlug = selectedCountryData.name.toLowerCase().replace(/\s+/g, '-')
-        
-        // Add category as query param if selected
-        const searchParams = new URLSearchParams()
-        if (selectedCategory) {
-          searchParams.set('categoryId', selectedCategory)
-        }
-        
-        const queryString = searchParams.toString()
-        const url = `/${countrySlug}${queryString ? `?${queryString}` : ''}`
+        const url = `/${countrySlug}`
         router.push(url)
         return
       }
@@ -145,9 +119,6 @@ export default function HeroSearchForm() {
     }
     if (selectedCity) {
       searchParams.set('cityId', selectedCity)
-    }
-    if (selectedCategory) {
-      searchParams.set('categoryId', selectedCategory)
     }
 
     router.push(`/search?${searchParams.toString()}`)
@@ -183,7 +154,7 @@ export default function HeroSearchForm() {
     <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg max-w-4xl mx-auto">
       <div className="flex flex-col gap-4">
         {/* Mobile: Stack all fields vertically, Desktop: Row layout */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <label htmlFor={countrySelectId} className="block text-sm font-medium text-gray-700">
               Country
@@ -217,25 +188,6 @@ export default function HeroSearchForm() {
               {cities.map((city) => (
                 <option key={city.id} value={city.id}>
                   {city.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-2 sm:col-span-2 lg:col-span-1">
-            <label htmlFor={categorySelectId} className="block text-sm font-medium text-gray-700">
-              Style
-            </label>
-            <select
-              id={categorySelectId}
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full px-3 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none"
-            >
-              <option value="">Any Style</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
                 </option>
               ))}
             </select>
