@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import MotorcycleCard from './MotorcycleCard'
 
-jest.mock('next/image', () => ({ __esModule: true, default: (props: any) => <img {...props} /> }))
+jest.mock('next/image', () => ({ __esModule: true, default: (props: any) => <span data-testid="next-image" {...props} /> }))
 jest.mock('next/link', () => ({ __esModule: true, default: (props: any) => <a {...props} /> }))
 
 const motorcycle: any = {
