@@ -8,7 +8,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Custom color palette for RideVault
+        // Custom color palette for Global Moto Rentals
         primary: {
           50: '#eff6ff',
           100: '#dbeafe',

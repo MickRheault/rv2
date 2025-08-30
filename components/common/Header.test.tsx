@@ -6,7 +6,7 @@ jest.mock('next/link', () => ({ __esModule: true, default: ({ href, children, ..
 describe('Header', () => {
   it('renders logo and nav', () => {
     render(<Header />)
-    expect(screen.getByRole('link', { name: /RideVault/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Global Moto Rentals/i })).toBeInTheDocument()
   })
 })
 

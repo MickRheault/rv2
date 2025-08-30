@@ -87,7 +87,7 @@ export default async function CountryPage({ params }: CountryPageProps) {
     const shops = shopsResult.shops || []
 
     // Generate JSON-LD structured data for the shop listings
-    const currentUrl = `https://ridevault.com/${country}/`
+    const currentUrl = `https://globalmotorentals.com/${country}/`
     const structuredData = generateLocationShopListingSchema({
       location: countryDisplayName,
       locationType: 'country',
