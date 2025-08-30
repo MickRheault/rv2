@@ -1,0 +1,169 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-08-17T16:29:57.046Z",
+    "shop_identifier": "Farang Rent Motorbike",
+    "provider_name": "Farang Rent Motorbike",
+    "place_id": "ChIJiSAMRgCf4jARQ3YEwj1fyWI",
+    "address": "The base, The Base Park East, เลขที่ 99 east, พระโขนง, เขตวัฒนา กรุงเทพมหานคร 10110, Thailand",
+    "city": "Bangkok",
+    "province": "Bangkok",
+    "country": "Thailand",
+    "latitude": 13.7135481,
+    "longitude": 100.6004064,
+    "phone": "083 902 6692",
+    "website": "https://farang-rental-motorbike.odoo.com/",
+    "google_maps_url": "https://maps.google.com/?cid=7118325404888495683",
+    "business_status": "OPERATIONAL",
+    "rating": 4.8,
+    "review_count": 20,
+    "rental_conditions": {
+      "required_documents": "Passport, Rental contract or proof of residence, Thai or foreign driver's license",
+      "deposit_options": "Passport OR cash deposit (3,000 THB for small scooters to 10,000 THB for large scooters)",
+      "fuel_policy": "50 THB per missing fuel gauge level",
+      "late_return_fee": "50 THB per started hour of delay",
+      "theft_policy": "Must be reported immediately",
+      "cleanliness_fee": "50 to 200 THB depending on vehicle condition",
+      "damage_policy": "Evaluated after return, repairs at official garage, repair costs charged to customer"
+    },
+    "rental_inclusions": [
+      "phone holder",
+      "helmet"
+    ],
+    "available_service_locations": [
+      "Bangkok"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "farang-rental-motorbike",
+      "scrape_timestamp": "2025-08-17T16:29:58.065Z",
+      "source_url": "https://farang-rental-motorbike.odoo.com/shop/honda-click-160-7",
+      "brand": "Honda",
+      "model": "Click 160",
+      "year": null,
+      "engine_capacity_cc": 160,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [],
+      "images": [],
+      "features": [
+        "phone holder",
+        "helmet"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Passeport",
+        "Contrat de location ou preuve de résidence/ AirBnb/ Booking…",
+        "Permis de conduire Thaïlandais ou étranger"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "farang-rental-motorbike",
+      "scrape_timestamp": "2025-08-17T16:29:58.065Z",
+      "source_url": "https://farang-rental-motorbike.odoo.com/shop/yamaha-grand-filano-6",
+      "brand": "Yamaha",
+      "model": "Grand Filano",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [],
+      "images": [],
+      "features": [
+        "phone holder",
+        "helmet"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Passeport",
+        "Contrat de location ou preuve de résidence/ AirBnb/ Booking…",
+        "Permis de conduire Thaïlandais ou étranger"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "farang-rental-motorbike",
+      "scrape_timestamp": "2025-08-17T16:29:58.065Z",
+      "source_url": "https://farang-rental-motorbike.odoo.com/shop/honda-scoopy-110-2",
+      "brand": "Honda",
+      "model": "Scoopy 110",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [],
+      "images": [],
+      "features": [
+        "phone holder",
+        "helmet"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Passeport",
+        "Contrat de location ou preuve de résidence/ AirBnb/ Booking…",
+        "Permis de conduire Thaïlandais ou étranger"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "farang-rental-motorbike",
+      "scrape_timestamp": "2025-08-17T16:29:58.065Z",
+      "source_url": "https://farang-rental-motorbike.odoo.com/shop/honda-pcx-160-4",
+      "brand": "Honda",
+      "model": "PCX 160",
+      "year": null,
+      "engine_capacity_cc": 160,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [],
+      "images": [],
+      "features": [
+        "phone holder",
+        "helmet"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Passeport",
+        "Contrat de location ou preuve de résidence/ AirBnb/ Booking…",
+        "Permis de conduire Thaïlandais ou étranger"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "farang-rental-motorbike",
+      "scrape_timestamp": "2025-08-17T16:29:58.065Z",
+      "source_url": "https://farang-rental-motorbike.odoo.com/shop/honda-giorno-3",
+      "brand": "Honda",
+      "model": "Giorno",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [],
+      "images": [],
+      "features": [
+        "phone holder",
+        "helmet"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Passeport",
+        "Contrat de location ou preuve de résidence/ AirBnb/ Booking…",
+        "Permis de conduire Thaïlandais ou étranger"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    }
+  ]
+}

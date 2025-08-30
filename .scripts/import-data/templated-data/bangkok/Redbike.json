@@ -1,0 +1,522 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-08-17T17:18:11.411Z",
+    "shop_identifier": "Redbike",
+    "provider_name": "Redbike",
+    "place_id": "ChIJ4abufFOd4jAR7E2XY2guEEc",
+    "address": "201/663 ซอย วิภาวดีรังสิต Khwaeng Talat Bang Khen, Khet Lak Si, Krung Thep Maha Nakhon 10210, Thailand",
+    "city": "Bangkok",
+    "province": "Bangkok",
+    "country": "Thailand",
+    "latitude": 13.8726334,
+    "longitude": 100.5813808,
+    "phone": "065 391 0560",
+    "website": "https://www.redbikerent.com/",
+    "google_maps_url": "https://maps.google.com/?cid=5120643802202590700",
+    "business_status": "OPERATIONAL",
+    "rating": 4.8,
+    "review_count": 25,
+    "rental_conditions": {
+      "student_only": true,
+      "max_km_per_month": 1500,
+      "commercial_use_prohibited": true,
+      "allowed_purposes": [
+        "school",
+        "dormitory",
+        "tourism",
+        "shopping malls",
+        "markets"
+      ]
+    },
+    "rental_inclusions": [],
+    "available_service_locations": [
+      "Bangkok university areas"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "RedBikeRent",
+      "scrape_timestamp": "2025-06-10T00:18:03",
+      "source_url": "https://www.redbikerent.com",
+      "brand": "Honda",
+      "model": "Scoopy i LED CLUB12",
+      "year": 2018,
+      "engine_capacity_cc": 110,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "1,800 บาท/เดือน",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 60,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.redbikerent.com/wp-content/uploads/2024/12/mo2.png"
+      ],
+      "features": [
+        "Auto transmission",
+        "Gasoline"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "บัตรนักศึกษา",
+        "บัตรประชาชน",
+        "ใบขับขี่",
+        "เอกสารยืนยันการเป็นนักศึกษา"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "RedBikeRent",
+      "scrape_timestamp": "2025-06-10T00:18:03",
+      "source_url": "https://www.redbikerent.com",
+      "brand": "Honda",
+      "model": "Scoopy i LED CLUB12",
+      "year": 2020,
+      "engine_capacity_cc": 110,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "1,800 บาท/เดือน",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 60,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.redbikerent.com/wp-content/uploads/2024/12/mo4-1024x768.png"
+      ],
+      "features": [
+        "Auto transmission",
+        "Gasoline"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "บัตรนักศึกษา",
+        "บัตรประชาชน",
+        "ใบขับขี่",
+        "เอกสารยืนยันการเป็นนักศึกษา"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "RedBikeRent",
+      "scrape_timestamp": "2025-06-10T00:18:03",
+      "source_url": "https://www.redbikerent.com",
+      "brand": "Honda",
+      "model": "Scoopy i Pretige",
+      "year": 2021,
+      "engine_capacity_cc": 110,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "1,800 บาท/เดือน",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 60,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.redbikerent.com/wp-content/uploads/2024/12/mo15-1024x768.png"
+      ],
+      "features": [
+        "Auto transmission",
+        "Gasoline"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "บัตรนักศึกษา",
+        "บัตรประชาชน",
+        "ใบขับขี่",
+        "เอกสารยืนยันการเป็นนักศึกษา"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "RedBikeRent",
+      "scrape_timestamp": "2025-06-10T00:18:03",
+      "source_url": "https://www.redbikerent.com",
+      "brand": "Yamaha",
+      "model": "Grand Filano Hybrid",
+      "year": 2017,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "1,800 - 2,200 บาท/เดือน",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 63.33,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.redbikerent.com/wp-content/uploads/2024/12/mo11-1024x768.png"
+      ],
+      "features": [
+        "Auto transmission",
+        "Gasoline"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "บัตรนักศึกษา",
+        "บัตรประชาชน",
+        "ใบขับขี่",
+        "เอกสารยืนยันการเป็นนักศึกษา"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "RedBikeRent",
+      "scrape_timestamp": "2025-06-10T00:18:03",
+      "source_url": "https://www.redbikerent.com",
+      "brand": "Yamaha",
+      "model": "Grand Filano Hybrid",
+      "year": 2021,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "1,800 - 2,200 บาท/เดือน",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 63.33,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.redbikerent.com/wp-content/uploads/2024/12/mo12-1024x768.png",
+        "https://www.redbikerent.com/wp-content/uploads/2024/12/mo14.png",
+        "https://www.redbikerent.com/wp-content/uploads/2024/12/mo3-1024x768.png"
+      ],
+      "features": [
+        "Auto transmission",
+        "Gasoline"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "บัตรนักศึกษา",
+        "บัตรประชาชน",
+        "ใบขับขี่",
+        "เอกสารยืนยันการเป็นนักศึกษา"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "RedBikeRent",
+      "scrape_timestamp": "2025-06-10T00:18:03",
+      "source_url": "https://www.redbikerent.com",
+      "brand": "Yamaha",
+      "model": "QBIX",
+      "year": 2017,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "1,800 บาท/เดือน",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 60,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.redbikerent.com/wp-content/uploads/2024/12/mo10-2.png"
+      ],
+      "features": [
+        "Auto transmission",
+        "Gasoline"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "บัตรนักศึกษา",
+        "บัตรประชาชน",
+        "ใบขับขี่",
+        "เอกสารยืนยันการเป็นนักศึกษา"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "RedBikeRent",
+      "scrape_timestamp": "2025-06-10T00:18:03",
+      "source_url": "https://www.redbikerent.com",
+      "brand": "Yamaha",
+      "model": "QBIX",
+      "year": 2018,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "1,800 บาท/เดือน",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 60,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.redbikerent.com/wp-content/uploads/2024/12/Screenshot-2024-12-17-004328-1024x771.png"
+      ],
+      "features": [
+        "Auto transmission",
+        "Gasoline"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "บัตรนักศึกษา",
+        "บัตรประชาชน",
+        "ใบขับขี่",
+        "เอกสารยืนยันการเป็นนักศึกษา"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "RedBikeRent",
+      "scrape_timestamp": "2025-06-10T00:18:03",
+      "source_url": "https://www.redbikerent.com",
+      "brand": "Yamaha",
+      "model": "Fino 125 Fi",
+      "year": 2020,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "1,500 บาท/เดือน",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 50,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.redbikerent.com/wp-content/uploads/2024/12/mo1-1024x576.png"
+      ],
+      "features": [
+        "Auto transmission",
+        "Gasoline"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "บัตรนักศึกษา",
+        "บัตรประชาชน",
+        "ใบขับขี่",
+        "เอกสารยืนยันการเป็นนักศึกษา"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "RedBikeRent",
+      "scrape_timestamp": "2025-06-10T00:18:03",
+      "source_url": "https://www.redbikerent.com",
+      "brand": "Yamaha",
+      "model": "GT",
+      "year": 2018,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "1,500 - 1,800 บาท/เดือน",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 55,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.redbikerent.com/wp-content/uploads/2024/12/mo5.png"
+      ],
+      "features": [
+        "Auto transmission",
+        "Gasoline"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "บัตรนักศึกษา",
+        "บัตรประชาชน",
+        "ใบขับขี่",
+        "เอกสารยืนยันการเป็นนักศึกษา"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "RedBikeRent",
+      "scrape_timestamp": "2025-06-10T00:18:03",
+      "source_url": "https://www.redbikerent.com",
+      "brand": "Yamaha",
+      "model": "Fino Premium Fashion",
+      "year": 2021,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "1,500 บาท/เดือน",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 50,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.redbikerent.com/wp-content/uploads/2024/12/mo6.png"
+      ],
+      "features": [
+        "Auto transmission",
+        "Gasoline"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "บัตรนักศึกษา",
+        "บัตรประชาชน",
+        "ใบขับขี่",
+        "เอกสารยืนยันการเป็นนักศึกษา"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "RedBikeRent",
+      "scrape_timestamp": "2025-06-10T00:18:03",
+      "source_url": "https://www.redbikerent.com",
+      "brand": "Yamaha",
+      "model": "Grand Filano",
+      "year": 2016,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "1,800 - 2,200 บาท/เดือน",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 63.33,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.redbikerent.com/wp-content/uploads/2024/12/mo7.png"
+      ],
+      "features": [
+        "Auto transmission",
+        "Gasoline"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "บัตรนักศึกษา",
+        "บัตรประชาชน",
+        "ใบขับขี่",
+        "เอกสารยืนยันการเป็นนักศึกษา"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "RedBikeRent",
+      "scrape_timestamp": "2025-06-10T00:18:03",
+      "source_url": "https://www.redbikerent.com",
+      "brand": "Yamaha",
+      "model": "GT LED Remote",
+      "year": 2021,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "1,500 - 1,800 บาท/เดือน",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 55,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.redbikerent.com/wp-content/uploads/2024/12/mo8-1024x768.png"
+      ],
+      "features": [
+        "Auto transmission",
+        "Gasoline"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "บัตรนักศึกษา",
+        "บัตรประชาชน",
+        "ใบขับขี่",
+        "เอกสารยืนยันการเป็นนักศึกษา"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "RedBikeRent",
+      "scrape_timestamp": "2025-06-10T00:18:03",
+      "source_url": "https://www.redbikerent.com",
+      "brand": "Yamaha",
+      "model": "Fino final edition",
+      "year": 2024,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "1,500 บาท/เดือน",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 50,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.redbikerent.com/wp-content/uploads/2024/12/mo9.png"
+      ],
+      "features": [
+        "Auto transmission",
+        "Gasoline"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "บัตรนักศึกษา",
+        "บัตรประชาชน",
+        "ใบขับขี่",
+        "เอกสารยืนยันการเป็นนักศึกษา"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    }
+  ]
+}

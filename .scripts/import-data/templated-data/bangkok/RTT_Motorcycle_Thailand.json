@@ -1,0 +1,1337 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-08-17T17:15:00.567Z",
+    "shop_identifier": "RTT Motorcycle Thailand",
+    "provider_name": "RTT Motorcycle Thailand",
+    "place_id": "ChIJm41WdueR4jARU3WPiSTxm_U",
+    "address": "1/3 Liang, Muang 12, บางกระสอ อำเภอเมืองนนทบุรี นนทบุรี 11000, Thailand",
+    "city": "Nonthaburi",
+    "province": "Nonthaburi",
+    "country": "Thailand",
+    "latitude": 13.8730748,
+    "longitude": 100.4959182,
+    "phone": null,
+    "website": "https://www.rtt-motorcycle-thailand.com/",
+    "google_maps_url": "https://maps.google.com/?cid=17698004299911492947",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 52,
+    "rental_conditions": {
+      "min_rental_days": 4,
+      "min_rider_age": 24,
+      "min_license_experience_years": 3,
+      "daily_km_limit": 200,
+      "extra_km_cost": 5,
+      "unlimited_km_min_days": 10,
+      "deposit_amount": 500,
+      "deposit_currency": "EUR/USD",
+      "peak_season_surcharge": 10,
+      "peak_season_months": "November-February",
+      "advance_reservation_required": true,
+      "walk_ins_accepted": false,
+      "after_hours_drop_off": true,
+      "one_way_rentals": true
+    },
+    "rental_inclusions": [
+      "Full face helmet",
+      "Phone holder",
+      "Phone charger",
+      "Local insurance",
+      "Google map links",
+      "Tire repair kit",
+      "Luggage storage"
+    ],
+    "available_service_locations": [
+      "Bangkok",
+      "North Thailand",
+      "North-west Thailand",
+      "North-east Thailand",
+      "Central West Thailand",
+      "Central East Thailand",
+      "Central to South Thailand",
+      "South to Central Thailand",
+      "Central to North Thailand",
+      "North to Central Thailand",
+      "Koh Chang Island",
+      "Pattaya",
+      "Khao Yai",
+      "Nakhon Nayok"
+    ],
+    "offered_tours": [
+      {
+        "name": "MT-1 : North Thailand 6 Days",
+        "duration_text": "6 days",
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "MT-2 : North-west Thailand 8 Days",
+        "duration_text": "8 days",
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "MT-3 : North-east Thailand 8 Days",
+        "duration_text": "8 days",
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "MT-4 : Central West Thailand 9 Days",
+        "duration_text": "9 days",
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "MT-5 : Central East Thailand 7 Days",
+        "duration_text": "7 days, 6 nights",
+        "distance_km": 1900,
+        "price_text": "From $1,480 per person",
+        "currency": "USD"
+      },
+      {
+        "name": "MT-6 : Central to South Thailand 7 Days",
+        "duration_text": "7 days",
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "MT-7 : South to Central Thailand 7 Days",
+        "duration_text": "7 days",
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "MT-8 : Central to North Thailand 7 Days",
+        "duration_text": "7 days",
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "MT-9 : North to Central Thailand 7 Days",
+        "duration_text": "7 days",
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "rtt-motorcycle-thailand",
+      "scrape_timestamp": "2025-06-10T00:18:03Z",
+      "source_url": "https://www.rtt-motorcycle-thailand.com/rent/adventure-bikes.html",
+      "brand": "Honda",
+      "model": "NC750X",
+      "year": null,
+      "engine_capacity_cc": 750,
+      "category": "Adventure Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "THB per day (peak season +10%)",
+          "min_days": 4,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.rtt-motorcycle-thailand.com/images/rtt-motorcycle-thailand/home/rtt-motorcycle-thailand-home-vstrom650-01.jpg"
+      ],
+      "features": [
+        "Adventure touring capabilities",
+        "Dual-purpose tires",
+        "Luggage capacity"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "International driving license",
+        "Passport copy",
+        "3+ years big motorcycle license experience"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "Regular insurance included in Thailand"
+        },
+        {
+          "type_name": "First class protection",
+          "is_included": false,
+          "cost_per_day": 200,
+          "currency": "THB",
+          "deductible": 0,
+          "deductible_currency": "THB",
+          "notes": "Deductible free, accident cover, lost bike coverage, emergency assistance, motorcycle replacement"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "rtt-motorcycle-thailand",
+      "scrape_timestamp": "2025-06-10T00:18:03Z",
+      "source_url": "https://www.rtt-motorcycle-thailand.com/rent/adventure-bikes.html",
+      "brand": "Suzuki",
+      "model": "Vstrom 650",
+      "year": null,
+      "engine_capacity_cc": 650,
+      "category": "Adventure Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "THB per day (peak season +10%)",
+          "min_days": 4,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.rtt-motorcycle-thailand.com/images/rtt-motorcycle-thailand/home/rtt-motorcycle-thailand-home-vstrom650-01.jpg"
+      ],
+      "features": [
+        "Adventure touring capabilities",
+        "Dual-purpose tires",
+        "Luggage capacity"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "International driving license",
+        "Passport copy",
+        "3+ years big motorcycle license experience"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "Regular insurance included in Thailand"
+        },
+        {
+          "type_name": "First class protection",
+          "is_included": false,
+          "cost_per_day": 200,
+          "currency": "THB",
+          "deductible": 0,
+          "deductible_currency": "THB",
+          "notes": "Deductible free, accident cover, lost bike coverage, emergency assistance, motorcycle replacement"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "rtt-motorcycle-thailand",
+      "scrape_timestamp": "2025-06-10T00:18:03Z",
+      "source_url": "https://www.rtt-motorcycle-thailand.com/rent/adventure-bikes.html",
+      "brand": "KTM",
+      "model": "Adventure 390",
+      "year": null,
+      "engine_capacity_cc": 390,
+      "category": "Adventure Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "THB per day (peak season +10%)",
+          "min_days": 4,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "THB"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Adventure touring capabilities",
+        "Dual-purpose tires",
+        "Luggage capacity"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "International driving license",
+        "Passport copy",
+        "3+ years big motorcycle license experience"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "Regular insurance included in Thailand"
+        },
+        {
+          "type_name": "First class protection",
+          "is_included": false,
+          "cost_per_day": 200,
+          "currency": "THB",
+          "deductible": 0,
+          "deductible_currency": "THB",
+          "notes": "Deductible free, accident cover, lost bike coverage, emergency assistance, motorcycle replacement"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "rtt-motorcycle-thailand",
+      "scrape_timestamp": "2025-06-10T00:18:03Z",
+      "source_url": "https://www.rtt-motorcycle-thailand.com/rent/adventure-bikes.html",
+      "brand": "KTM",
+      "model": "Adventure 790",
+      "year": null,
+      "engine_capacity_cc": 790,
+      "category": "Adventure Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "THB per day (peak season +10%)",
+          "min_days": 4,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "THB"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Adventure touring capabilities",
+        "Dual-purpose tires",
+        "Luggage capacity"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "International driving license",
+        "Passport copy",
+        "3+ years big motorcycle license experience"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "Regular insurance included in Thailand"
+        },
+        {
+          "type_name": "First class protection",
+          "is_included": false,
+          "cost_per_day": 200,
+          "currency": "THB",
+          "deductible": 0,
+          "deductible_currency": "THB",
+          "notes": "Deductible free, accident cover, lost bike coverage, emergency assistance, motorcycle replacement"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "rtt-motorcycle-thailand",
+      "scrape_timestamp": "2025-06-10T00:18:03Z",
+      "source_url": "https://www.rtt-motorcycle-thailand.com/rent/touring-bikes.html",
+      "brand": "Honda",
+      "model": "CTX700",
+      "year": null,
+      "engine_capacity_cc": 700,
+      "category": "Touring Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "THB per day (peak season +10%)",
+          "min_days": 4,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.rtt-motorcycle-thailand.com/images/rtt-motorcycle-thailand/home/rtt-motorcycle-thailand-home-honda-ctx700-01.jpg"
+      ],
+      "features": [
+        "Touring capabilities",
+        "Comfortable seating",
+        "Wind protection",
+        "Luggage capacity"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "International driving license",
+        "Passport copy",
+        "3+ years big motorcycle license experience"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "Regular insurance included in Thailand"
+        },
+        {
+          "type_name": "First class protection",
+          "is_included": false,
+          "cost_per_day": 200,
+          "currency": "THB",
+          "deductible": 0,
+          "deductible_currency": "THB",
+          "notes": "Deductible free, accident cover, lost bike coverage, emergency assistance, motorcycle replacement"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "rtt-motorcycle-thailand",
+      "scrape_timestamp": "2025-06-10T00:18:03Z",
+      "source_url": "https://www.rtt-motorcycle-thailand.com/rent/touring-bikes.html",
+      "brand": "Yamaha",
+      "model": "Tracer 900",
+      "year": null,
+      "engine_capacity_cc": 900,
+      "category": "Touring Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "THB per day (peak season +10%)",
+          "min_days": 4,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.rtt-motorcycle-thailand.com/images/rtt-motorcycle-thailand/home/rtt-motorcycle-thailand-home-tracer900gt-01.jpg"
+      ],
+      "features": [
+        "Touring capabilities",
+        "Comfortable seating",
+        "Wind protection",
+        "Luggage capacity"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "International driving license",
+        "Passport copy",
+        "3+ years big motorcycle license experience"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "Regular insurance included in Thailand"
+        },
+        {
+          "type_name": "First class protection",
+          "is_included": false,
+          "cost_per_day": 200,
+          "currency": "THB",
+          "deductible": 0,
+          "deductible_currency": "THB",
+          "notes": "Deductible free, accident cover, lost bike coverage, emergency assistance, motorcycle replacement"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "rtt-motorcycle-thailand",
+      "scrape_timestamp": "2025-06-10T00:18:03Z",
+      "source_url": "https://www.rtt-motorcycle-thailand.com/rent/touring-bikes.html",
+      "brand": "BMW",
+      "model": "F850GS",
+      "year": null,
+      "engine_capacity_cc": 850,
+      "category": "Touring Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "THB per day (peak season +10%)",
+          "min_days": 4,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "THB"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Touring capabilities",
+        "Comfortable seating",
+        "Wind protection",
+        "Luggage capacity"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "International driving license",
+        "Passport copy",
+        "3+ years big motorcycle license experience"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "Regular insurance included in Thailand"
+        },
+        {
+          "type_name": "First class protection",
+          "is_included": false,
+          "cost_per_day": 200,
+          "currency": "THB",
+          "deductible": 0,
+          "deductible_currency": "THB",
+          "notes": "Deductible free, accident cover, lost bike coverage, emergency assistance, motorcycle replacement"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "rtt-motorcycle-thailand",
+      "scrape_timestamp": "2025-06-10T00:18:03Z",
+      "source_url": "https://www.rtt-motorcycle-thailand.com/rent/sport-bikes.html",
+      "brand": "Honda",
+      "model": "CBR500R",
+      "year": null,
+      "engine_capacity_cc": 500,
+      "category": "Sport Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "THB per day (peak season +10%)",
+          "min_days": 4,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.rtt-motorcycle-thailand.com/images/rtt-motorcycle-thailand/home/rtt-motorcycle-thailand-home-cbr500r-01.jpg"
+      ],
+      "features": [
+        "Sport riding position",
+        "Agile handling",
+        "Performance-oriented"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "International driving license",
+        "Passport copy",
+        "3+ years big motorcycle license experience"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "Regular insurance included in Thailand"
+        },
+        {
+          "type_name": "First class protection",
+          "is_included": false,
+          "cost_per_day": 200,
+          "currency": "THB",
+          "deductible": 0,
+          "deductible_currency": "THB",
+          "notes": "Deductible free, accident cover, lost bike coverage, emergency assistance, motorcycle replacement"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "rtt-motorcycle-thailand",
+      "scrape_timestamp": "2025-06-10T00:18:03Z",
+      "source_url": "https://www.rtt-motorcycle-thailand.com/rent/sport-bikes.html",
+      "brand": "Kawasaki",
+      "model": "Ninja 400",
+      "year": null,
+      "engine_capacity_cc": 400,
+      "category": "Sport Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "THB per day (peak season +10%)",
+          "min_days": 4,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "THB"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Sport riding position",
+        "Agile handling",
+        "Performance-oriented"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "International driving license",
+        "Passport copy",
+        "3+ years big motorcycle license experience"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "Regular insurance included in Thailand"
+        },
+        {
+          "type_name": "First class protection",
+          "is_included": false,
+          "cost_per_day": 200,
+          "currency": "THB",
+          "deductible": 0,
+          "deductible_currency": "THB",
+          "notes": "Deductible free, accident cover, lost bike coverage, emergency assistance, motorcycle replacement"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "rtt-motorcycle-thailand",
+      "scrape_timestamp": "2025-06-10T00:18:03Z",
+      "source_url": "https://www.rtt-motorcycle-thailand.com/rent/naked-bikes.html",
+      "brand": "Triumph",
+      "model": "Street Triple 765",
+      "year": null,
+      "engine_capacity_cc": 765,
+      "category": "Naked Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "THB per day (peak season +10%)",
+          "min_days": 4,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.rtt-motorcycle-thailand.com/images/rtt-motorcycle-thailand/home/rtt-motorcycle-thailand-home-triumph-street-triple-765-01.jpg"
+      ],
+      "features": [
+        "Naked riding position",
+        "Street-focused performance",
+        "Agile handling"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "International driving license",
+        "Passport copy",
+        "3+ years big motorcycle license experience"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "Regular insurance included in Thailand"
+        },
+        {
+          "type_name": "First class protection",
+          "is_included": false,
+          "cost_per_day": 200,
+          "currency": "THB",
+          "deductible": 0,
+          "deductible_currency": "THB",
+          "notes": "Deductible free, accident cover, lost bike coverage, emergency assistance, motorcycle replacement"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "rtt-motorcycle-thailand",
+      "scrape_timestamp": "2025-06-10T00:18:03Z",
+      "source_url": "https://www.rtt-motorcycle-thailand.com/rent/naked-bikes.html",
+      "brand": "Suzuki",
+      "model": "GSX750S",
+      "year": null,
+      "engine_capacity_cc": 750,
+      "category": "Naked Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "THB per day (peak season +10%)",
+          "min_days": 4,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "THB"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Naked riding position",
+        "Street-focused performance",
+        "Agile handling"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "International driving license",
+        "Passport copy",
+        "3+ years big motorcycle license experience"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "Regular insurance included in Thailand"
+        },
+        {
+          "type_name": "First class protection",
+          "is_included": false,
+          "cost_per_day": 200,
+          "currency": "THB",
+          "deductible": 0,
+          "deductible_currency": "THB",
+          "notes": "Deductible free, accident cover, lost bike coverage, emergency assistance, motorcycle replacement"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "rtt-motorcycle-thailand",
+      "scrape_timestamp": "2025-06-10T00:18:03Z",
+      "source_url": "https://www.rtt-motorcycle-thailand.com/rent/super-sport-bikes.html",
+      "brand": "Kawasaki",
+      "model": "GSX-R750",
+      "year": null,
+      "engine_capacity_cc": 750,
+      "category": "Super Sport Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "THB per day (peak season +10%)",
+          "min_days": 4,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.rtt-motorcycle-thailand.com/images/rtt-motorcycle-thailand/home/rtt-motorcycle-thailand-home-gsx-r750-01.jpg"
+      ],
+      "features": [
+        "Full sport riding position",
+        "Track-capable performance",
+        "Race-oriented features"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "International driving license",
+        "Passport copy",
+        "3+ years big motorcycle license experience"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "Regular insurance included in Thailand"
+        },
+        {
+          "type_name": "First class protection",
+          "is_included": false,
+          "cost_per_day": 200,
+          "currency": "THB",
+          "deductible": 0,
+          "deductible_currency": "THB",
+          "notes": "Deductible free, accident cover, lost bike coverage, emergency assistance, motorcycle replacement"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "rtt-motorcycle-thailand",
+      "scrape_timestamp": "2025-06-10T00:18:03Z",
+      "source_url": "https://www.rtt-motorcycle-thailand.com/rent/cruiser-custom-bikes.html",
+      "brand": "Honda",
+      "model": "Rebel 500",
+      "year": null,
+      "engine_capacity_cc": 500,
+      "category": "Cruiser / Custom Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "THB per day (peak season +10%)",
+          "min_days": 4,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "THB"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Cruiser riding position",
+        "Relaxed ergonomics",
+        "Custom styling"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "International driving license",
+        "Passport copy",
+        "3+ years big motorcycle license experience"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "Regular insurance included in Thailand"
+        },
+        {
+          "type_name": "First class protection",
+          "is_included": false,
+          "cost_per_day": 200,
+          "currency": "THB",
+          "deductible": 0,
+          "deductible_currency": "THB",
+          "notes": "Deductible free, accident cover, lost bike coverage, emergency assistance, motorcycle replacement"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "rtt-motorcycle-thailand",
+      "scrape_timestamp": "2025-06-10T00:18:03Z",
+      "source_url": "https://www.rtt-motorcycle-thailand.com/rent/cruiser-custom-bikes.html",
+      "brand": "Suzuki",
+      "model": "Boulevard C50-800",
+      "year": null,
+      "engine_capacity_cc": 800,
+      "category": "Cruiser / Custom Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "THB per day (peak season +10%)",
+          "min_days": 4,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "THB"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Cruiser riding position",
+        "Relaxed ergonomics",
+        "Custom styling"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "International driving license",
+        "Passport copy",
+        "3+ years big motorcycle license experience"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "Regular insurance included in Thailand"
+        },
+        {
+          "type_name": "First class protection",
+          "is_included": false,
+          "cost_per_day": 200,
+          "currency": "THB",
+          "deductible": 0,
+          "deductible_currency": "THB",
+          "notes": "Deductible free, accident cover, lost bike coverage, emergency assistance, motorcycle replacement"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "rtt-motorcycle-thailand",
+      "scrape_timestamp": "2025-06-10T00:18:03Z",
+      "source_url": "https://www.rtt-motorcycle-thailand.com/rent/big-scooters.html",
+      "brand": "Yamaha",
+      "model": "X-MAX 300",
+      "year": null,
+      "engine_capacity_cc": 300,
+      "category": "Big Scooters",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "THB per day (peak season +10%)",
+          "min_days": 4,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.rtt-motorcycle-thailand.com/images/rtt-motorcycle-thailand/home/rtt-motorcycle-thailand-home-x-max-300-01.jpg"
+      ],
+      "features": [
+        "Scooter convenience",
+        "Storage under seat",
+        "Automatic transmission"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "International driving license",
+        "Passport copy",
+        "3+ years big motorcycle license experience"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "Regular insurance included in Thailand"
+        },
+        {
+          "type_name": "First class protection",
+          "is_included": false,
+          "cost_per_day": 200,
+          "currency": "THB",
+          "deductible": 0,
+          "deductible_currency": "THB",
+          "notes": "Deductible free, accident cover, lost bike coverage, emergency assistance, motorcycle replacement"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "rtt-motorcycle-thailand",
+      "scrape_timestamp": "2025-06-10T00:18:03Z",
+      "source_url": "https://www.rtt-motorcycle-thailand.com/rent/adventure-bikes.html",
+      "brand": "Honda",
+      "model": "Transalp 750",
+      "year": null,
+      "engine_capacity_cc": 750,
+      "category": "Adventure Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "THB per day (peak season +10%)",
+          "min_days": 4,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "THB"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Adventure touring capabilities",
+        "Dual-purpose tires",
+        "Luggage capacity"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "International driving license",
+        "Passport copy",
+        "3+ years big motorcycle license experience"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "Regular insurance included in Thailand"
+        },
+        {
+          "type_name": "First class protection",
+          "is_included": false,
+          "cost_per_day": 200,
+          "currency": "THB",
+          "deductible": 0,
+          "deductible_currency": "THB",
+          "notes": "Deductible free, accident cover, lost bike coverage, emergency assistance, motorcycle replacement"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "rtt-motorcycle-thailand",
+      "scrape_timestamp": "2025-06-10T00:18:03Z",
+      "source_url": "https://www.rtt-motorcycle-thailand.com/rent/adventure-bikes.html",
+      "brand": "Kawasaki",
+      "model": "Versys 650",
+      "year": null,
+      "engine_capacity_cc": 650,
+      "category": "Adventure Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "THB per day (peak season +10%)",
+          "min_days": 4,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "THB"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Adventure touring capabilities",
+        "Dual-purpose tires",
+        "Luggage capacity"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "International driving license",
+        "Passport copy",
+        "3+ years big motorcycle license experience"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "Regular insurance included in Thailand"
+        },
+        {
+          "type_name": "First class protection",
+          "is_included": false,
+          "cost_per_day": 200,
+          "currency": "THB",
+          "deductible": 0,
+          "deductible_currency": "THB",
+          "notes": "Deductible free, accident cover, lost bike coverage, emergency assistance, motorcycle replacement"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "rtt-motorcycle-thailand",
+      "scrape_timestamp": "2025-06-10T00:18:03Z",
+      "source_url": "https://www.rtt-motorcycle-thailand.com/rent/touring-bikes.html",
+      "brand": "Yamaha",
+      "model": "R-7",
+      "year": null,
+      "engine_capacity_cc": 700,
+      "category": "Touring Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "THB per day (peak season +10%)",
+          "min_days": 4,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "THB"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Touring capabilities",
+        "Comfortable seating",
+        "Wind protection",
+        "Luggage capacity"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "International driving license",
+        "Passport copy",
+        "3+ years big motorcycle license experience"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "Regular insurance included in Thailand"
+        },
+        {
+          "type_name": "First class protection",
+          "is_included": false,
+          "cost_per_day": 200,
+          "currency": "THB",
+          "deductible": 0,
+          "deductible_currency": "THB",
+          "notes": "Deductible free, accident cover, lost bike coverage, emergency assistance, motorcycle replacement"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "rtt-motorcycle-thailand",
+      "scrape_timestamp": "2025-06-10T00:18:03Z",
+      "source_url": "https://www.rtt-motorcycle-thailand.com/rent/super-sport-bikes.html",
+      "brand": "Kawasaki",
+      "model": "Ninja 400",
+      "year": null,
+      "engine_capacity_cc": 400,
+      "category": "Super Sport Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "THB per day (peak season +10%)",
+          "min_days": 4,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "THB"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Full sport riding position",
+        "Track-capable performance",
+        "Race-oriented features"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "International driving license",
+        "Passport copy",
+        "3+ years big motorcycle license experience"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "Regular insurance included in Thailand"
+        },
+        {
+          "type_name": "First class protection",
+          "is_included": false,
+          "cost_per_day": 200,
+          "currency": "THB",
+          "deductible": 0,
+          "deductible_currency": "THB",
+          "notes": "Deductible free, accident cover, lost bike coverage, emergency assistance, motorcycle replacement"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "rtt-motorcycle-thailand",
+      "scrape_timestamp": "2025-06-10T00:18:03Z",
+      "source_url": "https://www.rtt-motorcycle-thailand.com/rent/adventure-bikes.html",
+      "brand": "KTM",
+      "model": "Duke 390",
+      "year": null,
+      "engine_capacity_cc": 390,
+      "category": "Adventure Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "THB per day (peak season +10%)",
+          "min_days": 4,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "THB"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Adventure touring capabilities",
+        "Dual-purpose tires",
+        "Luggage capacity"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "International driving license",
+        "Passport copy",
+        "3+ years big motorcycle license experience"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "Regular insurance included in Thailand"
+        },
+        {
+          "type_name": "First class protection",
+          "is_included": false,
+          "cost_per_day": 200,
+          "currency": "THB",
+          "deductible": 0,
+          "deductible_currency": "THB",
+          "notes": "Deductible free, accident cover, lost bike coverage, emergency assistance, motorcycle replacement"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "rtt-motorcycle-thailand",
+      "scrape_timestamp": "2025-06-10T00:18:03Z",
+      "source_url": "https://www.rtt-motorcycle-thailand.com/rent/cruiser-custom-bikes.html",
+      "brand": "Kawasaki",
+      "model": "Vulcan 650",
+      "year": null,
+      "engine_capacity_cc": 650,
+      "category": "Cruiser / Custom Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "THB per day (peak season +10%)",
+          "min_days": 4,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "THB"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Cruiser riding position",
+        "Relaxed ergonomics",
+        "Custom styling"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "International driving license",
+        "Passport copy",
+        "3+ years big motorcycle license experience"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "Regular insurance included in Thailand"
+        },
+        {
+          "type_name": "First class protection",
+          "is_included": false,
+          "cost_per_day": 200,
+          "currency": "THB",
+          "deductible": 0,
+          "deductible_currency": "THB",
+          "notes": "Deductible free, accident cover, lost bike coverage, emergency assistance, motorcycle replacement"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "rtt-motorcycle-thailand",
+      "scrape_timestamp": "2025-06-10T00:18:03Z",
+      "source_url": "https://www.rtt-motorcycle-thailand.com/rent/touring-bikes.html",
+      "brand": "BMW",
+      "model": "F800R",
+      "year": null,
+      "engine_capacity_cc": 800,
+      "category": "Touring Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "THB per day (peak season +10%)",
+          "min_days": 4,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "THB"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Touring capabilities",
+        "Comfortable seating",
+        "Wind protection",
+        "Luggage capacity"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "International driving license",
+        "Passport copy",
+        "3+ years big motorcycle license experience"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "Regular insurance included in Thailand"
+        },
+        {
+          "type_name": "First class protection",
+          "is_included": false,
+          "cost_per_day": 200,
+          "currency": "THB",
+          "deductible": 0,
+          "deductible_currency": "THB",
+          "notes": "Deductible free, accident cover, lost bike coverage, emergency assistance, motorcycle replacement"
+        }
+      ],
+      "availability_status": "Available"
+    }
+  ]
+}

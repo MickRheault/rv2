@@ -163,7 +163,7 @@ export default function ShopDetails({ shop, premium }: ShopDetailsProps) {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {motorcycle_rentals.slice(0, 6).map((motorcycle) => (
+                {motorcycle_rentals.map((motorcycle) => (
                   <MotorcycleCard 
                     key={motorcycle.id} 
                     motorcycle={motorcycle as any}
@@ -172,15 +172,6 @@ export default function ShopDetails({ shop, premium }: ShopDetailsProps) {
                   />
                 ))}
               </div>
-              {motorcycle_rentals.length > 6 && (
-                <div className="mt-6 text-center">
-                  <Link href={`/search?shop=${shop.id}`}>
-                    <Button variant="outline">
-                      View All {motorcycle_rentals.length} Motorcycles
-                    </Button>
-                  </Link>
-                </div>
-              )}
             </CardContent>
           </Card>
         )}

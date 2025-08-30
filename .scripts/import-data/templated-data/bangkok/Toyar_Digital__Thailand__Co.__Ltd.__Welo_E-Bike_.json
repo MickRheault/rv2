@@ -1,0 +1,54 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-08-17T17:10:27.390Z",
+    "shop_identifier": "Toyar Digital (Thailand) Co., Ltd. (Welo E-Bike)",
+    "provider_name": "Toyar Digital (Thailand) Co., Ltd. (Welo E-Bike)",
+    "place_id": "ChIJt7szQbGf4jARGAHwPYUysKM",
+    "address": "77/1 Ramkhamhaeng 53, Khwaeng Phlabphla, Khet Wang Thonglang, Krung Thep Maha Nakhon 10310, Thailand",
+    "city": "Bangkok",
+    "province": "Bangkok",
+    "country": "Thailand",
+    "latitude": 13.7666224,
+    "longitude": 100.618865,
+    "phone": "02 077 6686",
+    "website": "https://toyardigital.com/welo/",
+    "google_maps_url": "https://maps.google.com/?cid=11794982971934507288",
+    "business_status": "OPERATIONAL",
+    "rating": null,
+    "review_count": null,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [
+      "Chiangmai",
+      "Phitsanulok"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "welo-ebike-thailand",
+      "scrape_timestamp": "2025-06-10T00:18:03Z",
+      "source_url": "https://welobike.com",
+      "brand": "Welo",
+      "model": "E-Bike",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Electric bike",
+      "description": "Welo E-Bike (Electric Bike) rental platform with service points covering all areas, convenient, safe, fast, making every journey easy with Welo.",
+      "rental_rates": [],
+      "images": [
+        "https://welobike.com/wp-content/uploads/2024/07/Logo-250x100-2.png"
+      ],
+      "features": [
+        "Convenient",
+        "Safe",
+        "Fast"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    }
+  ]
+}

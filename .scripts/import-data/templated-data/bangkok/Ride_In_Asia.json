@@ -1,0 +1,240 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-08-17T17:02:18.992Z",
+    "shop_identifier": "Ride In Asia",
+    "provider_name": "Ride In Asia",
+    "place_id": "ChIJh9jLgkqf4jAROuk0kxTNRUI",
+    "address": "39, 4 Soi Attha Kawi 1, Khwaeng Khlong Tan, Khet Khlong Toei, Krung Thep Maha Nakhon 10110, Thailand",
+    "city": "Bangkok",
+    "province": "Bangkok",
+    "country": "Thailand",
+    "latitude": 13.7215899,
+    "longitude": 100.5731084,
+    "phone": "090 542 3035",
+    "website": "http://www.rideinasia.com/",
+    "google_maps_url": "https://maps.google.com/?cid=4775448468149037370",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 11,
+    "rental_conditions": {
+      "minimum_age": 18,
+      "international_license_required": true,
+      "valid_thai_visa_required": true,
+      "security_deposit_required": true
+    },
+    "rental_inclusions": [
+      "Motorcycle",
+      "Third party insurance",
+      "Accommodation",
+      "Breakfast and dinner",
+      "Fuel during the days",
+      "Motorcycle Gear",
+      "GPS",
+      "Anti-theft padlock"
+    ],
+    "available_service_locations": [
+      "Bangkok",
+      "Ayutthaya",
+      "Chiang Mai",
+      "Hua Hin",
+      "Phetchaburi",
+      "Phuket",
+      "Prachuap Khiri",
+      "Phan Nga",
+      "Ranong"
+    ],
+    "offered_tours": [
+      {
+        "name": "Bangkok Northeast of Thailand loop",
+        "duration_text": "5 days, 4 nights",
+        "distance_km": 1452,
+        "price_text": "฿ 82,200",
+        "currency": "THB"
+      },
+      {
+        "name": "Tour from Bangkok to Hua Hin Beach",
+        "duration_text": "3 days, 2 nights",
+        "distance_km": 459,
+        "price_text": "฿ 39,200",
+        "currency": "THB"
+      },
+      {
+        "name": "Bangkok - Khao Yai - Ayutthaya",
+        "duration_text": "3 days, 2 nights",
+        "distance_km": 434,
+        "price_text": "฿ 39,200",
+        "currency": "THB"
+      },
+      {
+        "name": "East Seaboard Motorcycle Loop",
+        "duration_text": "4 days, 3 nights",
+        "distance_km": 710,
+        "price_text": "฿ 53,500",
+        "currency": "THB"
+      },
+      {
+        "name": "Motorcycle tour from Bangkok to Phuket",
+        "duration_text": "7 days, 6 nights",
+        "distance_km": 1879,
+        "price_text": "฿ 96,600",
+        "currency": "THB"
+      },
+      {
+        "name": "Bangkok Northern Thailand Loop",
+        "duration_text": "9 days 8 nights",
+        "distance_km": 1878,
+        "price_text": "฿ 125,200",
+        "currency": "THB"
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "rideinasia",
+      "scrape_timestamp": "2025-08-17T17:02:20.560Z",
+      "source_url": "https://rideinasia.com/product/bmw-r1200-gs-adventure",
+      "brand": "BMW",
+      "model": "R1200 GS Adventure",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Touring motorcycle",
+      "description": "Ride the BMW R1200 GS Adventure in exclusivity into Thailand. This model is the best touring motorcycle for adventure with a powerful engine and equipments made specially for long distance. For more security, the injectors are equipped with a safety system such as an ABS braking system that can be turned on-off.",
+      "rental_rates": [
+        {
+          "rate_text": "฿ 5,000 / day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 5000,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://rideinasia.com/wp-content/uploads/2020/12/BMW-R1250GS-adenture-ria-531x354.jpg"
+      ],
+      "features": [
+        "ABS braking system",
+        "Safety system",
+        "Powerful engine",
+        "Equipment for long distance"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "International motorcycle license",
+        "Valid Thai visa"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third party insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rideinasia",
+      "scrape_timestamp": "2025-08-17T17:02:20.560Z",
+      "source_url": "https://rideinasia.com/product/bmw-r1220gs",
+      "brand": "BMW",
+      "model": "R1200GS",
+      "year": null,
+      "engine_capacity_cc": 1170,
+      "category": "Sport touring motorcycle",
+      "description": "The Motorcycle BMW R1200 GS is the best sport touring motorcycle design for short or long tour. The engine have 1,170Cc and two-cylinder boxer with 4-valves per cylinder. It's a really safe model equipped with ABS, ESA and ASC. The R1200 GS is a stable and powerful motorcycle.",
+      "rental_rates": [
+        {
+          "rate_text": "฿ 4,500 / day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 4500,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://rideinasia.com/wp-content/uploads/2020/12/bmw-r1220gs-531x354.jpeg"
+      ],
+      "features": [
+        "ABS",
+        "ESA",
+        "ASC",
+        "Stable",
+        "Powerful"
+      ],
+      "specifications_raw": {
+        "engine": "1,170Cc",
+        "cylinder_configuration": "two-cylinder boxer",
+        "valves": "4-valves per cylinder"
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "International motorcycle license",
+        "Valid Thai visa"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third party insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rideinasia",
+      "scrape_timestamp": "2025-08-17T17:02:20.560Z",
+      "source_url": "https://rideinasia.com/product/kawasaki-versys-650",
+      "brand": "Kawasaki",
+      "model": "Versys 650",
+      "year": null,
+      "engine_capacity_cc": 650,
+      "category": "Middle-weight motorcycle",
+      "description": "The Kawasaki Versys 650 is a middle-weight motorcycle. It borrows design elements from dual-sport bikes, standards, adventure tourers and sport bikes; sharing characteristics of all, but not neatly fitting into any of those categories. The name Versys is a portmanteau of the words versatile and system.",
+      "rental_rates": [
+        {
+          "rate_text": "฿ 2,200 / day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 2200,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://rideinasia.com/wp-content/uploads/2020/12/kawasaki-versys-650-531x354.jpg"
+      ],
+      "features": [
+        "Versatile design",
+        "Dual-sport elements",
+        "Standard elements",
+        "Adventure tourer elements",
+        "Sport bike elements"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "International motorcycle license",
+        "Valid Thai visa"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third party insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    }
+  ]
+}
