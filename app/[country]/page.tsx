@@ -85,6 +85,12 @@ export default async function CountryPage({ params }: CountryPageProps) {
     })
 
     const shops = shopsResult.shops || []
+    console.log(`Country page [${country}]: Found ${shops.length} shops`)
+    console.log('Shop business statuses:', shops.map(s => ({ 
+      id: s.id, 
+      name: s.provider_name, 
+      status: s.business_statuses?.status_code 
+    })))
 
     // Generate JSON-LD structured data for the shop listings
     const currentUrl = `https://globalmotorentals.com/${country}/`
