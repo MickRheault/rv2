@@ -1,7 +1,6 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { motorcycleService } from '@/services/motorcycles'
-import MotorcycleGallery from '@/components/motorcycle/MotorcycleGallery'
 import MotorcycleDetails from '@/components/motorcycle/MotorcycleDetails'
 import MotorcycleCard from '@/components/motorcycle/MotorcycleCard'
 import { generateMetadata as generateSEOMetadata, generateMotorcycleSEO } from '@/lib/seo/config'
@@ -47,17 +46,7 @@ export default async function MotorcycleDetailPage({ params }: PageProps) {
       notFound()
     }
 
-    // Transform images for the gallery component
-    const images = motorcycle.motorcycle_images
-      ?.filter(mi => mi.images)
-      .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
-      .map(mi => ({
-        id: mi.images!.id,
-        url: mi.images!.url,
-        alt_text: mi.images!.alt_text
-      })) || []
-
-    const motorcycleName = `${motorcycle.brands?.name} ${motorcycle.model}`
+    // Gallery now rendered inside MotorcycleDetails below the header
 
     // Generate enhanced structured data for rich snippets
     const structuredData = generateEnhancedMotorcycleSchema({
@@ -98,19 +87,8 @@ export default async function MotorcycleDetailPage({ params }: PageProps) {
         <StructuredData schema={structuredData} />
         <div className="min-h-screen bg-gray-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            {/* Image Gallery */}
-            <div>
-              <MotorcycleGallery 
-                images={images} 
-                motorcycleName={motorcycleName}
-              />
-            </div>
-
-            {/* Motorcycle Details */}
-            <div>
-              <MotorcycleDetails motorcycle={motorcycle} />
-            </div>
+          <div className="mb-8">
+            <MotorcycleDetails motorcycle={motorcycle} />
           </div>
 
           {/* Related Motorcycles */}

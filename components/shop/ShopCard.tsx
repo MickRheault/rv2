@@ -7,7 +7,6 @@ import {
   PhoneIcon,
   GlobeAltIcon,
   HeartIcon,
-  ShareIcon,
   ClockIcon,
   TruckIcon,
   MapIcon,
@@ -86,13 +85,7 @@ export default function ShopCard({
     onFavoriteToggle?.(shop.id, !isFavorited)
   }
 
-  // Handle share click
-  const handleShareClick = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    // TODO: Implement share functionality
-    console.log('Share shop:', shop.provider_name)
-  }
+  // Share removed per UI cleanup
 
   // Render star rating
   const renderStars = (rating: number) => {
@@ -161,14 +154,6 @@ export default function ShopCard({
                   )}
                 </button>
               )}
-              
-              <button
-                onClick={handleShareClick}
-                className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
-                aria-label="Share shop"
-              >
-                <ShareIcon className="w-4 h-4 text-gray-400" />
-              </button>
             </div>
           </div>
 

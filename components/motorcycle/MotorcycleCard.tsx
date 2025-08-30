@@ -6,7 +6,6 @@ import { useState } from 'react'
 import { clsx } from 'clsx'
 import {
   HeartIcon,
-  ShareIcon,
   MapPinIcon,
   StarIcon,
   CalendarIcon,
@@ -36,7 +35,7 @@ interface MotorcycleCardProps {
 export default function MotorcycleCard({ 
   motorcycle, 
   showShopInfo = true,
-  showFeatures = true,
+  showFeatures = false,
   compact = false,
   onFavoriteToggle,
   isFavorited = false,
@@ -57,11 +56,8 @@ export default function MotorcycleCard({
     .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
     .map(img => img.images!) || []
   
-  // Get features
-  const features = motorcycle.motorcycle_features
-    ?.filter(f => f.features)
-    .map(f => f.features!)
-    .slice(0, compact ? 3 : 5) || []
+  // Features removed per UI cleanup
+  const features: any[] = []
   
   // Get location string
   const location = shop?.cities 
@@ -220,18 +216,6 @@ export default function MotorcycleCard({
                     )}
                   </button>
                 )}
-                
-                <button
-                  onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    // TODO: Implement share functionality
-                  }}
-                  className="p-1.5 bg-white/90 hover:bg-white rounded-full transition-colors backdrop-blur-sm"
-                  aria-label="Share motorcycle"
-                >
-                  <ShareIcon className="w-4 h-4 text-gray-600" />
-                </button>
               </div>
             </div>
             
@@ -281,34 +265,10 @@ export default function MotorcycleCard({
               </div>
             )}
             
-            {motorcycle.availability_status && (
-              <div className="flex items-center space-x-1">
-                <div className={clsx(
-                  'w-2 h-2 rounded-full',
-                  motorcycle.availability_status === 'available' ? 'bg-green-500' : 'bg-orange-500'
-                )} />
-                <span className="capitalize">{motorcycle.availability_status}</span>
-              </div>
-            )}
+            {/* Availability pill removed per UI cleanup */}
           </div>
 
-          {/* Features */}
-          {showFeatures && features.length > 0 && (
-            <div className="space-y-1">
-              <div className="flex flex-wrap gap-1">
-                {features.map((feature) => (
-                  <div
-                    key={feature.id}
-                    className="flex items-center space-x-1 bg-gray-100 rounded-full px-2 py-1 text-xs text-gray-700"
-                    title={feature.description || feature.name}
-                  >
-                    {getFeatureIcon(feature.name)}
-                    <span className="truncate max-w-20">{feature.name}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Features removed per UI cleanup */}
 
           {/* Shop Information */}
           {showShopInfo && shop && !compact && (
