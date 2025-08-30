@@ -5,6 +5,7 @@ import { RentalShopConditionsModal } from '@/components/admin/RentalShopConditio
 import { RentalShopToursModal } from '@/components/admin/RentalShopToursModal';
 import { useState, useEffect, useCallback } from 'react';
 import { shopService, ShopWithDetails } from '@/services/shops';
+import { businessStatusService } from '@/services/business-statuses';
 import { Card, Button, Input, Modal, Alert, Select, Spinner, Checkbox, Textarea } from '@/components/ui';
 import { 
   PlusIcon, 
@@ -194,6 +195,73 @@ function ShopsAdminContent() {
     } catch (error) {
       console.error('Error bulk deleting shops:', error);
       setError('Failed to delete shops');
+    }
+  };
+
+  // Toggle shop visibility by changing business status
+  const toggleShopVisibility = async (shop: ShopWithDetails) => {
+    try {
+      const activeStatuses = ['OPERATIONAL', 'operational', 'active', 'ACTIVE'];
+      const inactiveStatuses = ['inactive', 'INACTIVE', 'closed', 'CLOSED'];
+      
+      // Find the current status
+      const currentStatusCode = shop.business_statuses?.status_code;
+      const isCurrentlyActive = currentStatusCode && activeStatuses.includes(currentStatusCode);
+      
+      console.log('Toggle Debug:', {
+        shopId: shop.id,
+        shopName: shop.provider_name,
+        currentStatusCode,
+        isCurrentlyActive,
+        availableStatuses: businessStatuses.map(s => ({ id: s.id, code: s.status_code }))
+      });
+      
+      // Find appropriate target status
+      let targetStatusId: number;
+      if (isCurrentlyActive) {
+        // Find inactive status
+        let inactiveStatus = businessStatuses.find(s => inactiveStatuses.includes(s.status_code));
+        if (!inactiveStatus) {
+          // Create inactive status if it doesn't exist
+          console.log('Creating inactive business status...');
+          inactiveStatus = await businessStatusService.createBusinessStatus({ 
+            status_code: 'inactive', 
+            description: 'Inactive shop - hidden from platform' 
+          });
+          console.log('Created inactive status:', inactiveStatus);
+          // Refresh business statuses list
+          const updatedStatuses = await shopService.getBusinessStatuses();
+          setBusinessStatuses(updatedStatuses);
+        }
+        targetStatusId = inactiveStatus.id;
+        console.log('Switching to inactive status ID:', targetStatusId);
+      } else {
+        // Find active status
+        let activeStatus = businessStatuses.find(s => activeStatuses.includes(s.status_code));
+        if (!activeStatus) {
+          // Create operational status if it doesn't exist
+          console.log('Creating operational business status...');
+          activeStatus = await businessStatusService.createBusinessStatus({ 
+            status_code: 'OPERATIONAL', 
+            description: 'Operational shop - visible on platform' 
+          });
+          console.log('Created operational status:', activeStatus);
+          // Refresh business statuses list
+          const updatedStatuses = await shopService.getBusinessStatuses();
+          setBusinessStatuses(updatedStatuses);
+        }
+        targetStatusId = activeStatus.id;
+        console.log('Switching to active status ID:', targetStatusId);
+      }
+      
+      // Update the shop
+      console.log('Updating shop business_status_id to:', targetStatusId);
+      await shopService.updateShop(shop.id, { business_status_id: targetStatusId });
+      setSuccess(`Shop ${isCurrentlyActive ? 'disabled' : 'enabled'} successfully`);
+      await loadShops();
+    } catch (error) {
+      console.error('Error toggling shop visibility:', error);
+      setError(`Failed to update shop status: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -479,6 +547,9 @@ function ShopsAdminContent() {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Location
                         </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Actions
                         </th>
@@ -513,6 +584,30 @@ function ShopsAdminContent() {
                             </div>
                             <div className="text-sm text-gray-500">
                               {shop.cities?.provinces?.countries?.name}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                shop.business_statuses?.status_code && ['OPERATIONAL', 'operational', 'active', 'ACTIVE'].includes(shop.business_statuses.status_code)
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {shop.business_statuses?.status_code || 'Unknown'}
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => toggleShopVisibility(shop)}
+                                className={`p-1 rounded ${
+                                  shop.business_statuses?.status_code && ['OPERATIONAL', 'operational', 'active', 'ACTIVE'].includes(shop.business_statuses.status_code)
+                                    ? 'text-red-600 hover:bg-red-50'
+                                    : 'text-green-600 hover:bg-green-50'
+                                }`}
+                                title={shop.business_statuses?.status_code && ['OPERATIONAL', 'operational', 'active', 'ACTIVE'].includes(shop.business_statuses.status_code) ? 'Disable Shop' : 'Enable Shop'}
+                              >
+                                {shop.business_statuses?.status_code && ['OPERATIONAL', 'operational', 'active', 'ACTIVE'].includes(shop.business_statuses.status_code) ? '🔴' : '🟢'}
+                              </Button>
                             </div>
                           </td>
                           <td className="px-6 py-4 text-right">

@@ -55,6 +55,34 @@ export interface ShopSearchFilters {
   offset?: number
 }
 
+// Define active business statuses that should be visible on the platform
+export const ACTIVE_BUSINESS_STATUSES = ['OPERATIONAL', 'operational', 'active', 'ACTIVE'];
+
+// Helper function to get active business status IDs
+async function getActiveBusinessStatusIds(): Promise<number[]> {
+  const { data: activeBusinessStatuses } = await supabase
+    .from('business_statuses')
+    .select('id, status_code')
+    .in('status_code', ACTIVE_BUSINESS_STATUSES)
+  
+  console.log('Active business statuses found:', activeBusinessStatuses)
+  console.log('ACTIVE_BUSINESS_STATUSES constant:', ACTIVE_BUSINESS_STATUSES)
+  
+  return activeBusinessStatuses ? activeBusinessStatuses.map(status => status.id) : []
+}
+
+// Helper function to apply active status filter to a query
+function applyActiveStatusFilterSync(query: any, activeStatusIds: number[]): any {
+  console.log('Applying active status filter with IDs:', activeStatusIds)
+  if (activeStatusIds.length > 0) {
+    console.log('Filtering by business_status_id IN:', activeStatusIds)
+    return query.in('business_status_id', activeStatusIds)
+  }
+  console.log('No active statuses found - returning empty result query')
+  // If no active statuses, return query that matches nothing
+  return query.eq('id', 'impossible-id-that-will-never-match')
+}
+
 export const shopService = {
   // Get paginated shops with filters
   async getShops(filters: ShopSearchFilters = {}) {
@@ -122,6 +150,10 @@ export const shopService = {
         return { shops: [], total: 0 }
       }
     }
+
+    // Filter by active business statuses only (shop visibility control)
+    const activeStatusIds = await getActiveBusinessStatusIds()
+    shopQuery = applyActiveStatusFilterSync(shopQuery, activeStatusIds)
 
     // Apply shop-specific filters
     if (minRating !== undefined) {
@@ -237,6 +269,12 @@ export const shopService = {
       throw error
     }
 
+    // Apply active status filter - check if shop is active before returning
+    const activeStatusIds = await getActiveBusinessStatusIds()
+    if (activeStatusIds.length === 0 || !data?.business_status_id || !activeStatusIds.includes(data.business_status_id)) {
+      throw new Error('Shop not found or not available')
+    }
+
     return data as ShopWithMotorcycles
   },
 
@@ -271,8 +309,14 @@ export const shopService = {
       .single()
 
     if (error) {
-      console.error('Error fetching shop by slug:', error)
+      console.error('Error fetching shop:', error)
       throw error
+    }
+
+    // Apply active status filter - check if shop is active before returning
+    const activeStatusIds = await getActiveBusinessStatusIds()
+    if (activeStatusIds.length === 0 || !data?.business_status_id || !activeStatusIds.includes(data.business_status_id)) {
+      throw new Error('Shop not found or not available')
     }
 
     return data as ShopWithMotorcycles
@@ -305,7 +349,7 @@ export const shopService = {
 
   // Search shops by location text (city, province, country names)
   async searchShopsByLocation(locationQuery: string, limit: number = 10) {
-    const { data, error } = await supabase
+    let query = supabase
       .from('rental_shops')
       .select(`
         *,
@@ -315,10 +359,17 @@ export const shopService = {
             *,
             countries (*)
           )
-        )
+        ),
+        business_statuses (*)
       `)
       .or(`cities.name.ilike.%${locationQuery}%,cities.provinces.name.ilike.%${locationQuery}%,cities.provinces.countries.name.ilike.%${locationQuery}%`)
       .limit(limit)
+
+    // Filter by active business status
+    const activeStatusIds = await getActiveBusinessStatusIds()
+    query = applyActiveStatusFilterSync(query, activeStatusIds)
+
+    const { data, error } = await query
 
     if (error) {
       console.error('Error searching shops by location:', error)
@@ -330,7 +381,7 @@ export const shopService = {
 
   // Get top-rated shops
   async getTopRatedShops(limit: number = 10) {
-    const { data, error } = await supabase
+    let query = supabase
       .from('rental_shops')
       .select(`
         *,
@@ -347,6 +398,12 @@ export const shopService = {
       .order('rating', { ascending: false })
       .order('review_count', { ascending: false })
       .limit(limit)
+
+    // Filter by active business status
+    const activeStatusIds = await getActiveBusinessStatusIds()
+    query = applyActiveStatusFilterSync(query, activeStatusIds)
+
+    const { data, error } = await query
 
     if (error) {
       console.error('Error fetching top rated shops:', error)
@@ -369,9 +426,14 @@ export const shopService = {
             countries (*)
           )
         ),
+        business_statuses (*),
         rental_shop_tours!inner (*)
       `)
       .order('rating', { ascending: false, nullsFirst: false })
+
+    // Filter by active business status
+    const activeStatusIds = await getActiveBusinessStatusIds()
+    query = applyActiveStatusFilterSync(query, activeStatusIds)
 
     if (limit) {
       query = query.limit(limit)
