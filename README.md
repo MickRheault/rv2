@@ -1,4 +1,4 @@
-# 🏍️ RideVault - Global Motorcycle Rental Platform
+# 🏍️ Global Moto Rentals - Worldwide Motorcycle Rental Platform
 
 A comprehensive Next.js application for aggregating motorcycle rental businesses worldwide, built with TypeScript, Tailwind CSS, and Supabase.
 
@@ -147,7 +147,7 @@ The platform uses a comprehensive Supabase database with 19 tables for motorcycl
 
 ### Recent UI Updates
 - Simplified homepage hero: location focus (removed style selector and counts)
-- Replaced “Why Choose RideVault” with concise copy; removed bottom CTA
+- Replaced "Why Choose Global Moto Rentals" with concise copy; removed bottom CTA
 - Header: “Countries” nav link, user icon links to admin login, removed Compare/Favorites from header
 - MotorcycleCard: removed features list, availability pill, and share icon
 - ShopCard: removed share icon

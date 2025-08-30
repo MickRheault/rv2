@@ -23,7 +23,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   },
   global: {
     headers: {
-      'X-Client-Info': 'ridevault-web'
+      'X-Client-Info': 'global-moto-rentals-web'
     }
   }
 })

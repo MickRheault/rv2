@@ -97,7 +97,7 @@ export default function AdminLoginPage() {
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900">RideVault</h2>
+          <h2 className="text-3xl font-bold text-gray-900">Global Moto Rentals</h2>
           <p className="mt-2 text-sm text-gray-600">Admin Access</p>
         </div>
       </div>
@@ -147,7 +147,7 @@ export default function AdminLoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@ridevault.com"
+                  placeholder="admin@globalmotorentals.com"
                 />
               </div>
             </div>
@@ -216,7 +216,7 @@ export default function AdminLoginPage() {
               size="sm"
               onClick={() => router.push('/')}
             >
-              ← Back to RideVault
+              ← Back to Global Moto Rentals
             </Button>
           </div>
         </Card>

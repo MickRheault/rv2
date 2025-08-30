@@ -1,4 +1,4 @@
-// SEO configuration and utilities for RideVault
+// SEO configuration and utilities for Global Moto Rentals
 import { Metadata } from 'next';
 
 export interface SEOConfig {
@@ -17,11 +17,11 @@ export interface SEOConfig {
 
 // Default site configuration
 export const SITE_CONFIG = {
-  name: 'RideVault',
-  title: 'RideVault - Global Motorcycle Rental Platform',
+  name: 'Global Moto Rentals',
+  title: 'Global Moto Rentals - Worldwide Motorcycle Rental Platform',
   description: 'Discover and compare motorcycle rentals worldwide. Find the perfect bike for your adventure.',
   url: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
-  twitterHandle: '@ridevault', // Update with your actual Twitter handle
+  twitterHandle: '@globalmotorentals', // Update with your actual Twitter handle
   locale: 'en_US',
   defaultImage: '/images/og-default.jpg', // We'll create this
   keywords: [
@@ -145,10 +145,10 @@ export const PAGE_CONFIGS = {
     ] as string[],
   },
   about: {
-    title: 'About RideVault - Motorcycle Rental Platform',
-    description: 'Learn about RideVault, the trusted platform connecting motorcycle enthusiasts with quality rental providers worldwide. Our mission is to make motorcycle travel accessible and safe.',
+    title: 'About Global Moto Rentals - Motorcycle Rental Platform',
+    description: 'Learn about Global Moto Rentals, the trusted platform connecting motorcycle enthusiasts with quality rental providers worldwide. Our mission is to make motorcycle travel accessible and safe.',
     keywords: [
-      'about ridevault',
+      'about global moto rentals',
       'motorcycle platform',
       'rental marketplace',
       'travel platform',
@@ -157,9 +157,9 @@ export const PAGE_CONFIGS = {
   },
   contact: {
     title: 'Contact Us - Get Help & Support',
-    description: 'Get in touch with the RideVault team. We\'re here to help with your motorcycle rental questions, booking support, or partnership inquiries.',
+    description: 'Get in touch with the Global Moto Rentals team. We\'re here to help with your motorcycle rental questions, booking support, or partnership inquiries.',
     keywords: [
-      'contact ridevault',
+      'contact global moto rentals',
       'customer support',
       'help center',
       'rental support',
@@ -192,7 +192,7 @@ export const PAGE_CONFIGS = {
   },
   privacy: {
     title: 'Privacy Policy - Data Protection',
-    description: 'Learn how RideVault protects your privacy and handles your personal data. Our commitment to transparent data practices and user rights.',
+    description: 'Learn how Global Moto Rentals protects your privacy and handles your personal data. Our commitment to transparent data practices and user rights.',
     keywords: [
       'privacy policy',
       'data protection',
@@ -203,7 +203,7 @@ export const PAGE_CONFIGS = {
   },
   terms: {
     title: 'Terms of Service - Usage Agreement',
-    description: 'Terms and conditions for using RideVault platform, including user responsibilities, booking terms, and service limitations.',
+    description: 'Terms and conditions for using Global Moto Rentals platform, including user responsibilities, booking terms, and service limitations.',
     keywords: [
       'terms of service',
       'usage terms',

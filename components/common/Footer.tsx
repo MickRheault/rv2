@@ -26,7 +26,7 @@ export default function Footer() {
               <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg">
                 <span className="text-white font-bold text-sm">🏍️</span>
               </div>
-              <span className="font-semibold text-gray-900">RideVault</span>
+              <span className="font-semibold text-gray-900">Global Moto Rentals</span>
             </Link>
             <p className="text-gray-600 text-sm leading-relaxed mb-4">
               Your global motorcycle rental platform. Find and compare rentals from trusted providers worldwide.
@@ -88,7 +88,7 @@ export default function Footer() {
         <div className="border-t border-gray-200 mt-12 pt-8">
           <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
             <p className="text-gray-500 text-sm">
-              © 2024 RideVault. All rights reserved.
+              © 2024 Global Moto Rentals. All rights reserved.
             </p>
             <div className="flex items-center space-x-6">
               <Link href="/privacy" className="text-gray-500 text-sm hover:text-blue-600 transition-colors">
