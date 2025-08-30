@@ -5,19 +5,20 @@ const nextConfig = {
     // typedRoutes: true,
   },
   images: {
-    domains: [
-      'localhost',
-      // Add Supabase storage domain
-      'supabase.co',
-      // Add Unsplash for demo images
-      'images.unsplash.com',
-      // Add demo/example domains
-      'example.com',
-      'via.placeholder.com',
-      'picsum.photos',
-      // Add other image domains as needed
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+      {
+        protocol: 'http',
+        hostname: '**',
+      },
     ],
     formats: ['image/webp', 'image/avif'],
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   async headers() {
     return [
