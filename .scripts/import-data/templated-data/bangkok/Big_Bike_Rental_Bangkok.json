@@ -1,0 +1,565 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-08-17T17:20:21.710Z",
+    "shop_identifier": "Big Bike Rental Bangkok",
+    "provider_name": "Big Bike Rental Bangkok",
+    "place_id": "ChIJ9f-jftFfHTERFc4l6C79Lzs",
+    "address": "938, 936 Soi Chumchon Talat Samrong, Krung Thep Maha Nakhon 10270, Thailand",
+    "city": "Bangkok",
+    "province": "Bangkok",
+    "country": "Thailand",
+    "latitude": 13.642492,
+    "longitude": 100.60956,
+    "phone": "098 274 7827",
+    "website": "http://www.bigbikerentalbangkok.com/",
+    "google_maps_url": "https://maps.google.com/?cid=4264905750048263701",
+    "business_status": "OPERATIONAL",
+    "rating": 4.6,
+    "review_count": 116,
+    "rental_conditions": {
+      "cash_deposit_required": "40,000 baht (approx. $1,150 USD)",
+      "km_limit_per_day": "280-300 km (varies by bike)",
+      "multi_country_rentals": true,
+      "cross_border_paperwork": true,
+      "opening_hours": "Monday - Sunday, 08:00 - 18:00 hrs",
+      "delivery_service": true,
+      "minimum_rental_period": "1 day"
+    },
+    "rental_inclusions": [
+      "Basic insurance",
+      "Standard safety gear",
+      "Roadside assistance",
+      "Pickup and delivery options"
+    ],
+    "available_service_locations": [
+      "Bangkok",
+      "Pattaya",
+      "Hua Hin",
+      "Phuket",
+      "Krabi",
+      "Chiang Mai"
+    ],
+    "offered_tours": [
+      {
+        "name": "Cross-Border Adventure",
+        "duration_text": "Multi-day",
+        "distance_km": null,
+        "price_text": "Varies by bike and duration",
+        "currency": "THB"
+      },
+      {
+        "name": "Bangkok to Chiang Khan (Mekong River) Multi-Day Journey",
+        "duration_text": "Multi-day",
+        "distance_km": null,
+        "price_text": "Included with bike rental",
+        "currency": "THB"
+      },
+      {
+        "name": "Tour Photographer Service",
+        "duration_text": "Custom",
+        "distance_km": null,
+        "price_text": "Additional fee",
+        "currency": "THB"
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "bigbikerentalbangkok.com",
+      "scrape_timestamp": "2025-08-17T17:20:23.302Z",
+      "source_url": "https://bigbikerentalbangkok.com/product/honda-nx500-2024/",
+      "brand": "Honda",
+      "model": "NX500",
+      "year": 2024,
+      "engine_capacity_cc": 471,
+      "category": "Adventure/Touring",
+      "description": "Adventure motorcycle with touring capabilities",
+      "rental_rates": [
+        {
+          "rate_text": "฿2,300.00/Day",
+          "min_days": 1,
+          "max_days": 6,
+          "rate_per_day": 2300,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "฿1,955.00/Day (15% discount)",
+          "min_days": 7,
+          "max_days": 29,
+          "rate_per_day": 1955,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "฿1,610.00/Day (30% discount)",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 1610,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "http://www.bigbikerentalbangkok.com/"
+      ],
+      "features": [
+        "ABS",
+        "USB-Charger",
+        "LED-Lighting",
+        "Slipper Clutch",
+        "Traction-Control",
+        "Riding Modes"
+      ],
+      "specifications_raw": {
+        "fuel_usage": "Petrol",
+        "gear_box": "6 Speed",
+        "max_passengers": 2,
+        "engine_capacity": "471 cc",
+        "limited_km_per_day": "280 Km"
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "bigbikerentalbangkok.com",
+      "scrape_timestamp": "2025-08-17T17:20:23.302Z",
+      "source_url": "https://bigbikerentalbangkok.com/product/honda-cb500x-2023/",
+      "brand": "Honda",
+      "model": "CB500X",
+      "year": 2023,
+      "engine_capacity_cc": 471,
+      "category": "Adventure/Touring",
+      "description": "Adventure motorcycle with touring capabilities",
+      "rental_rates": [
+        {
+          "rate_text": "฿2,200.00/Day",
+          "min_days": 1,
+          "max_days": 6,
+          "rate_per_day": 2200,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "฿1,870.00/Day (15% discount)",
+          "min_days": 7,
+          "max_days": 29,
+          "rate_per_day": 1870,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "฿1,540.00/Day (30% discount)",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 1540,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "http://www.bigbikerentalbangkok.com/"
+      ],
+      "features": [
+        "ABS",
+        "USB-Charger",
+        "LED-Lighting",
+        "Slipper Clutch",
+        "Riding Modes"
+      ],
+      "specifications_raw": {
+        "fuel_usage": "Petrol",
+        "gear_box": "Manual",
+        "max_passengers": 2,
+        "engine_capacity": "471 cc",
+        "limited_km_per_day": "280 Km"
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "bigbikerentalbangkok.com",
+      "scrape_timestamp": "2025-08-17T17:20:23.302Z",
+      "source_url": "https://bigbikerentalbangkok.com/product/yamaha-tenere-700/",
+      "brand": "Yamaha",
+      "model": "TENERE 700",
+      "year": null,
+      "engine_capacity_cc": 689,
+      "category": "Adventure/Touring",
+      "description": "Adventure motorcycle with touring capabilities",
+      "rental_rates": [
+        {
+          "rate_text": "฿3,600.00/Day",
+          "min_days": 1,
+          "max_days": 6,
+          "rate_per_day": 3600,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "฿3,060.00/Day (15% discount)",
+          "min_days": 7,
+          "max_days": 29,
+          "rate_per_day": 3060,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "฿2,520.00/Day (30% discount)",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 2520,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "http://www.bigbikerentalbangkok.com/"
+      ],
+      "features": [
+        "ABS",
+        "USB-Charger",
+        "LED-Lighting",
+        "Slipper Clutch",
+        "Riding Modes",
+        "Traction-Control"
+      ],
+      "specifications_raw": {
+        "fuel_usage": "Petrol",
+        "gear_box": "Manual",
+        "max_passengers": 2,
+        "engine_capacity": "689 cc",
+        "limited_km_per_day": "280 Km"
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "bigbikerentalbangkok.com",
+      "scrape_timestamp": "2025-08-17T17:20:23.302Z",
+      "source_url": "https://bigbikerentalbangkok.com/product/honda-crf300l/",
+      "brand": "Honda",
+      "model": "CRF300L",
+      "year": null,
+      "engine_capacity_cc": 286,
+      "category": "Motocross/Adventure",
+      "description": "Dual-sport motorcycle for off-road and street use",
+      "rental_rates": [
+        {
+          "rate_text": "฿1,400.00/Day",
+          "min_days": 1,
+          "max_days": 6,
+          "rate_per_day": 1400,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "฿1,190.00/Day (15% discount)",
+          "min_days": 7,
+          "max_days": 29,
+          "rate_per_day": 1190,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "฿980.00/Day (30% discount)",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 980,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "http://www.bigbikerentalbangkok.com/"
+      ],
+      "features": [
+        "LED-Lighting",
+        "Slipper Clutch"
+      ],
+      "specifications_raw": {
+        "fuel_usage": "Petrol",
+        "gear_box": "Manual",
+        "max_passengers": 2,
+        "engine_capacity": "286 cc",
+        "limited_km_per_day": "300 Km"
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "bigbikerentalbangkok.com",
+      "scrape_timestamp": "2025-08-17T17:20:23.302Z",
+      "source_url": "https://bigbikerentalbangkok.com/product/honda-xl750-transalp/",
+      "brand": "Honda",
+      "model": "XL750 Transalp",
+      "year": null,
+      "engine_capacity_cc": 755,
+      "category": "Adventure/Touring",
+      "description": "Adventure motorcycle with touring capabilities",
+      "rental_rates": [
+        {
+          "rate_text": "฿3,800.00/Day",
+          "min_days": 1,
+          "max_days": 6,
+          "rate_per_day": 3800,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "฿3,230.00/Day (15% discount)",
+          "min_days": 7,
+          "max_days": 29,
+          "rate_per_day": 3230,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "฿2,660.00/Day (30% discount)",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 2660,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "http://www.bigbikerentalbangkok.com/"
+      ],
+      "features": [
+        "ABS",
+        "USB-Charger",
+        "LED-Lighting",
+        "Slipper Clutch",
+        "Riding Modes",
+        "Traction-Control"
+      ],
+      "specifications_raw": {
+        "fuel_usage": "Petrol",
+        "gear_box": "Manual",
+        "max_passengers": 2,
+        "engine_capacity": "755 cc",
+        "limited_km_per_day": "300 Km"
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "bigbikerentalbangkok.com",
+      "scrape_timestamp": "2025-08-17T17:20:23.302Z",
+      "source_url": "https://bigbikerentalbangkok.com/product/kawasaki-klx230/",
+      "brand": "Kawasaki",
+      "model": "KLX230",
+      "year": null,
+      "engine_capacity_cc": 233,
+      "category": "Motocross/Adventure",
+      "description": "Dual-sport motorcycle for off-road and street use",
+      "rental_rates": [
+        {
+          "rate_text": "฿1,400.00/Day",
+          "min_days": 1,
+          "max_days": 6,
+          "rate_per_day": 1400,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "฿1,190.00/Day (15% discount)",
+          "min_days": 7,
+          "max_days": 29,
+          "rate_per_day": 1190,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "฿980.00/Day (30% discount)",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 980,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "http://www.bigbikerentalbangkok.com/"
+      ],
+      "features": [
+        "ABS",
+        "LED-Lighting"
+      ],
+      "specifications_raw": {
+        "fuel_usage": "Petrol",
+        "gear_box": "Manual",
+        "engine_capacity": "233 cc",
+        "limited_km_per_day": "300 Km"
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "bigbikerentalbangkok.com",
+      "scrape_timestamp": "2025-08-17T17:20:23.302Z",
+      "source_url": "https://bigbikerentalbangkok.com/product/honda-adv350/",
+      "brand": "Honda",
+      "model": "ADV350",
+      "year": null,
+      "engine_capacity_cc": 330,
+      "category": "Scooter",
+      "description": "Adventure scooter with touring capabilities",
+      "rental_rates": [
+        {
+          "rate_text": "฿1,700.00/Day",
+          "min_days": 1,
+          "max_days": 6,
+          "rate_per_day": 1700,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "฿1,445.00/Day (15% discount)",
+          "min_days": 7,
+          "max_days": 29,
+          "rate_per_day": 1445,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "฿1,190.00/Day (30% discount)",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 1190,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "http://www.bigbikerentalbangkok.com/"
+      ],
+      "features": [
+        "ABS",
+        "LED-Lighting",
+        "USB-Charger"
+      ],
+      "specifications_raw": {
+        "fuel_usage": "Petrol",
+        "gear_box": "Automatic",
+        "engine_capacity": "330 cc",
+        "limited_km_per_day": "300 Km",
+        "class": "Scooter"
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "bigbikerentalbangkok.com",
+      "scrape_timestamp": "2025-08-17T17:20:23.302Z",
+      "source_url": "https://bigbikerentalbangkok.com/product/kawasaki-z900/",
+      "brand": "Kawasaki",
+      "model": "Z900",
+      "year": 2024,
+      "engine_capacity_cc": 948,
+      "category": "Sport",
+      "description": "Sport motorcycle with advanced features",
+      "rental_rates": [
+        {
+          "rate_text": "฿3,800.00/Day",
+          "min_days": 1,
+          "max_days": 6,
+          "rate_per_day": 3800,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "฿3,230.00/Day (15% discount)",
+          "min_days": 7,
+          "max_days": 29,
+          "rate_per_day": 3230,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "฿2,660.00/Day (30% discount)",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 2660,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "http://www.bigbikerentalbangkok.com/"
+      ],
+      "features": [
+        "ABS",
+        "LED-Lighting",
+        "Traction Control",
+        "USB Charger",
+        "Power Modes",
+        "Riding Modes",
+        "Smart Phone connectivity",
+        "Economical Riding Indicator"
+      ],
+      "specifications_raw": {
+        "fuel_usage": "Petrol",
+        "gear_box": "6 Speed",
+        "engine_capacity": "948 cc",
+        "limited_km_per_day": "300 Km",
+        "class": "Sport",
+        "max_passengers": 2
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "bigbikerentalbangkok.com",
+      "scrape_timestamp": "2025-08-17T17:20:23.302Z",
+      "source_url": "https://bigbikerentalbangkok.com/product/honda-cbr650r/",
+      "brand": "Honda",
+      "model": "CBR650R",
+      "year": 2024,
+      "engine_capacity_cc": 650,
+      "category": "Sport",
+      "description": "Sport motorcycle with advanced features",
+      "rental_rates": [
+        {
+          "rate_text": "฿2,800.00/Day",
+          "min_days": 1,
+          "max_days": 6,
+          "rate_per_day": 2800,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "฿2,380.00/Day (15% discount)",
+          "min_days": 7,
+          "max_days": 29,
+          "rate_per_day": 2380,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "฿1,960.00/Day (30% discount)",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 1960,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "http://www.bigbikerentalbangkok.com/"
+      ],
+      "features": [
+        "Ignition Security System",
+        "ABS",
+        "LED-Lighting",
+        "USB Charger",
+        "Selectable Torque Control",
+        "Smart Voice Control System",
+        "Smart Phone connectivity",
+        "E-Clutch"
+      ],
+      "specifications_raw": {
+        "fuel_usage": "Petrol",
+        "gear_box": "6 Speed",
+        "engine_capacity": "650 cc",
+        "limited_km_per_day": "300 Km",
+        "class": "Sport",
+        "max_passengers": 2
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "Available"
+    }
+  ]
+}

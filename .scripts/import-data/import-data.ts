@@ -97,7 +97,7 @@ const supabase: SupabaseClient<Database> = createClient<Database>(supabaseUrl, s
   }
 });
 
-const DATA_DIR = path.resolve(__dirname, './templated-data');
+const DATA_DIR = path.resolve(__dirname, './templated-data/bangkok');
 
 // --- Helper Functions for Find/Create ---
 

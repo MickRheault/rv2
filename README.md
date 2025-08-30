@@ -77,6 +77,18 @@ rv2/
 └── tsconfig.json          # TypeScript configuration
 ```
 
+### Additional Key Directories (Updated)
+
+- `app/admin/*` – Admin dashboard pages (analytics, data freshness, premium listings, users, etc.)
+- `app/search/*` – Client search UI (filters, results, location autocomplete)
+- `app/[country]/*` and `app/[country]/[city]/*` – Location-based browsing pages
+- `components/search/*` – Search components (`LocationAutocomplete`, `SearchFilters`, etc.)
+- `components/shop/*` – Shop-related UI (`ShopCard`, `ShopDetails`, `GoogleMap`)
+- `components/motorcycle/*` – Motorcycle UI (`MotorcycleCard`, `MotorcycleDetails`, `MotorcycleGallery`)
+- `components/analytics/*` – Cookie consent banner and analytics helpers
+- `supabase/migrations/*` – Database migrations (schema changes, analytics snapshots, premium listings, etc.)
+- `supabase/functions/*` – Supabase Edge Functions (e.g., auth custom claims)
+
 ## 🗄️ Database Schema
 
 The platform uses a comprehensive Supabase database with 19 tables for motorcycle rental data:
@@ -102,6 +114,12 @@ The platform uses a comprehensive Supabase database with 19 tables for motorcycl
 - **`rental_shop_inclusions`** - What's included in rentals
 - **`rental_shop_tours`** - Available tour packages
 
+### Additional Tables (Updated)
+- **`premium_listings` / related utils** – Premium placement and boosting
+- **`business_statuses`** – Operational status codes for shops (active/closed)
+- **`flagged_content`** – User flags for data accuracy with admin moderation
+- **`analytics_*`** – Historical analytics snapshots and related functions
+
 ## 🛠️ Available Scripts
 
 - `npm run dev` - Start development server
@@ -109,6 +127,10 @@ The platform uses a comprehensive Supabase database with 19 tables for motorcycl
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint
 - `npm run type-check` - Run TypeScript type checking
+
+### Sitemap & SEO (Updated)
+- `next-sitemap` runs on postbuild to generate sitemaps automatically
+- Structured data helpers under `lib/seo/*` for enhanced SERP rich results
 
 ## 🎨 Styling & UI
 
@@ -122,6 +144,15 @@ The platform uses a comprehensive Supabase database with 19 tables for motorcycl
 - `.card` - Card component styling
 - `.container-custom` - Responsive container
 - `.grid-responsive` - Responsive grid layout
+
+### Recent UI Updates
+- Simplified homepage hero: location focus (removed style selector and counts)
+- Replaced “Why Choose RideVault” with concise copy; removed bottom CTA
+- Header: “Countries” nav link, user icon links to admin login, removed Compare/Favorites from header
+- MotorcycleCard: removed features list, availability pill, and share icon
+- ShopCard: removed share icon
+- Shop page: removed operational status badge, repositioned “Motorcycles Available” under header, added clearer spacing, removed quick stats
+- Cookies page content added; cookie consent banner with preferences
 
 ## 📊 Key Features
 
@@ -140,6 +171,15 @@ The platform uses a comprehensive Supabase database with 19 tables for motorcycl
 - 🔄 User authentication and favorites
 - 🔄 Admin interface for data moderation
 
+### Implemented Features (Updated)
+- Location-based search and filtering (countries → provinces → cities)
+- Location directory browsing (`/browse`) with country/city links
+- Dynamic location pages (`/{country}` and `/{country}/{city}`)
+- Premium listings integration and prioritized sorting in search results
+- Admin interface with analytics, premium listings, data freshness, flagged content, and users
+- Cookie consent and preferences (analytics/marketing functional split)
+- Sitemap generation and structured data for SEO
+
 ## 🧪 Development Workflow
 
 1. **Check TypeScript** - `npm run type-check`
@@ -154,6 +194,10 @@ The app is configured to work with fallback Supabase credentials for development
 
 ### Production
 Ensure all environment variables are properly configured in your deployment platform (Vercel, Netlify, etc.).
+
+### Rendering & Caching Notes (Updated)
+- The project currently does not use Incremental Static Regeneration (ISR). Admin routes and some pages are dynamic (`revalidate = 0`).
+- You can opt-in per page by exporting `export const revalidate = <seconds>` or via `fetch(..., { next: { revalidate } })`.
 
 ### Required Environment Variables
 ```env
@@ -183,6 +227,11 @@ The project is optimized for deployment on Vercel:
 2. **Configure environment variables** in the Vercel dashboard
 3. **Deploy** - Vercel will automatically build and deploy
 
+### Additional Deployment Notes
+- Security headers are configured in `next.config.js` (X-Frame-Options, X-Content-Type-Options, Referrer-Policy)
+- Image domains whitelisted under `images.domains` (Unsplash, Supabase, etc.)
+- Postbuild sitemap generation via `next-sitemap`
+
 ### Deployment Checklist
 - [ ] Environment variables configured
 - [ ] Supabase project is active
@@ -205,7 +254,11 @@ The project is optimized for deployment on Vercel:
 - [Supabase Documentation](https://supabase.com/docs)
 - [Tailwind CSS Documentation](https://tailwindcss.com/docs)
 - [Project PRD](./PRD/prd-motorcycle-rental-aggregator.md)
-- [Development Tasks](./tasks/tasks-prd-motorcycle-rental-aggregator.md)
+- [Development Tasks (Updated)](./.PRD/tasks-prd-motorcycle-rental-aggregator.md)
+- [Analytics Setup](./docs/ANALYTICS_SETUP.md)
+- [SEO Implementation](./docs/SEO_IMPLEMENTATION.md)
+- [Sitemap Setup](./docs/SITEMAP_SETUP.md)
+- [Enhanced Structured Data](./docs/ENHANCED_STRUCTURED_DATA.md)
 
 ## 🤝 Support
 

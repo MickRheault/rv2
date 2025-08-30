@@ -1,0 +1,346 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-08-17T17:12:20.354Z",
+    "shop_identifier": "MadBike @i-Store Sukhumvit 24",
+    "provider_name": "MadBike @i-Store Sukhumvit 24",
+    "place_id": "ChIJaxWQs9mf4jARX_jUABCmkFY",
+    "address": "54 Soi Sukhumvit 24, Khwaeng Khlong Tan, Khet Khlong Toei, Krung Thep Maha Nakhon 10110, Thailand",
+    "city": "Bangkok",
+    "province": "Bangkok",
+    "country": "Thailand",
+    "latitude": 13.723924,
+    "longitude": 100.5676211,
+    "phone": "064 190 8824",
+    "website": "https://madbike.co/",
+    "google_maps_url": "https://maps.google.com/?cid=6237668071571781727",
+    "business_status": "CLOSED_TEMPORARILY",
+    "rating": null,
+    "review_count": null,
+    "rental_conditions": {
+      "deposit_amount_thb": 5000,
+      "required_documents": "Passport, Driver's license",
+      "minimum_rental_period_days": 1,
+      "maximum_rental_period_days": null,
+      "delivery_fee_thb": "200-300",
+      "delivery_range_km": 10,
+      "age_requirement": null,
+      "fuel_policy": "Return with same level",
+      "cancellation_policy": null,
+      "late_return_fee": null
+    },
+    "rental_inclusions": [
+      "Third party liability insurance",
+      "Up to two helmets",
+      "Basic maintenance"
+    ],
+    "available_service_locations": [
+      "Sathorn",
+      "Golden Mount",
+      "Khaosan",
+      "Nana",
+      "Thonglor",
+      "Hua Lamphong",
+      "Hua Hin"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "madbike",
+      "scrape_timestamp": "2025-08-17T17:12:21.866Z",
+      "source_url": "https://madbike.co/",
+      "brand": "Honda",
+      "model": "Scoopy-i",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Economy",
+      "description": "Our economy motorbikes are ideal for quick and zippy rides. If you need an affordable, reliable, and well-maintained rental motorbike, this category is for you.",
+      "rental_rates": [
+        {
+          "rate_text": "THB 300 per day",
+          "min_days": 1,
+          "max_days": 6,
+          "rate_per_day": 300,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "THB 1,500 per week",
+          "min_days": 7,
+          "max_days": 29,
+          "rate_per_day": 214.29,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "THB 3,000 per month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 100,
+          "currency": "THB"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Automatic transmission",
+        "Fuel efficient",
+        "Lightweight design",
+        "Easy to maneuver"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": "Economy category motorbikes require THB 3,000 deposit. Must be returned with same fuel level. Mileage restrictions may apply.",
+      "required_documents_raw": [
+        "Original passport",
+        "Valid driver's license"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Liability",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "Basic coverage included in all rentals"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "madbike",
+      "scrape_timestamp": "2025-08-17T17:12:21.866Z",
+      "source_url": "https://madbike.co/",
+      "brand": "Honda",
+      "model": "Click 125i",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Standard",
+      "description": "Our high quality standard motorbikes are coined by their superior design and comfort. They are the ideal companion for exploring Bangkok and its surroundings.",
+      "rental_rates": [
+        {
+          "rate_text": "THB 350 per day",
+          "min_days": 1,
+          "max_days": 6,
+          "rate_per_day": 350,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "THB 1,700 per week",
+          "min_days": 7,
+          "max_days": 29,
+          "rate_per_day": 242.86,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "THB 3,500 per month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 116.67,
+          "currency": "THB"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Automatic transmission",
+        "125cc engine",
+        "Comfortable seating",
+        "Modern design"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": "Standard category motorbikes require THB 5,000 deposit. Must be returned with same fuel level. Mileage restrictions may apply.",
+      "required_documents_raw": [
+        "Original passport",
+        "Valid driver's license"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Liability",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "Basic coverage included in all rentals"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "madbike",
+      "scrape_timestamp": "2025-08-17T17:12:21.866Z",
+      "source_url": "https://madbike.co/",
+      "brand": "Yamaha",
+      "model": "Grand Filano",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Standard",
+      "description": "Our high quality standard motorbikes are coined by their superior design and comfort. They are the ideal companion for exploring Bangkok and its surroundings.",
+      "rental_rates": [
+        {
+          "rate_text": "THB 350 per day",
+          "min_days": 1,
+          "max_days": 6,
+          "rate_per_day": 350,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "THB 1,700 per week",
+          "min_days": 7,
+          "max_days": 29,
+          "rate_per_day": 242.86,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "THB 3,500 per month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 116.67,
+          "currency": "THB"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Automatic transmission",
+        "125cc engine",
+        "Stylish design",
+        "Comfortable for city riding"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": "Standard category motorbikes require THB 5,000 deposit. Must be returned with same fuel level. Mileage restrictions may apply.",
+      "required_documents_raw": [
+        "Original passport",
+        "Valid driver's license"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Liability",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "Basic coverage included in all rentals"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "madbike",
+      "scrape_timestamp": "2025-08-17T17:12:21.866Z",
+      "source_url": "https://madbike.co/",
+      "brand": "Yamaha",
+      "model": "Aerox 155 ABS",
+      "year": null,
+      "engine_capacity_cc": 155,
+      "category": "Premium",
+      "description": "Our premium motorbikes are characterized by their superior riding characteristics. Enjoy a sporty and comfortable ride – also for two riders and longer trips.",
+      "rental_rates": [
+        {
+          "rate_text": "THB 500 per day",
+          "min_days": 1,
+          "max_days": 6,
+          "rate_per_day": 500,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "THB 2,500 per week",
+          "min_days": 7,
+          "max_days": 29,
+          "rate_per_day": 357.14,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "THB 5,500 per month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 183.33,
+          "currency": "THB"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Automatic transmission",
+        "155cc engine",
+        "ABS braking system",
+        "Sporty design",
+        "Comfortable for two riders"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": "Premium category motorbikes require THB 5,000 deposit. Must be returned with same fuel level. Mileage restrictions may apply.",
+      "required_documents_raw": [
+        "Original passport",
+        "Valid driver's license"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Liability",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "Basic coverage included in all rentals"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "madbike",
+      "scrape_timestamp": "2025-08-17T17:12:21.866Z",
+      "source_url": "https://madbike.co/",
+      "brand": "Yamaha",
+      "model": "NMAX 155 ABS",
+      "year": null,
+      "engine_capacity_cc": 155,
+      "category": "Premium",
+      "description": "Our premium motorbikes are characterized by their superior riding characteristics. Enjoy a sporty and comfortable ride – also for two riders and longer trips.",
+      "rental_rates": [
+        {
+          "rate_text": "THB 500 per day",
+          "min_days": 1,
+          "max_days": 6,
+          "rate_per_day": 500,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "THB 2,500 per week",
+          "min_days": 7,
+          "max_days": 29,
+          "rate_per_day": 357.14,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "THB 5,500 per month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 183.33,
+          "currency": "THB"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Automatic transmission",
+        "155cc engine",
+        "ABS braking system",
+        "Premium comfort",
+        "Suitable for longer trips"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": "Premium category motorbikes require THB 5,000 deposit. Must be returned with same fuel level. Mileage restrictions may apply.",
+      "required_documents_raw": [
+        "Original passport",
+        "Valid driver's license"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Liability",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "Basic coverage included in all rentals"
+        }
+      ],
+      "availability_status": null
+    }
+  ]
+}

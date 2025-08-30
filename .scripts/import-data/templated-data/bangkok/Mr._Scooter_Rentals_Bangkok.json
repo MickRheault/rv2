@@ -1,0 +1,154 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-08-17T17:13:47.231Z",
+    "shop_identifier": "Mr. Scooter Rentals Bangkok",
+    "provider_name": "Mr. Scooter Rentals Bangkok",
+    "place_id": "ChIJE4VXqyuf4jAR47RIlmoTZ1I",
+    "address": "500 Pridi Bhanomyong 42, Phatthana Wet Yaek 10, Klongton Nua, เขตวัฒนา กรุงเทพมหานคร 10110, Thailand",
+    "city": "Bangkok",
+    "province": "Bangkok",
+    "country": "Thailand",
+    "latitude": 13.7320687,
+    "longitude": 100.6017569,
+    "phone": "081 415 3555",
+    "website": "https://mrscooterrentalsbangkok.blogspot.com/",
+    "google_maps_url": "https://maps.google.com/?cid=5937735982220096739",
+    "business_status": "CLOSED_TEMPORARILY",
+    "rating": 1,
+    "review_count": 1,
+    "rental_conditions": {
+      "age_requirement": "Must be complete 20 years up",
+      "required_documents": "Original Passport/ Identity Card/ Thai Driving License/ Foreign or International License (Not Expired)",
+      "payment_deposit": "On the start date of motorbikes rental, Renter must make full payment of rental and deposit, price will be agreed upon between Renter and Mr. Scooter. Deposit starts from 2000 baht depending on the motorbike type you require.",
+      "extension_policy": "Renter must notify Mr. Scooter the intention to extend rental period prior to the expiry of rental period for extension of rental period, refrain from notifying means infringement of Renter and Mr. Scooter.",
+      "maintenance_policy": "Mr. Scooter will not be responsible in case of flat tyre or all other damages except in case of engine is broken down which is not incurred by any causes. Mr. Scooter will be responsible and/or replace with other motorbike appropriately.",
+      "collection_return_policy": "Renter must collect and return motorbike at office of Mr. Scooter only, there is no outdoor service to collect and send scooter outside the place.",
+      "robbery_policy": "Renter must be careful in parking of motorbike. It should be parked at court with security system and properly locked the motorbike. In case of robbery, Renter must be responsible at price according to age or condition of motorbike or upon agreement between Mr. Scooter and Renter."
+    },
+    "rental_inclusions": [
+      "2 helmets"
+    ],
+    "available_service_locations": [
+      "Bangkok"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "mrscooterrentalsbangkok",
+      "scrape_timestamp": "2025-08-17T17:13:48.323Z",
+      "source_url": "https://mrscooterrentalsbangkok.blogspot.com/p/honda-click-125.html",
+      "brand": "Honda",
+      "model": "Click 125i",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "350 THB Per Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 350,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhqnf2fQG4r5y0jKRv756u3j2Ush_4INKFdWkywVmPbDEhOXier5wJngIaoH-mbrwYCH9K9WGVcooD6I971kvMxynMZF4M_MmZyKW7Lvw7-UI6RrkD11RWhDd8ToR6JSSwdf6wxZOatH2MgkCwH-7hiz7C2y3cpxWcOYxNi3EL0xNwEfQEnqb5JLJ7cgA/s685/Color_Section_New_click_125i_red_black_cast.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg5leId90oh3fhuQA2yIL6yntGi66A_tg-AIl4j2mCZzLM5W34FJtUFb-tnzvK35E3s81-6sJN8F50O40NqkLPvD0hDSaQXWOOexqF_EtmrXkww43WdQppjV6cvj4vrYIO0fkH77z365mNw4rCpm0uPTmbTndFy5aGvi4Pn3GIiRyq9FCywRqJLsqCgrQ/s685/Highlight_features_685X426_New_click_125i_04.jpg",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgYsxR7-ZJem7cPfaXY4Sn5dpoDBDDn-C0vngAtCF18xWuudvLCexoSxuTL9Fk-0nBb_LSrwd5Uacr3l9r1V8XDg2tMb1ePV7VALavWd3qcoqq7cNUfYWo6wT7879J3BnMXwoyu4wfIn1r0cAk6Ko6TxbwiwTZ5omwBHseWKr5b54wU85fkW5sQDtTMNw/s685/Highlight_features_685X426_New_click_125i_03.jpg",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgqysqe6ofLBbqIG5clvGWedko3jvLsOqjnWxPYIq5mHGexFOVvFgzgosSyDn9ZWLN0oXBpQt818gCYcNB2TlbV7S_wO_UufFb02Z5LK2Y3lH6Vp2G-wtbM7bECNFPjE1szblWjiBoJAe9-b5C6sW-Nbqe3f8Vubhg_BN8qZMxxxk5ttaW2lFLaxzsESw/s685/Highlight_features_685X426_New_click_125i_02.jpg",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgBUYYP5xShE1bUbNpGtRBz0ICDgnPPFqH9x36JUCjwTPPPz0V_SCJ4diP-L2NYMUZht_qYzcypD9MIAVkWQeLimXoNeDR_4dKCQ118BlNUe7-RB5dUg0cUJDiN4IbqcDYcPhbk14UcZ7vqbcYuzr3ptHFhtFxG_CPM-U2D6sXRAYMnNWKpebu-cfQLLA/s685/Highlight_features_685X426_New_click_125i_01.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": "Insurance under the Protection of Motor Vehicle Accident Victims Act included in the rate of rental. First Class Insurance available as an optional.",
+      "required_documents_raw": [
+        "Original Passport",
+        "Identity Card",
+        "Thai Driving License",
+        "Foreign or International License (Not Expired)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Insurance under the Protection of Motor Vehicle Accident Victims Act included in the rate of rental"
+        },
+        {
+          "type_name": "First Class Insurance",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Available as an optional"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "mrscooterrentalsbangkok",
+      "scrape_timestamp": "2025-08-17T17:13:48.323Z",
+      "source_url": "https://mrscooterrentalsbangkok.blogspot.com/p/yamaha-filano.html",
+      "brand": "Yamaha",
+      "model": "Grand Filano",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "350 THB Per Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 350,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjTn6mDRc7jEI3J2Viu2YfC5s1uxdO3fMi4g0vK1ghxUvA6CCSai_36xIf76k9BxDTbp2bXxmiTe4BqZe-sAi3C9xhZ01ES-KBTJlhOhIFjW0ioA8yeD7ny-i7wsSVE4Wwv_vJ8IBql4ZZsvLecaPASvUUmVAYgKOvKyL0XHAoeGfJoyki8C8gKk1kYxQ/s700/0.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEilhTQBi3R-1I8WSKAbx0fhyxrHml7UMZRpFO3WL9MD006WCeaVyr1JS3fYDMTUF0SZG1gjgrIwrnYlRsk0sVb4elGmWQlB2QW7oFLbwvdU1A1Z2BP_p2uft2eyCBQwHLmfUQrb_Lt1XvJIelu8XkrixlbPssWQpw12TQCixusYMOcNlijoAeGJUWaiNA/s700/2.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiX8thJWZJ0zPDOEGbztJ3_jk-7cHBN7imQNsWyHmA-IQdtQ6fiX6ZE6sTCO8gEWJaljxh6oc5VhFtn7AFfB-OD1DqpjU6EehbemxBTC7OMHnU1lHgMeec33xBXyVxmovrVdvbOl8mdcW4Fki-es86kZeuYLzg2zHofHc2G00dYbHjY3vlamffN4r5Chw/s700/4.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiMxsYB4FnVsTDR5RT8AT9kpnj_y3zrqKswGidTXNFheNi6pIX2cGkTqFlTjet9pBt0Q3xzqDzhPslubsLdtjGd5h_8-pEBfdDr1gyQ_s3u351gijc6uV8DuDB5eRQmFKIIguJjJd053l1e1--mS9HRSvsY8zLdYN_tholkVFTib8Up8LDMwyuLOequFQ/s700/6.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEigNk3QPUNuG8IU2mvHMK8UfWFfDmUK6-ezYrfcJUvbzDw0y-MpgkGo33H-4dacE6DJENrApW-lSGsQvQPl4UsWzSeTFUWA38PfGYP4CQFC4j7PWY5ZxwJI4RVpZZcvwOwxt2S6q-vW3ar925KKkoW_NzaAalKeG7gEIsz2aMyI10jt_k9wVP5_Q7tqyA/s700/10.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiAlyVa4h0tixBntaGfuiihlvFins5OqWV3tBF5CXMEyEbpL22B8B7FNNrEIotGnnIVv6J2GUf6Zomu3TxtwRnMSBMjBI5R1d5LaBpCnigEgulXL4Kb1HmjFw3tZvpM7ZiDSzFu5MpjlUvdqguGQ128f30_tMj-2zOL6dNORnAxQ2csDuiB2yuY0Vqrfw/s700/12.png",
+        "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi811zV4Epi1HEdhh3m4x7s886Kdr4arZ4xz01YodjtmQvnZAg33f64cWqcWaTw-UnO_wvtvHA_wm9NnmKlQzHKt0uuM7CH_ZM3kBaPqqWwU2NdK73hmymtfi1emhLO0cYwYD6vrUNU7HZxevBXNODNHOcD2vptu5jii0QHydqsqqYDQp2gSHxuDO69Iw/s700/14.png"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": "Insurance under the Protection of Motor Vehicle Accident Victims Act included in the rate of rental. First Class Insurance available as an optional.",
+      "required_documents_raw": [
+        "Original Passport",
+        "Identity Card",
+        "Thai Driving License",
+        "Foreign or International License (Not Expired)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Insurance under the Protection of Motor Vehicle Accident Victims Act included in the rate of rental"
+        },
+        {
+          "type_name": "First Class Insurance",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Available as an optional"
+        }
+      ],
+      "availability_status": null
+    }
+  ]
+}

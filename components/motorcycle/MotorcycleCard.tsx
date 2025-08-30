@@ -1,8 +1,6 @@
 'use client'
 
-import Image from 'next/image'
 import Link from 'next/link'
-import { useState } from 'react'
 import { clsx } from 'clsx'
 import {
   HeartIcon,
@@ -10,13 +8,10 @@ import {
   StarIcon,
   CalendarIcon,
   CogIcon,
-  ShieldCheckIcon,
-  WifiIcon,
   GlobeAltIcon
 } from '@heroicons/react/24/outline'
 import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid'
-import { Card, CardContent, CardFooter, CardHeader, Badge, PremiumBadge } from '@/components/ui'
-import Button from '@/components/ui/Button'
+import { Card, Badge, PremiumBadge } from '@/components/ui'
 import { MotorcycleWithDetails } from '@/services/motorcycles'
 import { formatCurrency, formatEngineCapacity } from '@/lib/utils'
 
@@ -43,21 +38,9 @@ export default function MotorcycleCard({
   premiumType = 'gold',
   className 
 }: MotorcycleCardProps) {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [imageError, setImageError] = useState(false)
-  
   const shop = motorcycle.rental_shops
   const brand = motorcycle.brands
   const category = motorcycle.categories
-  
-  // Get sorted images
-  const images = motorcycle.motorcycle_images
-    ?.filter(img => img.images?.url)
-    .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
-    .map(img => img.images!) || []
-  
-  // Features removed per UI cleanup
-  const features: any[] = []
   
   // Get location string
   const location = shop?.cities 
@@ -69,10 +52,6 @@ export default function MotorcycleCard({
     ? formatCurrency(motorcycle.rental_rate_per_day, motorcycle.rental_rate_currency || 'USD')
     : 'Price on request'
 
-  // Get primary image
-  const primaryImage = images[currentImageIndex] || images[0]
-  const fallbackImage = 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop&crop=center&auto=format&q=80'
-
   // Handle favorite toggle
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -80,239 +59,130 @@ export default function MotorcycleCard({
     onFavoriteToggle?.(motorcycle.id, !isFavorited)
   }
 
-  // Handle image navigation
-  const nextImage = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (images.length > 1) {
-      setCurrentImageIndex((prev) => (prev + 1) % images.length)
-    }
-  }
-
-  const prevImage = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (images.length > 1) {
-      setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)
-    }
-  }
-
-  // Get feature icon
-  const getFeatureIcon = (featureName: string) => {
-    const name = featureName.toLowerCase()
-    if (name.includes('abs') || name.includes('brake')) return <ShieldCheckIcon className="w-3 h-3" />
-    if (name.includes('gps') || name.includes('navigation')) return <MapPinIcon className="w-3 h-3" />
-    if (name.includes('wifi') || name.includes('internet')) return <WifiIcon className="w-3 h-3" />
-    if (name.includes('helmet')) return <ShieldCheckIcon className="w-3 h-3" />
-    return <CogIcon className="w-3 h-3" />
-  }
-
   return (
     <Link href={`/motorcycle/${motorcycle.id}`} className="block group">
-      <Card className={clsx(
-        'overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1',
-        compact ? 'h-auto' : 'h-full',
-        isPremium && 'ring-2 ring-yellow-400 shadow-xl relative',
-        isPremium && premiumType === 'featured' && 'ring-blue-500 shadow-blue-200',
-        isPremium && premiumType === 'platinum' && 'ring-gray-400 shadow-gray-200',
-        className
-      )}>
+      <Card 
+        padding="none"
+        className={clsx(
+          'overflow-hidden transition-all duration-300 hover:shadow-md hover:border-gray-300 w-full',
+          isPremium && 'ring-2 ring-yellow-400 shadow-lg relative',
+          isPremium && premiumType === 'featured' && 'ring-blue-500 shadow-blue-200',
+          isPremium && premiumType === 'platinum' && 'ring-gray-400 shadow-gray-200',
+          className
+        )}
+      >
         {/* Premium border glow effect */}
         {isPremium && (
           <div className={clsx(
-            'absolute inset-0 rounded-2xl opacity-20 pointer-events-none',
+            'absolute inset-0 rounded-lg opacity-10 pointer-events-none',
             premiumType === 'gold' && 'bg-gradient-to-br from-yellow-400 to-yellow-600',
             premiumType === 'platinum' && 'bg-gradient-to-br from-gray-300 to-gray-500',
-            premiumType === 'featured' && 'bg-gradient-to-br from-blue-500 to-purple-600 animate-pulse'
+            premiumType === 'featured' && 'bg-gradient-to-br from-blue-500 to-purple-600'
           )} />
         )}
         
-        <CardHeader className="p-0 relative">
-          {/* Motorcycle Image */}
-          <div className={clsx(
-            'relative w-full overflow-hidden bg-gray-100',
-            compact ? 'h-40' : 'h-48'
-          )}>
-            <Image
-              src={!imageError && primaryImage?.url ? primaryImage.url : fallbackImage}
-              alt={primaryImage?.alt_text || `${brand?.name || ''} ${motorcycle.model || 'Motorcycle'}`}
-              fill
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
-              onError={() => setImageError(true)}
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            />
+        <div className="p-3 space-y-2">
+          {/* Header with title and badges */}
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-gray-900 line-clamp-1 text-sm">
+                {brand?.name} {motorcycle.model}
+              </h3>
+              {motorcycle.year && (
+                <p className="text-xs text-gray-500">
+                  {motorcycle.year} Model
+                </p>
+              )}
+            </div>
             
-            {/* Image Navigation */}
-            {images.length > 1 && !compact && (
-              <>
-                <button
-                  onClick={prevImage}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                  aria-label="Previous image"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <button
-                  onClick={nextImage}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                  aria-label="Next image"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-                
-                {/* Image indicators */}
-                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex space-x-1">
-                  {images.map((_, index) => (
-                    <div
-                      key={index}
-                      className={clsx(
-                        'w-1.5 h-1.5 rounded-full transition-colors',
-                        index === currentImageIndex ? 'bg-white' : 'bg-white/50'
-                      )}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
-            
-            {/* Overlays */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-            
-            {/* Top row: Category/Premium and Actions */}
-            <div className="absolute top-3 left-3 right-3 flex justify-between items-start">
+            <div className="flex items-center gap-1 flex-shrink-0">
               {/* Premium Badge or Category Badge */}
-              <div className="flex gap-1 flex-wrap">
-                {isPremium && (
-                  <PremiumBadge type={premiumType} className="shadow-lg" />
-                )}
-                {category && !isPremium && (
-                <Badge variant="primary" size="sm" className="bg-blue-600 text-white">
+              {isPremium && (
+                <PremiumBadge type={premiumType} className="text-xs" />
+              )}
+              {category && (
+                <Badge 
+                  variant={isPremium ? "secondary" : "primary"} 
+                  size="sm" 
+                  className={clsx(
+                    "text-xs",
+                    isPremium ? "bg-gray-100 text-gray-700" : "bg-blue-600 text-white"
+                  )}
+                >
                   {category.name}
                 </Badge>
               )}
-                {category && isPremium && (
-                  <Badge variant="secondary" size="sm" className="bg-white/90 text-gray-700">
-                    {category.name}
-                  </Badge>
-                )}
-              </div>
               
-              {/* Action buttons */}
-              <div className="flex space-x-1">
-                {onFavoriteToggle && (
-                  <button
-                    onClick={handleFavoriteClick}
-                    className="p-1.5 bg-white/90 hover:bg-white rounded-full transition-colors backdrop-blur-sm"
-                    aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
-                  >
-                    {isFavorited ? (
-                      <HeartSolid className="w-4 h-4 text-red-500" />
-                    ) : (
-                      <HeartIcon className="w-4 h-4 text-gray-600" />
-                    )}
-                  </button>
-                )}
-              </div>
-            </div>
-            
-            {/* Price Badge */}
-            <div className="absolute bottom-3 right-3">
-              <div className="bg-white/95 backdrop-blur-sm rounded-lg px-2 py-1">
-                <div className="text-sm font-bold text-gray-900">
-                  {price}
-                  {motorcycle.rental_rate_per_day && (
-                    <span className="text-xs text-gray-600 ml-1">/day</span>
+              {/* Favorite button */}
+              {onFavoriteToggle && (
+                <button
+                  onClick={handleFavoriteClick}
+                  className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                  aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+                >
+                  {isFavorited ? (
+                    <HeartSolid className="w-3 h-3 text-red-500" />
+                  ) : (
+                    <HeartIcon className="w-3 h-3 text-gray-400" />
                   )}
-                </div>
-              </div>
+                </button>
+              )}
             </div>
           </div>
-        </CardHeader>
 
-        <CardContent className={clsx('space-y-3', compact ? 'p-3' : 'p-4')}>
-          {/* Motorcycle Title */}
-          <div>
-            <h3 className={clsx(
-              'font-semibold text-gray-900 line-clamp-1',
-              compact ? 'text-sm' : 'text-base'
-            )}>
-              {brand?.name} {motorcycle.model}
-            </h3>
-            {motorcycle.year && (
-              <p className="text-xs text-gray-500 mt-0.5">
-                {motorcycle.year} Model
-              </p>
-            )}
-          </div>
-
-          {/* Specifications */}
-          <div className="flex items-center space-x-4 text-xs text-gray-600">
-            {motorcycle.engine_capacity_cc && (
-              <div className="flex items-center space-x-1">
-                <CogIcon className="w-3 h-3" />
-                <span>{formatEngineCapacity(motorcycle.engine_capacity_cc)}</span>
-              </div>
-            )}
-            
-            {motorcycle.year && (
-              <div className="flex items-center space-x-1">
-                <CalendarIcon className="w-3 h-3" />
-                <span>{motorcycle.year}</span>
-              </div>
-            )}
-            
-            {/* Availability pill removed per UI cleanup */}
-          </div>
-
-          {/* Features removed per UI cleanup */}
-
-          {/* Shop Information */}
-          {showShopInfo && shop && !compact && (
-            <div className="pt-2 border-t border-gray-100 space-y-1">
-              <div className="flex items-center space-x-1 text-sm">
-                <GlobeAltIcon className="w-3 h-3 text-gray-400" />
-                <span className="font-medium line-clamp-1 text-gray-900">{shop.provider_name}</span>
-              </div>
-              
-              <div className="flex items-center justify-between text-xs text-gray-600">
+          {/* Specifications and Price */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3 text-xs text-gray-600">
+              {motorcycle.engine_capacity_cc && (
                 <div className="flex items-center space-x-1">
-                  <MapPinIcon className="w-3 h-3" />
-                  <span className="line-clamp-1">{location}</span>
+                  <CogIcon className="w-3 h-3" />
+                  <span>{formatEngineCapacity(motorcycle.engine_capacity_cc)}</span>
+                </div>
+              )}
+              
+              {motorcycle.year && (
+                <div className="flex items-center space-x-1">
+                  <CalendarIcon className="w-3 h-3" />
+                  <span>{motorcycle.year}</span>
+                </div>
+              )}
+            </div>
+            
+            {/* Price */}
+            <div className="text-right">
+              <div className="text-sm font-bold text-gray-900">
+                {price}
+              </div>
+              {motorcycle.rental_rate_per_day && (
+                <div className="text-xs text-gray-500">/day</div>
+              )}
+            </div>
+          </div>
+
+          {/* Shop Information - Compact */}
+          {showShopInfo && shop && (
+            <div className="pt-2 border-t border-gray-100">
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center space-x-1 flex-1 min-w-0">
+                  <GlobeAltIcon className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                  <span className="font-medium line-clamp-1 text-gray-900 truncate">{shop.provider_name}</span>
                 </div>
                 
                 {shop.rating && (
-                  <div className="flex items-center space-x-1">
+                  <div className="flex items-center space-x-1 flex-shrink-0 ml-2">
                     <StarIcon className="w-3 h-3 text-yellow-500 fill-current" />
-                    <span className="font-medium">{shop.rating.toFixed(1)}</span>
-                    {shop.review_count && (
-                      <span className="text-gray-500">({shop.review_count})</span>
-                    )}
+                    <span className="font-medium text-gray-700">{shop.rating.toFixed(1)}</span>
                   </div>
                 )}
               </div>
+              
+              <div className="flex items-center space-x-1 mt-1 text-xs text-gray-500">
+                <MapPinIcon className="w-3 h-3 flex-shrink-0" />
+                <span className="line-clamp-1 truncate">{location}</span>
+              </div>
             </div>
           )}
-        </CardContent>
-
-        {!compact && (
-          <CardFooter className="p-4 pt-0">
-            <div className="flex w-full gap-2">
-              <Button variant="outline" size="sm" className="flex-1">
-                View Details
-              </Button>
-              
-              {shop && (
-                <Button variant="primary" size="sm" className="flex-1">
-                  Visit Shop
-                </Button>
-              )}
-            </div>
-          </CardFooter>
-        )}
+        </div>
       </Card>
     </Link>
   )

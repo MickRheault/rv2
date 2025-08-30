@@ -1,0 +1,442 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-08-17T17:05:44.614Z",
+    "shop_identifier": "Ride Asia Ltd. Part.",
+    "provider_name": "Ride Asia Ltd. Part.",
+    "place_id": "ChIJl-XTNEqe4jARY-339kyFeCE",
+    "address": "1053 56 Sukhumvit 71 Rd, Khwaeng Khlong Tan Nuea, Watthana, Krung Thep Maha Nakhon 10110, Thailand",
+    "city": "Bangkok",
+    "province": "Bangkok",
+    "country": "Thailand",
+    "latitude": 13.7362028,
+    "longitude": 100.5944019,
+    "phone": "081 804 7780",
+    "website": "http://www.rideasia.com/",
+    "google_maps_url": "https://maps.google.com/?cid=2411824166064352611",
+    "business_status": "OPERATIONAL",
+    "rating": 4.2,
+    "review_count": 5,
+    "rental_conditions": {
+      "security_deposit_eur": "1500-3000",
+      "luggage_limit": "one big case and a small backpack",
+      "road_rules_thailand": "drive on left",
+      "road_rules_other_countries": "drive on right",
+      "visa_requirements": "required for all tours",
+      "minimum_experience": "experienced motorcycle touring enthusiast",
+      "tour_categories": "Scenic Tour, Light Adventure, High Adventure",
+      "fuel_requirements": "95 or 95 gasohol fuel (91 acceptable where unavailable)",
+      "support_vehicle": "yes, carries luggage and up to 2 motorcycles",
+      "single_occupancy_fee": "available with supplement fee"
+    },
+    "rental_inclusions": [
+      "motorcycles",
+      "fuel",
+      "insurance",
+      "accommodation",
+      "meals (breakfasts and dinners on travel days)",
+      "support vehicle",
+      "luggage transport",
+      "guide services",
+      "GPS waypoints and data",
+      "road books"
+    ],
+    "available_service_locations": [
+      "Thailand",
+      "China",
+      "Laos",
+      "Cambodia",
+      "Vietnam",
+      "Myanmar",
+      "Tibet"
+    ],
+    "offered_tours": [
+      {
+        "name": "Forgotten Roads",
+        "duration_text": "11 Days",
+        "distance_km": 2054,
+        "price_text": "€3,650 - €4,550",
+        "currency": "EUR"
+      },
+      {
+        "name": "The Land of the Dragon",
+        "duration_text": "21 Days",
+        "distance_km": null,
+        "price_text": "€7,050",
+        "currency": "EUR"
+      },
+      {
+        "name": "The Road to Shangri-La",
+        "duration_text": "14 Days",
+        "distance_km": null,
+        "price_text": "€4,700",
+        "currency": "EUR"
+      },
+      {
+        "name": "The Roof of the World",
+        "duration_text": "21 Days",
+        "distance_km": null,
+        "price_text": "€7,050",
+        "currency": "EUR"
+      },
+      {
+        "name": "The Buddha Route",
+        "duration_text": "30 Days",
+        "distance_km": 6350,
+        "price_text": "€3,000 - €9,360",
+        "currency": "EUR"
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "rideasia",
+      "scrape_timestamp": "2025-08-17T17:05:45.830Z",
+      "source_url": "https://rideasia.com/bike-fleet-service-vehicles/",
+      "brand": "Honda",
+      "model": "CBX500",
+      "year": null,
+      "engine_capacity_cc": 500,
+      "category": "Touring",
+      "description": "A cheaper option than the BMWs, these bikes are reliable, easy-to-handle and good on varied terrain.",
+      "rental_rates": [
+        {
+          "rate_text": "€3,650 for 11 days (Forgotten Roads tour)",
+          "min_days": 11,
+          "max_days": 11,
+          "rate_per_day": 331.82,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "€6,840 for 30 days (The Buddha Route tour)",
+          "min_days": 30,
+          "max_days": 30,
+          "rate_per_day": 228,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://rideasia.com/cms/wp-content/uploads/2020/09/honda-cbx500.jpg"
+      ],
+      "features": [
+        "reliable",
+        "easy-to-handle",
+        "good on varied terrain",
+        "luggage systems"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport",
+        "valid motorcycle license",
+        "visa (as required)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Security deposit of €1500-€3000 required"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "rideasia",
+      "scrape_timestamp": "2025-08-17T17:05:45.830Z",
+      "source_url": "https://rideasia.com/bike-fleet-service-vehicles/",
+      "brand": "BMW",
+      "model": "F700GS",
+      "year": null,
+      "engine_capacity_cc": 798,
+      "category": "Adventure",
+      "description": "Proven time and time again as the go-to bikes for touring holidays, these motorcycles are great on and off-road.",
+      "rental_rates": [
+        {
+          "rate_text": "€4,190 for 11 days (Forgotten Roads tour)",
+          "min_days": 11,
+          "max_days": 11,
+          "rate_per_day": 380.91,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "€7,680 for 30 days (The Buddha Route tour)",
+          "min_days": 30,
+          "max_days": 30,
+          "rate_per_day": 256,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://rideasia.com/cms/wp-content/uploads/2019/06/BMW-motorcycle-tours-Asia-900x600-510x340.jpg"
+      ],
+      "features": [
+        "great on and off-road",
+        "luggage systems",
+        "BMW Navigation system cradle"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport",
+        "valid motorcycle license",
+        "visa (as required)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Security deposit of €1500-€3000 required"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "rideasia",
+      "scrape_timestamp": "2025-08-17T17:05:45.830Z",
+      "source_url": "https://rideasia.com/bike-fleet-service-vehicles/",
+      "brand": "BMW",
+      "model": "F800GS",
+      "year": null,
+      "engine_capacity_cc": 798,
+      "category": "Adventure",
+      "description": "Proven time and time again as the go-to bikes for touring holidays, these motorcycles are great on and off-road.",
+      "rental_rates": [
+        {
+          "rate_text": "€4,280 for 11 days (Forgotten Roads tour)",
+          "min_days": 11,
+          "max_days": 11,
+          "rate_per_day": 389.09,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "€8,520 for 30 days (The Buddha Route tour)",
+          "min_days": 30,
+          "max_days": 30,
+          "rate_per_day": 284,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://rideasia.com/cms/wp-content/uploads/2019/06/BMW-motorcycle-tours-Asia-900x600-510x340.jpg"
+      ],
+      "features": [
+        "great on and off-road",
+        "luggage systems",
+        "BMW Navigation system cradle"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport",
+        "valid motorcycle license",
+        "visa (as required)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Security deposit of €1500-€3000 required"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "rideasia",
+      "scrape_timestamp": "2025-08-17T17:05:45.830Z",
+      "source_url": "https://rideasia.com/bike-fleet-service-vehicles/",
+      "brand": "BMW",
+      "model": "F1200GS",
+      "year": null,
+      "engine_capacity_cc": 1170,
+      "category": "Adventure",
+      "description": "Proven time and time again as the go-to bikes for touring holidays, these motorcycles are great on and off-road.",
+      "rental_rates": [
+        {
+          "rate_text": "€4,550 for 11 days (Forgotten Roads tour)",
+          "min_days": 11,
+          "max_days": 11,
+          "rate_per_day": 413.64,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "€9,360 for 30 days (The Buddha Route tour)",
+          "min_days": 30,
+          "max_days": 30,
+          "rate_per_day": 312,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://rideasia.com/cms/wp-content/uploads/2020/09/bmw-gs1200.jpg"
+      ],
+      "features": [
+        "great on and off-road",
+        "luggage systems",
+        "BMW Navigation system cradle"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport",
+        "valid motorcycle license",
+        "visa (as required)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Security deposit of €1500-€3000 required"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "rideasia",
+      "scrape_timestamp": "2025-08-17T17:05:45.830Z",
+      "source_url": "https://rideasia.com/bike-fleet-service-vehicles/",
+      "brand": "Honda",
+      "model": "CRF250L",
+      "year": null,
+      "engine_capacity_cc": 249,
+      "category": "Dual-sport",
+      "description": "A reliable dual-sport motorcycle suitable for varied terrain.",
+      "rental_rates": [
+        {
+          "rate_text": "€3,000 for 30 days (The Buddha Route tour)",
+          "min_days": 30,
+          "max_days": 30,
+          "rate_per_day": 100,
+          "currency": "EUR"
+        }
+      ],
+      "images": [],
+      "features": [
+        "reliable",
+        "suitable for varied terrain"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport",
+        "valid motorcycle license",
+        "visa (as required)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Security deposit of €1500-€3000 required"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "rideasia",
+      "scrape_timestamp": "2025-08-17T17:05:45.830Z",
+      "source_url": "https://rideasia.com/bike-fleet-service-vehicles/",
+      "brand": "BMW",
+      "model": "R1100R",
+      "year": null,
+      "engine_capacity_cc": 1085,
+      "category": "Roadster",
+      "description": "A classic BMW roadster motorcycle.",
+      "rental_rates": [
+        {
+          "rate_text": "€3,200 for 11 days (Forgotten Roads tour)",
+          "min_days": 11,
+          "max_days": 11,
+          "rate_per_day": 290.91,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "€6,000 for 30 days (The Buddha Route tour)",
+          "min_days": 30,
+          "max_days": 30,
+          "rate_per_day": 200,
+          "currency": "EUR"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport",
+        "valid motorcycle license",
+        "visa (as required)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Security deposit of €1500-€3000 required"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "rideasia",
+      "scrape_timestamp": "2025-08-17T17:05:45.830Z",
+      "source_url": "https://rideasia.com/bike-fleet-service-vehicles/",
+      "brand": "BMW",
+      "model": "G310GS",
+      "year": null,
+      "engine_capacity_cc": 313,
+      "category": "Adventure",
+      "description": "An entry-level adventure motorcycle from BMW.",
+      "rental_rates": [
+        {
+          "rate_text": "€6,000 for 30 days (The Buddha Route tour)",
+          "min_days": 30,
+          "max_days": 30,
+          "rate_per_day": 200,
+          "currency": "EUR"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport",
+        "valid motorcycle license",
+        "visa (as required)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Security deposit of €1500-€3000 required"
+        }
+      ],
+      "availability_status": "available"
+    }
+  ]
+}

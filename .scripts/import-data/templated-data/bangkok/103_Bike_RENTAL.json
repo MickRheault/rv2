@@ -1,0 +1,84 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-08-17T17:08:51.784Z",
+    "shop_identifier": "103 Bike RENTAL",
+    "provider_name": "103 Bike RENTAL",
+    "place_id": "ChIJFZ8lYPZfHTERYbLs7lzGSGM",
+    "address": "ปาก Soi Prawit Lae Phuan 1, Khwaeng Bang Chak, Khet Phra Khanong, Krung Thep Maha Nakhon 10260, Thailand",
+    "city": "Bangkok",
+    "province": "Bangkok",
+    "country": "Thailand",
+    "latitude": 13.6787054,
+    "longitude": 100.6372735,
+    "phone": "063 379 3799",
+    "website": "https://sites.google.com/view/citybikeforrent",
+    "google_maps_url": "https://maps.google.com/?cid=7154186110525813345",
+    "business_status": "OPERATIONAL",
+    "rating": 4.5,
+    "review_count": 43,
+    "rental_conditions": {
+      "hours": "Monday - Sunday 09:00 - 18:00 (Tuesday closed)",
+      "deposit_policy": "No passport required for deposit",
+      "long_term_benefits": "no insurance, maintenance, annual tax, paperwork related to purchasing and no loss of value"
+    },
+    "rental_inclusions": [
+      "unlimited free mileage",
+      "well-maintained bikes"
+    ],
+    "available_service_locations": [
+      "Bangkok"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "103-BIKE-RENTAL",
+      "scrape_timestamp": "2025-06-10T00:18:03",
+      "source_url": "https://sites.google.com/view/citybikeforrent/our-bike",
+      "brand": null,
+      "model": "City Bike",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "City Scooters",
+      "description": "Premium, well-maintained bikes for getting around Bangkok, easy to ride, and convenient when traveling through traffic",
+      "rental_rates": [],
+      "images": [
+        "https://lh4.googleusercontent.com/wTSs19cP8u7d3F29JGP3_SLbtW5m9btd7znZI4W8osKvKzMG0r2LFxEXtp_3jmGyQqdZwGvlVH2hSodhDtBQ5p2DmcmYuEhD8MyRSuiFTkxil9iTxEdIjnyHn0TRRZvvHw=w1280",
+        "https://lh3.googleusercontent.com/1UJc3vsNm3tHuu8iaVsmKrat41oTG8bhAt8gayw2T-S0r9jwZD_bA4M7Sv0RI09n15nArPdJ5O4seTFj5QXbG3sjmpCftNXsW6xMqPcS0OZDR5Uia9Qn0DatgPa4HKG1vuJWi9f9v3hXs9b30EiJcfclg7vmP_jmPp_LMcvG4nr4L20Vt62ZOA=w1280",
+        "https://lh4.googleusercontent.com/m3etZsVm9YOtUa-w07oF2_XQ1coN3ayp04DfpxXHc2UQGLqvd2VTi7cUzt_ovu5G8po1YlYbA6YbfBOBM3dfLkluL-6XFn_8P9rLGxgTk1umk882sGecrYQjTfMK8XfZWC4px4uMhpoYuz3mw1Msmprv2iFAorMFfjWJrhH0wlvg2YIlO8b4RQ=w1280",
+        "https://lh5.googleusercontent.com/7ovz5qtWmsaj8AkZ4fb9JtywiwtdDqVSmtBDNL1ODj2d-YXiIYGA5waZb3zv24t-ksVDzcmuBvJ_4Bgwp_KfYvKDZTD5Zt2M1sT-HmL_wkgxuLnVCKFhtWUUN2MWNPDX_7L6MTVaSNpiO9uYjw0J9T6XIPnWb3oOZQwXjpWcX82cojzpHsHKEw=w1280",
+        "https://lh3.googleusercontent.com/0lMB23A9GaMei-guE_1IhwqqMKswkKVuDpE_f2_pxHs5EdbWStwYDz1AhH8iUz2igt_Zs4cmwFR6_3EWgCtzKmk13aZRTU5Y2sHJ6IXLhiXJEL9aQuYxluCUoIT24T0Sa4kNqtj31wlhxNMudULW6PQRNURs0uwWLg0x1c-xaddBMb7MZrsHaQ=w1280",
+        "https://lh5.googleusercontent.com/420xs5dGMMp5atsN1roF7Z1saDEdo3gusUbe5C4RixWb2WFm0f4nZ7PD9SpNLDMmFAHmAKn8_dtZDwR8390DTTDB8kyP5YtiWavnZMgs4uD2esl7cN4G2vLKhLstJxXzh0Jd6lKmP5P_HWxQbfnBxo7VpgvzECCXcXs7VfIpGttTuuRhAhcM3g=w1280",
+        "https://lh5.googleusercontent.com/r8gw-1Dyoj3zbmEqeIm4YIhBwY1l22wOIRWSY1wFijxk0C-oDpNo9lm1zrpx1orJI0YcXbWSc0e2Blztuqp8Ug5RZrefdO51fuxwdLCUFkPC3Fiy6FOAq6BIhpRbyr_lJUegvM2gEbIolAhhyBmLtsYY_ko1-ATXEfPPGe4fVp_LUB7WpWK9ww=w1280",
+        "https://lh4.googleusercontent.com/uUWd30Yq7U-8Xn7wlDwALqzaORwm6HskrKqeombGF99o5f8O4sYTGcqo2YwP1h3S159CHvG5ZbG-jf8_VkTM2YwlL_l8k7TuZML8K9sloUYuCn9g1GORYqgS4ebVc-sWY-jeIE-S-twhFW1s3rK24rfyRtmbTUTllAbeVQ1LN9p0Rwa892bioA=w1280",
+        "https://lh6.googleusercontent.com/1KKWPZMAqfia5T941wAkDz5ZYQd32Nd4u6eEYgn8tytWBlBvblw5RAt4DjlIFqNHqga1s_KNc_D2wLOkFBCmD82f2rpbb05C8MP82w3h2aPGh-rCwDM6256W_eQqtrfQIA=w1280",
+        "https://lh6.googleusercontent.com/0kUbXVHm97c6fZ0fJ-YJ4dRE4lWJT-JKhZ-H9dLtBaLvYfX9wsJMNA_yWXmmvk16-iemMjZ9f8Oxqsq01pu_HIrxneL4rGQ3Elwu5TvAbdS9fDesNbZr_46SuQKFfSn6B9PYQ-vveP5lp3fcThSf3kK6QBfyKF-KrXvj8fmP5UWJRgSvtwktvA=w1280",
+        "https://lh6.googleusercontent.com/dd6eN6KJgpP7LC8cOQbO_aZ3R3_K32ldQ5CrnLWXNGhCvAM5z9dwvBOWIpzV-i0jje4C69kpTkcn69LOhRdl-TFhUznh3j6d5fs8vf6KnQQJ_x3x5ggsYo9xCaekMhYNHVu2o8P6SATXQRxbxRiM5bL8s_1_TxHiZcE8e9ZMYqzXgT-otNdN7A=w1280",
+        "https://lh3.googleusercontent.com/Nwgvm47ishm_HfJmmHzOb20f3dlaB6j2HVKMgmpQijLhL2sBhsUflPJenciYoZXlpaKjGCWf0lLAfzgJnvbWxHQwUdW9wu6xlPm1g2zwH9D2DiIXRULo268ptEUssI8KTA=w1280",
+        "https://lh3.googleusercontent.com/oZAJOfTQFiQucdo9gx0JOWV7ZTmvwG8HTqjw0rkSk1H5s4DVyKhGTic0XL-eqZ6OptpfnDzVmGhTbnMEqGch0seLUfFbqin4sdNwc38xy6tYc5xlxTjirFDLNif7NoW-FmLpr7pIjVWRrBJ5A1o4Vkyq54Gr_kus23TXGuVXLDlFD9OPvDGe_Q=w1280",
+        "https://lh4.googleusercontent.com/fFUT7UuHm-WLgTTsLxZhhzcF9UlP-yGQMyFN9FJ7Wlcc_K86eqSmIMB-hBw_ZdEqv1U5BC9XDvgP9l0DHWmK3ruM8Yg0K7mz0I34JLXtuj6-LE1RXeRCHuYfQXAnmKtvrhlX-j1M0TOrIF5TFU1ZMVigidzsYxU9URmUhLbM-w7JaMIdww2e1Q=w1280"
+      ],
+      "features": [
+        "easy to ride",
+        "convenient in traffic"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "No passport required"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Insurance is included in the rental price according to business description"
+        }
+      ],
+      "availability_status": "AVAILABLE"
+    }
+  ]
+}

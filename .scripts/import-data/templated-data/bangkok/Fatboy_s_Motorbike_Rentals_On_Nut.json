@@ -1,0 +1,1042 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-08-17T16:52:23.547Z",
+    "shop_identifier": "Fatboy's Motorbike Rentals On Nut",
+    "provider_name": "Fatboy's Motorbike Rentals On Nut",
+    "place_id": "ChIJ-1E24dyf4jARiQyJuOnEAoE",
+    "address": "Shophouse #6, Soi On Nut 17, Khwaeng Suan Luang, Khet Suan Luang, Krung Thep Maha Nakhon 10250, Thailand",
+    "city": "Bangkok",
+    "province": "Bangkok",
+    "country": "Thailand",
+    "latitude": 13.7115907,
+    "longitude": 100.610091,
+    "phone": "097 045 6030",
+    "website": "http://www.fatboysmotorbikes.com/",
+    "google_maps_url": "https://maps.google.com/?cid=9296209088948538505",
+    "business_status": "OPERATIONAL",
+    "rating": 4.7,
+    "review_count": 413,
+    "rental_conditions": {
+      "minimum_rental_days": 2,
+      "expat_deposit_110_125cc": 2000,
+      "expat_deposit_150cc_plus": 3000,
+      "tourist_deposit": 5000,
+      "allowed_areas": "Bangkok, Nonthaburi, Samut Prakan, certain areas of Nakhon Pathom",
+      "thai_license_required_for_premium_insurance": true,
+      "free_delivery_for_monthly_rentals": true,
+      "delivery_range_km": 10,
+      "appointment_required_for_certain_hours": true,
+      "appointment_notice_hours": 72
+    },
+    "rental_inclusions": [
+      "Free bike maintenance",
+      "Government bike tax",
+      "Government bike health insurance",
+      "Up to 2 free helmets",
+      "Child helmets available upon request"
+    ],
+    "available_service_locations": [
+      "Bangkok",
+      "Nonthaburi",
+      "Samut Prakan",
+      "Certain areas of Nakhon Pathom"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "fatboys_motorbike_rentals",
+      "scrape_timestamp": "2025-08-17T16:52:24.570Z",
+      "source_url": "https://www.fatboysmotorbikes.com/motorbikes-for-rent/",
+      "brand": "Honda",
+      "model": "Click 125",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Premium 125cc Scooter",
+      "description": "New model Honda Click 125 scooter for rent",
+      "rental_rates": [
+        {
+          "rate_text": "400 baht per day",
+          "min_days": 1,
+          "max_days": 6,
+          "rate_per_day": 400,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "2,000 baht per week",
+          "min_days": 7,
+          "max_days": 29,
+          "rate_per_day": 285.71,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "4,000 baht per month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 133.33,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.fatboysmotorbikes.com/wp-content/uploads/2024/05/Click-160-Model.jpg"
+      ],
+      "features": [
+        "Automatic transmission",
+        "125cc engine",
+        "Modern design",
+        "Fuel efficient"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": "Available for monthly rentals with free delivery within 10km of branches",
+      "required_documents_raw": [
+        "Passport Copy/Photo",
+        "Work Permit OR Condo Contract Copy/Photo (for expats)",
+        "2,000 Baht Monetary Deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic 3rd Party Medical",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included free of charge with all rentals"
+        },
+        {
+          "type_name": "Premium Insurance",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Covers damage to rental bike and 3rd party in case of accident. Requires Thai Motorbike License."
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "fatboys_motorbike_rentals",
+      "scrape_timestamp": "2025-08-17T16:52:24.570Z",
+      "source_url": "https://www.fatboysmotorbikes.com/motorbikes-for-rent/",
+      "brand": "Yamaha",
+      "model": "Grand Filano Hybrid",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Premium 125cc Scooter",
+      "description": "Yamaha Grand Filano Hybrid scooter for rent",
+      "rental_rates": [
+        {
+          "rate_text": "400 baht per day",
+          "min_days": 1,
+          "max_days": 6,
+          "rate_per_day": 400,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "2,000 baht per week",
+          "min_days": 7,
+          "max_days": 29,
+          "rate_per_day": 285.71,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "4,000 baht per month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 133.33,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.fatboysmotorbikes.com/wp-content/uploads/2021/03/Grand-Filano-Hybrid-2_400x300.jpg"
+      ],
+      "features": [
+        "Automatic transmission",
+        "125cc engine",
+        "Hybrid technology",
+        "Premium features"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": "Available for monthly rentals with free delivery within 10km of branches",
+      "required_documents_raw": [
+        "Passport Copy/Photo",
+        "Work Permit OR Condo Contract Copy/Photo (for expats)",
+        "2,000 Baht Monetary Deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic 3rd Party Medical",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included free of charge with all rentals"
+        },
+        {
+          "type_name": "Premium Insurance",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Covers damage to rental bike and 3rd party in case of accident. Requires Thai Motorbike License."
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "fatboys_motorbike_rentals",
+      "scrape_timestamp": "2025-08-17T16:52:24.570Z",
+      "source_url": "https://www.fatboysmotorbikes.com/motorbikes-for-rent/",
+      "brand": "Honda",
+      "model": "Zoomer X",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Premium 125cc Scooter",
+      "description": "Honda Zoomer X scooter for rent",
+      "rental_rates": [
+        {
+          "rate_text": "400 baht per day",
+          "min_days": 1,
+          "max_days": 6,
+          "rate_per_day": 400,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "2,000 baht per week",
+          "min_days": 7,
+          "max_days": 29,
+          "rate_per_day": 285.71,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "4,000 baht per month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 133.33,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.fatboysmotorbikes.com/wp-content/uploads/2021/03/Spacy_400x300.jpg"
+      ],
+      "features": [
+        "Automatic transmission",
+        "125cc engine",
+        "Sporty design",
+        "Compact size"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": "Available for monthly rentals with free delivery within 10km of branches",
+      "required_documents_raw": [
+        "Passport Copy/Photo",
+        "Work Permit OR Condo Contract Copy/Photo (for expats)",
+        "2,000 Baht Monetary Deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic 3rd Party Medical",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included free of charge with all rentals"
+        },
+        {
+          "type_name": "Premium Insurance",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Covers damage to rental bike and 3rd party in case of accident. Requires Thai Motorbike License."
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "fatboys_motorbike_rentals",
+      "scrape_timestamp": "2025-08-17T16:52:24.570Z",
+      "source_url": "https://www.fatboysmotorbikes.com/motorbikes-for-rent/",
+      "brand": "Yamaha",
+      "model": "Aerox 155",
+      "year": null,
+      "engine_capacity_cc": 155,
+      "category": "Large 150-300cc Scooter",
+      "description": "Yamaha Aerox 155 scooter for rent",
+      "rental_rates": [
+        {
+          "rate_text": "550 baht per day",
+          "min_days": 1,
+          "max_days": 6,
+          "rate_per_day": 550,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "2,500 baht per week",
+          "min_days": 7,
+          "max_days": 29,
+          "rate_per_day": 357.14,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "5,000 baht per month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 166.67,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.fatboysmotorbikes.com/wp-content/uploads/2021/03/Nmax_400x300.jpg"
+      ],
+      "features": [
+        "Automatic transmission",
+        "155cc engine",
+        "Sport performance",
+        "Advanced features"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": "Available for monthly rentals with free delivery within 10km of branches",
+      "required_documents_raw": [
+        "Passport Copy/Photo",
+        "Work Permit OR Condo Contract Copy/Photo (for expats)",
+        "3,000 Baht Monetary Deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic 3rd Party Medical",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included free of charge with all rentals"
+        },
+        {
+          "type_name": "Premium Insurance",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Covers damage to rental bike and 3rd party in case of accident. Requires Thai Motorbike License."
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "fatboys_motorbike_rentals",
+      "scrape_timestamp": "2025-08-17T16:52:24.570Z",
+      "source_url": "https://www.fatboysmotorbikes.com/motorbikes-for-rent/",
+      "brand": "Yamaha",
+      "model": "Nmax 155",
+      "year": null,
+      "engine_capacity_cc": 155,
+      "category": "Large 150-300cc Scooter",
+      "description": "Yamaha Nmax 155 scooter for rent",
+      "rental_rates": [
+        {
+          "rate_text": "550 baht per day",
+          "min_days": 1,
+          "max_days": 6,
+          "rate_per_day": 550,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "2,500 baht per week",
+          "min_days": 7,
+          "max_days": 29,
+          "rate_per_day": 357.14,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "5,000 baht per month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 166.67,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.fatboysmotorbikes.com/wp-content/uploads/2021/03/Nmax_400x300.jpg"
+      ],
+      "features": [
+        "Automatic transmission",
+        "155cc engine",
+        "Premium scooter",
+        "Advanced technology"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": "Available for monthly rentals with free delivery within 10km of branches",
+      "required_documents_raw": [
+        "Passport Copy/Photo",
+        "Work Permit OR Condo Contract Copy/Photo (for expats)",
+        "3,000 Baht Monetary Deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic 3rd Party Medical",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included free of charge with all rentals"
+        },
+        {
+          "type_name": "Premium Insurance",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Covers damage to rental bike and 3rd party in case of accident. Requires Thai Motorbike License."
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "fatboys_motorbike_rentals",
+      "scrape_timestamp": "2025-08-17T16:52:24.570Z",
+      "source_url": "https://www.fatboysmotorbikes.com/motorbikes-for-rent/",
+      "brand": "Honda",
+      "model": "PCX",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Large 150-300cc Scooter",
+      "description": "Honda PCX scooter for rent",
+      "rental_rates": [
+        {
+          "rate_text": "550 baht per day",
+          "min_days": 1,
+          "max_days": 6,
+          "rate_per_day": 550,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "2,500 baht per week",
+          "min_days": 7,
+          "max_days": 29,
+          "rate_per_day": 357.14,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "5,000 baht per month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 166.67,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.fatboysmotorbikes.com/wp-content/uploads/2021/03/Nmax_400x300.jpg"
+      ],
+      "features": [
+        "Automatic transmission",
+        "150cc engine",
+        "Premium scooter",
+        "Comfortable ride"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": "Available for monthly rentals with free delivery within 10km of branches",
+      "required_documents_raw": [
+        "Passport Copy/Photo",
+        "Work Permit OR Condo Contract Copy/Photo (for expats)",
+        "3,000 Baht Monetary Deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic 3rd Party Medical",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included free of charge with all rentals"
+        },
+        {
+          "type_name": "Premium Insurance",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Covers damage to rental bike and 3rd party in case of accident. Requires Thai Motorbike License."
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "fatboys_motorbike_rentals",
+      "scrape_timestamp": "2025-08-17T16:52:24.570Z",
+      "source_url": "https://www.fatboysmotorbikes.com/motorbikes-for-rent/",
+      "brand": "Honda",
+      "model": "CB 150 R",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "125-150cc Motorbike",
+      "description": "Honda CB 150 R manual transmission motorbike for rent",
+      "rental_rates": [
+        {
+          "rate_text": "350 baht per day",
+          "min_days": 1,
+          "max_days": 6,
+          "rate_per_day": 350,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "1,800 baht per week",
+          "min_days": 7,
+          "max_days": 29,
+          "rate_per_day": 257.14,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "3,500 baht per month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 116.67,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.fatboysmotorbikes.com/wp-content/uploads/2021/03/Legend-150_400x300.jpg"
+      ],
+      "features": [
+        "Manual transmission",
+        "150cc engine",
+        "Sport bike",
+        "Naked bike design"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": "Available for monthly rentals with free delivery within 10km of branches",
+      "required_documents_raw": [
+        "Passport Copy/Photo",
+        "Work Permit OR Condo Contract Copy/Photo (for expats)",
+        "2,000 Baht Monetary Deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic 3rd Party Medical",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included free of charge with all rentals"
+        },
+        {
+          "type_name": "Premium Insurance",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Covers damage to rental bike and 3rd party in case of accident. Requires Thai Motorbike License."
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "fatboys_motorbike_rentals",
+      "scrape_timestamp": "2025-08-17T16:52:24.570Z",
+      "source_url": "https://www.fatboysmotorbikes.com/motorbikes-for-rent/",
+      "brand": "Yamaha",
+      "model": "XSR 155",
+      "year": null,
+      "engine_capacity_cc": 155,
+      "category": "125-150cc Motorbike",
+      "description": "Yamaha XSR 155 manual transmission motorbike for rent",
+      "rental_rates": [
+        {
+          "rate_text": "350 baht per day",
+          "min_days": 1,
+          "max_days": 6,
+          "rate_per_day": 350,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "1,800 baht per week",
+          "min_days": 7,
+          "max_days": 29,
+          "rate_per_day": 257.14,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "3,500 baht per month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 116.67,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.fatboysmotorbikes.com/wp-content/uploads/2021/03/Legend-150_400x300.jpg"
+      ],
+      "features": [
+        "Manual transmission",
+        "155cc engine",
+        "Retro style",
+        "Modern performance"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": "Available for monthly rentals with free delivery within 10km of branches",
+      "required_documents_raw": [
+        "Passport Copy/Photo",
+        "Work Permit OR Condo Contract Copy/Photo (for expats)",
+        "2,000 Baht Monetary Deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic 3rd Party Medical",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included free of charge with all rentals"
+        },
+        {
+          "type_name": "Premium Insurance",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Covers damage to rental bike and 3rd party in case of accident. Requires Thai Motorbike License."
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "fatboys_motorbike_rentals",
+      "scrape_timestamp": "2025-08-17T16:52:24.570Z",
+      "source_url": "https://www.fatboysmotorbikes.com/motorbikes-for-rent/",
+      "brand": "Kawasaki",
+      "model": "Z250",
+      "year": null,
+      "engine_capacity_cc": 250,
+      "category": "200cc+ Motorbike",
+      "description": "Kawasaki Z250 manual transmission motorbike for rent",
+      "rental_rates": [
+        {
+          "rate_text": "800 baht per day",
+          "min_days": 1,
+          "max_days": 6,
+          "rate_per_day": 800,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "3,000 baht per week",
+          "min_days": 7,
+          "max_days": 29,
+          "rate_per_day": 428.57,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "6,500 baht per month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 216.67,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.fatboysmotorbikes.com/wp-content/uploads/2021/03/Z250_400x300.jpg"
+      ],
+      "features": [
+        "Manual transmission",
+        "250cc engine",
+        "Sport bike",
+        "Aggressive styling"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": "Available for monthly rentals with free delivery within 10km of branches",
+      "required_documents_raw": [
+        "Passport Copy/Photo",
+        "Work Permit OR Condo Contract Copy/Photo (for expats)",
+        "3,000 Baht Monetary Deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic 3rd Party Medical",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included free of charge with all rentals"
+        },
+        {
+          "type_name": "Premium Insurance",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Covers damage to rental bike and 3rd party in case of accident. Requires Thai Motorbike License."
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "fatboys_motorbike_rentals",
+      "scrape_timestamp": "2025-08-17T16:52:24.570Z",
+      "source_url": "https://www.fatboysmotorbikes.com/motorbikes-for-rent/",
+      "brand": "Honda",
+      "model": "Rebel",
+      "year": null,
+      "engine_capacity_cc": 300,
+      "category": "300cc+ Motorbike",
+      "description": "Honda Rebel manual transmission motorbike for rent",
+      "rental_rates": [
+        {
+          "rate_text": "900 baht per day",
+          "min_days": 1,
+          "max_days": 6,
+          "rate_per_day": 900,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "3,500 baht per week",
+          "min_days": 7,
+          "max_days": 29,
+          "rate_per_day": 500,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "8,000 baht per month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 266.67,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.fatboysmotorbikes.com/wp-content/uploads/2021/05/Rebel-300.jpg"
+      ],
+      "features": [
+        "Manual transmission",
+        "300cc engine",
+        "Cruiser style",
+        "Relaxed riding position"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": "Available for monthly rentals with free delivery within 10km of branches",
+      "required_documents_raw": [
+        "Passport Copy/Photo",
+        "Work Permit OR Condo Contract Copy/Photo (for expats)",
+        "3,000 Baht Monetary Deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic 3rd Party Medical",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included free of charge with all rentals"
+        },
+        {
+          "type_name": "Premium Insurance",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Covers damage to rental bike and 3rd party in case of accident. Requires Thai Motorbike License."
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "fatboys_motorbike_rentals",
+      "scrape_timestamp": "2025-08-17T16:52:24.570Z",
+      "source_url": "https://www.fatboysmotorbikes.com/motorbikes-for-rent/",
+      "brand": "Honda",
+      "model": "Zoomer",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Standard 110-125cc Scooter",
+      "description": "Honda Zoomer scooter for rent",
+      "rental_rates": [
+        {
+          "rate_text": "350 baht per day",
+          "min_days": 1,
+          "max_days": 6,
+          "rate_per_day": 350,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "1,800 baht per week",
+          "min_days": 7,
+          "max_days": 29,
+          "rate_per_day": 257.14,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "3,500 baht per month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 116.67,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.fatboysmotorbikes.com/wp-content/uploads/2021/03/Spacy_400x300.jpg"
+      ],
+      "features": [
+        "Automatic transmission",
+        "110cc engine",
+        "Compact size",
+        "Fuel efficient"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": "Available for monthly rentals with free delivery within 10km of branches",
+      "required_documents_raw": [
+        "Passport Copy/Photo",
+        "Work Permit OR Condo Contract Copy/Photo (for expats)",
+        "2,000 Baht Monetary Deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic 3rd Party Medical",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included free of charge with all rentals"
+        },
+        {
+          "type_name": "Premium Insurance",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Covers damage to rental bike and 3rd party in case of accident. Requires Thai Motorbike License."
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "fatboys_motorbike_rentals",
+      "scrape_timestamp": "2025-08-17T16:52:24.570Z",
+      "source_url": "https://www.fatboysmotorbikes.com/motorbikes-for-rent/",
+      "brand": "Yamaha",
+      "model": "Freego",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Standard 110-125cc Scooter",
+      "description": "Yamaha Freego scooter for rent",
+      "rental_rates": [
+        {
+          "rate_text": "350 baht per day",
+          "min_days": 1,
+          "max_days": 6,
+          "rate_per_day": 350,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "1,800 baht per week",
+          "min_days": 7,
+          "max_days": 29,
+          "rate_per_day": 257.14,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "3,500 baht per month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 116.67,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.fatboysmotorbikes.com/wp-content/uploads/2021/03/Spacy_400x300.jpg"
+      ],
+      "features": [
+        "Automatic transmission",
+        "110cc engine",
+        "Modern design",
+        "Practical features"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": "Available for monthly rentals with free delivery within 10km of branches",
+      "required_documents_raw": [
+        "Passport Copy/Photo",
+        "Work Permit OR Condo Contract Copy/Photo (for expats)",
+        "2,000 Baht Monetary Deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic 3rd Party Medical",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included free of charge with all rentals"
+        },
+        {
+          "type_name": "Premium Insurance",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Covers damage to rental bike and 3rd party in case of accident. Requires Thai Motorbike License."
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "fatboys_motorbike_rentals",
+      "scrape_timestamp": "2025-08-17T16:52:24.570Z",
+      "source_url": "https://www.fatboysmotorbikes.com/motorbikes-for-rent/",
+      "brand": "Honda",
+      "model": "Click 2018",
+      "year": 2018,
+      "engine_capacity_cc": 125,
+      "category": "Standard 110-125cc Scooter",
+      "description": "Honda Click 2018 model scooter for rent",
+      "rental_rates": [
+        {
+          "rate_text": "350 baht per day",
+          "min_days": 1,
+          "max_days": 6,
+          "rate_per_day": 350,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "1,800 baht per week",
+          "min_days": 7,
+          "max_days": 29,
+          "rate_per_day": 257.14,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "3,500 baht per month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 116.67,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.fatboysmotorbikes.com/wp-content/uploads/2021/03/Spacy_400x300.jpg"
+      ],
+      "features": [
+        "Automatic transmission",
+        "125cc engine",
+        "Reliable model",
+        "Good fuel economy"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": "Available for monthly rentals with free delivery within 10km of branches",
+      "required_documents_raw": [
+        "Passport Copy/Photo",
+        "Work Permit OR Condo Contract Copy/Photo (for expats)",
+        "2,000 Baht Monetary Deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic 3rd Party Medical",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included free of charge with all rentals"
+        },
+        {
+          "type_name": "Premium Insurance",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Covers damage to rental bike and 3rd party in case of accident. Requires Thai Motorbike License."
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "fatboys_motorbike_rentals",
+      "scrape_timestamp": "2025-08-17T16:52:24.570Z",
+      "source_url": "https://www.fatboysmotorbikes.com/motorbikes-for-rent/",
+      "brand": "Yamaha",
+      "model": "Fino 125",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Standard/Premium 125cc Scooter",
+      "description": "Yamaha Fino 125 scooter for rent",
+      "rental_rates": [
+        {
+          "rate_text": "350-400 baht per day",
+          "min_days": 1,
+          "max_days": 6,
+          "rate_per_day": 375,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "1,800-2,000 baht per week",
+          "min_days": 7,
+          "max_days": 29,
+          "rate_per_day": 267.86,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "3,500-4,000 baht per month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 120.83,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "https://www.fatboysmotorbikes.com/wp-content/uploads/2021/03/Spacy_400x300.jpg"
+      ],
+      "features": [
+        "Automatic transmission",
+        "125cc engine",
+        "Classic styling",
+        "Comfortable ride"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": "Available for monthly rentals with free delivery within 10km of branches",
+      "required_documents_raw": [
+        "Passport Copy/Photo",
+        "Work Permit OR Condo Contract Copy/Photo (for expats)",
+        "2,000 Baht Monetary Deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic 3rd Party Medical",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included free of charge with all rentals"
+        },
+        {
+          "type_name": "Premium Insurance",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Covers damage to rental bike and 3rd party in case of accident. Requires Thai Motorbike License."
+        }
+      ],
+      "availability_status": "Available"
+    }
+  ]
+}

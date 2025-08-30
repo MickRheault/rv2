@@ -1,0 +1,1378 @@
+<think>Let me analyze the markdown files to extract the required information following the template structure.
+
+First, I'll identify the provider metadata information:
+
+From the files, I can see:
+- Shop name: MVIX Motorbike Rental Bangkok / Mvix Bangkok
+- Address: 70 Charoen Nakhon 12 alley, Klong Tonsai, Klongsan, Bangkok 10600
+- Phone: (66) 081-860-3257, (66) 081-644-1845
+- Website: http://www.mvixbangkok.com/
+- Social media: Facebook, Line, Instagram
+- They have multiple branches: Bangkok, DMK, Chinatown
+
+For the scrape_timestamp, I'll use the current datetime provided: 2025-08-17T16:37:58.982Z
+
+For the motorcycle offerings, I need to extract all the bikes mentioned across the files:
+
+From page_1_1.md:
+- Honda CB300R - 300cc Sport - 1,000/1,300 Baht
+- Honda CB300F - 300cc Sport - 800/1,200 Baht
+- Kawasaki Versys - 300cc touring - 1,000/1,300 Baht
+- Kawasaki Z300 - 300cc Sport - 1,000/1,300 Baht
+- Kawasaki 2250 - 250cc Sport - 700/1,100 Baht
+- Yamaha XMAX - 300cc Big Scooter - 1,000/1,300 Baht
+- Honda Forza (new) - 300cc Big Scooter - 1,000/1,300 Baht
+- Honda Forza (old) - 300cc Big Scooter - 700/1,000 Baht
+- Honda CRF250 - 250cc Off road - 800/1,200 Baht
+
+From page_1_4.md:
+- Honda CB500X - 500cc touring - 1,500/1,900 Baht
+- Honda CB500F - 500cc touring - 1,400/1,800 Baht
+
+From page_1_5.md:
+- Triumph T120 - 1,200cc classic - 3,200/4,000 Baht
+- Triumph T100 - 1,000cc classic - 3,000/3,800 Baht
+- Honda NC750X - 750cc touring - 2,000/2,800 Baht
+- Honda CBR650R - 650cc sport - 2,000/2,500 Baht
+- Honda CBR650F - 650cc sport - 1,800/2,400 Baht
+- Honda CB650F - 650cc sport - 1,800/2,400 Baht
+- Suzuki v strom - 650cc touring - 2,000/2,800 Baht
+- Kawasaki Versys - 650cc touring - 1,800/2,400 Baht
+- Kawasaki Z650 - 650cc Sport - 1,800/2,400 Baht
+- Kawasaki Vulcan S - 650cc cruiser - 1,500/2,000 Baht
+- Kawasaki ER6N - 650cc sport - 1,500/2,000 Baht
+- Royal Enfield - 650cc classic - N/A
+- Yamaha Mt – 07 - 650cc sport - N/A
+
+From page_1_12.md (small bikes & scooters):
+- Honda ADV300 - 300cc scooter - N/A
+- Yamaha XMAX - 300cc scooter - 1,000-1,300 Baht
+- Honda Forza (new) - 300cc scooter - 1,000-1,300 Baht
+- Honda Forza (old) - 300cc scooter - 700-1,000 Baht
+- Honda CB - 150cc m/c - 500-700 Baht
+- Yamaha Mt - 150cc m/c - 500-700 Baht
+- Yamaha Aerox - 155cc - 400-600 Baht
+- Yamaha NMAX - 155cc - 400-600 Baht
+- Honda PCX - 150cc - 400-600 Baht
+- Honda ADV - 150cc - 500-600 Baht
+- Honda Click 150i - 150cc - 400-500 Baht
+- Honda Click 125i - 125cc - 350-400 Baht
+- Yamaha LEXT - 125cc - 300-400 Baht
+- Yamaha GT - 125cc - 300-400 Baht
+- Yamaha Fino125 - 125cc - 300-400 Baht
+- Yamaha Fino - 110cc - 300 Baht
+- Yamaha Grand Filano - 110cc - 350-400 Baht
+- Honda Scoopy i - 110cc - 300 Baht
+- Honda Zoomer X - 110cc - 300 Baht
+- Honda Moove - 110cc - 300 Baht
+- Honda Wave - 110cc - 300 Baht
+- Yamaha Spark - 110cc - 300 Baht
+- Kawasaki KSR - 110cc - 300 Baht
+
+I also see specific pricing details for some bikes:
+- Yamaha XMAX 300: 1,300 Baht/Day
+- Honda Forza 300: 1,000 Baht/Day
+- Honda Fino: 300 Baht/Day
+- Honda PCX150: 600 Baht/Day
+- Yamaha Nmax155: 500 Baht/Day
+- Yamaha Grand Filano: 400 Baht/Day
+- Yamaha AEROX155: 600 Baht/Day
+- Yamaha GT125i: 400 Baht/Day
+- Honda Click125i: 500 Baht/Day
+
+For the provider metadata section:
+
+- shop_identifier: "mvixbangkok"
+- provider_name: "MVIX Motorbike Rental Bangkok"
+- address: "70 Charoen Nakhon 12 alley"
+- city: "Bangkok"
+- province: "Klongsan" (though this is actually a district within Bangkok)
+- country: "Thailand"
+- phone: "08-1860-3257 / 08-1644-1845"
+- website: "http://www.mvixbangkok.com/"
+- google_maps_url: null (not explicitly provided)
+- place_id: null (not provided)
+- latitude: null (not provided)
+- longitude: null (not provided)
+- business_status: null (not provided)
+- rating: null (not provided)
+- review_count: null (not provided)
+
+For rental_conditions, I need to look for terms and conditions. From page_1_6.md, there's a link to "Mvix_appendix terms n conditions_2024.pdf", but the actual conditions aren't in the text. However, there are some mentions:
+- "WORRY FREE GUARANTEED" all bikes are under 1st class insurance (with deductible fee)
+- They mention "full options are: phone holder, charger, panniers (boxes), protection bar"
+
+For rental_inclusions, I can see from the text that they include:
+- Phone holder
+- Charger
+- Panniers (boxes)
+- Protection bar
+
+For available_service_locations, from the text:
+- "MVIX'S BRANCHES: 1. Mvixmotorbike Bangkok, 2. Mvixmotorbike DMK, 3. Mvixmotorbike Chinatown"
+
+For offered_tours, I don't see specific tour information in the provided files.
+
+Now for the motorcycle_offerings section:
+
+I need to extract each motorcycle with all the details. Let me go through each one:
+
+1. Honda CB300R:
+   - brand: "Honda"
+   - model: "CB300R"
+   - engine_capacity_cc: 300
+   - category: "Sport"
+   - rental_rates: 
+     - rate_text: "1,000-1,300 Baht"
+     - min_days: 1
+     - max_days: null (assuming daily rate)
+     - rate_per_day: 1000 (for city use) and 1300 (for trip)
+     - currency: "THB"
+
+2. Honda CB300F:
+   - brand: "Honda"
+   - model: "CB300F"
+   - engine_capacity_cc: 300
+   - category: "Sport"
+   - rental_rates: 
+     - rate_text: "800-1,200 Baht"
+     - min_days: 1
+     - max_days: null
+     - rate_per_day: 800 (city) and 1200 (trip)
+     - currency: "THB"
+
+3. Kawasaki Versys (300cc):
+   - brand: "Kawasaki"
+   - model: "Versys"
+   - engine_capacity_cc: 300
+   - category: "Touring"
+   - rental_rates: 
+     - rate_text: "1,000-1,300 Baht"
+     - min_days: 1
+     - max_days: null
+     - rate_per_day: 1000 (city) and 1300 (trip)
+     - currency: "THB"
+
+4. Kawasaki Z300:
+   - brand: "Kawasaki"
+   - model: "Z300"
+   - engine_capacity_cc: 300
+   - category: "Sport"
+   - rental_rates: 
+     - rate_text: "1,000-1,300 Baht"
+     - min_days: 1
+     - max_days: null
+     - rate_per_day: 1000 (city) and 1300 (trip)
+     - currency: "THB"
+
+5. Kawasaki Z250 ABS:
+   - brand: "Kawasaki"
+   - model: "Z250 ABS"
+   - engine_capacity_cc: 250
+   - category: "Sport"
+   - rental_rates: 
+     - rate_text: "1,100 Baht/Day"
+     - min_days: 1
+     - max_days: null
+     - rate_per_day: 1100
+     - currency: "THB"
+
+6. Yamaha XMAX 300:
+   - brand: "Yamaha"
+   - model: "XMAX 300"
+   - engine_capacity_cc: 300
+   - category: "Big Scooter"
+   - rental_rates: 
+     - rate_text: "1,300 Baht/Day"
+     - min_days: 1
+     - max_days: null
+     - rate_per_day: 1300
+     - currency: "THB"
+
+7. Honda Forza 300 (new):
+   - brand: "Honda"
+   - model: "Forza 300"
+   - engine_capacity_cc: 300
+   - category: "Big Scooter"
+   - rental_rates: 
+     - rate_text: "1,000 Baht/Day"
+     - min_days: 1
+     - max_days: null
+     - rate_per_day: 1000
+     - currency: "THB"
+
+8. Honda Forza 300 (old):
+   - brand: "Honda"
+   - model: "Forza 300"
+   - engine_capacity_cc: 300
+   - category: "Big Scooter"
+   - rental_rates: 
+     - rate_text: "700-1,000 Baht"
+     - min_days: 1
+     - max_days: null
+     - rate_per_day: 700 (city) and 1000 (trip)
+     - currency: "THB"
+
+9. Honda CB500X:
+   - brand: "Honda"
+   - model: "CB500X"
+   - engine_capacity_cc: 500
+   - category: "Touring"
+   - rental_rates: 
+     - rate_text: "1,500-1,900 Baht"
+     - min_days: 1
+     - max_days: null
+     - rate_per_day: 1500 (city) and 1900 (trip)
+     - currency: "THB"
+
+10. Honda CB500F:
+    - brand: "Honda"
+    - model: "CB500F"
+    - engine_capacity_cc: 500
+    - category: "Touring"
+    - rental_rates: 
+      - rate_text: "1,400-1,800 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 1400 (city) and 1800 (trip)
+      - currency: "THB"
+
+11. Triumph T120:
+    - brand: "Triumph"
+    - model: "T120"
+    - engine_capacity_cc: 1200
+    - category: "Classic"
+    - rental_rates: 
+      - rate_text: "3,200-4,000 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 3200 (city) and 4000 (trip)
+      - currency: "THB"
+
+12. Triumph T100:
+    - brand: "Triumph"
+    - model: "T100"
+    - engine_capacity_cc: 1000
+    - category: "Classic"
+    - rental_rates: 
+      - rate_text: "3,000-3,800 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 3000 (city) and 3800 (trip)
+      - currency: "THB"
+
+13. Honda NC750X:
+    - brand: "Honda"
+    - model: "NC750X"
+    - engine_capacity_cc: 750
+    - category: "Touring"
+    - rental_rates: 
+      - rate_text: "2,000-2,800 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 2000 (city) and 2800 (trip)
+      - currency: "THB"
+
+14. Honda CBR650R:
+    - brand: "Honda"
+    - model: "CBR650R"
+    - engine_capacity_cc: 650
+    - category: "Sport"
+    - rental_rates: 
+      - rate_text: "2,000-2,500 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 2000 (city) and 2500 (trip)
+      - currency: "THB"
+
+15. Honda CBR650F:
+    - brand: "Honda"
+    - model: "CBR650F"
+    - engine_capacity_cc: 650
+    - category: "Sport"
+    - rental_rates: 
+      - rate_text: "1,800-2,400 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 1800 (city) and 2400 (trip)
+      - currency: "THB"
+
+16. Honda CB650F:
+    - brand: "Honda"
+    - model: "CB650F"
+    - engine_capacity_cc: 650
+    - category: "Sport"
+    - rental_rates: 
+      - rate_text: "1,800-2,400 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 1800 (city) and 2400 (trip)
+      - currency: "THB"
+
+17. Suzuki V-Strom 650:
+    - brand: "Suzuki"
+    - model: "V-Strom 650"
+    - engine_capacity_cc: 650
+    - category: "Touring"
+    - rental_rates: 
+      - rate_text: "2,000-2,800 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 2000 (city) and 2800 (trip)
+      - currency: "THB"
+
+18. Kawasaki Versys 650:
+    - brand: "Kawasaki"
+    - model: "Versys 650"
+    - engine_capacity_cc: 650
+    - category: "Touring"
+    - rental_rates: 
+      - rate_text: "1,800-2,400 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 1800 (city) and 2400 (trip)
+      - currency: "THB"
+
+19. Kawasaki Z650:
+    - brand: "Kawasaki"
+    - model: "Z650"
+    - engine_capacity_cc: 650
+    - category: "Sport"
+    - rental_rates: 
+      - rate_text: "1,800-2,400 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 1800 (city) and 2400 (trip)
+      - currency: "THB"
+
+20. Kawasaki Vulcan S:
+    - brand: "Kawasaki"
+    - model: "Vulcan S"
+    - engine_capacity_cc: 650
+    - category: "Cruiser"
+    - rental_rates: 
+      - rate_text: "1,500-2,000 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 1500 (city) and 2000 (trip)
+      - currency: "THB"
+
+21. Kawasaki ER6N:
+    - brand: "Kawasaki"
+    - model: "ER6N"
+    - engine_capacity_cc: 650
+    - category: "Sport"
+    - rental_rates: 
+      - rate_text: "1,500-2,000 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 1500 (city) and 2000 (trip)
+      - currency: "THB"
+
+22. Yamaha XMAX 300 (again):
+    - brand: "Yamaha"
+    - model: "XMAX 300"
+    - engine_capacity_cc: 300
+    - category: "Scooter"
+    - rental_rates: 
+      - rate_text: "1,300 Baht/Day"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 1300
+      - currency: "THB"
+
+23. Honda Forza 300 (again):
+    - brand: "Honda"
+    - model: "Forza 300"
+    - engine_capacity_cc: 300
+    - category: "Scooter"
+    - rental_rates: 
+      - rate_text: "1,000 Baht/Day"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 1000
+      - currency: "THB"
+
+24. Yamaha Fino:
+    - brand: "Yamaha"
+    - model: "Fino"
+    - engine_capacity_cc: 110
+    - category: "Scooter"
+    - rental_rates: 
+      - rate_text: "300 Baht/Day"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 300
+      - currency: "THB"
+
+25. Honda PCX150:
+    - brand: "Honda"
+    - model: "PCX150"
+    - engine_capacity_cc: 150
+    - category: "Scooter"
+    - rental_rates: 
+      - rate_text: "600 Baht/Day"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 600
+      - currency: "THB"
+
+26. Yamaha Nmax155:
+    - brand: "Yamaha"
+    - model: "Nmax155"
+    - engine_capacity_cc: 155
+    - category: "Scooter"
+    - rental_rates: 
+      - rate_text: "500 Baht/Day"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 500
+      - currency: "THB"
+
+27. Yamaha Grand Filano:
+    - brand: "Yamaha"
+    - model: "Grand Filano"
+    - engine_capacity_cc: 110
+    - category: "Scooter"
+    - rental_rates: 
+      - rate_text: "400 Baht/Day"
+      - min_days: 1
+    - max_days: null
+      - rate_per_day: 400
+      - currency: "THB"
+
+28. Yamaha AEROX155:
+    - brand: "Yamaha"
+    - model: "AEROX155"
+    - engine_capacity_cc: 155
+    - category: "Scooter"
+    - rental_rates: 
+      - rate_text: "600 Baht/Day"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 600
+      - currency: "THB"
+
+29. Yamaha GT125i:
+    - brand: "Yamaha"
+    - model: "GT125i"
+    - engine_capacity_cc: 125
+    - category: "Scooter"
+    - rental_rates: 
+      - rate_text: "400 Baht/Day"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 400
+      - currency: "THB"
+
+30. Honda Click125i:
+    - brand: "Honda"
+    - model: "Click125i"
+    - engine_capacity_cc: 125
+    - category: "Scooter"
+    - rental_rates: 
+      - rate_text: "500 Baht/Day"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 500
+      - currency: "THB"
+
+31. Honda ADV300:
+    - brand: "Honda"
+    - model: "ADV300"
+    - engine_capacity_cc: 300
+    - category: "Scooter"
+    - rental_rates: 
+      - rate_text: "N/A"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: null
+      - currency: "THB"
+
+32. Honda CB (150cc):
+    - brand: "Honda"
+    - model: "CB"
+    - engine_capacity_cc: 150
+    - category: "Motorcycle"
+    - rental_rates: 
+      - rate_text: "500-700 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 500 (city) and 700 (trip)
+      - currency: "THB"
+
+33. Yamaha Mt (150cc):
+    - brand: "Yamaha"
+    - model: "Mt"
+    - engine_capacity_cc: 150
+    - category: "Motorcycle"
+    - rental_rates: 
+      - rate_text: "500-700 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 500 (city) and 700 (trip)
+      - currency: "THB"
+
+34. Yamaha Aerox:
+    - brand: "Yamaha"
+    - model: "Aerox"
+    - engine_capacity_cc: 155
+    - category: "Scooter"
+    - rental_rates: 
+      - rate_text: "400-600 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 400 (city) and 600 (trip)
+      - currency: "THB"
+
+35. Yamaha NMAX:
+    - brand: "Yamaha"
+    - model: "NMAX"
+    - engine_capacity_cc: 155
+    - category: "Scooter"
+    - rental_rates: 
+      - rate_text: "400-600 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 400 (city) and 600 (trip)
+      - currency: "THB"
+
+36. Honda PCX:
+    - brand: "Honda"
+    - model: "PCX"
+    - engine_capacity_cc: 150
+    - category: "Scooter"
+    - rental_rates: 
+      - rate_text: "400-600 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 400 (city) and 600 (trip)
+      - currency: "THB"
+
+37. Honda ADV:
+    - brand: "Honda"
+    - model: "ADV"
+    - engine_capacity_cc: 150
+    - category: "Scooter"
+    - rental_rates: 
+      - rate_text: "500-600 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 500 (city) and 600 (trip)
+      - currency: "THB"
+
+38. Honda Click 150i:
+    - brand: "Honda"
+    - model: "Click 150i"
+    - engine_capacity_cc: 150
+    - category: "Scooter"
+    - rental_rates: 
+      - rate_text: "400-500 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 400 (city) and 500 (trip)
+      - currency: "THB"
+
+39. Honda Click 125i:
+    - brand: "Honda"
+    - model: "Click 125i"
+    - engine_capacity_cc: 125
+    - category: "Scooter"
+    - rental_rates: 
+      - rate_text: "350-400 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 350 (city) and 400 (trip)
+      - currency: "THB"
+
+40. Yamaha LEXT:
+    - brand: "Yamaha"
+    - model: "LEXT"
+    - engine_capacity_cc: 125
+    - category: "Scooter"
+    - rental_rates: 
+      - rate_text: "300-400 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 300 (city) and 400 (trip)
+      - currency: "THB"
+
+41. Yamaha GT:
+    - brand: "Yamaha"
+    - model: "GT"
+    - engine_capacity_cc: 125
+    - category: "Scooter"
+    - rental_rates: 
+      - rate_text: "300-400 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 300 (city) and 400 (trip)
+      - currency: "THB"
+
+42. Yamaha Fino125:
+    - brand: "Yamaha"
+    - model: "Fino125"
+    - engine_capacity_cc: 125
+    - category: "Scooter"
+    - rental_rates: 
+      - rate_text: "300-400 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 300 (city) and 400 (trip)
+      - currency: "THB"
+
+43. Yamaha Fino:
+    - brand: "Yamaha"
+    - model: "Fino"
+    - engine_capacity_cc: 110
+    - category: "Scooter"
+    - rental_rates: 
+      - rate_text: "300 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 300
+      - currency: "THB"
+
+44. Yamaha Grand Filano:
+    - brand: "Yamaha"
+    - model: "Grand Filano"
+    - engine_capacity_cc: 110
+    - category: "Scooter"
+    - rental_rates: 
+      - rate_text: "350-400 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 350 (city) and 400 (trip)
+      - currency: "THB"
+
+45. Honda Scoopy i:
+    - brand: "Honda"
+    - model: "Scoopy i"
+    - engine_capacity_cc: 110
+    - category: "Scooter"
+    - rental_rates: 
+      - rate_text: "300 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 300
+      - currency: "THB"
+
+46. Honda Zoomer X:
+    - brand: "Honda"
+    - model: "Zoomer X"
+    - engine_capacity_cc: 110
+    - category: "Scooter"
+    - rental_rates: 
+      - rate_text: "300 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 300
+      - currency: "THB"
+
+47. Honda Moove:
+    - brand: "Honda"
+    - model: "Moove"
+    - engine_capacity_cc: 110
+    - category: "Scooter"
+    - rental_rates: 
+      - rate_text: "300 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 300
+      - currency: "THB"
+
+48. Honda Wave:
+    - brand: "Honda"
+    - model: "Wave"
+    - engine_capacity_cc: 110
+    - category: "Scooter"
+    - rental_rates: 
+      - rate_text: "300 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 300
+      - currency: "THB"
+
+49. Yamaha Spark:
+    - brand: "Yamaha"
+    - model: "Spark"
+    - engine_capacity_cc: 110
+    - category: "Scooter"
+    - rental_rates: 
+      - rate_text: "300 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 300
+      - currency: "THB"
+
+50. Kawasaki KSR:
+    - brand: "Kawasaki"
+    - model: "KSR"
+    - engine_capacity_cc: 110
+    - category: "Scooter"
+    - rental_rates: 
+      - rate_text: "300 Baht"
+      - min_days: 1
+      - max_days: null
+      - rate_per_day: 300
+      - currency: "THB"
+
+For insurance details, I see "WORRY FREE GUARANTEED" all bikes are under 1st class insurance (with deductible fee), but no specific details about deductibles or costs.
+
+For features, I see "full options are: phone holder, charger, panniers (boxes), protection bar" mentioned multiple times.
+
+Now I'll structure this data according to the template.
+
+Let me check if there are any duplicates. I see some bikes like Yamaha XMAX 300, Honda Forza 300, etc. appear multiple times in different files. I should consolidate these into single entries.
+
+Also, for the rental_rates, I need to handle the city/trip pricing. It seems like the lower price is for city use and the higher price is for trips (longer distances). I'll create two separate rate entries for each bike where this distinction exists.
+
+Let me reorganize the motorcycle offerings to avoid duplicates and structure the rental rates properly.
+
+For the provider_metadata section:
+
+- shop_identifier: "mvixbangkok"
+- provider_name: "MVIX Motorbike Rental Bangkok"
+- address: "70 Charoen Nakhon 12 alley"
+- city: "Bangkok"
+- province: "Klongsan" (though this is actually a district within Bangkok)
+- country: "Thailand"
+- phone: "08-1860-3257 / 08-1644-1845"
+- website: "http://www.mvixbangkok.com/"
+- google_maps_url: null
+- place_id: null
+- latitude: null
+- longitude: null
+- business_status: null
+- rating: null
+- review_count: null
+- rental_conditions: {
+    "insurance": "1st class insurance (with deductible fee)",
+    "worry_free_guaranteed": true
+  }
+- rental_inclusions: ["phone holder", "charger", "panniers (boxes)", "protection bar"]
+- available_service_locations: ["Bangkok", "DMK", "Chinatown"]
+
+For motorcycle_offerings, I'll consolidate the bikes and structure the rental rates properly.
+
+Let me go through each unique bike:
+
+1. Honda CB300R:
+   - rental_rates: [
+        {rate_text: "1,000 Baht/Day (City)", min_days: 1, max_days: null, rate_per_day: 1000, currency: "THB"},
+        {rate_text: "1,300 Baht/Day (Trip)", min_days: 1, max_days: null, rate_per_day: 1300, currency: "THB"}
+     ]
+
+2. Honda CB300F:
+   - rental_rates: [
+        {rate_text: "800 Baht/Day (City)", min_days: 1, max_days: null, rate_per_day: 800, currency: "THB"},
+        {rate_text: "1,200 Baht/Day (Trip)", min_days: 1, max_days: null, rate_per_day: 1200, currency: "THB"}
+     ]
+
+3. Kawasaki Versys (300cc):
+   - rental_rates: [
+        {rate_text: "1,000 Baht/Day (City)", min_days: 1, max_days: null, rate_per_day: 1000, currency: "THB"},
+        {rate_text: "1,300 Baht/Day (Trip)", min_days: 1, max_days: null, rate_per_day: 1300, currency: "THB"}
+     ]
+
+4. Kawasaki Z300:
+   - rental_rates: [
+        {rate_text: "1,000 Baht/Day (City)", min_days: 1, max_days: null, rate_per_day: 1000, currency: "THB"},
+        {rate_text: "1,300 Baht/Day (Trip)", min_days: 1, max_days: null, rate_per_day: 1300, currency: "THB"}
+     ]
+
+5. Kawasaki Z250 ABS:
+   - rental_rates: [
+        {rate_text: "1,100 Baht/Day", min_days: 1, max_days: null, rate_per_day: 1100, currency: "THB"}
+     ]
+
+6. Yamaha XMAX 300:
+   - rental_rates: [
+        {rate_text: "1,300 Baht/Day", min_days: 1, max_days: null, rate_per_day: 1300, currency: "THB"}
+     ]
+
+7. Honda Forza 300 (new):
+   - rental_rates: [
+        {rate_text: "1,000 Baht/Day", min_days: 1, max_days: null, rate_per_day: 1000, currency: "THB"}
+     ]
+
+8. Honda Forza 300 (old):
+   - rental_rates: [
+        {rate_text: "700 Baht/Day (City)", min_days: 1, max_days: null, rate_per_day: 700, currency: "THB"},
+        {rate_text: "1,000 Baht/Day (Trip)", min_days: 1, max_days: null, rate_per_day: 1000, currency: "THB"}
+     ]
+
+9. Honda CB500X:
+   - rental_rates: [
+        {rate_text: "1,500 Baht/Day (City)", min_days: 1, max_days: null, rate_per_day: 1500, currency: "THB"},
+        {rate_text: "1,900 Baht/Day (Trip)", min_days: 1, max_days: null, rate_per_day: 1900, currency: "THB"}
+     ]
+
+10. Honda CB500F:
+    - rental_rates: [
+        {rate_text: "1,400 Baht/Day (City)", min_days: 1, max_days: null, rate_per_day: 1400, currency: "THB"},
+        {rate_text: "1,800 Baht/Day (Trip)", min_days: 1, max_days: null, rate_per_day: 1800, currency: "THB"}
+     ]
+
+11. Triumph T120:
+    - rental_rates: [
+        {rate_text: "3,200 Baht/Day (City)", min_days: 1, max_days: null, rate_per_day: 3200, currency: "THB"},
+        {rate_text: "4,000 Baht/Day (Trip)", min_days: 1, max_days: null, rate_per_day: 4000, currency: "THB"}
+     ]
+
+12. Triumph T100:
+    - rental_rates: [
+        {rate_text: "3,000 Baht/Day (City)", min_days: 1, max_days: null, rate_per_day: 3000, currency: "THB"},
+        {rate_text: "3,800 Baht/Day (Trip)", min_days: 1, max_days: null, rate_per_day: 3800, currency: "THB"}
+     ]
+
+13. Honda NC750X:
+    - rental_rates: [
+        {rate_text: "2,000 Baht/Day (City)", min_days: 1, max_days: null, rate_per_day: 2000, currency: "THB"},
+        {rate_text: "2,800 Baht/Day (Trip)", min_days: 1, max_days: null, rate_per_day: 2800, currency: "THB"}
+     ]
+
+14. Honda CBR650R:
+    - rental_rates: [
+        {rate_text: "2,000 Baht/Day (City)", min_days: 1, max_days: null, rate_per_day: 2000, currency: "THB"},
+        {rate_text: "2,500 Baht/Day (Trip)", min_days: 1, max_days: null, rate_per_day: 2500, currency: "THB"}
+     ]
+
+15. Honda CBR650F:
+    - rental_rates: [
+        {rate_text: "1,800 Baht/Day (City)", min_days: 1, max_days: null, rate_per_day: 1800, currency: "THB"},
+        {rate_text: "2,400 Baht/Day (Trip)", min_days: 1, max_days: null, rate_per_day: 2400, currency: "THB"}
+     ]
+
+16. Honda CB650F:
+    - rental_rates: [
+        {rate_text: "1,800 Baht/Day (City)", min_days: 1, max_days: null, rate_per_day: 1800, currency: "THB"},
+        {rate_text: "2,400 Baht/Day (Trip)", min_days: 1, max_days: null, rate_per_day: 2400, currency: "THB"}
+     ]
+
+17. Suzuki V-Strom 650:
+    - rental_rates: [
+        {rate_text: "2,000 Baht/Day (City)", min_days: 1, max_days: null, rate_per_day: 2000, currency: "THB"},
+        {rate_text: "2,800 Baht/Day (Trip)", min_days: 1, max_days: null, rate_per_day: 2800, currency: "THB"}
+     ]
+
+18. Kawasaki Versys 650:
+    - rental_rates: [
+        {rate_text: "1,800 Baht/Day (City)", min_days: 1, max_days: null, rate_per_day: 1800, currency: "THB"},
+        {rate_text: "2,400 Baht/Day (Trip)", min_days: 1, max_days: null, rate_per_day: 2400, currency: "THB"}
+     ]
+
+19. Kawasaki Z650:
+    - rental_rates: [
+        {rate_text: "1,800 Baht/Day (City)", min_days: 1, max_days: null, rate_per_day: 1800, currency: "THB"},
+        {rate_text: "2,400 Baht/Day (Trip)", min_days: 1, max_days: null, rate_per_day: 2400, currency: "THB"}
+     ]
+
+20. Kawasaki Vulcan S:
+    - rental_rates: [
+        {rate_text: "1,500 Baht/Day (City)", min_days: 1, max_days: null, rate_per_day: 1500, currency: "THB"},
+        {rate_text: "2,000 Baht/Day (Trip)", min_days: 1, max_days: null, rate_per_day: 2000, currency: "THB"}
+     ]
+
+21. Kawasaki ER6N:
+    - rental_rates: [
+        {rate_text: "1,500 Baht/Day (City)", min_days: 1, max_days: null, rate_per_day: 1500, currency: "THB"},
+        {rate_text: "2,000 Baht/Day (Trip)", min_days: 1, max_days: null, rate_per_day: 2000, currency: "THB"}
+     ]
+
+22. Yamaha Fino:
+    - rental_rates: [
+        {rate_text: "300 Baht/Day", min_days: 1, max_days: null, rate_per_day: 300, currency: "THB"}
+     ]
+
+23. Honda PCX150:
+    - rental_rates: [
+        {rate_text: "600 Baht/Day", min_days: 1, max_days: null, rate_per_day: 600, currency: "THB"}
+     ]
+
+24. Yamaha Nmax155:
+    - rental_rates: [
+        {rate_text: "500 Baht/Day", min_days: 1, max_days: null, rate_per_day: 500, currency: "THB"}
+     ]
+
+25. Yamaha Grand Filano:
+    - rental_rates: [
+        {rate_text: "400 Baht/Day", min_days: 1, max_days: null, rate_per_day: 400, currency: "THB"}
+     ]
+
+26. Yamaha AEROX155:
+    - rental_rates: [
+        {rate_text: "600 Baht/Day", min_days: 1, max_days: null, rate_per_day: 600, currency: "THB"}
+     ]
+
+27. Yamaha GT125i:
+    - rental_rates: [
+        {rate_text: "400 Baht/Day", min_days: 1, max_days: null, rate_per_day: 400, currency: "THB"}
+     ]
+
+28. Honda Click125i:
+    - rental_rates: [
+        {rate_text: "500 Baht/Day", min_days: 1, max_days: null, rate_per_day: 500, currency: "THB"}
+     ]
+
+29. Honda ADV300:
+    - rental_rates: []
+
+30. Honda CB (150cc):
+    - rental_rates: [
+        {rate_text: "500 Baht/Day (City)", min_days: 1, max_days: null, rate_per_day: 500, currency: "THB"},
+        {rate_text: "700 Baht/Day (Trip)", min_days: 1, max_days: null, rate_per_day: 700, currency: "THB"}
+     ]
+
+31. Yamaha Mt (150cc):
+    - rental_rates: [
+        {rate_text: "500 Baht/Day (City)", min_days: 1, max_days: null, rate_per_day: 500, currency: "THB"},
+        {rate_text: "700 Baht/Day (Trip)", min_days: 1, max_days: null, rate_per_day: 700, currency: "THB"}
+     ]
+
+32. Yamaha Aerox:
+    - rental_rates: [
+        {rate_text: "400 Baht/Day (City)", min_days: 1, max_days: null, rate_per_day: 400, currency: "THB"},
+        {rate_text: "600 Baht/Day (Trip)", min_days: 1, max_days: null, rate_per_day: 600, currency: "THB"}
+     ]
+
+33. Yamaha NMAX:
+    - rental_rates: [
+        {rate_text: "400 Baht/Day (City)", min_days: 1, max_days: null, rate_per_day: 400, currency: "THB"},
+        {rate_text: "600 Baht/Day (Trip)", min_days: 1, max_days: null, rate_per_day: 600, currency: "THB"}
+     ]
+
+34. Honda PCX:
+    - rental_rates: [
+        {rate_text: "400 Baht/Day (City)", min_days: 1, max_days: null, rate_per_day: 400, currency: "THB"},
+        {rate_text: "600 Baht/Day (Trip)", min_days: 1, max_days: null, rate_per_day: 600, currency: "THB"}
+     ]
+
+35. Honda ADV:
+    - rental_rates: [
+        {rate_text: "500 Baht/Day (City)", min_days: 1, max_days: null, rate_per_day: 500, currency: "THB"},
+        {rate_text: "600 Baht/Day (Trip)", min_days: 1, max_days: null, rate_per_day: 600, currency: "THB"}
+     ]
+
+36. Honda Click 150i:
+    - rental_rates: [
+        {rate_text: "400 Baht/Day (City)", min_days: 1, max_days: null, rate_per_day: 400, currency: "THB"},
+        {rate_text: "500 Baht/Day (Trip)", min_days: 1, max_days: null, rate_per_day: 500, currency: "THB"}
+     ]
+
+37. Honda Click 125i:
+    - rental_rates: [
+        {rate_text: "350 Baht/Day (City)", min_days: 1, max_days: null, rate_per_day: 350, currency: "THB"},
+        {rate_text: "400 Baht/Day (Trip)", min_days: 1, max_days: null, rate_per_day: 400, currency: "THB"}
+     ]
+
+38. Yamaha LEXT:
+    - rental_rates: [
+        {rate_text: "300 Baht/Day (City)", min_days: 1, max_days: null, rate_per_day: 300, currency: "THB"},
+        {rate_text: "400 Baht/Day (Trip)", min_days: 1, max_days: null, rate_per_day: 400, currency: "THB"}
+     ]
+
+39. Yamaha GT:
+    - rental_rates: [
+        {rate_text: "300 Baht/Day (City)", min_days: 1, max_days: null, rate_per_day: 300, currency: "THB"},
+        {rate_text: "400 Baht/Day (Trip)", min_days: 1, max_days: null, rate_per_day: 400, currency: "THB"}
+     ]
+
+40. Yamaha Fino125:
+    - rental_rates: [
+        {rate_text: "300 Baht/Day (City)", min_days: 1, max_days: null, rate_per_day: 300, currency: "THB"},
+        {rate_text: "400 Baht/Day (Trip)", min_days: 1, max_days: null, rate_per_day: 400, currency: "THB"}
+     ]
+
+41. Yamaha Fino:
+    - rental_rates: [
+        {rate_text: "300 Baht/Day", min_days: 1, max_days: null, rate_per_day: 300, currency: "THB"}
+     ]
+
+42. Yamaha Grand Filano:
+    - rental_rates: [
+        {rate_text: "350 Baht/Day (City)", min_days: 1, max_days: null, rate_per_day: 350, currency: "THB"},
+        {rate_text: "400 Baht/Day (Trip)", min_days: 1, max_days: null, rate_per_day: 400, currency: "THB"}
+     ]
+
+43. Honda Scoopy i:
+    - rental_rates: [
+        {rate_text: "300 Baht/Day", min_days: 1, max_days: null, rate_per_day: 300, currency: "THB"}
+     ]
+
+44. Honda Zoomer X:
+    - rental_rates: [
+        {rate_text: "300 Baht/Day", min_days: 1, max_days: null, rate_per_day: 300, currency: "THB"}
+     ]
+
+45. Honda Moove:
+    - rental_rates: [
+        {rate_text: "300 Baht/Day", min_days: 1, max_days: null, rate_per_day: 300, currency: "THB"}
+     ]
+
+46. Honda Wave:
+    - rental_rates: [
+        {rate_text: "300 Baht/Day", min_days: 1, max_days: null, rate_per_day: 300, currency: "THB"}
+     ]
+
+47. Yamaha Spark:
+    - rental_rates: [
+        {rate_text: "300 Baht/Day", min_days: 1, max_days: null, rate_per_day: 300, currency: "THB"}
+     ]
+
+48. Kawasaki KSR:
+    - rental_rates: [
+        {rate_text: "300 Baht/Day", min_days: 1, max_days: null, rate_per_day: 300, currency: "THB"}
+     ]
+
+For insurance_details_raw, I'll add:
+- type_name: "1st class insurance"
+- is_included: true
+- cost_per_day: null (not specified)
+- currency: "THB"
+- deductible: null (not specified)
+- deductible_currency: "THB"
+- notes: "with deductible fee"
+
+For features, I'll add: ["phone holder", "charger", "panniers (boxes)", "protection bar"]
+
+Now I'll structure this into the JSON format following the template.
+</think>
+
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-08-17T16:37:58.982Z",
+    "shop_identifier": "mvixbangkok",
+    "provider_name": "MVIX Motorbike Rental Bangkok",
+    "place_id": null,
+    "address": "70 Charoen Nakhon 12 alley",
+    "city": "Bangkok",
+    "province": "Klongsan",
+    "country": "Thailand",
+    "latitude": null,
+    "longitude": null,
+    "phone": "08-1860-3257 / 08-1644-1845",
+    "website": "http://www.mvixbangkok.com/",
+    "google_maps_url": null,
+    "business_status": null,
+    "rating": null,
+    "review_count": null,
+    "rental_conditions": {
+      "insurance_coverage": "1st class insurance (with deductible fee)",
+      "worry_free_guaranteed": true,
+      "required_documents": "Not explicitly specified in text"
+    },
+    "rental_inclusions": [
+      "phone holder",
+      "charger",
+      "panniers (boxes)",
+      "protection bar"
+    ],
+    "available_service_locations": [
+      "Bangkok",
+      "DMK",
+      "Chinatown"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "mvixbangkok",
+      "scrape_timestamp": "2025-08-17T16:37:58.982Z",
+      "source_url": "http://www.mvixbangkok.com/300Series.html",
+      "brand": "Honda",
+      "model": "CB300R",
+      "year": null,
+      "engine_capacity_cc": 300,
+      "category": "Sport",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "1,000 Baht/Day (City)",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 1000,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "1,300 Baht/Day (Trip)",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 1300,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "http://www.mvixbangkok.com/productlist/300/CB300R.jpg"
+      ],
+      "features": [
+        "phone holder",
+        "charger",
+        "panniers (boxes)",
+        "protection bar"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "1st class insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "with deductible fee"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "mvixbangkok",
+      "scrape_timestamp": "2025-08-17T16:37:58.982Z",
+      "source_url": "http://www.mvixbangkok.com/300Series.html",
+      "brand": "Honda",
+      "model": "CB300F",
+      "year": 2018,
+      "engine_capacity_cc": 300,
+      "category": "Sport",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "800 Baht/Day (City)",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 800,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "1,200 Baht/Day (Trip)",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 1200,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "http://www.mvixbangkok.com/productlist/300/CB300F.jpg"
+      ],
+      "features": [
+        "phone holder",
+        "charger",
+        "panniers (boxes)",
+        "protection bar"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "1st class insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "with deductible fee"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "mvixbangkok",
+      "scrape_timestamp": "2025-08-17T16:37:58.982Z",
+      "source_url": "http://www.mvixbangkok.com/300Series.html",
+      "brand": "Kawasaki",
+      "model": "Versys",
+      "year": null,
+      "engine_capacity_cc": 300,
+      "category": "Touring",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "1,000 Baht/Day (City)",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 1000,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "1,300 Baht/Day (Trip)",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 1300,
+          "currency": "THB"
+        }
+      ],
+      "images": [],
+      "features": [
+        "phone holder",
+        "charger",
+        "panniers (boxes)",
+        "protection bar"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "1st class insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "with deductible fee"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "mvixbangkok",
+      "scrape_timestamp": "2025-08-17T16:37:58.982Z",
+      "source_url": "http://www.mvixbangkok.com/300Series.html",
+      "brand": "Kawasaki",
+      "model": "Z300",
+      "year": null,
+      "engine_capacity_cc": 300,
+      "category": "Sport",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "1,000 Baht/Day (City)",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 1000,
+          "currency": "THB"
+        },
+        {
+          "rate_text": "1,300 Baht/Day (Trip)",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 1300,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "http://www.mvixbangkok.com/productlist/300/Z300.jpg"
+      ],
+      "features": [
+        "phone holder",
+        "charger",
+        "panniers (boxes)",
+        "protection bar"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "1st class insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "with deductible fee"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "mvixbangkok",
+      "scrape_timestamp": "2025-08-17T16:37:58.982Z",
+      "source_url": "http://www.mvixbangkok.com/300Series.html",
+      "brand": "Kawasaki",
+      "model": "Z250 ABS",
+      "year": null,
+      "engine_capacity_cc": 250,
+      "category": "Sport",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "1,100 Baht/Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 1100,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "http://www.mvixbangkok.com/productlist/300/Z250ABS.jpg"
+      ],
+      "features": [
+        "phone holder",
+        "charger",
+        "panniers (boxes)",
+        "protection bar"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "1st class insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "with deductible fee"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "mvixbangkok",
+      "scrape_timestamp": "2025-08-17T16:37:58.982Z",
+      "source_url": "http://www.mvixbangkok.com/300Series.html",
+      "brand": "Yamaha",
+      "model": "XMAX 300",
+      "year": null,
+      "engine_capacity_cc": 300,
+      "category": "Big Scooter",
+      "description": "The Sport Scooter!! Yamaha XMAX 300, gives you comfortable, convenient and fun riding. (Seat height 795mm, Weight 179kg, Fuel consumption 26-28 km/litre.)",
+      "rental_rates": [
+        {
+          "rate_text": "1,300 Baht/Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 1300,
+          "currency": "THB"
+        }
+      ],
+      "images": [
+        "http://www.mvixbangkok.com/productlist/300/XMAX300.jpg"
+      ],
+      "features": [
+        "phone holder",
+        "charger",
+        "panniers (boxes)",
+        "protection bar"
+      ],
+      "specifications_raw": "Seat height 795mm, Weight 179kg, Fuel consumption 26-28 km/litre",
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "1st class insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "THB",
+          "deductible": null,
+          "deductible_currency": "THB",
+          "notes": "with deductible fee"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "mvixbangkok",
+      "scrape_timestamp": "2025-08-17T16:37:58.982Z",
+      "source_url": "http://www.mvixbangkok.com/300Series.html",
+      "brand": "Honda",
+      "model": "Forza 300",
+      "year": 2017,
+      "engine_capacity_cc": 300,
+      "category": "Big Scooter",
+      "
