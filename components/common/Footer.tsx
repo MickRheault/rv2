@@ -5,20 +5,13 @@ export default function Footer() {
     platform: [
       { name: 'Search Motorcycles', href: '/search' },
       { name: 'Browse Locations', href: '/browse' },
-      { name: 'Compare Rentals', href: '/compare' },
-      { name: 'How It Works', href: '/how-it-works' },
-    ],
-    support: [
-      { name: 'Help Center', href: '/help' },
-      { name: 'Contact Us', href: '/contact' },
-      { name: 'Report Issue', href: '/report' },
-      { name: 'Safety Tips', href: '/safety' },
+      // Removed deprecated: Compare Rentals, How It Works
     ],
     company: [
       { name: 'About Us', href: '/about' },
       { name: 'Privacy Policy', href: '/privacy' },
       { name: 'Terms of Service', href: '/terms' },
-      { name: 'Careers', href: '/careers' },
+      // Removed deprecated: Careers
     ],
   }
 
@@ -74,19 +67,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Support Links */}
-          <div>
-            <h3 className="font-semibold text-gray-900 mb-4">Support</h3>
-            <ul className="space-y-3">
-              {footerLinks.support.map((link) => (
-                <li key={link.name}>
-                  <Link href={link.href} className="text-gray-600 text-sm hover:text-blue-600 transition-colors">
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {/* Support Links removed per UI cleanup */}
 
           {/* Company Links */}
           <div>
