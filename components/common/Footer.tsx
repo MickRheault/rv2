@@ -86,6 +86,13 @@ export default function Footer() {
 
         {/* Bottom Section */}
         <div className="border-t border-gray-200 mt-12 pt-8">
+          {/* Data Disclaimer */}
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-yellow-800 text-sm text-center">
+              <strong>Disclaimer:</strong> Data on this site is aggregated from public sources and may not be fully accurate. Please verify directly with the companies for the most up-to-date information.
+            </p>
+          </div>
+          
           <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
             <p className="text-gray-500 text-sm">
               © 2024 Global Moto Rentals. All rights reserved.
