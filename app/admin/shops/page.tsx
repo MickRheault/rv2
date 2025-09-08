@@ -83,6 +83,10 @@ function ShopsAdminContent() {
   // Reference data
   const [cities, setCities] = useState<City[]>([]);
   const [businessStatuses, setBusinessStatuses] = useState<BusinessStatus[]>([]);
+  
+  // Service locations (pickup/drop-off) management
+  const [serviceLocations, setServiceLocations] = useState<string[]>([]);
+  const [serviceLocationsLoading, setServiceLocationsLoading] = useState(false);
 
   // Load reference data
   useEffect(() => {
@@ -151,9 +155,15 @@ function ShopsAdminContent() {
       
       if (editingShop) {
         await shopService.updateShop(editingShop.id, formData);
+        // Update service locations for existing shop
+        await shopService.updateShopServiceLocations(editingShop.id, serviceLocations);
         setSuccess('Shop updated successfully');
       } else {
-        await shopService.createShop(formData as ShopInsert);
+        const newShop = await shopService.createShop(formData as ShopInsert);
+        // Add service locations for new shop
+        if (serviceLocations.length > 0) {
+          await shopService.updateShopServiceLocations(newShop.id, serviceLocations);
+        }
         setSuccess('Shop created successfully');
       }
       
@@ -269,12 +279,13 @@ function ShopsAdminContent() {
   const handleCreate = () => {
     setFormData({});
     setEditingShop(null);
+    setServiceLocations([]);
     setShowCreateModal(true);
     setError(null);
     setSuccess(null);
   };
 
-  const handleEdit = (shop: ShopWithDetails) => {
+  const handleEdit = async (shop: ShopWithDetails) => {
     setFormData({
       provider_name: shop.provider_name,
       slug: shop.slug,
@@ -293,6 +304,19 @@ function ShopsAdminContent() {
       review_count: shop.review_count
     });
     setEditingShop(shop);
+    
+    // Load service locations for this shop
+    try {
+      setServiceLocationsLoading(true);
+      const locations = await shopService.getServiceLocations(shop.id);
+      setServiceLocations(locations.map(loc => loc.location_name));
+    } catch (error) {
+      console.error('Error loading service locations:', error);
+      setServiceLocations([]);
+    } finally {
+      setServiceLocationsLoading(false);
+    }
+    
     setShowEditModal(true);
     setError(null);
     setSuccess(null);
@@ -303,6 +327,7 @@ function ShopsAdminContent() {
     setShowEditModal(false);
     setEditingShop(null);
     setFormData({});
+    setServiceLocations([]);
     setError(null);
     setSuccess(null);
   };
@@ -889,6 +914,73 @@ function ShopsAdminContent() {
                 rows={3}
               />
             </div>
+          </div>
+          
+          {/* Service Locations (Pickup/Drop-off) Section */}
+          <div className="border-t pt-6">
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Pickup & Drop-off Locations
+              </label>
+              <p className="text-sm text-gray-500 mb-3">
+                Add locations where customers can pick up and drop off motorcycles
+              </p>
+            </div>
+            
+            {serviceLocationsLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <Spinner size="sm" className="mr-2" />
+                <span className="text-sm text-gray-500">Loading locations...</span>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {serviceLocations.map((location, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Input
+                      value={location}
+                      onChange={(e) => {
+                        const newLocations = [...serviceLocations];
+                        newLocations[index] = e.target.value;
+                        setServiceLocations(newLocations);
+                      }}
+                      placeholder="e.g., Downtown Office, Airport Counter, Hotel Delivery"
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const newLocations = serviceLocations.filter((_, i) => i !== index);
+                        setServiceLocations(newLocations);
+                      }}
+                      className="px-3"
+                    >
+                      <TrashIcon className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setServiceLocations([...serviceLocations, ''])}
+                  className="flex items-center gap-2"
+                >
+                  <PlusIcon className="w-4 h-4" />
+                  Add Location
+                </Button>
+                
+                {serviceLocations.length === 0 && (
+                  <div className="text-center py-4 text-gray-500 text-sm">
+                    No pickup/drop-off locations added yet.
+                    <br />
+                    Click &quot;Add Location&quot; to get started.
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           
           <div className="flex justify-end gap-3 pt-6 border-t">

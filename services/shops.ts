@@ -741,6 +741,108 @@ export const shopService = {
       name: city.name,
       fullName: `${city.name}, ${city.provinces?.name || ''}, ${city.provinces?.countries?.name || ''}`
     }))
+  },
+
+  // ========================================
+  // Service Locations (Pickup/Drop-off) Management
+  // ========================================
+
+  // Get service locations for a shop
+  async getServiceLocations(shopId: string): Promise<RentalShopServiceLocation[]> {
+    const { data, error } = await supabase
+      .from('rental_shop_service_locations')
+      .select('*')
+      .eq('shop_id', shopId)
+      .order('created_at', { ascending: true })
+
+    if (error) {
+      console.error('Error fetching service locations:', error)
+      throw error
+    }
+
+    return data || []
+  },
+
+  // Create service location
+  async createServiceLocation(shopId: string, locationName: string): Promise<RentalShopServiceLocation> {
+    const { data, error } = await supabase
+      .from('rental_shop_service_locations')
+      .insert({
+        shop_id: shopId,
+        location_name: locationName.trim()
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error creating service location:', error)
+      throw error
+    }
+
+    return data
+  },
+
+  // Update service location
+  async updateServiceLocation(id: string, locationName: string): Promise<RentalShopServiceLocation> {
+    const { data, error } = await supabase
+      .from('rental_shop_service_locations')
+      .update({
+        location_name: locationName.trim(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error updating service location:', error)
+      throw error
+    }
+
+    return data
+  },
+
+  // Delete service location
+  async deleteServiceLocation(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('rental_shop_service_locations')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      console.error('Error deleting service location:', error)
+      throw error
+    }
+  },
+
+  // Bulk update service locations for a shop
+  async updateShopServiceLocations(shopId: string, locations: string[]): Promise<RentalShopServiceLocation[]> {
+    // First, get existing locations
+    const existing = await this.getServiceLocations(shopId)
+    const existingNames = existing.map(loc => loc.location_name)
+    
+    // Filter out empty/duplicate location names
+    const newLocations = locations
+      .map(loc => loc.trim())
+      .filter(loc => loc.length > 0)
+      .filter((loc, index, arr) => arr.indexOf(loc) === index) // Remove duplicates
+
+    // Determine which to add and which to remove
+    const toAdd = newLocations.filter(loc => !existingNames.includes(loc))
+    const toRemove = existing.filter(loc => !newLocations.includes(loc.location_name))
+
+    // Delete removed locations
+    for (const location of toRemove) {
+      await this.deleteServiceLocation(location.id)
+    }
+
+    // Add new locations
+    for (const locationName of toAdd) {
+      await this.createServiceLocation(shopId, locationName)
+    }
+
+    // Return updated list
+    return await this.getServiceLocations(shopId)
   }
 }
 

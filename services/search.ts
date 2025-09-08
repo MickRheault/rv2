@@ -26,6 +26,7 @@ export interface LocationBasedSearchFilters extends MotorcycleFilters {
   locationQuery?: string // Free text search for location
   radius?: number // Search radius in km (for future geo-search)
   includeNearby?: boolean // Include nearby cities/provinces
+  contentType?: 'motorcycles' | 'shops' | 'all' // What type of content to search for
 }
 
 export interface SearchResults {
@@ -129,89 +130,97 @@ export const searchService = {
       resolvedCategoryId = await this.resolveCategoryId(otherFilters.categoryId)
     }
 
-    // Search motorcycles and shops with resolved location filters
-    const [motorcycleResults, shopResults] = await Promise.all([
-      motorcycleService.getMotorcycles({
+    // Validate pagination parameters
+    const limit = Math.max(1, Math.min(100, otherFilters.limit || 20))
+    const offset = Math.max(0, otherFilters.offset || 0)
+    const contentType = otherFilters.contentType || 'all'
+
+    // Search based on content type to avoid pagination conflicts
+    let motorcycleResults: Awaited<ReturnType<typeof motorcycleService.getMotorcycles>>
+    let shopResults: { shops: (ShopWithDetails & { premium?: PremiumFeatureConfig })[], total: number }
+
+    if (contentType === 'motorcycles' || contentType === 'all') {
+      motorcycleResults = await motorcycleService.getMotorcycles({
         ...otherFilters,
         brandId: resolvedBrandId,
         categoryId: resolvedCategoryId,
         ...resolvedLocationFilters,
-        // Remove pagination from motorcycles - show all
-        limit: 1000,
+        limit: contentType === 'motorcycles' ? limit : 1000, // Get all for counts when showing 'all'
+        offset: contentType === 'motorcycles' ? offset : 0
+      })
+    } else {
+      // When only showing shops, return empty motorcycle results but get count
+      const countResults = await motorcycleService.getMotorcycles({
+        ...otherFilters,
+        brandId: resolvedBrandId,
+        categoryId: resolvedCategoryId,
+        ...resolvedLocationFilters,
+        limit: 1,
         offset: 0
-      }),
-      shopService.getShops({
+      })
+      motorcycleResults = { motorcycles: [], total: countResults.total }
+    }
+
+    if (contentType === 'shops' || contentType === 'all') {
+      const rawShopResults = await shopService.getShops({
         ...resolvedLocationFilters,
         query: otherFilters.query,
         sortBy: otherFilters.sortBy === 'rating_desc' ? 'rating_desc' : 'newest',
-        // Apply pagination to shops for testing - 1 at a time
-        limit: 1,
-        offset: otherFilters.offset || 0
+        limit: contentType === 'shops' ? limit : 1000, // Get all for counts when showing 'all'
+        offset: contentType === 'shops' ? offset : 0
       })
-    ])
-
-    // Get premium information for shops
-    const shopIds = shopResults.shops.map(shop => shop.id)
-    console.log('=== SEARCH PREMIUM DEBUG ===')
-    console.log('Shop IDs for premium lookup:', shopIds)
-    console.log('Entity IDs that will be searched for:', shopIds)
-    console.log('Entity ID types:', shopIds.map(id => typeof id))
-    console.log('About to call getPremiumEntities with:')
-    console.log('  - content_type:', 'rental_shop')
-    console.log('  - entity_ids array:', shopIds)
-    console.log('  - entity_ids array length:', shopIds.length)
-    shopIds.forEach((id, index) => {
-      console.log(`  - entity_ids[${index}]: ${id}`)
-      console.log(`  - searching for entity_id: ${id}`)
-    })
-    
-    const premiumMap = await PremiumUtilsService.getPremiumEntities('rental_shop', shopIds)
-    console.log('Premium map result:', premiumMap)
-    console.log('Premium map size:', premiumMap.size)
-    console.log('Premium map keys:', Array.from(premiumMap.keys()))
-    console.log('Premium map entries:', Array.from(premiumMap.entries()))
-    console.log('Exact entity IDs searched for in premium query:', shopIds)
-
-    // Enhance shop results with premium information
-    const enhancedShops = shopResults.shops.map(shop => {
-      const premiumInfo = premiumMap.get(shop.id)
-      console.log(`=== SEARCH SHOP PREMIUM DEBUG ===`)
-      console.log(`Shop ${shop.provider_name} (Entity ID: ${shop.id}):`, premiumInfo)
-      console.log(`Premium map has entity ID ${shop.id}?`, premiumMap.has(shop.id))
-      console.log(`Premium info for entity ID ${shop.id}:`, premiumInfo)
-      if (premiumInfo) {
-        console.log(`Premium found, setting isPremium to true with type: ${premiumInfo.tier}`)
-      } else {
-        console.log(`No premium info found, setting isPremium to false`)
-      }
       
-      return {
-        ...shop,
-        premium: premiumInfo ? {
-          isPremium: true,
-          premiumType: premiumInfo.tier,
-          boostScore: premiumInfo.boostScore
-        } : {
-          isPremium: false
-        }
-      }
-    })
+      // Get premium information for shops
+      const shopIds = rawShopResults.shops.map(shop => shop.id)
+      const premiumMap = await PremiumUtilsService.getPremiumEntities('rental_shop', shopIds)
 
-    // Sort shops with premium priority
-    const sortedShops = PremiumUtilsService.sortWithPremiumPriority(
-      enhancedShops,
-      premiumMap,
-      (a, b) => {
-        // Apply original sort logic for same premium level
-        switch (otherFilters.sortBy) {
-          case 'rating_desc':
-            return (b.rating || 0) - (a.rating || 0)
-          case 'newest':
-          default:
-            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      // Enhance shop results with premium information
+      const enhancedShops = rawShopResults.shops.map(shop => {
+        const premiumInfo = premiumMap.get(shop.id)
+        return {
+          ...shop,
+          premium: premiumInfo ? {
+            isPremium: true,
+            premiumType: premiumInfo.tier,
+            boostScore: premiumInfo.boostScore
+          } : {
+            isPremium: false
+          }
         }
+      })
+
+      // Sort shops with premium priority
+      const sortedShops = PremiumUtilsService.sortWithPremiumPriority(
+        enhancedShops,
+        premiumMap,
+        (a, b) => {
+          // Apply original sort logic for same premium level
+          switch (otherFilters.sortBy) {
+            case 'rating_desc':
+              return (b.rating || 0) - (a.rating || 0)
+            case 'newest':
+            default:
+              return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          }
+        }
+      )
+
+      shopResults = {
+        ...rawShopResults,
+        shops: sortedShops
       }
-    )
+    } else {
+      // When only showing motorcycles, return empty shop results but get count
+      const countResults = await shopService.getShops({
+        ...resolvedLocationFilters,
+        query: otherFilters.query,
+        sortBy: otherFilters.sortBy === 'rating_desc' ? 'rating_desc' : 'newest',
+        limit: 1,
+        offset: 0
+      })
+      shopResults = { shops: [], total: countResults.total }
+    }
+
 
     // Get location suggestions if locationQuery was provided
     const locationSuggestions = locationQuery 
@@ -220,10 +229,7 @@ export const searchService = {
 
     return {
       motorcycles: motorcycleResults,
-      shops: {
-        ...shopResults,
-        shops: sortedShops
-      },
+      shops: shopResults,
       locations: locationSuggestions,
       totalResults: motorcycleResults.total + shopResults.total
     }
