@@ -62,23 +62,17 @@ export const ACTIVE_BUSINESS_STATUSES = ['OPERATIONAL', 'operational', 'active',
 async function getActiveBusinessStatusIds(): Promise<number[]> {
   const { data: activeBusinessStatuses } = await supabase
     .from('business_statuses')
-    .select('id, status_code')
+    .select('id')
     .in('status_code', ACTIVE_BUSINESS_STATUSES)
-  
-  console.log('Active business statuses found:', activeBusinessStatuses)
-  console.log('ACTIVE_BUSINESS_STATUSES constant:', ACTIVE_BUSINESS_STATUSES)
   
   return activeBusinessStatuses ? activeBusinessStatuses.map(status => status.id) : []
 }
 
 // Helper function to apply active status filter to a query
 function applyActiveStatusFilterSync(query: any, activeStatusIds: number[]): any {
-  console.log('Applying active status filter with IDs:', activeStatusIds)
   if (activeStatusIds.length > 0) {
-    console.log('Filtering by business_status_id IN:', activeStatusIds)
     return query.in('business_status_id', activeStatusIds)
   }
-  console.log('No active statuses found - returning empty result query')
   // If no active statuses, return query that matches nothing
   return query.eq('id', 'impossible-id-that-will-never-match')
 }
