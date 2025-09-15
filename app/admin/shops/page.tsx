@@ -5,6 +5,7 @@ import { RentalShopConditionsModal } from '@/components/admin/RentalShopConditio
 import { RentalShopToursModal } from '@/components/admin/RentalShopToursModal';
 import { useState, useEffect, useCallback } from 'react';
 import { shopService, ShopWithDetails } from '@/services/shops';
+import { businessStatusService } from '@/services/business-statuses';
 import { Card, Button, Input, Modal, Alert, Select, Spinner, Checkbox, Textarea } from '@/components/ui';
 import { 
   PlusIcon, 
@@ -82,6 +83,10 @@ function ShopsAdminContent() {
   // Reference data
   const [cities, setCities] = useState<City[]>([]);
   const [businessStatuses, setBusinessStatuses] = useState<BusinessStatus[]>([]);
+  
+  // Service locations (pickup/drop-off) management
+  const [serviceLocations, setServiceLocations] = useState<string[]>([]);
+  const [serviceLocationsLoading, setServiceLocationsLoading] = useState(false);
 
   // Load reference data
   useEffect(() => {
@@ -150,9 +155,15 @@ function ShopsAdminContent() {
       
       if (editingShop) {
         await shopService.updateShop(editingShop.id, formData);
+        // Update service locations for existing shop
+        await shopService.updateShopServiceLocations(editingShop.id, serviceLocations);
         setSuccess('Shop updated successfully');
       } else {
-        await shopService.createShop(formData as ShopInsert);
+        const newShop = await shopService.createShop(formData as ShopInsert);
+        // Add service locations for new shop
+        if (serviceLocations.length > 0) {
+          await shopService.updateShopServiceLocations(newShop.id, serviceLocations);
+        }
         setSuccess('Shop created successfully');
       }
       
@@ -197,16 +208,84 @@ function ShopsAdminContent() {
     }
   };
 
+  // Toggle shop visibility by changing business status
+  const toggleShopVisibility = async (shop: ShopWithDetails) => {
+    try {
+      const activeStatuses = ['OPERATIONAL', 'operational', 'active', 'ACTIVE'];
+      const inactiveStatuses = ['inactive', 'INACTIVE', 'closed', 'CLOSED'];
+      
+      // Find the current status
+      const currentStatusCode = shop.business_statuses?.status_code;
+      const isCurrentlyActive = currentStatusCode && activeStatuses.includes(currentStatusCode);
+      
+      console.log('Toggle Debug:', {
+        shopId: shop.id,
+        shopName: shop.provider_name,
+        currentStatusCode,
+        isCurrentlyActive,
+        availableStatuses: businessStatuses.map(s => ({ id: s.id, code: s.status_code }))
+      });
+      
+      // Find appropriate target status
+      let targetStatusId: number;
+      if (isCurrentlyActive) {
+        // Find inactive status
+        let inactiveStatus = businessStatuses.find(s => inactiveStatuses.includes(s.status_code));
+        if (!inactiveStatus) {
+          // Create inactive status if it doesn't exist
+          console.log('Creating inactive business status...');
+          inactiveStatus = await businessStatusService.createBusinessStatus({ 
+            status_code: 'inactive', 
+            description: 'Inactive shop - hidden from platform' 
+          });
+          console.log('Created inactive status:', inactiveStatus);
+          // Refresh business statuses list
+          const updatedStatuses = await shopService.getBusinessStatuses();
+          setBusinessStatuses(updatedStatuses);
+        }
+        targetStatusId = inactiveStatus.id;
+        console.log('Switching to inactive status ID:', targetStatusId);
+      } else {
+        // Find active status
+        let activeStatus = businessStatuses.find(s => activeStatuses.includes(s.status_code));
+        if (!activeStatus) {
+          // Create operational status if it doesn't exist
+          console.log('Creating operational business status...');
+          activeStatus = await businessStatusService.createBusinessStatus({ 
+            status_code: 'OPERATIONAL', 
+            description: 'Operational shop - visible on platform' 
+          });
+          console.log('Created operational status:', activeStatus);
+          // Refresh business statuses list
+          const updatedStatuses = await shopService.getBusinessStatuses();
+          setBusinessStatuses(updatedStatuses);
+        }
+        targetStatusId = activeStatus.id;
+        console.log('Switching to active status ID:', targetStatusId);
+      }
+      
+      // Update the shop
+      console.log('Updating shop business_status_id to:', targetStatusId);
+      await shopService.updateShop(shop.id, { business_status_id: targetStatusId });
+      setSuccess(`Shop ${isCurrentlyActive ? 'disabled' : 'enabled'} successfully`);
+      await loadShops();
+    } catch (error) {
+      console.error('Error toggling shop visibility:', error);
+      setError(`Failed to update shop status: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
   // Modal handlers
   const handleCreate = () => {
     setFormData({});
     setEditingShop(null);
+    setServiceLocations([]);
     setShowCreateModal(true);
     setError(null);
     setSuccess(null);
   };
 
-  const handleEdit = (shop: ShopWithDetails) => {
+  const handleEdit = async (shop: ShopWithDetails) => {
     setFormData({
       provider_name: shop.provider_name,
       slug: shop.slug,
@@ -225,6 +304,19 @@ function ShopsAdminContent() {
       review_count: shop.review_count
     });
     setEditingShop(shop);
+    
+    // Load service locations for this shop
+    try {
+      setServiceLocationsLoading(true);
+      const locations = await shopService.getServiceLocations(shop.id);
+      setServiceLocations(locations.map(loc => loc.location_name));
+    } catch (error) {
+      console.error('Error loading service locations:', error);
+      setServiceLocations([]);
+    } finally {
+      setServiceLocationsLoading(false);
+    }
+    
     setShowEditModal(true);
     setError(null);
     setSuccess(null);
@@ -235,6 +327,7 @@ function ShopsAdminContent() {
     setShowEditModal(false);
     setEditingShop(null);
     setFormData({});
+    setServiceLocations([]);
     setError(null);
     setSuccess(null);
   };
@@ -479,6 +572,9 @@ function ShopsAdminContent() {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Location
                         </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Actions
                         </th>
@@ -513,6 +609,30 @@ function ShopsAdminContent() {
                             </div>
                             <div className="text-sm text-gray-500">
                               {shop.cities?.provinces?.countries?.name}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                shop.business_statuses?.status_code && ['OPERATIONAL', 'operational', 'active', 'ACTIVE'].includes(shop.business_statuses.status_code)
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {shop.business_statuses?.status_code || 'Unknown'}
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => toggleShopVisibility(shop)}
+                                className={`p-1 rounded ${
+                                  shop.business_statuses?.status_code && ['OPERATIONAL', 'operational', 'active', 'ACTIVE'].includes(shop.business_statuses.status_code)
+                                    ? 'text-red-600 hover:bg-red-50'
+                                    : 'text-green-600 hover:bg-green-50'
+                                }`}
+                                title={shop.business_statuses?.status_code && ['OPERATIONAL', 'operational', 'active', 'ACTIVE'].includes(shop.business_statuses.status_code) ? 'Disable Shop' : 'Enable Shop'}
+                              >
+                                {shop.business_statuses?.status_code && ['OPERATIONAL', 'operational', 'active', 'ACTIVE'].includes(shop.business_statuses.status_code) ? '🔴' : '🟢'}
+                              </Button>
                             </div>
                           </td>
                           <td className="px-6 py-4 text-right">
@@ -794,6 +914,73 @@ function ShopsAdminContent() {
                 rows={3}
               />
             </div>
+          </div>
+          
+          {/* Service Locations (Pickup/Drop-off) Section */}
+          <div className="border-t pt-6">
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Pickup & Drop-off Locations
+              </label>
+              <p className="text-sm text-gray-500 mb-3">
+                Add locations where customers can pick up and drop off motorcycles
+              </p>
+            </div>
+            
+            {serviceLocationsLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <Spinner size="sm" className="mr-2" />
+                <span className="text-sm text-gray-500">Loading locations...</span>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {serviceLocations.map((location, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Input
+                      value={location}
+                      onChange={(e) => {
+                        const newLocations = [...serviceLocations];
+                        newLocations[index] = e.target.value;
+                        setServiceLocations(newLocations);
+                      }}
+                      placeholder="e.g., Downtown Office, Airport Counter, Hotel Delivery"
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const newLocations = serviceLocations.filter((_, i) => i !== index);
+                        setServiceLocations(newLocations);
+                      }}
+                      className="px-3"
+                    >
+                      <TrashIcon className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setServiceLocations([...serviceLocations, ''])}
+                  className="flex items-center gap-2"
+                >
+                  <PlusIcon className="w-4 h-4" />
+                  Add Location
+                </Button>
+                
+                {serviceLocations.length === 0 && (
+                  <div className="text-center py-4 text-gray-500 text-sm">
+                    No pickup/drop-off locations added yet.
+                    <br />
+                    Click &quot;Add Location&quot; to get started.
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           
           <div className="flex justify-end gap-3 pt-6 border-t">

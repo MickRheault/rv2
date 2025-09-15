@@ -18,9 +18,9 @@ export function generateOrganizationSchema() {
     },
     sameAs: [
       // Add your social media URLs here
-      // 'https://facebook.com/ridevault',
-      // 'https://twitter.com/ridevault',
-      // 'https://instagram.com/ridevault',
+      // 'https://facebook.com/globalmotorentals',
+      // 'https://twitter.com/globalmotorentals',
+      // 'https://instagram.com/globalmotorentals',
     ],
   };
 }

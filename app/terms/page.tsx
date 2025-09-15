@@ -12,7 +12,7 @@ export default function TermsPage() {
         </h1>
         <div className="card p-8 text-center">
           <p className="text-gray-600 mb-4">
-            Read our terms and conditions for using RideVault.
+            Read our terms and conditions for using Global Moto Rentals.
           </p>
           <div className="inline-flex items-center px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg">
             📜 Coming Soon

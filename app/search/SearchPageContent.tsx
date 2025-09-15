@@ -14,7 +14,8 @@ import MobileFilterToggle from '@/components/search/MobileFilterToggle'
 const DEFAULT_FILTERS: LocationBasedSearchFilters = {
   limit: 20,
   offset: 0,
-  sortBy: 'newest'
+  sortBy: 'newest',
+  contentType: 'motorcycles'
 }
 
 export default function SearchPageContent() {
@@ -107,7 +108,7 @@ export default function SearchPageContent() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-6">
-            Search Motorcycles & Rental Shops
+            Search Motorcycles
           </h1>
           
           <Card className="mb-6">
@@ -117,7 +118,7 @@ export default function SearchPageContent() {
                   <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <Input
                     type="text"
-                    placeholder="Search motorcycles, brands, or shops..."
+                    placeholder="Search motorcycles, brands, models..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={(e) => {

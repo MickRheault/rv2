@@ -17,10 +17,10 @@ export type Database = {
     Functions: {
       graphql: {
         Args: {
+          extensions?: Json
           operationName?: string
           query?: string
           variables?: Json
-          extensions?: Json
         }
         Returns: Json
       }
@@ -147,13 +147,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "cities_province_id_fkey"
-            columns: ["province_id"]
-            isOneToOne: false
-            referencedRelation: "mv_location_motorcycle_counts"
-            referencedColumns: ["province_id"]
-          },
           {
             foreignKeyName: "cities_province_id_fkey"
             columns: ["province_id"]
@@ -848,13 +841,6 @@ export type Database = {
             referencedRelation: "countries"
             referencedColumns: ["code"]
           },
-          {
-            foreignKeyName: "provinces_country_code_fkey"
-            columns: ["country_code"]
-            isOneToOne: false
-            referencedRelation: "mv_location_motorcycle_counts"
-            referencedColumns: ["country_code"]
-          },
         ]
       }
       rental_rate_tiers: {
@@ -1121,13 +1107,6 @@ export type Database = {
             referencedRelation: "cities"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "rental_shops_city_id_fkey"
-            columns: ["city_id"]
-            isOneToOne: false
-            referencedRelation: "mv_location_motorcycle_counts"
-            referencedColumns: ["city_id"]
-          },
         ]
       }
       required_document_types: {
@@ -1201,26 +1180,11 @@ export type Database = {
       }
     }
     Views: {
-      mv_location_motorcycle_counts: {
-        Row: {
-          avg_rating: number | null
-          city_id: string | null
-          city_name: string | null
-          country_code: string | null
-          country_name: string | null
-          max_price: number | null
-          min_price: number | null
-          motorcycle_count: number | null
-          province_id: string | null
-          province_name: string | null
-          shop_count: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       apply_flagged_content_changes: {
-        Args: { flagged_content_id: string; admin_id: string }
+        Args: { admin_id: string; flagged_content_id: string }
         Returns: boolean
       }
       authorize: {
@@ -1256,39 +1220,39 @@ export type Database = {
       get_brand_distribution: {
         Args: Record<PropertyKey, never>
         Returns: {
+          avg_engine_size: number
+          avg_price: number
           brand: string
           count: number
-          avg_price: number
-          avg_engine_size: number
         }[]
       }
       get_category_distribution: {
         Args: Record<PropertyKey, never>
         Returns: {
+          avg_engine_size: number
+          avg_price: number
           category: string
           count: number
-          avg_price: number
-          avg_engine_size: number
         }[]
       }
       get_data_freshness_stats: {
         Args: Record<PropertyKey, never>
         Returns: {
-          total_entities: number
           fresh_entities: number
-          stale_entities: number
-          very_stale_entities: number
           fresh_percentage: number
-          stale_percentage: number
-          very_stale_percentage: number
           motorcycle_fresh: number
           motorcycle_stale: number
           motorcycle_very_stale: number
+          oldest_motorcycle_days: number
+          oldest_shop_days: number
           shop_fresh: number
           shop_stale: number
           shop_very_stale: number
-          oldest_motorcycle_days: number
-          oldest_shop_days: number
+          stale_entities: number
+          stale_percentage: number
+          total_entities: number
+          very_stale_entities: number
+          very_stale_percentage: number
         }[]
       }
       get_entities_by_freshness: {
@@ -1299,68 +1263,59 @@ export type Database = {
           p_offset?: number
         }
         Returns: {
-          id: string
           content_type: Database["public"]["Enums"]["freshness_content_type"]
+          days_since_update: number
           entity_id: string
           entity_name: string
-          last_updated_at: string
-          days_since_update: number
           freshness_status: Database["public"]["Enums"]["freshness_status"]
+          id: string
+          last_updated_at: string
           location_info: string
         }[]
       }
       get_flagged_content_stats: {
         Args: Record<PropertyKey, never>
         Returns: {
-          total_pending: number
-          total_under_review: number
-          total_approved: number
-          total_applied: number
-          total_rejected: number
           critical_pending: number
           motorcycle_flags: number
           rental_shop_flags: number
+          total_applied: number
+          total_approved: number
+          total_pending: number
+          total_rejected: number
+          total_under_review: number
         }[]
       }
       get_geographic_distribution: {
         Args: Record<PropertyKey, never>
         Returns: {
-          country: string
           city: string
+          country: string
           shop_count: number
         }[]
       }
       get_premium_analytics_summary: {
         Args: {
+          p_end_date?: string
           p_listing_id: string
           p_start_date?: string
-          p_end_date?: string
         }
         Returns: {
-          metric_type: Database["public"]["Enums"]["premium_metric_type"]
-          total_value: number
           avg_daily_value: number
           days_tracked: number
+          metric_type: Database["public"]["Enums"]["premium_metric_type"]
+          total_value: number
         }[]
       }
       get_premium_dashboard_stats: {
         Args: Record<PropertyKey, never>
         Returns: {
+          expiring_soon: number
+          new_listings_this_month: number
+          revenue_last_month: number
+          revenue_this_month: number
           total_active_listings: number
           total_expired_listings: number
-          expiring_soon: number
-          revenue_this_month: number
-          revenue_last_month: number
-          new_listings_this_month: number
-        }[]
-      }
-      get_query_performance_stats: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          query_type: string
-          avg_duration_ms: number
-          total_calls: number
-          cache_hit_ratio: number
         }[]
       }
       insert_daily_snapshot: {
@@ -1378,39 +1333,15 @@ export type Database = {
       refresh_data_freshness: {
         Args: Record<PropertyKey, never>
         Returns: {
-          updated_count: number
           fresh_count: number
           stale_count: number
+          updated_count: number
           very_stale_count: number
         }[]
-      }
-      refresh_location_counts: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
       }
       remove_user_admin: {
         Args: { user_email: string }
         Returns: boolean
-      }
-      search_locations_with_counts: {
-        Args: { search_query: string; result_limit?: number }
-        Returns: {
-          type: string
-          id: string
-          name: string
-          parent_name: string
-          full_name: string
-          motorcycle_count: number
-          shop_count: number
-        }[]
-      }
-      unaccent: {
-        Args: { "": string }
-        Returns: string
-      }
-      unaccent_init: {
-        Args: { "": unknown }
-        Returns: unknown
       }
     }
     Enums: {
@@ -1463,21 +1394,25 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -1495,14 +1430,16 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -1518,14 +1455,16 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
@@ -1541,14 +1480,16 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
@@ -1556,14 +1497,16 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
