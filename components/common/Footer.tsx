@@ -31,6 +31,14 @@ export default function Footer() {
             <p className="text-gray-600 text-sm leading-relaxed mb-4">
               Your global motorcycle rental platform. Find and compare rentals from trusted providers worldwide.
             </p>
+            <div className="mb-4">
+              <a 
+                href="mailto:globalmotorentals@gmail.com" 
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
+              >
+                globalmotorentals@gmail.com
+              </a>
+            </div>
             <div className="flex space-x-4">
               <button className="text-gray-400 hover:text-blue-600 transition-colors">
                 <span className="sr-only">Facebook</span>

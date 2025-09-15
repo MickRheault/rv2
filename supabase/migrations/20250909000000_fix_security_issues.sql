@@ -143,30 +143,6 @@ BEGIN
     END;
     
     BEGIN
-        ALTER FUNCTION search_locations_with_counts(text, integer) SET search_path = '';
-    EXCEPTION WHEN others THEN
-        RAISE NOTICE 'Function search_locations_with_counts(text, integer) does not exist, skipping';
-    END;
-    
-    BEGIN
-        ALTER FUNCTION get_query_performance_stats() SET search_path = '';
-    EXCEPTION WHEN others THEN
-        RAISE NOTICE 'Function get_query_performance_stats() does not exist, skipping';
-    END;
-    
-    BEGIN
-        ALTER FUNCTION trigger_location_counts_refresh() SET search_path = '';
-    EXCEPTION WHEN others THEN
-        RAISE NOTICE 'Function trigger_location_counts_refresh() does not exist, skipping';
-    END;
-    
-    BEGIN
-        ALTER FUNCTION refresh_location_counts() SET search_path = '';
-    EXCEPTION WHEN others THEN
-        RAISE NOTICE 'Function refresh_location_counts() does not exist, skipping';
-    END;
-    
-    BEGIN
         ALTER FUNCTION clear_all_data() SET search_path = '';
     EXCEPTION WHEN others THEN
         RAISE NOTICE 'Function clear_all_data() does not exist, skipping';
