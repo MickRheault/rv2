@@ -2,7 +2,7 @@
 
 import { AdminRoute } from '@/components/admin/AdminRoute';
 import { useState, useEffect, useCallback } from 'react';
-import { categoryService, CategoryWithStats } from '@/services/categories';
+import { categoryService, CategoryWithStats, Category } from '@/services/categories';
 import { Card, Button, Input, Modal, Alert, Spinner, Checkbox, Textarea } from '@/components/ui';
 import { 
   PlusIcon, 
@@ -12,7 +12,12 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   FolderIcon,
-  ArrowLeftIcon
+  ArrowLeftIcon,
+  ArrowsRightLeftIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon,
+  ArrowPathIcon,
+  Squares2X2Icon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { Database } from '@/lib/supabase/database.types';
@@ -46,6 +51,29 @@ function CategoriesAdminContent() {
   // Selection for bulk operations
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [showBulkActions, setShowBulkActions] = useState(false);
+  
+  // Reassignment modals and state
+  const [showReassignModal, setShowReassignModal] = useState(false);
+  const [showBulkReassignModal, setShowBulkReassignModal] = useState(false);
+  const [showDeleteWithReassignModal, setShowDeleteWithReassignModal] = useState(false);
+  const [showNormalizationSuggestions, setShowNormalizationSuggestions] = useState(false);
+  
+  // Reassignment data
+  const [reassignmentData, setReassignmentData] = useState<{
+    sourceCategories: CategoryWithStats[];
+    targetCategoryId: string | null;
+    impactAnalysis: any;
+  }>({
+    sourceCategories: [],
+    targetCategoryId: null,
+    impactAnalysis: null
+  });
+  
+  // Normalization suggestions
+  const [normalizationSuggestions, setNormalizationSuggestions] = useState<Array<{category: Category, suggestions: Category[]}>>([]);
+  
+  // Available categories for target selection (excluding source categories)
+  const [availableTargetCategories, setAvailableTargetCategories] = useState<Category[]>([]);
 
   // Load categories
   const loadCategories = useCallback(async () => {
@@ -206,6 +234,180 @@ function CategoriesAdminContent() {
     setShowBulkActions(selectedItems.size > 0);
   }, [selectedItems]);
 
+  // ========================================
+  // Reassignment Handlers
+  // ========================================
+
+  // Load normalization suggestions
+  const loadNormalizationSuggestions = async () => {
+    try {
+      const suggestions = await categoryService.findSimilarCategories();
+      setNormalizationSuggestions(suggestions);
+      setShowNormalizationSuggestions(true);
+    } catch (error) {
+      console.error('Error loading normalization suggestions:', error);
+      setError('Failed to load normalization suggestions');
+    }
+  };
+
+  // Handle single category reassignment
+  const handleReassignCategory = async (sourceCategory: CategoryWithStats) => {
+    try {
+      // Get impact analysis
+      const analysis = await categoryService.getCategoryImpactAnalysis([sourceCategory.id]);
+      
+      // Get available target categories (excluding the source)
+      const allCategories = await categoryService.getCategories();
+      const targetOptions = allCategories.filter(cat => cat.id !== sourceCategory.id);
+      
+      setReassignmentData({
+        sourceCategories: [sourceCategory],
+        targetCategoryId: null,
+        impactAnalysis: analysis
+      });
+      setAvailableTargetCategories(targetOptions);
+      setShowReassignModal(true);
+      setError(null);
+    } catch (error) {
+      console.error('Error preparing reassignment:', error);
+      setError('Failed to prepare reassignment');
+    }
+  };
+
+  // Handle bulk reassignment
+  const handleBulkReassign = async () => {
+    if (selectedItems.size === 0) return;
+    
+    try {
+      const sourceCategories = categories.filter(cat => selectedItems.has(cat.id));
+      const analysis = await categoryService.getCategoryImpactAnalysis(Array.from(selectedItems));
+      
+      // Get available target categories (excluding selected ones)
+      const allCategories = await categoryService.getCategories();
+      const targetOptions = allCategories.filter(cat => !selectedItems.has(cat.id));
+      
+      setReassignmentData({
+        sourceCategories,
+        targetCategoryId: null,
+        impactAnalysis: analysis
+      });
+      setAvailableTargetCategories(targetOptions);
+      setShowBulkReassignModal(true);
+      setError(null);
+    } catch (error) {
+      console.error('Error preparing bulk reassignment:', error);
+      setError('Failed to prepare bulk reassignment');
+    }
+  };
+
+  // Execute reassignment
+  const executeReassignment = async () => {
+    if (!reassignmentData.sourceCategories.length) return;
+    
+    try {
+      setFormLoading(true);
+      
+      const sourceIds = reassignmentData.sourceCategories.map(cat => cat.id);
+      
+      if (sourceIds.length === 1) {
+        await categoryService.reassignMotorcycles(sourceIds[0], reassignmentData.targetCategoryId);
+      } else {
+        await categoryService.bulkReassignMotorcycles(sourceIds, reassignmentData.targetCategoryId);
+      }
+      
+      const targetName = reassignmentData.targetCategoryId 
+        ? availableTargetCategories.find(cat => cat.id === reassignmentData.targetCategoryId)?.name || 'Unknown'
+        : 'No Category';
+        
+      setSuccess(`Successfully reassigned ${reassignmentData.impactAnalysis.totalMotorcycles} motorcycles to "${targetName}"`);
+      
+      // Close modals and refresh
+      handleCloseReassignmentModals();
+      await loadCategories();
+    } catch (error: any) {
+      console.error('Error executing reassignment:', error);
+      setError(error.message || 'Failed to reassign motorcycles');
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  // Handle delete with reassignment
+  const handleDeleteWithReassignment = async (categoryToDelete: CategoryWithStats) => {
+    try {
+      // Get impact analysis
+      const analysis = await categoryService.getCategoryImpactAnalysis([categoryToDelete.id]);
+      
+      if (analysis.totalMotorcycles === 0) {
+        // No motorcycles, can delete directly
+        await handleDelete(categoryToDelete.id);
+        return;
+      }
+      
+      // Get available target categories (excluding the one to delete)
+      const allCategories = await categoryService.getCategories();
+      const targetOptions = allCategories.filter(cat => cat.id !== categoryToDelete.id);
+      
+      setReassignmentData({
+        sourceCategories: [categoryToDelete],
+        targetCategoryId: null,
+        impactAnalysis: analysis
+      });
+      setAvailableTargetCategories(targetOptions);
+      setShowDeleteWithReassignModal(true);
+      setError(null);
+    } catch (error) {
+      console.error('Error preparing delete with reassignment:', error);
+      setError('Failed to prepare delete operation');
+    }
+  };
+
+  // Execute delete with reassignment
+  const executeDeleteWithReassignment = async () => {
+    if (!reassignmentData.sourceCategories.length) return;
+    
+    try {
+      setFormLoading(true);
+      
+      const categoryToDelete = reassignmentData.sourceCategories[0];
+      await categoryService.deleteCategoryWithReassignment(
+        categoryToDelete.id, 
+        reassignmentData.targetCategoryId
+      );
+      
+      const targetName = reassignmentData.targetCategoryId 
+        ? availableTargetCategories.find(cat => cat.id === reassignmentData.targetCategoryId)?.name || 'Unknown'
+        : 'No Category';
+        
+      setSuccess(`Category "${categoryToDelete.name}" deleted and ${reassignmentData.impactAnalysis.totalMotorcycles} motorcycles reassigned to "${targetName}"`);
+      
+      // Close modals and refresh
+      handleCloseReassignmentModals();
+      await loadCategories();
+    } catch (error: any) {
+      console.error('Error executing delete with reassignment:', error);
+      setError(error.message || 'Failed to delete category');
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  // Close reassignment modals
+  const handleCloseReassignmentModals = () => {
+    setShowReassignModal(false);
+    setShowBulkReassignModal(false);
+    setShowDeleteWithReassignModal(false);
+    setShowNormalizationSuggestions(false);
+    setReassignmentData({
+      sourceCategories: [],
+      targetCategoryId: null,
+      impactAnalysis: null
+    });
+    setAvailableTargetCategories([]);
+    setError(null);
+    setSuccess(null);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -226,10 +428,20 @@ function CategoriesAdminContent() {
                 </p>
               </div>
             </div>
-            <Button onClick={handleCreate} className="flex items-center">
-              <PlusIcon className="w-4 h-4 mr-2" />
-              Add Category
-            </Button>
+            <div className="flex items-center gap-3">
+              <Button 
+                onClick={loadNormalizationSuggestions} 
+                variant="outline"
+                className="flex items-center"
+              >
+                <Squares2X2Icon className="w-4 h-4 mr-2" />
+                Find Duplicates
+              </Button>
+              <Button onClick={handleCreate} className="flex items-center">
+                <PlusIcon className="w-4 h-4 mr-2" />
+                Add Category
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -300,6 +512,15 @@ function CategoriesAdminContent() {
                   onClick={() => setSelectedItems(new Set())}
                 >
                   Clear Selection
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBulkReassign}
+                  className="text-blue-600 hover:text-blue-700"
+                >
+                  <ArrowsRightLeftIcon className="w-4 h-4 mr-1" />
+                  Reassign Motorcycles
                 </Button>
                 <Button
                   variant="outline"
@@ -382,19 +603,32 @@ function CategoriesAdminContent() {
                           {new Date(category.created_at).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex items-center justify-end gap-2">
+                          <div className="flex items-center justify-end gap-1">
                             <Button 
                               variant="ghost" 
                               size="sm"
                               onClick={() => handleEdit(category)}
+                              title="Edit category"
                             >
                               <PencilIcon className="w-4 h-4" />
                             </Button>
+                            {(category.motorcycle_count || 0) > 0 && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleReassignCategory(category)}
+                                className="text-blue-600 hover:text-blue-700"
+                                title="Reassign motorcycles"
+                              >
+                                <ArrowsRightLeftIcon className="w-4 h-4" />
+                              </Button>
+                            )}
                             <Button 
                               variant="ghost" 
                               size="sm"
-                              onClick={() => handleDelete(category.id)}
+                              onClick={() => handleDeleteWithReassignment(category)}
                               className="text-red-600 hover:text-red-700"
+                              title="Delete category"
                             >
                               <TrashIcon className="w-4 h-4" />
                             </Button>
@@ -574,6 +808,385 @@ function CategoriesAdminContent() {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Reassignment Modal */}
+      <Modal
+        isOpen={showReassignModal}
+        onClose={handleCloseReassignmentModals}
+        title="Reassign Motorcycles"
+        size="lg"
+      >
+        {reassignmentData.impactAnalysis && (
+          <div className="space-y-6">
+            {/* Impact Summary */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start">
+                <InformationCircleIcon className="h-5 w-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
+                <div>
+                  <h4 className="text-sm font-medium text-blue-900">
+                    Reassignment Impact
+                  </h4>
+                  <p className="text-sm text-blue-700 mt-1">
+                    This will reassign <strong>{reassignmentData.impactAnalysis.totalMotorcycles} motorcycles</strong> from 
+                    category &ldquo;{reassignmentData.sourceCategories[0]?.name}&rdquo; to your selected target category.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Target Category Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Target Category
+              </label>
+              <select
+                value={reassignmentData.targetCategoryId || ''}
+                onChange={(e) => setReassignmentData({
+                  ...reassignmentData,
+                  targetCategoryId: e.target.value || null
+                })}
+                className="w-full rounded-md border border-gray-300 px-3 py-2"
+              >
+                <option value="">No Category (Remove category assignment)</option>
+                {availableTargetCategories.map(category => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Sample Motorcycles Preview */}
+            {reassignmentData.impactAnalysis.sampleMotorcycles.length > 0 && (
+              <div>
+                <h5 className="text-sm font-medium text-gray-900 mb-3">
+                  Sample Affected Motorcycles
+                </h5>
+                <div className="bg-gray-50 rounded-lg p-3 max-h-60 overflow-y-auto">
+                  <div className="space-y-2">
+                    {reassignmentData.impactAnalysis.sampleMotorcycles.map((motorcycle: any) => (
+                      <div key={motorcycle.id} className="flex justify-between items-center text-sm bg-white p-2 rounded">
+                        <div>
+                          <span className="font-medium">{motorcycle.brands?.name} {motorcycle.model}</span>
+                          {motorcycle.year && <span className="text-gray-500"> ({motorcycle.year})</span>}
+                        </div>
+                        <div className="text-right text-gray-600">
+                          <div>{motorcycle.rental_shops?.provider_name}</div>
+                          {motorcycle.rental_rate_per_day && (
+                            <div className="text-xs">
+                              {motorcycle.rental_rate_per_day} {motorcycle.rental_rate_currency}/day
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {reassignmentData.impactAnalysis.totalMotorcycles > reassignmentData.impactAnalysis.sampleMotorcycles.length && (
+                    <div className="text-center text-sm text-gray-500 mt-2">
+                      ... and {reassignmentData.impactAnalysis.totalMotorcycles - reassignmentData.impactAnalysis.sampleMotorcycles.length} more motorcycles
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCloseReassignmentModals}
+                disabled={formLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={executeReassignment}
+                disabled={formLoading}
+              >
+                {formLoading ? <Spinner size="sm" className="mr-2" /> : null}
+                Reassign {reassignmentData.impactAnalysis.totalMotorcycles} Motorcycles
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Bulk Reassignment Modal */}
+      <Modal
+        isOpen={showBulkReassignModal}
+        onClose={handleCloseReassignmentModals}
+        title="Bulk Reassign Motorcycles"
+        size="lg"
+      >
+        {reassignmentData.impactAnalysis && (
+          <div className="space-y-6">
+            {/* Impact Summary */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start">
+                <InformationCircleIcon className="h-5 w-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
+                <div>
+                  <h4 className="text-sm font-medium text-blue-900">
+                    Bulk Reassignment Impact
+                  </h4>
+                  <p className="text-sm text-blue-700 mt-1">
+                    This will reassign <strong>{reassignmentData.impactAnalysis.totalMotorcycles} motorcycles</strong> from 
+                    {reassignmentData.sourceCategories.length} selected categories to your target category.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Source Categories */}
+            <div>
+              <h5 className="text-sm font-medium text-gray-900 mb-2">Source Categories</h5>
+              <div className="space-y-1">
+                {reassignmentData.impactAnalysis.categoriesWithCounts.map(({ category, motorcycleCount }: any) => (
+                  <div key={category.id} className="flex justify-between items-center bg-gray-50 p-2 rounded">
+                    <span className="font-medium">{category.name}</span>
+                    <span className="text-sm text-gray-600">{motorcycleCount} motorcycles</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Target Category Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Target Category
+              </label>
+              <select
+                value={reassignmentData.targetCategoryId || ''}
+                onChange={(e) => setReassignmentData({
+                  ...reassignmentData,
+                  targetCategoryId: e.target.value || null
+                })}
+                className="w-full rounded-md border border-gray-300 px-3 py-2"
+              >
+                <option value="">No Category (Remove category assignment)</option>
+                {availableTargetCategories.map(category => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCloseReassignmentModals}
+                disabled={formLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={executeReassignment}
+                disabled={formLoading}
+              >
+                {formLoading ? <Spinner size="sm" className="mr-2" /> : null}
+                Reassign {reassignmentData.impactAnalysis.totalMotorcycles} Motorcycles
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Delete with Reassignment Modal */}
+      <Modal
+        isOpen={showDeleteWithReassignModal}
+        onClose={handleCloseReassignmentModals}
+        title="Delete Category with Reassignment"
+        size="lg"
+      >
+        {reassignmentData.impactAnalysis && (
+          <div className="space-y-6">
+            {/* Warning */}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="flex items-start">
+                <ExclamationTriangleIcon className="h-5 w-5 text-yellow-600 mt-0.5 mr-3 flex-shrink-0" />
+                <div>
+                  <h4 className="text-sm font-medium text-yellow-900">
+                    Category Deletion
+                  </h4>
+                  <p className="text-sm text-yellow-700 mt-1">
+                    You are about to delete category &ldquo;{reassignmentData.sourceCategories[0]?.name}&rdquo; which contains{' '}
+                    <strong>{reassignmentData.impactAnalysis.totalMotorcycles} motorcycles</strong>.
+                    You must choose where to reassign these motorcycles.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Target Category Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Reassign motorcycles to *
+              </label>
+              <select
+                value={reassignmentData.targetCategoryId || ''}
+                onChange={(e) => setReassignmentData({
+                  ...reassignmentData,
+                  targetCategoryId: e.target.value || null
+                })}
+                className="w-full rounded-md border border-gray-300 px-3 py-2"
+                required
+              >
+                <option value="">No Category (Remove category assignment)</option>
+                {availableTargetCategories.map(category => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Sample Motorcycles Preview */}
+            {reassignmentData.impactAnalysis.sampleMotorcycles.length > 0 && (
+              <div>
+                <h5 className="text-sm font-medium text-gray-900 mb-3">
+                  Motorcycles to be Reassigned
+                </h5>
+                <div className="bg-gray-50 rounded-lg p-3 max-h-48 overflow-y-auto">
+                  <div className="space-y-2">
+                    {reassignmentData.impactAnalysis.sampleMotorcycles.map((motorcycle: any) => (
+                      <div key={motorcycle.id} className="flex justify-between items-center text-sm bg-white p-2 rounded">
+                        <div>
+                          <span className="font-medium">{motorcycle.brands?.name} {motorcycle.model}</span>
+                          {motorcycle.year && <span className="text-gray-500"> ({motorcycle.year})</span>}
+                        </div>
+                        <div className="text-right text-gray-600">
+                          <div>{motorcycle.rental_shops?.provider_name}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {reassignmentData.impactAnalysis.totalMotorcycles > reassignmentData.impactAnalysis.sampleMotorcycles.length && (
+                    <div className="text-center text-sm text-gray-500 mt-2">
+                      ... and {reassignmentData.impactAnalysis.totalMotorcycles - reassignmentData.impactAnalysis.sampleMotorcycles.length} more motorcycles
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCloseReassignmentModals}
+                disabled={formLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={executeDeleteWithReassignment}
+                disabled={formLoading}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                {formLoading ? <Spinner size="sm" className="mr-2" /> : null}
+                Delete Category & Reassign
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Normalization Suggestions Modal */}
+      <Modal
+        isOpen={showNormalizationSuggestions}
+        onClose={handleCloseReassignmentModals}
+        title="Category Normalization Suggestions"
+        size="xl"
+      >
+        <div className="space-y-6">
+          {normalizationSuggestions.length === 0 ? (
+            <div className="text-center py-8">
+              <Squares2X2Icon className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No duplicates found</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                No similar category names were detected. Your categories look well-organized!
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start">
+                  <InformationCircleIcon className="h-5 w-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
+                  <div>
+                    <h4 className="text-sm font-medium text-blue-900">
+                      Similar Categories Detected
+                    </h4>
+                    <p className="text-sm text-blue-700 mt-1">
+                      We found {normalizationSuggestions.length} categories with similar names. 
+                      Consider merging these to improve data consistency.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {normalizationSuggestions.map(({ category, suggestions }, index) => (
+                  <div key={category.id} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h5 className="text-sm font-medium text-gray-900">
+                        Primary: &ldquo;{category.name}&rdquo; 
+                        <span className="text-gray-500 font-normal">
+                          ({(category as CategoryWithStats).motorcycle_count || 0} motorcycles)
+                        </span>
+                      </h5>
+                      <Button
+                        size="sm"
+                        onClick={() => handleReassignCategory(category as CategoryWithStats)}
+                        className="text-xs"
+                      >
+                        <ArrowsRightLeftIcon className="w-3 h-3 mr-1" />
+                        Reassign
+                      </Button>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <p className="text-xs text-gray-600 mb-2">Similar categories:</p>
+                      {suggestions.map(suggestion => (
+                        <div key={suggestion.id} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                          <span className="text-sm">
+                            &ldquo;{suggestion.name}&rdquo; 
+                            <span className="text-gray-500">
+                              ({(suggestion as CategoryWithStats).motorcycle_count || 0} motorcycles)
+                            </span>
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleReassignCategory(suggestion as CategoryWithStats)}
+                            className="text-xs"
+                          >
+                            <ArrowsRightLeftIcon className="w-3 h-3 mr-1" />
+                            Reassign
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          <div className="flex justify-end pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCloseReassignmentModals}
+            >
+              Close
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

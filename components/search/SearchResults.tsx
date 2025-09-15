@@ -25,7 +25,7 @@ interface SearchResultsProps {
 }
 
 type ViewMode = 'grid' | 'list'
-type ContentType = 'all' | 'motorcycles' | 'shops'
+type ContentType = 'motorcycles' | 'shops'
 
 export default function SearchResults({
   results,
@@ -38,7 +38,33 @@ export default function SearchResults({
   className = ''
 }: SearchResultsProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
-  const [contentType, setContentType] = useState<ContentType>('all')
+  const [contentType, setContentType] = useState<ContentType>('motorcycles')
+  
+  // Separate pagination state for each content type
+  const [motorcyclePagination, setMotorcyclePagination] = useState({ offset: 0 })
+  const [shopPagination, setShopPagination] = useState({ offset: 0 })
+  
+  // Handle content type switching - maintain separate pagination
+  const handleContentTypeChange = (newType: ContentType) => {
+    if (newType !== contentType) {
+      const oldType = contentType
+      setContentType(newType)
+      
+      // Save current pagination state for the old content type
+      if (oldType === 'motorcycles') {
+        setMotorcyclePagination({ offset: filters.offset || 0 })
+      } else {
+        setShopPagination({ offset: filters.offset || 0 })
+      }
+      
+      // Restore pagination state for the new content type
+      const newOffset = newType === 'motorcycles' 
+        ? motorcyclePagination.offset 
+        : shopPagination.offset
+      
+      onFiltersChange({ offset: newOffset, contentType: newType })
+    }
+  }
 
   // Sort options
   const sortOptions = [
@@ -66,10 +92,7 @@ export default function SearchResults({
       case 'shops':
         return { motorcycles: [], shops: results.shops.shops }
       default:
-        return { 
-          motorcycles: results.motorcycles.motorcycles, 
-          shops: results.shops.shops 
-        }
+        return { motorcycles: results.motorcycles.motorcycles, shops: [] }
     }
   }
 
@@ -77,18 +100,32 @@ export default function SearchResults({
 
   // Handle sort change
   const handleSortChange = (sortBy: string) => {
-    onFiltersChange({ sortBy: sortBy as any })
+    onFiltersChange({ sortBy: sortBy as any, contentType })
   }
 
   // Handle pagination
   const handlePageChange = (page: number) => {
     const offset = (page - 1) * (filters.limit || 20)
-    onFiltersChange({ offset })
+    onFiltersChange({ offset, contentType })
   }
 
-  // Get current page
-  const currentPage = Math.floor((filters.offset || 0) / (filters.limit || 20)) + 1
-  const totalPages = Math.ceil(totalCount / (filters.limit || 20))
+  // Get current page based on content type and validate offset
+  const relevantCount = contentType === 'motorcycles' ? motorcycleCount : shopCount
+  const pageSize = filters.limit || 20
+  const currentOffset = filters.offset || 0
+  
+  // Check if current offset is beyond available data
+  if (relevantCount > 0 && currentOffset >= relevantCount) {
+    // Reset to last valid page
+    const maxValidOffset = Math.max(0, Math.floor((relevantCount - 1) / pageSize) * pageSize)
+    if (currentOffset !== maxValidOffset) {
+      onFiltersChange({ offset: maxValidOffset, contentType })
+      return null // Return null to prevent rendering while resetting
+    }
+  }
+  
+  const currentPage = Math.floor(currentOffset / pageSize) + 1
+  const totalPages = Math.ceil(relevantCount / pageSize)
 
   // Render loading state
   if (isLoading) {
@@ -163,40 +200,30 @@ export default function SearchResults({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <h2 className="text-xl font-semibold text-gray-900">
-            {totalCount.toLocaleString()} {totalCount === 1 ? 'result' : 'results'}
+            {contentType === 'motorcycles' ? `${motorcycleCount.toLocaleString()} motorcycle${motorcycleCount === 1 ? '' : 's'}` : `${shopCount.toLocaleString()} rental shop${shopCount === 1 ? '' : 's'}`}
           </h2>
           
           {/* Content Type Filter */}
           <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
             <button
-              onClick={() => setContentType('all')}
-              className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
-                contentType === 'all'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              All ({totalCount})
-            </button>
-            <button
-              onClick={() => setContentType('motorcycles')}
+              onClick={() => handleContentTypeChange('motorcycles')}
               className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
                 contentType === 'motorcycles'
                   ? 'bg-white text-gray-900 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              Motorcycles ({motorcycleCount})
+              🏍️ Motorcycles ({motorcycleCount})
             </button>
             <button
-              onClick={() => setContentType('shops')}
+              onClick={() => handleContentTypeChange('shops')}
               className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
                 contentType === 'shops'
                   ? 'bg-white text-gray-900 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              Shops ({shopCount})
+              🏪 Rental Shops ({shopCount})
             </button>
           </div>
         </div>
@@ -262,18 +289,13 @@ export default function SearchResults({
       </div>
 
       {/* Results Grid/List */}
-      <div className="space-y-8">
+      <div className="space-y-6">
         {/* Motorcycles Section */}
-        {filteredResults.motorcycles.length > 0 && (
+        {contentType === 'motorcycles' && filteredResults.motorcycles.length > 0 && (
           <section>
-            {contentType === 'all' && (
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Motorcycles ({motorcycleCount})
-              </h3>
-            )}
             <div className={
               viewMode === 'grid'
-                ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
+                ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4'
                 : 'space-y-4'
             }>
               {filteredResults.motorcycles.map((motorcycle) => (
@@ -288,13 +310,8 @@ export default function SearchResults({
         )}
 
         {/* Shops Section */}
-        {filteredResults.shops.length > 0 && (
+        {contentType === 'shops' && filteredResults.shops.length > 0 && (
           <section>
-            {contentType === 'all' && (
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Rental Shops ({shopCount})
-              </h3>
-            )}
             <div className={
               viewMode === 'grid'
                 ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
@@ -311,6 +328,45 @@ export default function SearchResults({
             </div>
           </section>
         )}
+
+        {/* No Results for Selected Type */}
+        {((contentType === 'motorcycles' && filteredResults.motorcycles.length === 0) ||
+          (contentType === 'shops' && filteredResults.shops.length === 0)) && (
+          <div className="text-center py-12">
+            <div className="max-w-md mx-auto">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                {contentType === 'motorcycles' ? '🏍️' : '🏪'}
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                No {contentType === 'motorcycles' ? 'motorcycles' : 'rental shops'} found
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Try adjusting your search criteria or {contentType === 'motorcycles' ? 'browse rental shops' : 'search for motorcycles'} instead.
+              </p>
+              <div className="flex gap-2 justify-center">
+                <Button 
+                  variant="outline"
+                  onClick={() => handleContentTypeChange(contentType === 'motorcycles' ? 'shops' : 'motorcycles')}
+                >
+                  View {contentType === 'motorcycles' ? 'Rental Shops' : 'Motorcycles'} ({contentType === 'motorcycles' ? shopCount : motorcycleCount})
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => onFiltersChange({ 
+                    query: undefined,
+                    brandId: undefined,
+                    categoryId: undefined,
+                    minPrice: undefined,
+                    maxPrice: undefined,
+                    features: undefined
+                  })}
+                >
+                  Clear Filters
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Pagination */}
@@ -320,13 +376,13 @@ export default function SearchResults({
             currentPage={currentPage}
             totalPages={totalPages}
             pageSize={filters.limit || 20}
-            totalItems={totalCount}
-            startItem={Math.min((filters.offset || 0) + 1, totalCount)}
-            endItem={Math.min((filters.offset || 0) + (filters.limit || 20), totalCount)}
+            totalItems={relevantCount}
+            startItem={Math.min(currentOffset + 1, relevantCount)}
+            endItem={Math.min(currentOffset + pageSize, relevantCount)}
             hasNextPage={currentPage < totalPages}
             hasPrevPage={currentPage > 1}
             onPageChange={handlePageChange}
-            onPageSizeChange={(pageSize) => onFiltersChange({ limit: pageSize, offset: 0 })}
+            onPageSizeChange={(pageSize) => onFiltersChange({ limit: pageSize, offset: 0, contentType })}
             isLoading={isLoading}
           />
         </div>

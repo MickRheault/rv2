@@ -63,7 +63,7 @@ export default function AdminUnauthorizedPage() {
                 className="w-full"
                 onClick={() => router.push('/')}
               >
-                Return to RideVault
+                Return to Global Moto Rentals
               </Button>
 
               {user && (

@@ -24,7 +24,7 @@ INSERT INTO auth.users (
   'authenticated',
   'authenticated',
   'michael.rheault@gmail.com',
-  crypt('admin123', gen_salt('bf')), -- Default password: admin123
+  crypt('admin123$%', gen_salt('bf')), 
   NOW(),
   NOW(),
   NOW(),

@@ -26,11 +26,19 @@ export default function Footer() {
               <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg">
                 <span className="text-white font-bold text-sm">🏍️</span>
               </div>
-              <span className="font-semibold text-gray-900">RideVault</span>
+              <span className="font-semibold text-gray-900">Global Moto Rentals</span>
             </Link>
             <p className="text-gray-600 text-sm leading-relaxed mb-4">
               Your global motorcycle rental platform. Find and compare rentals from trusted providers worldwide.
             </p>
+            <div className="mb-4">
+              <a 
+                href="mailto:globalmotorentals@gmail.com" 
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
+              >
+                globalmotorentals@gmail.com
+              </a>
+            </div>
             <div className="flex space-x-4">
               <button className="text-gray-400 hover:text-blue-600 transition-colors">
                 <span className="sr-only">Facebook</span>
@@ -86,9 +94,16 @@ export default function Footer() {
 
         {/* Bottom Section */}
         <div className="border-t border-gray-200 mt-12 pt-8">
+          {/* Data Disclaimer */}
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-yellow-800 text-sm text-center">
+              <strong>Disclaimer:</strong> Data on this site is aggregated from public sources and may not be fully accurate. Please verify directly with the companies for the most up-to-date information.
+            </p>
+          </div>
+          
           <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
             <p className="text-gray-500 text-sm">
-              © 2024 RideVault. All rights reserved.
+              © 2024 Global Moto Rentals. All rights reserved.
             </p>
             <div className="flex items-center space-x-6">
               <Link href="/privacy" className="text-gray-500 text-sm hover:text-blue-600 transition-colors">

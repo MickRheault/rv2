@@ -127,7 +127,7 @@ export default function SetupPasswordPage() {
           <Image
             className="mx-auto h-12 w-auto"
             src="/logo.svg"
-            alt="RideVault"
+            alt="Global Moto Rentals"
             width={48}
             height={48}
             onError={(e) => {

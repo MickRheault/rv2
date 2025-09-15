@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase/client'
 import { Database } from '@/lib/supabase/database.types'
+import { ACTIVE_BUSINESS_STATUSES } from './shops'
 
 type MotorcycleRental = Database['public']['Tables']['motorcycle_rentals']['Row']
 type RentalShop = Database['public']['Tables']['rental_shops']['Row']
@@ -81,6 +82,25 @@ export interface FilterOptions {
   features: Array<{ id: string; name: string; description: string | null; count: number }>
 }
 
+// Helper function to get active business status IDs for motorcycles
+async function getActiveBusinessStatusIdsForMotorcycles(): Promise<number[]> {
+  const { data: activeBusinessStatuses } = await supabase
+    .from('business_statuses')
+    .select('id')
+    .in('status_code', ACTIVE_BUSINESS_STATUSES)
+  
+  return activeBusinessStatuses ? activeBusinessStatuses.map(status => status.id) : []
+}
+
+// Helper function to apply active shop status filter to motorcycle queries
+function applyActiveShopStatusFilterSync(query: any, activeStatusIds: number[]): any {
+  if (activeStatusIds.length > 0) {
+    return query.in('rental_shops.business_status_id', activeStatusIds)
+  }
+  // If no active statuses, return query that matches nothing
+  return query.eq('rental_shops.id', 'impossible-id-that-will-never-match')
+}
+
 export const motorcycleService = {
   // Get paginated motorcycles with filters
   async getMotorcycles(filters: SearchFilters = {}) {
@@ -113,7 +133,8 @@ export const motorcycleService = {
               *,
               countries (*)
             )
-          )
+          ),
+          business_statuses (*)
         ),
         brands (*),
         categories (*),
@@ -136,6 +157,10 @@ export const motorcycleService = {
     } else if (countryCode) {
       query = query.eq('rental_shops.cities.provinces.country_code', countryCode)
     }
+
+    // Filter by active shop status only (shop visibility control)
+    const activeStatusIds = await getActiveBusinessStatusIdsForMotorcycles()
+    query = applyActiveShopStatusFilterSync(query, activeStatusIds)
 
     // Apply motorcycle filters
     if (brandId) {
@@ -244,7 +269,8 @@ export const motorcycleService = {
               *,
               countries (*)
             )
-          )
+          ),
+          business_statuses (*)
         ),
         brands (*),
         categories (*),
@@ -271,6 +297,17 @@ export const motorcycleService = {
     if (error) {
       console.error('Error fetching motorcycle:', error)
       throw error
+    }
+
+    // Check if motorcycle's shop is active
+    const { data: activeBusinessStatuses } = await supabase
+      .from('business_statuses')
+      .select('id')
+      .in('status_code', ACTIVE_BUSINESS_STATUSES)
+    
+    const activeStatusIds = activeBusinessStatuses ? activeBusinessStatuses.map(status => status.id) : []
+    if (activeStatusIds.length === 0 || !data?.rental_shops?.business_status_id || !activeStatusIds.includes(data.rental_shops.business_status_id)) {
+      throw new Error('Motorcycle not found or not available')
     }
 
     return data

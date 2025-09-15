@@ -25,7 +25,7 @@ export default function Header() {
             <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg group-hover:scale-105 transition-transform">
               <span className="text-white font-bold text-sm">🏍️</span>
             </div>
-            <span className="font-semibold text-gray-900 hidden sm:block">RideVault</span>
+            <span className="font-semibold text-gray-900 hidden sm:block">Global Moto Rentals</span>
           </Link>
 
           {/* Desktop Navigation */}

@@ -1,4 +1,4 @@
-// Custom types for the RideVault application
+// Custom types for the Global Moto Rentals application
 export interface SearchLocation {
   id: string
   name: string

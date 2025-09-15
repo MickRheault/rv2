@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: ShopPageProps): Promise<Metad
     })
   } catch (error) {
     return {
-      title: 'Shop Not Found | RideVault',
+      title: 'Shop Not Found | Global Moto Rentals',
       description: 'The requested motorcycle rental shop could not be found.',
     }
   }

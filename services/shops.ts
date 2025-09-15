@@ -55,6 +55,28 @@ export interface ShopSearchFilters {
   offset?: number
 }
 
+// Define active business statuses that should be visible on the platform
+export const ACTIVE_BUSINESS_STATUSES = ['OPERATIONAL', 'operational', 'active', 'ACTIVE'];
+
+// Helper function to get active business status IDs
+async function getActiveBusinessStatusIds(): Promise<number[]> {
+  const { data: activeBusinessStatuses } = await supabase
+    .from('business_statuses')
+    .select('id')
+    .in('status_code', ACTIVE_BUSINESS_STATUSES)
+  
+  return activeBusinessStatuses ? activeBusinessStatuses.map(status => status.id) : []
+}
+
+// Helper function to apply active status filter to a query
+function applyActiveStatusFilterSync(query: any, activeStatusIds: number[]): any {
+  if (activeStatusIds.length > 0) {
+    return query.in('business_status_id', activeStatusIds)
+  }
+  // If no active statuses, return query that matches nothing
+  return query.eq('id', 'impossible-id-that-will-never-match')
+}
+
 export const shopService = {
   // Get paginated shops with filters
   async getShops(filters: ShopSearchFilters = {}) {
@@ -122,6 +144,10 @@ export const shopService = {
         return { shops: [], total: 0 }
       }
     }
+
+    // Filter by active business statuses only (shop visibility control)
+    const activeStatusIds = await getActiveBusinessStatusIds()
+    shopQuery = applyActiveStatusFilterSync(shopQuery, activeStatusIds)
 
     // Apply shop-specific filters
     if (minRating !== undefined) {
@@ -237,6 +263,12 @@ export const shopService = {
       throw error
     }
 
+    // Apply active status filter - check if shop is active before returning
+    const activeStatusIds = await getActiveBusinessStatusIds()
+    if (activeStatusIds.length === 0 || !data?.business_status_id || !activeStatusIds.includes(data.business_status_id)) {
+      throw new Error('Shop not found or not available')
+    }
+
     return data as ShopWithMotorcycles
   },
 
@@ -271,8 +303,14 @@ export const shopService = {
       .single()
 
     if (error) {
-      console.error('Error fetching shop by slug:', error)
+      console.error('Error fetching shop:', error)
       throw error
+    }
+
+    // Apply active status filter - check if shop is active before returning
+    const activeStatusIds = await getActiveBusinessStatusIds()
+    if (activeStatusIds.length === 0 || !data?.business_status_id || !activeStatusIds.includes(data.business_status_id)) {
+      throw new Error('Shop not found or not available')
     }
 
     return data as ShopWithMotorcycles
@@ -305,7 +343,7 @@ export const shopService = {
 
   // Search shops by location text (city, province, country names)
   async searchShopsByLocation(locationQuery: string, limit: number = 10) {
-    const { data, error } = await supabase
+    let query = supabase
       .from('rental_shops')
       .select(`
         *,
@@ -315,10 +353,17 @@ export const shopService = {
             *,
             countries (*)
           )
-        )
+        ),
+        business_statuses (*)
       `)
       .or(`cities.name.ilike.%${locationQuery}%,cities.provinces.name.ilike.%${locationQuery}%,cities.provinces.countries.name.ilike.%${locationQuery}%`)
       .limit(limit)
+
+    // Filter by active business status
+    const activeStatusIds = await getActiveBusinessStatusIds()
+    query = applyActiveStatusFilterSync(query, activeStatusIds)
+
+    const { data, error } = await query
 
     if (error) {
       console.error('Error searching shops by location:', error)
@@ -330,7 +375,7 @@ export const shopService = {
 
   // Get top-rated shops
   async getTopRatedShops(limit: number = 10) {
-    const { data, error } = await supabase
+    let query = supabase
       .from('rental_shops')
       .select(`
         *,
@@ -347,6 +392,12 @@ export const shopService = {
       .order('rating', { ascending: false })
       .order('review_count', { ascending: false })
       .limit(limit)
+
+    // Filter by active business status
+    const activeStatusIds = await getActiveBusinessStatusIds()
+    query = applyActiveStatusFilterSync(query, activeStatusIds)
+
+    const { data, error } = await query
 
     if (error) {
       console.error('Error fetching top rated shops:', error)
@@ -369,9 +420,14 @@ export const shopService = {
             countries (*)
           )
         ),
+        business_statuses (*),
         rental_shop_tours!inner (*)
       `)
       .order('rating', { ascending: false, nullsFirst: false })
+
+    // Filter by active business status
+    const activeStatusIds = await getActiveBusinessStatusIds()
+    query = applyActiveStatusFilterSync(query, activeStatusIds)
 
     if (limit) {
       query = query.limit(limit)
@@ -679,6 +735,108 @@ export const shopService = {
       name: city.name,
       fullName: `${city.name}, ${city.provinces?.name || ''}, ${city.provinces?.countries?.name || ''}`
     }))
+  },
+
+  // ========================================
+  // Service Locations (Pickup/Drop-off) Management
+  // ========================================
+
+  // Get service locations for a shop
+  async getServiceLocations(shopId: string): Promise<RentalShopServiceLocation[]> {
+    const { data, error } = await supabase
+      .from('rental_shop_service_locations')
+      .select('*')
+      .eq('shop_id', shopId)
+      .order('created_at', { ascending: true })
+
+    if (error) {
+      console.error('Error fetching service locations:', error)
+      throw error
+    }
+
+    return data || []
+  },
+
+  // Create service location
+  async createServiceLocation(shopId: string, locationName: string): Promise<RentalShopServiceLocation> {
+    const { data, error } = await supabase
+      .from('rental_shop_service_locations')
+      .insert({
+        shop_id: shopId,
+        location_name: locationName.trim()
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error creating service location:', error)
+      throw error
+    }
+
+    return data
+  },
+
+  // Update service location
+  async updateServiceLocation(id: string, locationName: string): Promise<RentalShopServiceLocation> {
+    const { data, error } = await supabase
+      .from('rental_shop_service_locations')
+      .update({
+        location_name: locationName.trim(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error updating service location:', error)
+      throw error
+    }
+
+    return data
+  },
+
+  // Delete service location
+  async deleteServiceLocation(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('rental_shop_service_locations')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      console.error('Error deleting service location:', error)
+      throw error
+    }
+  },
+
+  // Bulk update service locations for a shop
+  async updateShopServiceLocations(shopId: string, locations: string[]): Promise<RentalShopServiceLocation[]> {
+    // First, get existing locations
+    const existing = await this.getServiceLocations(shopId)
+    const existingNames = existing.map(loc => loc.location_name)
+    
+    // Filter out empty/duplicate location names
+    const newLocations = locations
+      .map(loc => loc.trim())
+      .filter(loc => loc.length > 0)
+      .filter((loc, index, arr) => arr.indexOf(loc) === index) // Remove duplicates
+
+    // Determine which to add and which to remove
+    const toAdd = newLocations.filter(loc => !existingNames.includes(loc))
+    const toRemove = existing.filter(loc => !newLocations.includes(loc.location_name))
+
+    // Delete removed locations
+    for (const location of toRemove) {
+      await this.deleteServiceLocation(location.id)
+    }
+
+    // Add new locations
+    for (const locationName of toAdd) {
+      await this.createServiceLocation(shopId, locationName)
+    }
+
+    // Return updated list
+    return await this.getServiceLocations(shopId)
   }
 }
 

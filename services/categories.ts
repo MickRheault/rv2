@@ -232,5 +232,220 @@ export const categoryService = {
     }
 
     return (data?.length || 0) > 0;
+  },
+
+  // ========================================
+  // Category Reassignment & Impact Analysis
+  // ========================================
+
+  // Get motorcycles affected by a category (for impact analysis)
+  async getMotorcyclesByCategory(categoryId: string, limit: number = 50): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('motorcycle_rentals')
+      .select(`
+        id,
+        model,
+        year,
+        brands!inner(name),
+        rental_shops!inner(provider_name, slug),
+        rental_rate_per_day,
+        rental_rate_currency
+      `)
+      .eq('category_id', categoryId)
+      .limit(limit)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching motorcycles by category:', error);
+      throw error;
+    }
+
+    return data || [];
+  },
+
+  // Get count of motorcycles for a category
+  async getMotorcycleCountByCategory(categoryId: string): Promise<number> {
+    const { count, error } = await supabase
+      .from('motorcycle_rentals')
+      .select('*', { count: 'exact', head: true })
+      .eq('category_id', categoryId);
+
+    if (error) {
+      console.error('Error counting motorcycles by category:', error);
+      throw error;
+    }
+
+    return count || 0;
+  },
+
+  // Reassign motorcycles from one category to another
+  async reassignMotorcycles(fromCategoryId: string, toCategoryId: string | null): Promise<number> {
+    const updateData: any = {
+      updated_at: new Date().toISOString()
+    };
+
+    if (toCategoryId === null) {
+      updateData.category_id = null;
+    } else {
+      updateData.category_id = toCategoryId;
+    }
+
+    const { data, error } = await supabase
+      .from('motorcycle_rentals')
+      .update(updateData)
+      .eq('category_id', fromCategoryId)
+      .select('id');
+
+    if (error) {
+      console.error('Error reassigning motorcycles:', error);
+      throw error;
+    }
+
+    return data?.length || 0;
+  },
+
+  // Bulk reassign motorcycles from multiple categories to one target category
+  async bulkReassignMotorcycles(fromCategoryIds: string[], toCategoryId: string | null): Promise<number> {
+    const updateData: any = {
+      updated_at: new Date().toISOString()
+    };
+
+    if (toCategoryId === null) {
+      updateData.category_id = null;
+    } else {
+      updateData.category_id = toCategoryId;
+    }
+
+    const { data, error } = await supabase
+      .from('motorcycle_rentals')
+      .update(updateData)
+      .in('category_id', fromCategoryIds)
+      .select('id');
+
+    if (error) {
+      console.error('Error bulk reassigning motorcycles:', error);
+      throw error;
+    }
+
+    return data?.length || 0;
+  },
+
+  // Delete category with reassignment of motorcycles
+  async deleteCategoryWithReassignment(categoryId: string, reassignToCategoryId: string | null): Promise<void> {
+    // First reassign the motorcycles
+    const affectedCount = await this.reassignMotorcycles(categoryId, reassignToCategoryId);
+    
+    // Then delete the category
+    const { error } = await supabase
+      .from('categories')
+      .delete()
+      .eq('id', categoryId);
+
+    if (error) {
+      console.error('Error deleting category after reassignment:', error);
+      throw error;
+    }
+
+    console.log(`Category deleted. ${affectedCount} motorcycles reassigned.`);
+  },
+
+  // Bulk delete categories with reassignment
+  async bulkDeleteCategoriesWithReassignment(categoryIds: string[], reassignToCategoryId: string | null): Promise<void> {
+    // First reassign all motorcycles from these categories
+    const affectedCount = await this.bulkReassignMotorcycles(categoryIds, reassignToCategoryId);
+    
+    // Then delete the categories
+    const { error } = await supabase
+      .from('categories')
+      .delete()
+      .in('id', categoryIds);
+
+    if (error) {
+      console.error('Error bulk deleting categories after reassignment:', error);
+      throw error;
+    }
+
+    console.log(`${categoryIds.length} categories deleted. ${affectedCount} motorcycles reassigned.`);
+  },
+
+  // ========================================
+  // Category Normalization Suggestions
+  // ========================================
+
+  // Find similar category names for normalization suggestions
+  async findSimilarCategories(): Promise<Array<{category: Category, suggestions: Category[]}>> {
+    // Get all categories
+    const categories = await this.getCategories();
+    const suggestions: Array<{category: Category, suggestions: Category[]}> = [];
+
+    for (const category of categories) {
+      const similar: Category[] = [];
+      const categoryName = category.name.toLowerCase().trim();
+
+      for (const other of categories) {
+        if (other.id === category.id) continue;
+        
+        const otherName = other.name.toLowerCase().trim();
+        
+        // Check for similar names (various patterns)
+        if (
+          // Plural/singular variations
+          (categoryName + 's' === otherName) ||
+          (categoryName === otherName + 's') ||
+          // Case variations
+          (categoryName === otherName) ||
+          // Common variations
+          (categoryName.replace(/[^a-z0-9]/g, '') === otherName.replace(/[^a-z0-9]/g, '')) ||
+          // Contains relationship
+          (categoryName.length > 3 && otherName.includes(categoryName)) ||
+          (otherName.length > 3 && categoryName.includes(otherName))
+        ) {
+          similar.push(other);
+        }
+      }
+
+      if (similar.length > 0) {
+        suggestions.push({
+          category,
+          suggestions: similar
+        });
+      }
+    }
+
+    return suggestions;
+  },
+
+  // Get impact analysis for category operations
+  async getCategoryImpactAnalysis(categoryIds: string[]): Promise<{
+    totalMotorcycles: number;
+    categoriesWithCounts: Array<{category: Category, motorcycleCount: number}>;
+    sampleMotorcycles: any[];
+  }> {
+    let totalMotorcycles = 0;
+    const categoriesWithCounts: Array<{category: Category, motorcycleCount: number}> = [];
+    let allSampleMotorcycles: any[] = [];
+
+    for (const categoryId of categoryIds) {
+      const [category, count, motorcycles] = await Promise.all([
+        this.getCategoryById(categoryId),
+        this.getMotorcycleCountByCategory(categoryId),
+        this.getMotorcyclesByCategory(categoryId, 10) // Get sample of 10 motorcycles per category
+      ]);
+
+      if (category) {
+        totalMotorcycles += count;
+        categoriesWithCounts.push({
+          category,
+          motorcycleCount: count
+        });
+        allSampleMotorcycles = allSampleMotorcycles.concat(motorcycles);
+      }
+    }
+
+    return {
+      totalMotorcycles,
+      categoriesWithCounts,
+      sampleMotorcycles: allSampleMotorcycles.slice(0, 20) // Limit to 20 total samples
+    };
   }
 }; 
