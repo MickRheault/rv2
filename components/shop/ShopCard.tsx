@@ -18,6 +18,7 @@ import { Card, CardContent, CardFooter, CardHeader, Badge, PremiumBadge } from '
 import Button from '@/components/ui/Button'
 import { ShopWithDetails } from '@/services/shops'
 import { PremiumTier, PremiumStatus, PremiumFeatureConfig } from '@/types/premium-listings'
+import { getShopUrl } from '@/lib/utils/urls'
 
 interface ShopCardProps {
   shop: ShopWithDetails
@@ -75,7 +76,7 @@ export default function ShopCard({
     ) {
       return
     }
-    router.push(`/shop/${shop.slug}`)
+    router.push(getShopUrl(shop))
   }
 
   // Handle favorite toggle
@@ -290,7 +291,7 @@ export default function ShopCard({
           <CardFooter className="p-4 pt-0">
             <div className="flex w-full gap-2">
               <a
-                href={`/shop/${shop.slug}`}
+                href={getShopUrl(shop)}
                 onClick={(e) => e.stopPropagation()}
                 className="flex-1"
               >
@@ -299,7 +300,7 @@ export default function ShopCard({
                 </Button>
               </a>
               <a
-                href={`/shop/${shop.slug}`}
+                href={getShopUrl(shop)}
                 onClick={(e) => e.stopPropagation()}
                 className="flex-1"
               >

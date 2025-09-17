@@ -5,20 +5,29 @@ import { PremiumUtilsService } from '@/services/premium-listings'
 import ShopDetails from '@/components/shop/ShopDetails'
 import { generateMetadata as generateSEOMetadata, generateShopSEO } from '@/lib/seo/config'
 import { StructuredData, generateRentalShopSchema, generateRentalServiceSchema, generateTourSchema, generateEnhancedMotorcycleSchema } from '@/lib/seo/structured-data'
+import { parseShopLocation, validateShopLocation } from '@/lib/utils/urls'
 
 interface ShopPageProps {
   params: {
+    country: string
+    city: string
     slug: string
   }
 }
 
 export async function generateMetadata({ params }: ShopPageProps): Promise<Metadata> {
   try {
-    const shop = await shopService.getShopBySlug(params.slug)
+    const { country, city, slug } = params
+    const { countryName, cityName } = parseShopLocation(country, city)
     
-    const location = shop.cities ? 
-      `${shop.cities.name}, ${shop.cities.provinces?.name || ''}, ${shop.cities.provinces?.countries?.name || ''}`.replace(/,\s*,/g, ',').replace(/,$/, '') :
-      shop.full_address
+    const shop = await shopService.getShopByLocationAndSlug(countryName, cityName, slug)
+    
+    // Validate that the shop actually matches the URL location
+    if (!validateShopLocation(shop, country, city)) {
+      throw new Error('Shop location mismatch')
+    }
+    
+    const location = `${shop.cities?.name}, ${shop.cities?.provinces?.name || ''}, ${shop.cities?.provinces?.countries?.name || ''}`.replace(/,\s*,/g, ',').replace(/,$/, '')
 
     const seoConfig = generateShopSEO({
       id: shop.id,
@@ -32,7 +41,7 @@ export async function generateMetadata({ params }: ShopPageProps): Promise<Metad
 
     return generateSEOMetadata({
       ...seoConfig,
-      url: `/shop/${params.slug}`,
+      url: `/shop/${country}/${city}/${slug}`,
     })
   } catch (error) {
     return {
@@ -44,37 +53,51 @@ export async function generateMetadata({ params }: ShopPageProps): Promise<Metad
 
 export default async function ShopPage({ params }: ShopPageProps) {
   try {
-    const shop = await shopService.getShopBySlug(params.slug)
+    const { country, city, slug } = params
+    const { countryName, cityName } = parseShopLocation(country, city)
+    
+    console.log('🔍 Shop page debug:', {
+      urlParams: { country, city, slug },
+      parsedLocation: { countryName, cityName }
+    })
+    
+    let shop = await shopService.getShopByLocationAndSlug(countryName, cityName, slug)
+    
+    // If location-based lookup fails, try fallback to just slug
+    if (!shop) {
+      console.log('🔄 Location-based lookup failed, trying fallback by slug only...')
+      try {
+        shop = await shopService.getShopBySlug(slug)
+        console.log('🎯 Fallback successful, found shop:', shop.provider_name)
+        
+        // Log the actual location vs expected
+        const actualLocation = shop.cities ? 
+          `${shop.cities.name}, ${shop.cities.provinces?.countries?.name}` : 
+          'No location data'
+        console.log('🗺️ Location mismatch - Expected:', `${countryName}, ${cityName}`, 'Actual:', actualLocation)
+      } catch (fallbackError) {
+        console.log('❌ Fallback also failed')
+        notFound()
+      }
+    }
     
     if (!shop) {
       notFound()
     }
 
+    // For now, let's be more lenient with location validation to debug
+    const locationMatches = validateShopLocation(shop, country, city)
+    if (!locationMatches) {
+      console.log('⚠️ Location validation failed but proceeding for debugging')
+    }
+
     // Fetch premium information for the shop (use same method as search results)
     let premium = undefined
     try {
-      console.log('=== SHOP PAGE PREMIUM DEBUG ===')
-      console.log('Shop ID:', shop.id)
-      console.log('Shop provider name:', shop.provider_name)
-      console.log('Entity ID that will be searched for:', shop.id)
-      console.log('Entity ID type:', typeof shop.id)
-      console.log('About to call getPremiumEntities with:')
-      console.log('  - content_type:', 'rental_shop')
-      console.log('  - entity_ids array:', [shop.id])
-      console.log('  - entity_ids array length:', [shop.id].length)
-      console.log('  - entity_ids[0]:', [shop.id][0])
-      console.log('  - searching for entity_id:', shop.id)
-      
       // Use the same method as search results for consistency
       const premiumMap = await PremiumUtilsService.getPremiumEntities('rental_shop', [shop.id])
-      console.log('Premium map result:', premiumMap)
-      console.log('Premium map size:', premiumMap.size)
-      console.log('Premium map keys:', Array.from(premiumMap.keys()))
-      console.log('Premium map has shop.id?', premiumMap.has(shop.id))
-      console.log('Exact entity ID searched for in premium query:', shop.id)
       
       const premiumInfo = premiumMap.get(shop.id)
-      console.log('Premium info for entity ID', shop.id, ':', premiumInfo)
       
       if (premiumInfo) {
         premium = {
@@ -82,10 +105,8 @@ export default async function ShopPage({ params }: ShopPageProps) {
           premiumType: premiumInfo.tier,
           boostScore: premiumInfo.boostScore
         }
-        console.log('Setting premium to:', premium)
       } else {
         premium = { isPremium: false }
-        console.log('No premium info found, setting isPremium to false')
       }
     } catch (error) {
       console.error('Error fetching premium info:', error)
@@ -176,4 +197,4 @@ export default async function ShopPage({ params }: ShopPageProps) {
     console.error('Error loading shop:', error)
     notFound()
   }
-} 
+}

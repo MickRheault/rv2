@@ -316,6 +316,107 @@ export const shopService = {
     return data as ShopWithMotorcycles
   },
 
+  // Get shop by location and slug (for new URL structure)
+  async getShopByLocationAndSlug(countryName: string, cityName: string, slug: string) {
+    console.log('🔍 getShopByLocationAndSlug called with:', {
+      countryName,
+      cityName,
+      slug
+    })
+    
+    // Try a simpler query first to debug
+    const { data: simpleData, error: simpleError } = await supabase
+      .from('rental_shops')
+      .select(`
+        *,
+        cities (
+          name,
+          provinces (
+            name,
+            countries (
+              name
+            )
+          )
+        )
+      `)
+      .eq('slug', slug)
+      .single()
+
+    console.log('🔍 Simple query result:', {
+      found: !!simpleData,
+      shopName: simpleData?.provider_name,
+      actualCity: simpleData?.cities?.name,
+      actualCountry: simpleData?.cities?.provinces?.countries?.name,
+      searchingFor: { cityName, countryName }
+    })
+
+    // Check if location matches (case-insensitive)
+    if (simpleData && simpleData.cities?.name && simpleData.cities?.provinces?.countries?.name) {
+      const actualCity = simpleData.cities.name.toLowerCase()
+      const actualCountry = simpleData.cities.provinces.countries.name.toLowerCase()
+      const expectedCity = cityName.toLowerCase()
+      const expectedCountry = countryName.toLowerCase()
+      
+      console.log('🔍 Case-insensitive comparison:', {
+        actualCity, expectedCity, cityMatch: actualCity === expectedCity,
+        actualCountry, expectedCountry, countryMatch: actualCountry === expectedCountry
+      })
+      
+      if (actualCity !== expectedCity || actualCountry !== expectedCountry) {
+        console.log('❌ Location mismatch detected')
+        throw new Error(`Location mismatch: expected ${countryName}/${cityName}, got ${simpleData.cities.provinces.countries.name}/${simpleData.cities.name}`)
+      }
+    }
+
+    // If we get here, location matches, so fetch full data
+    const { data, error } = await supabase
+      .from('rental_shops')
+      .select(`
+        *,
+        cities (
+          *,
+          provinces (
+            *,
+            countries (*)
+          )
+        ),
+        business_statuses (*),
+        rental_shop_inclusions (*),
+        rental_shop_tours (*),
+        rental_shop_service_locations (*),
+        rental_shop_conditions (
+          *,
+          condition_types (*)
+        ),
+        motorcycle_rentals (
+          *,
+          brands (*),
+          categories (*)
+        )
+      `)
+      .eq('slug', slug)
+      .single()
+
+    if (error) {
+      console.error('Error fetching shop by location and slug:', error)
+      throw error
+    }
+
+    console.log('🔍 Query result:', {
+      found: !!data,
+      shopName: data?.provider_name,
+      actualLocation: data?.cities ? `${data.cities.name}, ${data.cities.provinces?.countries?.name}` : 'No location data'
+    })
+
+    // Apply active status filter - check if shop is active before returning
+    const activeStatusIds = await getActiveBusinessStatusIds()
+    if (activeStatusIds.length === 0 || !data?.business_status_id || !activeStatusIds.includes(data.business_status_id)) {
+      throw new Error('Shop not found or not available')
+    }
+
+    return data as ShopWithMotorcycles
+  },
+
   // Get shops with motorcycle count for overview/stats
   async getShopsWithCounts(filters: ShopSearchFilters = {}) {
     const shopsResult = await this.getShops(filters)
