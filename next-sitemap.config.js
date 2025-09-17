@@ -139,16 +139,47 @@ module.exports = {
         })
       }
       
-      // Fetch all shops
+      // Fetch all shops with location data
       const { data: shops, error: shopsError } = await supabase
         .from('rental_shops')
-        .select('slug, updated_at')
+        .select(`
+          slug, 
+          updated_at,
+          cities (
+            name,
+            provinces (
+              name,
+              countries (
+                name
+              )
+            )
+          )
+        `)
         .limit(2000)
       
       if (!shopsError && shops) {
         shops.forEach(shop => {
+          // Helper function to format location for URL
+          const formatLocationForUrl = (name) => {
+            return name
+              .toLowerCase()
+              .replace(/\s+/g, '-')
+              .replace(/[^a-z0-9-]/g, '')
+              .replace(/-+/g, '-')
+              .replace(/^-|-$/g, '')
+          }
+
+          let shopUrl = `/shop/${shop.slug}` // Fallback to old format
+          
+          // Use new location-based URL if location data is available
+          if (shop.cities?.provinces?.countries?.name && shop.cities?.name) {
+            const country = formatLocationForUrl(shop.cities.provinces.countries.name)
+            const city = formatLocationForUrl(shop.cities.name)
+            shopUrl = `/shop/${country}/${city}/${shop.slug}`
+          }
+
           additionalPaths.push({
-            loc: `/shop/${shop.slug}`,
+            loc: shopUrl,
             changefreq: 'weekly',
             priority: 0.9,
             lastmod: shop.updated_at || new Date().toISOString(),
