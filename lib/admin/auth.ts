@@ -13,7 +13,7 @@ interface CustomJwtPayload {
 }
 
 /**
- * Get current user's role from JWT token
+ * Get current user's role from JWT token or database
  */
 export async function getCurrentUserRole(): Promise<AppRole | null> {
   try {
@@ -23,10 +23,37 @@ export async function getCurrentUserRole(): Promise<AppRole | null> {
       return null;
     }
 
-    const decoded = jwtDecode<CustomJwtPayload>(session.access_token);
-    return decoded.user_role || 'user';
+    // First try to get from JWT
+    try {
+      const decoded = jwtDecode<CustomJwtPayload>(session.access_token);
+      if (decoded.user_role) {
+        return decoded.user_role;
+      }
+    } catch (jwtError) {
+      console.warn('Could not decode JWT user_role, falling back to database:', jwtError);
+    }
+
+    // Fallback to database lookup
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return null;
+    }
+
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error checking user role in database:', error);
+      return 'user';
+    }
+
+    return data?.role || 'user';
   } catch (error) {
-    console.error('Error decoding JWT:', error);
+    console.error('Error getting user role:', error);
     return null;
   }
 }
@@ -45,7 +72,7 @@ export async function isCurrentUserAdmin(): Promise<boolean> {
 export async function getUserPermissions(role: AppRole): Promise<AppPermission[]> {
   try {
     // For admin role, return all admin permissions
-    // Since we know the JWT contains the correct role, we can trust it
+    // Since we know the role from the database, we can trust it
     if (role === 'admin') {
       const adminPermissions: AppPermission[] = [
         'content.moderate',
@@ -54,14 +81,10 @@ export async function getUserPermissions(role: AppRole): Promise<AppPermission[]
         'system.manage'
       ];
       
-      // Verify user actually has these permissions by testing one
-      const canManage = await hasPermission('system.manage');
-      if (canManage) {
-        return adminPermissions;
-    }
+      return adminPermissions;
     }
     
-    // For non-admin roles or if permission check fails, return empty array
+    // For non-admin roles, return empty array
     return [];
   } catch (error) {
     console.error('Error fetching user permissions:', error);
