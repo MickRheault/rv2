@@ -18,6 +18,7 @@ import { StarIcon as StarSolid } from '@heroicons/react/24/solid'
 import { Card, CardHeader, CardTitle, CardContent, Badge, Button } from '@/components/ui'
 import { FlagButton } from '@/components/common/FlagButton'
 import { MotorcycleWithDetails } from '@/services/motorcycles'
+import { getShopUrl } from '@/lib/utils/urls'
 
 interface MotorcycleDetailsProps {
   motorcycle: MotorcycleWithDetails
@@ -480,7 +481,7 @@ export default function MotorcycleDetails({ motorcycle }: MotorcycleDetailsProps
               </div>
 
               <div className="pt-4 space-y-2">
-                <Link href={`/shop/${rental_shops?.slug || rental_shops?.id}`}>
+                <Link href={rental_shops ? getShopUrl(rental_shops) : '#'}>
                   <Button className="w-full">
                     View Shop Details
                   </Button>

@@ -1,6 +1,7 @@
 // Structured data (JSON-LD) generators for rich snippets
 import React from 'react';
 import { SITE_CONFIG } from './config';
+import { getShopUrl } from '@/lib/utils/urls';
 
 // Organization schema for the company
 export function generateOrganizationSchema() {
@@ -264,9 +265,9 @@ export function generateLocationShopListingSchema(params: {
         position: index + 1,
         item: {
           '@type': 'LocalBusiness',
-          '@id': `${SITE_CONFIG.url}/shop/${shop.slug}`,
+          '@id': `${SITE_CONFIG.url}${shop.cities?.provinces?.countries?.name && shop.cities?.name ? `/shop/${shop.cities.provinces.countries.name.toLowerCase().replace(/\s+/g, '-')}/${shop.cities.name.toLowerCase().replace(/\s+/g, '-')}/${shop.slug}` : `/shop/${shop.slug}`}`,
           name: shop.provider_name,
-          url: `${SITE_CONFIG.url}/shop/${shop.slug}`,
+          url: `${SITE_CONFIG.url}${shop.cities?.provinces?.countries?.name && shop.cities?.name ? `/shop/${shop.cities.provinces.countries.name.toLowerCase().replace(/\s+/g, '-')}/${shop.cities.name.toLowerCase().replace(/\s+/g, '-')}/${shop.slug}` : `/shop/${shop.slug}`}`,
           telephone: shop.phone || undefined,
           sameAs: shop.website ? [shop.website] : undefined,
           address: {

@@ -135,6 +135,16 @@ export interface CityPageProps {
   params: CityPageParams
 }
 
+export interface ShopPageParams {
+  country: string
+  city: string
+  slug: string
+}
+
+export interface ShopPageProps {
+  params: ShopPageParams
+}
+
 // Component props interfaces
 export interface BaseComponentProps {
   className?: string
