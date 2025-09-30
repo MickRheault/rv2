@@ -1,0 +1,473 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-09-22T17:10:42.244Z",
+    "shop_identifier": "Kickstart Cambodia - Dirt Bike Adventures",
+    "provider_name": "Kickstart Cambodia - Dirt Bike Adventures",
+    "place_id": "ChIJJVsVAWQXEDERke-JdFPKOuY",
+    "address": "Bamboo St, Phum, ផ្លូវ​វត្ត​ស្វាយ​, Krong Siem Reap 17254, Cambodia",
+    "city": "Siem Reap",
+    "province": "Siem Reap Province",
+    "country": "Cambodia",
+    "latitude": 13.3453305,
+    "longitude": 103.8561995,
+    "phone": "093 214 444",
+    "website": "http://www.kickstartcambodia.com/",
+    "google_maps_url": "https://maps.google.com/?cid=16589794637158936465",
+    "business_status": "OPERATIONAL",
+    "rating": 4.8,
+    "review_count": 75,
+    "rental_conditions": {
+      "damage_deposit_required": true,
+      "damage_deposit_amount_xr250r": 500,
+      "damage_deposit_amount_upgrades": 750,
+      "damage_deposit_currency": "USD",
+      "damage_deposit_options": "cash or passport",
+      "cancellation_56_or_more_days": "retention of deposit",
+      "cancellation_55_42_days": "30% of tour price",
+      "cancellation_41_28_days": "60% of tour price",
+      "cancellation_27_14_days": "90% of tour price",
+      "cancellation_less_than_14_days": "100% of tour price",
+      "credit_card_fee": "3.9%",
+      "required_experience": "riders must know how to ride a dirt bike",
+      "health_requirements": "riders must be in good mental and physical health"
+    },
+    "rental_inclusions": [
+      "safety equipment",
+      "daily bike maintenance",
+      "sag setup based on rider weight",
+      "guided tours"
+    ],
+    "offered_tours": [
+      {
+        "name": "Around Siem Reap",
+        "duration_text": "half to two day trips",
+        "distance_km": null,
+        "price_text": "From $60",
+        "currency": "USD"
+      },
+      {
+        "name": "Tomb Raider Temple Tours",
+        "duration_text": "four to six day tours",
+        "distance_km": null,
+        "price_text": "From $60",
+        "currency": "USD"
+      },
+      {
+        "name": "Northeast Enduros",
+        "duration_text": "eight to ten day tours",
+        "distance_km": null,
+        "price_text": "From $60",
+        "currency": "USD"
+      },
+      {
+        "name": "Cardamom Mountain Adventures",
+        "duration_text": "six to eleven day tours",
+        "distance_km": null,
+        "price_text": "From $60",
+        "currency": "USD"
+      },
+      {
+        "name": "Southern Scrambles",
+        "duration_text": "three to eleven day tours",
+        "distance_km": null,
+        "price_text": "From $60",
+        "currency": "USD"
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "kickstartcambodia",
+      "scrape_timestamp": "2025-09-22T17:10:43.323Z",
+      "source_url": "https://www.kickstartcambodia.com/index.php/en/bikes/our-bikes/#xr250r",
+      "brand": "Honda",
+      "model": "XR 250R",
+      "year": 2004,
+      "engine_capacity_cc": 249,
+      "category": "Offroad/Enduro",
+      "description": "Robust, light and reliable—our standard tour package bike. Great all-rounder for riders of all abilities.",
+      "rental_rates": [
+        {
+          "rate_text": "Standard bike (included in tour price)",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://www.kickstartcambodia.com/images/rocketlauncher/pages/bikes/motorbike-tours-cambodia-honda-xr-250.jpg"
+      ],
+      "features": [
+        "Robust",
+        "Light",
+        "Reliable",
+        "Great all-rounder for riders of all abilities"
+      ],
+      "specifications_raw": {
+        "Model": "Honda XR 250R (2004)",
+        "Category": "Offroad/Enduro",
+        "Displacement": "249 cc",
+        "Engine": "Air-cooled, dry-sump, single-cyl, 4-stroke",
+        "Compression": "10.2:1",
+        "Bore x Stroke": "73.0 × 59.5 mm",
+        "Fuel system": "32 mm diaphragm-type CV carb",
+        "Transmission/Drive": "6-speed / Chain",
+        "Fuel capacity": "9.08 L (2.40 gal)",
+        "Dry weight": "110 kg (242.5 lb)"
+      },
+      "conditions_raw": "Standard tour package bike. All bikes are maintained in-house by experienced mechanics. Bikes are fully serviced before each tour and checked after each day's riding.",
+      "required_documents_raw": [
+        "Passport (as deposit option) or cash deposit of $500"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third party insurance",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "USD",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Available as extra"
+        },
+        {
+          "type_name": "Damage deposit",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "USD",
+          "deductible": 500,
+          "deductible_currency": "USD",
+          "notes": "Required for XR250R - cash or passport"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "kickstartcambodia",
+      "scrape_timestamp": "2025-09-22T17:10:43.323Z",
+      "source_url": "https://www.kickstartcambodia.com/index.php/en/bikes/our-bikes/#xr400r",
+      "brand": "Honda",
+      "model": "XR 400R",
+      "year": 2004,
+      "engine_capacity_cc": 397,
+      "category": "Offroad/Enduro",
+      "description": "Balanced power, handling and weight—perfect all-rounder for Cambodia's trails if you want a bit more punch.",
+      "rental_rates": [
+        {
+          "rate_text": "Upgrade pricing",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 40,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://www.kickstartcambodia.com/images/rocketlauncher/pages/bikes/motorbike-tours-cambodia-honda-xr-400.jpg"
+      ],
+      "features": [
+        "Balanced power",
+        "Good handling",
+        "Good weight",
+        "More power than standard bikes"
+      ],
+      "specifications_raw": {
+        "Model": "Honda XR 400R (2004)",
+        "Category": "Offroad/Enduro",
+        "Displacement": "397 cc",
+        "Engine": "Air-cooled, 4-stroke, single SOHC, 4-valve",
+        "Compression": "9.3:1",
+        "Bore x Stroke": "85.0 × 70.0 mm",
+        "Fuel system": "36 mm piston-valve carb",
+        "Transmission/Drive": "5-speed / Chain",
+        "Fuel capacity / Reserve": "9.46 L (2.50 gal) / 1.51 L (0.40 gal)",
+        "Dry weight": "121 kg (266.8 lb)"
+      },
+      "conditions_raw": "Upgrade option. All bikes are maintained in-house by experienced mechanics. Bikes are fully serviced before each tour and checked after each day's riding.",
+      "required_documents_raw": [
+        "Passport (as deposit option) or cash deposit of $750"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third party insurance",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "USD",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Available as extra"
+        },
+        {
+          "type_name": "Damage deposit",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "USD",
+          "deductible": 750,
+          "deductible_currency": "USD",
+          "notes": "Required for upgrade bikes - cash or passport"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "kickstartcambodia",
+      "scrape_timestamp": "2025-09-22T17:10:43.323Z",
+      "source_url": "https://www.kickstartcambodia.com/index.php/en/bikes/our-bikes/#wr250f",
+      "brand": "Yamaha",
+      "model": "WR 250F",
+      "year": 2008,
+      "engine_capacity_cc": 250,
+      "category": "Enduro/Offroad",
+      "description": "Our weapon of choice. Quick-revving engine with strong low/mid power. Best for more experienced enduro riders.",
+      "rental_rates": [
+        {
+          "rate_text": "Upgrade pricing",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 60,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://www.kickstartcambodia.com/images/rocketlauncher/pages/bikes/motorbike-tours-cambodia-yamaha-wrf-250.jpg"
+      ],
+      "features": [
+        "Quick-revving engine",
+        "Strong low/mid power",
+        "Best for experienced enduro riders"
+      ],
+      "specifications_raw": {
+        "Model": "Yamaha WR250F (2008)",
+        "Category": "Enduro/Offroad",
+        "Displacement": "250 cc",
+        "Engine": "4-stroke, single, DOHC, 5-valve",
+        "Compression": "12.5:1",
+        "Bore x Stroke": "77.0 × 53.6 mm",
+        "Fuel system": "Keihin FCR-MX37 flatslide (TPS)",
+        "Transmission/Drive": "5-speed / Chain",
+        "Fuel capacity": "7.94 L (2.10 gal)",
+        "Dry weight": "106.1 kg (234.0 lb)"
+      },
+      "conditions_raw": "Upgrade option. All bikes are maintained in-house by experienced mechanics. Bikes are fully serviced before each tour and checked after each day's riding.",
+      "required_documents_raw": [
+        "Passport (as deposit option) or cash deposit of $750"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third party insurance",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "USD",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Available as extra"
+        },
+        {
+          "type_name": "Damage deposit",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "USD",
+          "deductible": 750,
+          "deductible_currency": "USD",
+          "notes": "Required for upgrade bikes - cash or passport"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "kickstartcambodia",
+      "scrape_timestamp": "2025-09-22T17:10:43.323Z",
+      "source_url": "https://www.kickstartcambodia.com/index.php/bikes/our-bikes#wr450f",
+      "brand": "Yamaha",
+      "model": "WR 450F",
+      "year": 2008,
+      "engine_capacity_cc": 449,
+      "category": "Enduro/Offroad",
+      "description": "Light like the 250F, but with heaps more power—for serious enduro riders.",
+      "rental_rates": [
+        {
+          "rate_text": "Upgrade pricing",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 80,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://www.kickstartcambodia.com/images/rocketlauncher/pages/bikes/motorbike-tours-cambodia-yamaha-wrf-450.JPG"
+      ],
+      "features": [
+        "Light",
+        "Powerful",
+        "For serious enduro riders"
+      ],
+      "specifications_raw": {
+        "Model": "Yamaha WR450F (2008)",
+        "Category": "Enduro/Offroad",
+        "Displacement": "449 cc",
+        "Engine": "4-stroke, single, DOHC, 5 titanium valves/cyl",
+        "Compression": "12.3:1",
+        "Bore x Stroke": "95.0 × 63.4 mm",
+        "Fuel system": "39 mm Keihin FCR flatslide (TPS)",
+        "Transmission/Drive": "5-speed / Chain",
+        "Fuel capacity": "7.94 L (2.10 gal)",
+        "Dry weight": "112.5 kg (248.0 lb)"
+      },
+      "conditions_raw": "Upgrade option. All bikes are maintained in-house by experienced mechanics. Bikes are fully serviced before each tour and checked after each day's riding.",
+      "required_documents_raw": [
+        "Passport (as deposit option) or cash deposit of $750"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third party insurance",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "USD",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Available as extra"
+        },
+        {
+          "type_name": "Damage deposit",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "USD",
+          "deductible": 750,
+          "deductible_currency": "USD",
+          "notes": "Required for upgrade bikes - cash or passport"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "kickstartcambodia",
+      "scrape_timestamp": "2025-09-22T17:10:43.323Z",
+      "source_url": "https://www.kickstartcambodia.com/index.php/en/bikes/our-bikes/#crf250x",
+      "brand": "Honda",
+      "model": "CRF 250X",
+      "year": 2006,
+      "engine_capacity_cc": 249,
+      "category": "Enduro/Offroad",
+      "description": "Rare combo of light weight and tractable power. Great handling—a step up from the XR without being too wild.",
+      "rental_rates": [
+        {
+          "rate_text": "Upgrade pricing",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 60,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://www.kickstartcambodia.com/images/rocketlauncher/pages/bikes/motorbike-tours-cambodia-honda-crf-250.JPG"
+      ],
+      "features": [
+        "Light weight",
+        "Tractable power",
+        "Great handling",
+        "Step up from XR without being too wild"
+      ],
+      "specifications_raw": {
+        "Model": "Honda CRF 250X (2006)",
+        "Category": "Enduro/Offroad",
+        "Displacement": "249 cc",
+        "Engine": "4-stroke single, 4 valves",
+        "Compression": "12.5:1",
+        "Bore x Stroke": "78.0 × 52.2 mm",
+        "Fuel system": "Keihin 37 mm flatslide (TPS)",
+        "Transmission/Drive": "5-speed / Chain",
+        "Fuel capacity": "8.6 L (2.27 gal)",
+        "Dry weight": "102 kg (224.8 lb)"
+      },
+      "conditions_raw": "Upgrade option. All bikes are maintained in-house by experienced mechanics. Bikes are fully serviced before each tour and checked after each day's riding.",
+      "required_documents_raw": [
+        "Passport (as deposit option) or cash deposit of $750"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third party insurance",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "USD",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Available as extra"
+        },
+        {
+          "type_name": "Damage deposit",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "USD",
+          "deductible": 750,
+          "deductible_currency": "USD",
+          "notes": "Required for upgrade bikes - cash or passport"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "kickstartcambodia",
+      "scrape_timestamp": "2025-09-22T17:10:43.323Z",
+      "source_url": "https://www.kickstartcambodia.com/index.php/en/bikes/our-bikes/#ktm450exc",
+      "brand": "KTM",
+      "model": "450 EXC",
+      "year": 2004,
+      "engine_capacity_cc": 447,
+      "category": "Enduro/Offroad",
+      "description": "Controllable power with racing-oriented peak output—for serious enduro riders.",
+      "rental_rates": [
+        {
+          "rate_text": "Upgrade pricing",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 80,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://www.kickstartcambodia.com/images/rocketlauncher/pages/bikes/motorbike-tours-cambodia-ktm-exc-450.JPG"
+      ],
+      "features": [
+        "Controllable power",
+        "Racing-oriented peak output",
+        "For serious enduro riders"
+      ],
+      "specifications_raw": {
+        "Model": "KTM 450 EXC (2004)",
+        "Category": "Enduro/Offroad",
+        "Displacement": "447 cc",
+        "Engine": "4-stroke, single, SOHC, 4 valves/cyl",
+        "Compression": "11.0:1",
+        "Bore x Stroke": "89.0 × 72.0 mm",
+        "Fuel system": "Keihin MX FCR 39",
+        "Transmission/Drive": "6-speed / Chain",
+        "Fuel capacity": "9.0 L (5.38 gal)",
+        "Dry weight": "113.5 kg (250.2 lb)"
+      },
+      "conditions_raw": "Upgrade option. All bikes are maintained in-house by experienced mechanics. Bikes are fully serviced before each tour and checked after each day's riding.",
+      "required_documents_raw": [
+        "Passport (as deposit option) or cash deposit of $750"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third party insurance",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "USD",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Available as extra"
+        },
+        {
+          "type_name": "Damage deposit",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "USD",
+          "deductible": 750,
+          "deductible_currency": "USD",
+          "notes": "Required for upgrade bikes - cash or passport"
+        }
+      ],
+      "availability_status": "Available"
+    }
+  ]
+}

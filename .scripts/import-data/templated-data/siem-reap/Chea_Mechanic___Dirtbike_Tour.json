@@ -1,0 +1,466 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-09-20T09:02:56.580Z",
+    "shop_identifier": "Chea Mechanic & Dirtbike Tour",
+    "provider_name": "Chea Mechanic & Dirtbike Tour",
+    "place_id": "ChIJK-UjkWMXEDER7bv3B7fkM24",
+    "address": "#63 Vihear Chen, Krong Siem Reap, Cambodia",
+    "city": "Siem Reap",
+    "province": "Siem Reap Province",
+    "country": "Cambodia",
+    "latitude": 13.345334,
+    "longitude": 103.8535253,
+    "phone": "012 800 710",
+    "website": "http://rustybikeadventure.com/",
+    "google_maps_url": "https://maps.google.com/?cid=7940942042748140525",
+    "business_status": "OPERATIONAL",
+    "rating": 4.8,
+    "review_count": 81,
+    "rental_conditions": {
+      "riding_ability": "Intermediate to Advanced",
+      "ride_time": "8 hours a day",
+      "distance": "140-200 km per day",
+      "terrain": "red dirt roads, single tracks, sandy and dusty"
+    },
+    "rental_inclusions": [
+      "English speaking guide and mechanic",
+      "Fuel",
+      "Temple fees",
+      "Overnight in one night in Homestay / Hotel / Resort (twin rooms)",
+      "Breakfast and Lunch / drinks",
+      "Water during the trip",
+      "Minor repairs",
+      "Sweeper for groups bigger then 3",
+      "Airport pick up & transfer"
+    ],
+    "offered_tours": [
+      {
+        "name": "One Day Tour",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Three day Escape tour",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Five day Adventure Trail",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Seven Day Tour",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Eight Day Ultimate Cambodia Experience",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "Rusty Bike Adventure",
+      "scrape_timestamp": "2025-09-20T09:02:57.618Z",
+      "source_url": "http://www.rustybikeadventure.com/the-bikes.html",
+      "brand": "Honda",
+      "model": "XR250",
+      "year": null,
+      "engine_capacity_cc": 250,
+      "category": null,
+      "description": "Everybody knows this awesome bike. Absolutely perfect for Cambodia and suited to many riding abilities.",
+      "rental_rates": [
+        {
+          "rate_text": null,
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": null
+        }
+      ],
+      "images": [
+        "http://www.rustybikeadventure.com/uploads/images/HONDA%20XR250.JPG.jpg"
+      ],
+      "features": [
+        "Perfect for Cambodia",
+        "Suited to many riding abilities"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "License"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": null,
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "Rusty Bike Adventure",
+      "scrape_timestamp": "2025-09-20T09:02:57.618Z",
+      "source_url": "http://www.rustybikeadventure.com/the-bikes.html",
+      "brand": "Honda",
+      "model": "CRF 250L",
+      "year": null,
+      "engine_capacity_cc": 250,
+      "category": null,
+      "description": "The Honda CRF 250L is a versatile dual-sport bike ideal for both beginners and intermediate riders.",
+      "rental_rates": [
+        {
+          "rate_text": null,
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": null
+        }
+      ],
+      "images": [
+        "http://www.rustybikeadventure.com/uploads/HOND%20CRF250L.JPG.jpg"
+      ],
+      "features": [
+        "Versatile dual-sport bike",
+        "Ideal for beginners and intermediate riders"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "License"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": null,
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "Rusty Bike Adventure",
+      "scrape_timestamp": "2025-09-20T09:02:57.618Z",
+      "source_url": "http://www.rustybikeadventure.com/the-bikes.html",
+      "brand": "Kawasaki",
+      "model": "KLX250",
+      "year": null,
+      "engine_capacity_cc": 250,
+      "category": null,
+      "description": "The Kawasaki KLX 250 is a versatile dual-sport bike great for both on-road and off-road riding.",
+      "rental_rates": [
+        {
+          "rate_text": null,
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": null
+        }
+      ],
+      "images": [
+        "http://www.rustybikeadventure.com/uploads/images/KAWASAKI%20KLX250L.JPG.jpg"
+      ],
+      "features": [
+        "Versatile dual-sport bike",
+        "Great for both on-road and off-road riding"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "License"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": null,
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "Rusty Bike Adventure",
+      "scrape_timestamp": "2025-09-20T09:02:57.618Z",
+      "source_url": "http://www.rustybikeadventure.com/the-bikes.html",
+      "brand": "Yamaha",
+      "model": "WR250F",
+      "year": null,
+      "engine_capacity_cc": 250,
+      "category": null,
+      "description": "An option for experienced riders is the upgrade to the WR250.",
+      "rental_rates": [
+        {
+          "rate_text": null,
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 40,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "http://www.rustybikeadventure.com/uploads/YAMAHA%20WR250F.JPG.jpg"
+      ],
+      "features": [
+        "Option for experienced riders"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "License"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": null,
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "Rusty Bike Adventure",
+      "scrape_timestamp": "2025-09-20T09:02:57.618Z",
+      "source_url": "http://www.rustybikeadventure.com/the-bikes.html",
+      "brand": "Yamaha",
+      "model": "WR450F",
+      "year": null,
+      "engine_capacity_cc": 450,
+      "category": null,
+      "description": "A further upgrade to the serious 450 machine is also offered to those looking to challenge themselves.",
+      "rental_rates": [
+        {
+          "rate_text": null,
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 50,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "http://www.rustybikeadventure.com/uploads/images/the_bike/YAMAHA%20WR450F.JPG.jpg"
+      ],
+      "features": [
+        "Further upgrade to the serious 450 machine"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "License"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": null,
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "Rusty Bike Adventure",
+      "scrape_timestamp": "2025-09-20T09:02:57.618Z",
+      "source_url": "http://www.rustybikeadventure.com/the-bikes.html",
+      "brand": "KTM",
+      "model": "EXC-F 250",
+      "year": null,
+      "engine_capacity_cc": 250,
+      "category": null,
+      "description": "The KTM EXC-F 250 and Husqvarna FE 250 are both lightweight, high-performance off-road bikes designed for trail and enduro riding.",
+      "rental_rates": [
+        {
+          "rate_text": null,
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 50,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "http://www.rustybikeadventure.com/uploads/images/the_bike/KTM%20EXC-F%20250.jpg"
+      ],
+      "features": [
+        "Lightweight, high-performance off-road bike"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "License"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": null,
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "Rusty Bike Adventure",
+      "scrape_timestamp": "2025-09-20T09:02:57.618Z",
+      "source_url": "http://www.rustybikeadventure.com/the-bikes.html",
+      "brand": "Husqvarna",
+      "model": "FE250",
+      "year": null,
+      "engine_capacity_cc": 250,
+      "category": null,
+      "description": "The KTM EXC-F 250 and Husqvarna FE 250 are both lightweight, high-performance off-road bikes designed for trail and enduro riding.",
+      "rental_rates": [
+        {
+          "rate_text": null,
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 50,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "http://www.rustybikeadventure.com/uploads/images/the_bike/KTM%20EXC-F%20250.jpg"
+      ],
+      "features": [
+        "Lightweight, high-performance off-road bike"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "License"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": null,
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "Rusty Bike Adventure",
+      "scrape_timestamp": "2025-09-20T09:02:57.618Z",
+      "source_url": "http://www.rustybikeadventure.com/the-bikes.html",
+      "brand": "Husqvarna",
+      "model": "FE350",
+      "year": null,
+      "engine_capacity_cc": 350,
+      "category": null,
+      "description": "The Husqvarna FE 450 and KTM EXC-F 450 are both high-performance off-road bikes, perfect for trail and enduro riding.",
+      "rental_rates": [
+        {
+          "rate_text": null,
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 60,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "http://www.rustybikeadventure.com/uploads/images/the_bike/HUSQVARNA%20FE450.jpg"
+      ],
+      "features": [
+        "High-performance off-road bike"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "License"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": null,
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "Rusty Bike Adventure",
+      "scrape_timestamp": "2025-09-20T09:02:57.618Z",
+      "source_url": "http://www.rustybikeadventure.com/the-bikes.html",
+      "brand": "KTM",
+      "model": "EXC-F 450",
+      "year": null,
+      "engine_capacity_cc": 450,
+      "category": null,
+      "description": "The Husqvarna FE 450 and KTM EXC-F 450 are both high-performance off-road bikes, perfect for trail and enduro riding.",
+      "rental_rates": [
+        {
+          "rate_text": null,
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 60,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "http://www.rustybikeadventure.com/uploads/images/the_bike/HUSQVARNA%20FE450.jpg"
+      ],
+      "features": [
+        "High-performance off-road bike"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "License"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": null,
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    }
+  ]
+}

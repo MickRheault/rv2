@@ -1,0 +1,185 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-09-23T16:06:54.288Z",
+    "shop_identifier": "We Scooter Rental Siem Reap",
+    "provider_name": "We Scooter Rental Siem Reap",
+    "place_id": "ChIJ04nf69sXEDERQcxrViGpTJo",
+    "address": "Rambutan Ln, Krong Siem Reap 17254, Cambodia",
+    "city": "Siem Reap",
+    "province": "Siem Reap Province",
+    "country": "Cambodia",
+    "latitude": 13.350469,
+    "longitude": 103.854809,
+    "phone": "095 720 739",
+    "website": "https://wescooterrentalsiemreap.com/",
+    "google_maps_url": "https://maps.google.com/?cid=11118447540719832129",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 202,
+    "rental_conditions": {
+      "delivery": "Free delivery to accommodation at any time on request",
+      "support": "Service Support 24 hours",
+      "exchange_policy": "Scooter can be changed if you don't feel comfort"
+    },
+    "rental_inclusions": [
+      "Perfectly maintained scooters",
+      "Free delivery to accommodation"
+    ],
+    "offered_tours": [
+      {
+        "name": "Ride Scooter To Kompong Pluk Floating Village",
+        "duration_text": "6 hours",
+        "distance_km": null,
+        "price_text": "$45/Person",
+        "currency": "USD"
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "wescooterrentalsiemreap.com",
+      "scrape_timestamp": "2025-09-20T15:20:59",
+      "source_url": "https://wescooterrentalsiemreap.com/scooter-detail.html?name=ZOOMER-125CC",
+      "brand": "Honda",
+      "model": "ZOOMER X",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Full Automatic",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$10 / Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 10,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://wescooterrentalsiemreap.com/userfiles/thumbs/pro-4.png"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "wescooterrentalsiemreap.com",
+      "scrape_timestamp": "2025-09-20T15:20:59",
+      "source_url": "https://wescooterrentalsiemreap.com/scooter-detail.html?name=CLICK-125CC",
+      "brand": "Honda",
+      "model": "CLICK",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Full Automatic",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$10 / Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 10,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://wescooterrentalsiemreap.com/userfiles/thumbs/pro-2.png"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "wescooterrentalsiemreap.com",
+      "scrape_timestamp": "2025-09-20T15:20:59",
+      "source_url": "https://wescooterrentalsiemreap.com/scooter-detail.html?name=DREAM-125CC",
+      "brand": "Honda",
+      "model": "DREAM",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Semi Automatic",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$10 / Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 10,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://wescooterrentalsiemreap.com/userfiles/thumbs/pro-5.png"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "wescooterrentalsiemreap.com",
+      "scrape_timestamp": "2025-09-20T15:20:59",
+      "source_url": "https://wescooterrentalsiemreap.com/scooter-detail.html?name=SCOOPY-110CC",
+      "brand": "Honda",
+      "model": "SCOOPY",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Full Automatic",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$15 / Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 15,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://wescooterrentalsiemreap.com/userfiles/thumbs/pro-3.png"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "wescooterrentalsiemreap.com",
+      "scrape_timestamp": "2025-09-20T15:20:59",
+      "source_url": "https://wescooterrentalsiemreap.com/scooter-detail.html?name=Honda%20Pcx%20150cc",
+      "brand": "Honda",
+      "model": "PCX",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Full Automatic Smart Key",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "15$/Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 15,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://wescooterrentalsiemreap.com/userfiles/thumbs/Wescooterrentalsiemreap-Pcx%20150cc.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    }
+  ]
+}

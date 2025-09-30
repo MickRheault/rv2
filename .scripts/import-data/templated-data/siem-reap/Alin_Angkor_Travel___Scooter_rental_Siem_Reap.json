@@ -1,0 +1,123 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-09-20T09:01:47.043Z",
+    "shop_identifier": "Alin Angkor Travel & Scooter rental Siem Reap",
+    "provider_name": "Alin Angkor Travel & Scooter rental Siem Reap",
+    "place_id": "ChIJqy8FCkIXEDERwF1KobeEBqI",
+    "address": "In front of Hard Rock Cafe, វិថី ៧មករា, ក្រុងសៀមរាប, Cambodia",
+    "city": "Siem Reap",
+    "province": "Siem Reap Province",
+    "country": "Cambodia",
+    "latitude": 13.3528198,
+    "longitude": 103.856673,
+    "phone": "093 365 353",
+    "website": "https://siemreapmotorrental.blogspot.com/",
+    "google_maps_url": "https://maps.google.com/?cid=11675165008224476608",
+    "business_status": "OPERATIONAL",
+    "rating": 3.8,
+    "review_count": 23,
+    "rental_conditions": {
+      "example_condition_key": "string | number | boolean | null"
+    },
+    "rental_inclusions": [
+      "string"
+    ],
+    "offered_tours": [
+      {
+        "name": "Angkor 1 day tour",
+        "duration_text": "1 day",
+        "distance_km": null,
+        "price_text": "string | null",
+        "currency": "string | null"
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "Aline Scooter Rental",
+      "scrape_timestamp": "2025-09-20T09:01:48.151Z",
+      "source_url": "https://siemreapmotorrental.blogspot.com/2024/07/scooter-price.html",
+      "brand": "Honda",
+      "model": "Today",
+      "year": null,
+      "engine_capacity_cc": 60,
+      "category": "Economy scooter",
+      "description": "string | null",
+      "rental_rates": [
+        {
+          "rate_text": "8$ per day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 8,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "string"
+      ],
+      "features": [
+        "string"
+      ],
+      "specifications_raw": "object | string | null",
+      "conditions_raw": "object | string | null",
+      "required_documents_raw": [
+        "string"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "string",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "string | null",
+          "deductible": null,
+          "deductible_currency": "string | null",
+          "notes": "string | null"
+        }
+      ],
+      "availability_status": "string | null"
+    },
+    {
+      "shop_identifier": "Aline Scooter Rental",
+      "scrape_timestamp": "2025-09-20T09:01:48.151Z",
+      "source_url": "https://siemreapmotorrental.blogspot.com/2024/07/scooter-price.html",
+      "brand": "Honda",
+      "model": "Scoopy",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Standard scooter",
+      "description": "string | null",
+      "rental_rates": [
+        {
+          "rate_text": "10$ per day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 10,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "string"
+      ],
+      "features": [
+        "string"
+      ],
+      "specifications_raw": "object | string | null",
+      "conditions_raw": "object | string | null",
+      "required_documents_raw": [
+        "string"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "string",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "string | null",
+          "deductible": null,
+          "deductible_currency": "string | null",
+          "notes": "string | null"
+        }
+      ],
+      "availability_status": "string | null"
+    }
+  ]
+}
