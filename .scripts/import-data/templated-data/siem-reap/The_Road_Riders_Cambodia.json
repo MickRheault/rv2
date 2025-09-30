@@ -1,0 +1,284 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-09-22T16:59:51.983Z",
+    "shop_identifier": "The Road Riders Cambodia",
+    "provider_name": "The Road Riders Cambodia",
+    "place_id": "ChIJgckltcIXEDERI7KQMbt1euE",
+    "address": "874 Sok San Rd, Krong Siem Reap 17251, Cambodia",
+    "city": "Siem Reap",
+    "province": "Siem Reap Province",
+    "country": "Cambodia",
+    "latitude": 13.3547969,
+    "longitude": 103.8513783,
+    "phone": "088 873 2513",
+    "website": "https://www.theroadriders-cambodia.com/",
+    "google_maps_url": "https://maps.google.com/?cid=16247428052543386147",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 80,
+    "rental_conditions": {
+      "minimum_age": 18,
+      "security_deposit_required": true,
+      "road_safety_rules_compliance": true,
+      "fine_responsibility": "renter",
+      "cancellation_policy": "Cancellation fees may apply"
+    },
+    "rental_inclusions": [
+      "Helmets",
+      "USB charger",
+      "Phone holder",
+      "Motorcycle lock"
+    ],
+    "offered_tours": [
+      {
+        "name": "OFF ROAD TOUR 1 DAY",
+        "duration_text": "2 hours",
+        "distance_km": 45,
+        "price_text": "75$",
+        "currency": "USD"
+      },
+      {
+        "name": "SUNSET TOUR 1 DAY",
+        "duration_text": "Half day (16:30 – 19:00)",
+        "distance_km": 30,
+        "price_text": "Rider only: 35$, Rider + passenger: 45$",
+        "currency": "USD"
+      },
+      {
+        "name": "SIEM REAP COUNTRYSIDE TOUR 1 DAY",
+        "duration_text": "Full day (10:00 – 18:30)",
+        "distance_km": 90,
+        "price_text": "Rider only: 75$, Rider + passenger: 95$",
+        "currency": "USD"
+      },
+      {
+        "name": "PHNOM KULEN TOUR 1 DAY",
+        "duration_text": "Full day (8:00 – 17:00)",
+        "distance_km": 120,
+        "price_text": "Rider only: 100$, Rider + passenger: 125$",
+        "currency": "USD"
+      },
+      {
+        "name": "KAMPONG KLEANG FLOATING VILLAGE 1 DAY",
+        "duration_text": "Full day (9:00 – 17:00)",
+        "distance_km": 100,
+        "price_text": "Rider only: 85$, Rider + passenger: 110$",
+        "currency": "USD"
+      },
+      {
+        "name": "KOH KER TOUR 1 DAY",
+        "duration_text": "Full day (8:00 – 17:00)",
+        "distance_km": 240,
+        "price_text": "Rider only: 100$, Rider + passenger: 125$",
+        "currency": "USD"
+      },
+      {
+        "name": "PHNOM KULEN-KOH KER TOUR 2 DAYS",
+        "duration_text": "2 days / 1 night",
+        "distance_km": 280,
+        "price_text": "Rider only: 250$, Rider + passenger: 300$",
+        "currency": "USD"
+      },
+      {
+        "name": "BATTAMBANG TOUR 3 DAYS",
+        "duration_text": "3 days / 2 nights",
+        "distance_km": 350,
+        "price_text": "Rider only: 500$, Rider + passenger: 600$",
+        "currency": "USD"
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "theroadriders-cambodia",
+      "scrape_timestamp": "2025-09-22T16:59:52.989Z",
+      "source_url": "https://www.theroadriders-cambodia.com",
+      "brand": "Honda",
+      "model": "FTR",
+      "year": null,
+      "engine_capacity_cc": 223,
+      "category": "Adventure/Standard",
+      "description": "The Honda FTR 223 isn't just a motorcycle - it's an invitation to adventure! Inspired by the adrenaline-pumping world of flat track racing, this lightweight machine delivers a unique and exhilarating riding experience. Its air-cooled 223cc single-cylinder engine packs a punch with 19 hp and 17 Nm of torque, propelling you effortlessly through city streets and winding roads.",
+      "rental_rates": [
+        {
+          "rate_text": "19 $/day",
+          "min_days": 1,
+          "max_days": 7,
+          "rate_per_day": 19,
+          "currency": "USD"
+        },
+        {
+          "rate_text": "17 $/day",
+          "min_days": 7,
+          "max_days": 14,
+          "rate_per_day": 17,
+          "currency": "USD"
+        },
+        {
+          "rate_text": "15 $/day",
+          "min_days": 15,
+          "max_days": 21,
+          "rate_per_day": 15,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://static.wixstatic.com/media/4594da_3e71c00bb60e4da9ba9af242b2d22369~mv2.jpg/v1/fit/w_859,h_559,q_90,enc_avif,quality_auto/4594da_3e71c00bb60e4da9ba9af242b2d22369~mv2.jpg",
+        "https://static.wixstatic.com/media/4594da_bd195f60f845485192861bd5f9c54574~mv2.jpg/v1/fit/w_859,h_559,q_90,enc_avif,quality_auto/4594da_bd195f60f845485192861bd5f9c54574~mv2.jpg"
+      ],
+      "features": [
+        "Helmets",
+        "USB charger",
+        "Phone holder",
+        "Motorcycle lock"
+      ],
+      "specifications_raw": "air-cooled 223cc single-cylinder engine, 19 hp, 17 Nm of torque",
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "AVAILABLE"
+    },
+    {
+      "shop_identifier": "theroadriders-cambodia",
+      "scrape_timestamp": "2025-09-22T16:59:52.989Z",
+      "source_url": "https://www.theroadriders-cambodia.com",
+      "brand": "Royal Enfield",
+      "model": "Classic 500",
+      "year": 2021,
+      "engine_capacity_cc": 500,
+      "category": "Cruiser",
+      "description": "The Royal Enfield Classic 500 is a motorcycle that defies time. With its classic, timeless design and powerful, reliable engine, it's a machine that will turn heads and put a smile on your face! The Royal Enfield Classic 500 is for riders who appreciate classic style and reliability. It's a great choice for riders who want a comfortable and enjoyable ride, whether they're commuting, touring, or just cruising around town.",
+      "rental_rates": [
+        {
+          "rate_text": "39 $/day",
+          "min_days": 1,
+          "max_days": 7,
+          "rate_per_day": 39,
+          "currency": "USD"
+        },
+        {
+          "rate_text": "35 $/day",
+          "min_days": 7,
+          "max_days": 14,
+          "rate_per_day": 35,
+          "currency": "USD"
+        },
+        {
+          "rate_text": "30 $/day",
+          "min_days": 15,
+          "max_days": 21,
+          "rate_per_day": 30,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://static.wixstatic.com/media/4594da_54e20bb9c4fb4a2eb7c0a9d4f4bc4cfc~mv2.png/v1/fill/w_674,h_424,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/photo_2025-07-29%2013_37_edited.png"
+      ],
+      "features": [
+        "Helmets",
+        "Phone holder",
+        "Motorcycle lock"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "AVAILABLE"
+    },
+    {
+      "shop_identifier": "theroadriders-cambodia",
+      "scrape_timestamp": "2025-09-22T16:59:52.989Z",
+      "source_url": "https://www.theroadriders-cambodia.com",
+      "brand": "Royal Enfield",
+      "model": "Classic 350",
+      "year": 2022,
+      "engine_capacity_cc": 350,
+      "category": "Cruiser",
+      "description": "The Royal Enfield Classic 350 shares the same vintage charm as the Classic 500 but with a lighter feel and smoother handling. It's ideal for riders who want comfort and control without the extra weight or power of the 500. Perfect for relaxed cruising and exploring Cambodia at your own pace.",
+      "rental_rates": [
+        {
+          "rate_text": "49 $/day",
+          "min_days": 1,
+          "max_days": 7,
+          "rate_per_day": 49,
+          "currency": "USD"
+        },
+        {
+          "rate_text": "45 $/day",
+          "min_days": 7,
+          "max_days": 14,
+          "rate_per_day": 45,
+          "currency": "USD"
+        },
+        {
+          "rate_text": "35 $/day",
+          "min_days": 15,
+          "max_days": 21,
+          "rate_per_day": 35,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://static.wixstatic.com/media/4594da_3033d6e9856046e1a30fb38e84ca0f81~mv2.jpg/v1/fill/w_687,h_455,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/photo_2025-07-29%2013_37_edited.jpg"
+      ],
+      "features": [
+        "Helmets",
+        "Phone holder",
+        "Motorcycle lock"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "AVAILABLE"
+    },
+    {
+      "shop_identifier": "theroadriders-cambodia",
+      "scrape_timestamp": "2025-09-22T16:59:52.989Z",
+      "source_url": "https://www.theroadriders-cambodia.com",
+      "brand": "Honda",
+      "model": "Wave 125 Adventure",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": "The Honda Wave 125 is the ultimate choice for riders seeking a perfect balance between power, fuel efficiency, and durability. Designed for both city commuting and long-distance rides, this lightweight yet robust motorcycle offers an exceptional riding experience.",
+      "rental_rates": [
+        {
+          "rate_text": "13 $/day",
+          "min_days": 1,
+          "max_days": 7,
+          "rate_per_day": 13,
+          "currency": "USD"
+        },
+        {
+          "rate_text": "12 $/day",
+          "min_days": 7,
+          "max_days": 14,
+          "rate_per_day": 12,
+          "currency": "USD"
+        },
+        {
+          "rate_text": "11 $/day",
+          "min_days": 15,
+          "max_days": 21,
+          "rate_per_day": 11,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://static.wixstatic.com/media/4594da_b6a8df7396d24fd29384c5205a8d5f3a~mv2.jpg/v1/fill/w_693,h_463,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/2025-03-15%2018_edited.jpg"
+      ],
+      "features": [
+        "Helmets",
+        "USB charger",
+        "Phone holder",
+        "Motorcycle lock"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "AVAILABLE"
+    }
+  ]
+}

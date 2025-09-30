@@ -97,7 +97,67 @@ const supabase: SupabaseClient<Database> = createClient<Database>(supabaseUrl, s
   }
 });
 
-const DATA_DIR = path.resolve(__dirname, './templated-data/bangkok');
+const DATA_DIR = path.resolve(__dirname, './templated-data/siem-reap');
+
+// --- Load Category Mapping ---
+interface CategoryMapping {
+  [brand: string]: {
+    [model: string]: string;
+  };
+}
+
+interface MappingData {
+  mapping: CategoryMapping;
+  category_guidelines: Record<string, string>;
+  conflict_resolutions: Record<string, string>;
+}
+
+let categoryMapping: MappingData | null = null;
+
+async function loadCategoryMapping(): Promise<MappingData> {
+  if (!categoryMapping) {
+    try {
+      const mappingPath = path.resolve(__dirname, './motorcycle-category-mapping.json');
+      const mappingContent = await fs.readFile(mappingPath, 'utf-8');
+      categoryMapping = JSON.parse(mappingContent) as MappingData;
+      console.log('✅ Category mapping loaded successfully');
+    } catch (error) {
+      console.warn('⚠️  Could not load category mapping file, will use original categories from data');
+      categoryMapping = { mapping: {}, category_guidelines: {}, conflict_resolutions: {} };
+    }
+  }
+  return categoryMapping;
+}
+
+function getMappedCategory(brand: string, model: string, originalCategory?: string): string | null {
+  if (!categoryMapping) return originalCategory || null;
+  
+  // Normalize brand and model for lookup
+  const normalizedBrand = brand.trim();
+  const normalizedModel = model.trim();
+  
+  // Check for exact brand and model match
+  if (categoryMapping.mapping[normalizedBrand]?.[normalizedModel]) {
+    const mappedCategory = categoryMapping.mapping[normalizedBrand][normalizedModel];
+    console.log(`   📋 Mapped ${normalizedBrand} ${normalizedModel}: "${originalCategory}" → "${mappedCategory}"`);
+    return mappedCategory;
+  }
+  
+  // Check for "Various Models" fallback for the brand
+  if (categoryMapping.mapping[normalizedBrand]?.["Various Models"]) {
+    const mappedCategory = categoryMapping.mapping[normalizedBrand]["Various Models"];
+    console.log(`   📋 Using brand default for ${normalizedBrand} ${normalizedModel}: "${originalCategory}" → "${mappedCategory}"`);
+    return mappedCategory;
+  }
+  
+  // Return original category if no mapping found
+  if (originalCategory) {
+    console.log(`   ⚠️  No mapping found for ${normalizedBrand} ${normalizedModel}, using original: "${originalCategory}"`);
+  } else {
+    console.log(`   ⚠️  No mapping found for ${normalizedBrand} ${normalizedModel}, no category will be set`);
+  }
+  return originalCategory || null;
+}
 
 // --- Helper Functions for Find/Create ---
 
@@ -122,7 +182,7 @@ async function findOrCreateCountry(code: string, name: string): Promise<string> 
 
     // Create if not found
     // Need a valid code (like 'TH'). If only name provided, need mapping or default.
-    const insertCode = code || (name === 'Thailand' ? 'TH' : 'XX'); // Example fallback
+    const insertCode = code || (name === 'Thailand' ? 'TH' : name === 'Cambodia' ? 'KH' : 'XX'); // Example fallback
     console.log(`Creating country: ${name} (${insertCode})`);
     const { data: newData, error: insertError } = await supabase
         .from('countries')
@@ -130,6 +190,20 @@ async function findOrCreateCountry(code: string, name: string): Promise<string> 
         .select('code')
         .single();
     if (insertError) {
+        // If it's a duplicate key error, try to find the existing country
+        if (insertError.code === '23505' && insertError.details?.includes('already exists')) {
+            console.log(`Country ${name} already exists, fetching existing record...`);
+            const { data: existingData, error: findError } = await supabase
+                .from('countries')
+                .select('code')
+                .eq('name', name || 'Unknown')
+                .single();
+            if (findError) {
+                console.error('Error finding existing country after duplicate error:', findError);
+                throw new Error(`Error finding existing country ${name}: ${findError.message}`);
+            }
+            return existingData.code;
+        }
         console.error('Supabase error creating country:', insertError);
         throw new Error(`Error creating country ${name}: ${insertError.message}`);
     }
@@ -650,6 +724,11 @@ async function importData() {
         throw new Error(`Connection test failed: ${testError.message}`);
     }
     console.log('Supabase connection successful.');
+    
+    // Load category mapping
+    console.log('Loading category mapping...');
+    await loadCategoryMapping();
+    
     // Proceed only if connection test passes
     // *** End Test Query ***
 
@@ -681,19 +760,23 @@ Processing file: ${file}`);
 
         // --- Process Motorcycle Offerings ---
         for (const offering of jsonData.motorcycle_offerings) {
-          console.log(`   - Processing offering: ${offering.brand} ${offering.model}`);
-
-          if (!offering.brand) {
-             console.warn(`     Skipping offering: Missing brand name.`);
-             continue;
+          // Use empty string for missing brand name (to be fixed manually)
+          const brandName = offering.brand || '';
+          console.log(`   - Processing offering: ${brandName || '(empty brand)'} ${offering.model}`);
+          
+          if (!brandName) {
+             console.warn(`     Processing offering with empty brand name (to be fixed manually).`);
           }
 
           try {
             // 1. Resolve Lookup IDs
-            const brandId = await findOrCreateBrand(offering.brand);
-            const categoryId = offering.category ? await findOrCreateCategory(offering.category) : null;
+            const brandId = await findOrCreateBrand(brandName);
+            
+            // 2. Get mapped category using the mapping table
+            const mappedCategory = getMappedCategory(brandName, offering.model, offering.category || undefined);
+            const categoryId = mappedCategory ? await findOrCreateCategory(mappedCategory) : null;
 
-            // 2. Prepare Core Rental Data
+            // 3. Prepare Core Rental Data
             // Extract a single daily rate if possible, otherwise null/handle later
             const dailyRateInfo = offering.rental_rates?.find(r => r.min_days === 1 && (!r.max_days || r.max_days === 1));
 
@@ -712,18 +795,18 @@ Processing file: ${file}`);
                 source_url: offering.source_url || null,
             };
 
-             // 3. Insert Core Rental Record
+             // 4. Insert Core Rental Record
             const { data: newRental, error: rentalInsertError } = await supabase
                 .from('motorcycle_rentals')
                 .insert(rentalInsertData)
                 .select('id')
                 .single();
 
-            if (rentalInsertError) throw new Error(`Error inserting rental for ${offering.brand} ${offering.model}: ${rentalInsertError.message}`);
+            if (rentalInsertError) throw new Error(`Error inserting rental for ${brandName} ${offering.model}: ${rentalInsertError.message}`);
             const motorcycleId = newRental.id;
              console.log(`     > Created motorcycle_rental record: ${motorcycleId}`);
 
-            // 4. Process Rental Rate Tiers
+            // 5. Process Rental Rate Tiers
             if (offering.rental_rates && offering.rental_rates.length > 0) {
                 const rateTiersData = offering.rental_rates
                     .filter(rate => rate.rate_per_day && rate.currency && rate.min_days)
@@ -748,7 +831,7 @@ Processing file: ${file}`);
                 }
             }
 
-             // 5. Process Images
+             // 6. Process Images
             if (offering.images && offering.images.length > 0) {
                 let imageLinks: TablesInsert<'motorcycle_images'>[] = [];
                 for (const [index, imageUrl] of Array.from(offering.images.entries())) {
@@ -766,7 +849,7 @@ Processing file: ${file}`);
                  }
             }
 
-             // 6. Process Features
+             // 7. Process Features
              if (offering.features && offering.features.length > 0) {
                 let featureLinks: TablesInsert<'motorcycle_features'>[] = [];
                  for (const featureName of offering.features) {
@@ -784,7 +867,7 @@ Processing file: ${file}`);
                  }
              }
 
-             // 7. Process Required Documents
+             // 8. Process Required Documents
             if (offering.required_documents_raw && offering.required_documents_raw.length > 0) {
                 let docLinks: TablesInsert<'motorcycle_required_documents'>[] = [];
                 for (const docName of offering.required_documents_raw) {
@@ -803,7 +886,7 @@ Processing file: ${file}`);
                 }
             }
 
-             // 8. Process Insurance Details
+             // 9. Process Insurance Details
              if (offering.insurance_details_raw && offering.insurance_details_raw.length > 0) {
                  let insuranceData: TablesInsert<'motorcycle_insurance_details'>[] = [];
                  for (const detail of offering.insurance_details_raw) {
@@ -833,13 +916,13 @@ Processing file: ${file}`);
                   }
              }
 
-             // 9. Process Conditions (Currently just stored in JSONB)
+             // 10. Process Conditions (Currently just stored in JSONB)
              // Future enhancement: Could parse conditions_raw if it becomes structured
              // and map to motorcycle_conditions junction table using findOrCreateConditionType
 
 
           } catch (offerError: any) {
-             console.error(`   ! Failed to process offering ${offering.brand} ${offering.model}: ${offerError.message}`);
+             console.error(`   ! Failed to process offering ${brandName} ${offering.model}: ${offerError.message}`);
           }
         } // End of offerings loop
 

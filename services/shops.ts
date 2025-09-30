@@ -252,7 +252,10 @@ export const shopService = {
         motorcycle_rentals (
           *,
           brands (*),
-          categories (*)
+          categories (*),
+          rental_rate_tiers (
+            *
+          )
         )
       `)
       .eq('id', id)
@@ -296,7 +299,8 @@ export const shopService = {
         motorcycle_rentals (
           *,
           brands (*),
-          categories (*)
+          categories (*),
+          rental_rate_tiers (*)
         )
       `)
       .eq('slug', slug)
@@ -391,7 +395,8 @@ export const shopService = {
         motorcycle_rentals (
           *,
           brands (*),
-          categories (*)
+          categories (*),
+          rental_rate_tiers (*)
         )
       `)
       .eq('slug', slug)

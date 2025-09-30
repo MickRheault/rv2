@@ -1,0 +1,205 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-09-23T16:44:58.224Z",
+    "shop_identifier": "Pich Mechanics",
+    "provider_name": "Pich Mechanics",
+    "place_id": "ChIJ70ri-80XEDERdp7XK7aOsFM",
+    "address": "298 NR63, Krong Siem Reap, Cambodia",
+    "city": "Siem Reap",
+    "province": "Siem Reap Province",
+    "country": "Cambodia",
+    "latitude": 13.3481663,
+    "longitude": 103.8532924,
+    "phone": "070 800 810",
+    "website": "http://www.twowheelscambodia.com/",
+    "google_maps_url": "https://maps.google.com/?cid=6030476814119837302",
+    "business_status": "OPERATIONAL",
+    "rating": 4.8,
+    "review_count": 52,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "offered_tours": [
+      {
+        "name": "1 Day Tour : Adventure Through Dirt Bike with Heritage",
+        "duration_text": "1 Day",
+        "distance_km": null,
+        "price_text": "USD 160",
+        "currency": "USD"
+      },
+      {
+        "name": "2 Days Tour : Adventure Through Dirt Bike with Heritage",
+        "duration_text": "2 Days",
+        "distance_km": null,
+        "price_text": "USD 320",
+        "currency": "USD"
+      },
+      {
+        "name": "3 Days Dirt Bike Adventure : Cambodia’s History and Heritage",
+        "duration_text": "3 Days",
+        "distance_km": null,
+        "price_text": "USD 480",
+        "currency": "USD"
+      },
+      {
+        "name": "4 Days Dirt Bike Adventure : Cambodia’s Hidden Gems and Ancient Temples",
+        "duration_text": "4 Days",
+        "distance_km": null,
+        "price_text": "USD 640",
+        "currency": "USD"
+      },
+      {
+        "name": "5 Days Two Wheels Dirt Bike Adventure : Through Mud and History",
+        "duration_text": "5 Days",
+        "distance_km": null,
+        "price_text": "USD 800",
+        "currency": "USD"
+      },
+      {
+        "name": "6 Days Dirt Bike Adventure : Cambodia’s Historical Trails and Off-Road Challenges",
+        "duration_text": "6 Days",
+        "distance_km": null,
+        "price_text": "USD 960",
+        "currency": "USD"
+      },
+      {
+        "name": "7 Days Dirt Bike Adventure : Phnom Penh to Siem Reap",
+        "duration_text": "7 Days",
+        "distance_km": null,
+        "price_text": "USD 1120",
+        "currency": "USD"
+      },
+      {
+        "name": "7 Days Dirt Bike Adventure : Cambodia’s Historical Trails and Off-Road Challenges",
+        "duration_text": "7 Days",
+        "distance_km": null,
+        "price_text": "USD 1120",
+        "currency": "USD"
+      },
+      {
+        "name": "8 Days 7 Nights Adventure from South to North with Two Wheels Cambodia",
+        "duration_text": "8 Days",
+        "distance_km": null,
+        "price_text": "USD 1280",
+        "currency": "USD"
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "twowheelscambodia",
+      "scrape_timestamp": "2025-09-23T16:44:59.156Z",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "XR 250",
+      "year": null,
+      "engine_capacity_cc": 250,
+      "category": "Adventure",
+      "description": "A versatile bike perfect for both beginners and experienced riders. Its lightweight design and reliable engine make it ideal for navigating off-road trails.",
+      "rental_rates": [],
+      "images": [
+        "https://www.twowheelscambodia.com/wp-content/uploads/2024/10/Dirt-bike-XR-250.jpg"
+      ],
+      "features": [
+        "lightweight design",
+        "reliable engine"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "twowheelscambodia",
+      "scrape_timestamp": "2025-09-23T16:44:59.156Z",
+      "source_url": null,
+      "brand": "Yamaha",
+      "model": "WR 250",
+      "year": null,
+      "engine_capacity_cc": 250,
+      "category": "Adventure",
+      "description": "A powerful machine for those seeking a more intense ride. Built for endurance, it excels on challenging trails and steep climbs.",
+      "rental_rates": [],
+      "images": [
+        "https://www.twowheelscambodia.com/wp-content/uploads/2024/10/Dirt-bike-YAMAHA-WR-YZFX-250.jpg"
+      ],
+      "features": [
+        "Powerful",
+        "Intense",
+        "Endurance"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "twowheelscambodia",
+      "scrape_timestamp": "2025-09-23T16:44:59.156Z",
+      "source_url": null,
+      "brand": "KTM",
+      "model": "250",
+      "year": null,
+      "engine_capacity_cc": 250,
+      "category": "Adventure",
+      "description": "We offer bike customization services to tailor your ride to your needs, including adjusting suspension and adding off-road accessories. Our support team is always ready to assist with any mechanical needs, ensuring your ride is smooth and worry-free.",
+      "rental_rates": [],
+      "images": [
+        "https://www.twowheelscambodia.com/wp-content/uploads/2024/10/Dirt-bike-KTM-250-350.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "twowheelscambodia",
+      "scrape_timestamp": "2025-09-23T16:44:59.156Z",
+      "source_url": null,
+      "brand": "Husqvarna",
+      "model": "250",
+      "year": null,
+      "engine_capacity_cc": 250,
+      "category": "Adventure",
+      "description": "Another powerful machine for those seeking a more intense ride. Built for endurance, it excels on challenging trails and steep climbs.",
+      "rental_rates": [],
+      "images": [
+        "https://www.twowheelscambodia.com/wp-content/uploads/2024/10/Dirt-bike-HUSQVARNA-250-350.jpg"
+      ],
+      "features": [
+        "Powerful",
+        "Intense",
+        "Endurance"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "twowheelscambodia",
+      "scrape_timestamp": "2025-09-23T16:44:59.156Z",
+      "source_url": null,
+      "brand": null,
+      "model": "PG1",
+      "year": null,
+      "engine_capacity_cc": 115,
+      "category": "Adventure",
+      "description": "We offer bike customization services to tailor your ride to your specific needs, including adjusting suspension and adding off-road accessories. Our support team is always ready to assist with any mechanical needs, ensuring your ride is smooth and worry-free.",
+      "rental_rates": [],
+      "images": [
+        "https://www.twowheelscambodia.com/wp-content/uploads/2024/10/Dirt-bike-PG1-115-cc.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    }
+  ]
+}
