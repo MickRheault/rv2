@@ -1,0 +1,157 @@
+{
+  "description": "Motorcycle model to category mapping for data import - resolves conflicts by using most common category",
+  "last_updated": "2025-01-20",
+  "mapping": {
+    "Benelli": {
+      "Various Models": "Adventure"
+    },
+    "BMW": {
+      "F1200GS": "Adventure",
+      "F700GS": "Adventure", 
+      "F800GS": "Adventure",
+      "F800R": "Touring",
+      "F850GS": "Touring",
+      "G310GS": "Adventure",
+      "R1100R": "Naked Bikes",
+      "R1200GS": "Touring",
+      "R1200 GS Adventure": "Touring",
+      "Various Models": "Adventure"
+    },
+    "Ducati": {
+      "Various Models": "Sport"
+    },
+    "Electric Scooter": {
+      "Standard E-Scooter": "Electric"
+    },
+    "GPX": {
+      "Legend 150": "Cafe Racer"
+    },
+    "Harley Davidson": {
+      "Various Models": "Cruiser / Custom Bikes"
+    },
+    "Honda": {
+      "500x": "Adventure",
+      "ADV160": "Scooter",
+      "ADV350": "Scooter",
+      "CB 150 R": "Naked Bikes",
+      "CB150R": "Naked Bikes", 
+      "CB300R": "Naked Bikes",
+      "CB500X": "Adventure",
+      "CBR500R": "Sport",
+      "CBR650R": "Sport",
+      "CBX500": "Touring",
+      "Click": "Scooter",
+      "Click 125": "Scooter",
+      "Click 125i": "Scooter",
+      "CLICK 125I": "Scooter",
+      "Click 150/160": "Scooter",
+      "CLICK 150I": "Scooter",
+      "Click 160": "Scooter",
+      "Click 2018": "Scooter",
+      "CRF250L": "Dual-sport",
+      "CRF300L": "Dual-sport",
+      "CTX700": "Touring",
+      "Forza 350": "Scooter",
+      "Giorno": "Scooter",
+      "MSX": "Naked Bikes",
+      "NC750X": "Adventure",
+      "NX500": "Adventure",
+      "PCX": "Scooter",
+      "PCX 150": "Scooter",
+      "PCX 160": "Scooter",
+      "Rebel": "Cruiser / Custom Bikes",
+      "Rebel 500": "Cruiser / Custom Bikes",
+      "Scoopy 110": "Scooter",
+      "Scoopy i": "Scooter",
+      "Scoopy-i": "Scooter",
+      "Scoopy i LED CLUB12": "Scooter",
+      "Scoopy i Pretige": "Scooter",
+      "Spacy": "Scooter",
+      "Transalp 750": "Adventure",
+      "Various Models": "Scooter",
+      "XL750 Transalp": "Adventure",
+      "XMax 300": "Scooter",
+      "Zoomer": "Scooter",
+      "Zoomer X": "Scooter"
+    },
+    "Kawasaki": {
+      "GSX-R750": "Sport",
+      "KLX230": "Dual-sport",
+      "Ninja 400": "Sport",
+      "Various Models": "Sport",
+      "Versys 650": "Adventure",
+      "Vulcan 650": "Cruiser / Custom Bikes",
+      "Z250": "Naked Bikes",
+      "Z900": "Sport"
+    },
+    "KTM": {
+      "Adventure 390": "Adventure",
+      "Adventure 790": "Adventure", 
+      "Duke 390": "Naked Bikes",
+      "Various Models": "Adventure"
+    },
+    "Piaggio": {
+      "Various Models": "Scooter"
+    },
+    "Suzuki": {
+      "Boulevard C50-800": "Cruiser / Custom Bikes",
+      "GSX750S": "Naked Bikes",
+      "Various Models": "Adventure",
+      "Vstrom 650": "Adventure"
+    },
+    "Triumph": {
+      "Street Triple 765": "Naked Bikes",
+      "Various Models": "Naked Bikes"
+    },
+    "Welo": {
+      "E-Bike": "Electric"
+    },
+    "Yamaha": {
+      "Aerox 155": "Scooter",
+      "Aerox 155 ABS": "Scooter",
+      "AEROX 155VVA R-VERSION": "Scooter",
+      "Filano 125": "Scooter",
+      "Fino 125": "Scooter", 
+      "FINO 125": "Scooter",
+      "Fino 125 Fi": "Scooter",
+      "Fino final edition": "Scooter",
+      "Fino Premium Fashion": "Scooter",
+      "Freego": "Scooter",
+      "Grand Filano": "Scooter",
+      "GRAND FILANO 125 HYBRID": "Scooter",
+      "Grand Filano Hybrid": "Scooter",
+      "GT": "Scooter",
+      "GT LED Remote": "Scooter",
+      "MT03": "Naked Bikes",
+      "MT15": "Naked Bikes",
+      "Nmax": "Scooter",
+      "Nmax 155": "Scooter",
+      "NMax 155": "Scooter", 
+      "NMAX 155 ABS": "Scooter",
+      "Qbix": "Scooter",
+      "QBIX": "Scooter",
+      "R-7": "Touring",
+      "TENERE 700": "Adventure",
+      "Tracer 900": "Touring",
+      "Various Models": "Scooter",
+      "X-MAX 300": "Scooter",
+      "XSR 155": "Naked Bikes"
+    }
+  },
+  "category_guidelines": {
+    "Scooter": "Automatic transmission, step-through design, under-seat storage. Includes all engine sizes (110cc-350cc+). Prioritize 'Scooter' over 'Big Scooters' for consistency.",
+    "Adventure": "Dual-purpose bikes designed for both on-road and off-road use, typically with upright seating position and high ground clearance.",
+    "Sport": "Performance-oriented motorcycles with aggressive styling and riding position, designed for speed and agility.",
+    "Naked Bikes": "Standard motorcycles without fairings, upright riding position, exposed engine.",
+    "Touring": "Long-distance motorcycles with comfortable seating, wind protection, and storage capacity.",
+    "Dual-sport": "Lightweight motorcycles designed primarily for off-road use but street legal.",
+    "Cruiser / Custom Bikes": "Low-slung motorcycles with forward foot controls and relaxed riding position.",
+    "Cafe Racer": "Classic styled motorcycles with sporty riding position and vintage aesthetics.",
+    "Electric": "Electric powered motorcycles and scooters of any type."
+  },
+  "conflict_resolutions": {
+    "Big Scooters vs Scooter": "Use 'Scooter' - engine size doesn't determine category",
+    "125-150cc vs Actual Type": "Use actual motorcycle type (Naked Bikes, Sport, etc.) not engine displacement",
+    "Various Models": "Assign most common category for that brand or use brand's typical focus"
+  }
+}

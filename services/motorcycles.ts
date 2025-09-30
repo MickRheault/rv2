@@ -146,6 +146,9 @@ export const motorcycleService = {
         motorcycle_images (
           *,
           images (*)
+        ),
+        rental_rate_tiers (
+          *
         )
       `, { count: 'exact' })
 
@@ -407,6 +410,9 @@ export const motorcycleService = {
         motorcycle_images (
           *,
           images (*)
+        ),
+        rental_rate_tiers (
+          *
         )
       `)
       .eq('shop_id', shopId)
@@ -443,7 +449,10 @@ export const motorcycleService = {
           )
         ),
         brands!inner (*),
-        categories (*)
+        categories (*),
+        rental_rate_tiers (
+          *
+        )
       `)
       .or(`model.ilike.%${searchQuery}%,brands.name.ilike.%${searchQuery}%`)
       .limit(limit)
@@ -473,7 +482,10 @@ export const motorcycleService = {
           )
         ),
         brands (*),
-        categories (*)
+        categories (*),
+        rental_rate_tiers (
+          *
+        )
       `)
       .not('rental_rate_per_day', 'is', null)
       .order('rental_shops.rating', { ascending: false, nullsFirst: false })

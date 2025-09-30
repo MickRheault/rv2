@@ -47,9 +47,30 @@ export default function MotorcycleCard({
     ? `${shop.cities.name}, ${shop.cities.provinces?.name || ''}`
     : shop?.full_address || 'Location not specified'
 
+  // Get the best (lowest) daily rate from rate tiers or fallback to base rate
+  // This matches the logic in MotorcycleDetails component
+  const getBestRate = () => {
+    if (motorcycle.rental_rate_tiers && motorcycle.rental_rate_tiers.length > 0) {
+      // Find the rate with min_days = 1 (daily rate) or the lowest rate
+      const dailyRate = motorcycle.rental_rate_tiers.find(tier => tier.min_days === 1)
+      if (dailyRate) {
+        return { amount: dailyRate.rate_per_day, currency: dailyRate.currency }
+      }
+      // If no daily rate, get the lowest rate
+      const lowestRate = motorcycle.rental_rate_tiers.reduce((prev, current) => 
+        prev.rate_per_day < current.rate_per_day ? prev : current
+      )
+      return { amount: lowestRate.rate_per_day, currency: lowestRate.currency }
+    }
+    return { amount: motorcycle.rental_rate_per_day, currency: motorcycle.rental_rate_currency }
+  }
+
+  const bestRate = getBestRate()
+  const hasRateTiers = motorcycle.rental_rate_tiers && motorcycle.rental_rate_tiers.length > 0
+  
   // Format pricing
-  const price = motorcycle.rental_rate_per_day 
-    ? formatCurrency(motorcycle.rental_rate_per_day, motorcycle.rental_rate_currency || 'USD')
+  const price = bestRate.amount
+    ? formatCurrency(bestRate.amount, bestRate.currency || 'USD')
     : 'Price on request'
 
   // Handle favorite toggle
@@ -153,9 +174,9 @@ export default function MotorcycleCard({
               <div className="text-sm font-bold text-gray-900">
                 {price}
               </div>
-              {motorcycle.rental_rate_per_day && (
-                <div className="text-xs text-gray-500">/day</div>
-              )}
+              <div className="text-xs text-gray-500">
+                {hasRateTiers ? 'starting from' : '/day'}
+              </div>
             </div>
           </div>
 
