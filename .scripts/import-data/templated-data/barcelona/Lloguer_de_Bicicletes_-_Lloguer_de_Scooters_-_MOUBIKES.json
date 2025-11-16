@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-10-14T19:14:07.943Z",
+    "shop_identifier": "Lloguer de Bicicletes - Lloguer de Scooters - MOUBIKES",
+    "provider_name": "Lloguer de Bicicletes - Lloguer de Scooters - MOUBIKES",
+    "place_id": "ChIJQ3owNuujpBIR0I4sq_vlc8U",
+    "address": "Carrer de Sardenya, 249, L'Eixample, 08013 Barcelona, Spain",
+    "city": "Barcelona",
+    "province": "Barcelona",
+    "country": "Spain",
+    "latitude": 41.4011055,
+    "longitude": 2.1761667,
+    "phone": "673 69 90 77",
+    "website": null,
+    "google_maps_url": "https://maps.google.com/?cid=14227968516864904912",
+    "business_status": "OPERATIONAL",
+    "rating": 4.3,
+    "review_count": 138,
+    "rental_conditions": null,
+    "rental_inclusions": null,
+    "available_service_locations": null,
+    "offered_tours": null
+  },
+  "motorcycle_offerings": []
+}

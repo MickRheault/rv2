@@ -1,0 +1,168 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T13:16:46.997Z",
+    "shop_identifier": "Rent Scooter Rome",
+    "provider_name": "Rent Scooter Rome",
+    "place_id": "ChIJfZzJ32ZgLxMRhKFgQcLWleY",
+    "address": "Via delle Grazie, 2, 00193 Roma RM, Italy",
+    "city": "Rome",
+    "province": "Lazio",
+    "country": "Italy",
+    "latitude": 41.90475259999999,
+    "longitude": 12.4584733,
+    "phone": "338 730 7135",
+    "website": "https://www.rentscooterroma.it/",
+    "google_maps_url": "https://maps.google.com/?cid=16615422530062164356",
+    "business_status": "OPERATIONAL",
+    "rating": 4.5,
+    "review_count": 284,
+    "rental_conditions": {
+      "driver_requirements": "Must be of legal age with ID",
+      "license_requirements": "Driver's license for car or motorcycle and good scooter driving experience",
+      "vehicle_return": "Vehicle must be returned on the agreed date",
+      "fuel_policy": "Vehicle must be returned with the same fuel level",
+      "helmet_requirement": true,
+      "authorized_drivers": "Vehicle must be driven only by the renter with a driver's license"
+    },
+    "rental_inclusions": [
+      "VAT included in the price",
+      "2 helmets",
+      "Civil liability insurance",
+      "Specialized staff demonstrating vehicle operation",
+      "Chain",
+      "City map",
+      "Unlimited kilometers"
+    ],
+    "available_service_locations": [
+      "Via delle Grazie, 2 (San Pietro)",
+      "Piazza d'Aracoeli, 16 (Piazza Venezia)"
+    ],
+    "offered_tours": [
+      {
+        "name": "Vespa Tour",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Bicicletta Tour",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "I gusti di Roma",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "rentscooterroma",
+      "scrape_timestamp": "2025-11-13T13:16:47.668Z",
+      "source_url": "https://www.rentscooterroma.it/",
+      "brand": "Vespa",
+      "model": "LX",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Scooter",
+      "description": "Scooter model offered by Rent Scooter Roma for exploring Rome",
+      "rental_rates": [],
+      "images": [
+        "https://www.rentscooterroma.it/wp-content/uploads/2017/07/Scooter-01.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid ID",
+        "Driver's license for car or motorcycle"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Civil liability insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rentscooterroma",
+      "scrape_timestamp": "2025-11-13T13:16:47.668Z",
+      "source_url": "https://www.rentscooterroma.it/",
+      "brand": "Vespa",
+      "model": "Primavera",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Scooter",
+      "description": "Scooter model offered by Rent Scooter Roma for exploring Rome",
+      "rental_rates": [],
+      "images": [
+        "https://www.rentscooterroma.it/wp-content/uploads/2017/07/Scooter-02.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid ID",
+        "Driver's license for car or motorcycle"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Civil liability insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rentscooterroma",
+      "scrape_timestamp": "2025-11-13T13:16:47.668Z",
+      "source_url": "https://www.rentscooterroma.it/",
+      "brand": "Piaggio",
+      "model": "Liberty",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Scooter",
+      "description": "Scooter model offered by Rent Scooter Roma for exploring Rome",
+      "rental_rates": [],
+      "images": [
+        "https://www.rentscooterroma.it/wp-content/uploads/2017/07/Scooter-03.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid ID",
+        "Driver's license for car or motorcycle"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Civil liability insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": null
+    }
+  ]
+}

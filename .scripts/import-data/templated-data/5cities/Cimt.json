@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T12:12:28.917Z",
+    "shop_identifier": "Cimt",
+    "provider_name": "Cimt",
+    "place_id": "ChIJ6dM9FqZhLxMRmmq7sSgWT8Y",
+    "address": "Via Eusebio Chini, 27/65, 00147 Roma RM, Italy",
+    "city": "Rome",
+    "province": "Lazio",
+    "country": "Italy",
+    "latitude": 41.8629137,
+    "longitude": 12.5004693,
+    "phone": "335 793 8218",
+    "website": "http://www.cimt.it/",
+    "google_maps_url": "https://maps.google.com/?cid=14289664506706225818",
+    "business_status": "OPERATIONAL",
+    "rating": 4.9,
+    "review_count": 34,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

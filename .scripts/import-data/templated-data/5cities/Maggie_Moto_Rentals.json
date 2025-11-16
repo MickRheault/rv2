@@ -1,0 +1,199 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T05:33:50.456Z",
+    "shop_identifier": "Maggie Moto Rentals",
+    "provider_name": "Maggie Moto Rentals",
+    "place_id": "ChIJwUc2mHPQCy8RRrZFQaS6C5A",
+    "address": "Leof. Alexandras 156, Athina 114 71, Greece",
+    "city": "Athens",
+    "province": "Attica",
+    "country": "Greece",
+    "latitude": 37.9878993,
+    "longitude": 23.7523357,
+    "phone": "698 371 0084",
+    "website": "https://maggiemotorentals.com/",
+    "google_maps_url": "https://maps.google.com/?cid=10379594980837930566",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 118,
+    "rental_conditions": {
+      "license_requirements": "International Driving License A, A1, A2, B",
+      "minimum_age": 21,
+      "booking_process": "Contact via phone or email to check availability",
+      "flexible_rental_periods": true,
+      "delivery_available": true,
+      "roadside_assistance": "24/7",
+      "driver_surcharge_under_23": true
+    },
+    "rental_inclusions": [
+      "Two helmets (for driver & passenger)",
+      "Top case for secure storage",
+      "Phone mount for navigation",
+      "Disc brake lock for added security",
+      "Third-party liability insurance",
+      "Driver surcharge coverage for riders under 23 years old",
+      "24/7 roadside assistance in Attica",
+      "Full tank of fuel when you pick up your scooter",
+      "Vehicle replacement option in case of breakdown",
+      "Liability insurance coverage included"
+    ],
+    "available_service_locations": [
+      "Athens",
+      "Attica region"
+    ],
+    "offered_tours": [
+      {
+        "name": "Cape Sounio & The Temple of Poseidon",
+        "duration_text": "Day trip",
+        "distance_km": 70,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Lake Marathon",
+        "duration_text": "Day trip",
+        "distance_km": 40,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Anavyssos & Palaia Fokaia",
+        "duration_text": "Day trip",
+        "distance_km": 50,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Lavrio & Thorikos Theater",
+        "duration_text": "Day trip",
+        "distance_km": 60,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Mount Parnitha National Park",
+        "duration_text": "Day trip",
+        "distance_km": 35,
+        "price_text": null,
+        "currency": null
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "maggiemotorentals.com",
+      "scrape_timestamp": "2025-11-13T05:33:51.240Z",
+      "source_url": "https://maggiemotorentals.com/scooter-rental-athens",
+      "brand": "Honda",
+      "model": "SH Mode",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": "Elegant design with enhanced comfort, suitable for longer rides and two passengers",
+      "rental_rates": [
+        {
+          "rate_text": "Contact for pricing",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": null
+        }
+      ],
+      "images": [
+        "https://images.squarespace-cdn.com/content/v1/6842ac506ae51209fdd32305/e82507ca-e592-48a9-97c5-c339688367fa/shmode_shmode_nhb25m-685x635w.png"
+      ],
+      "features": [
+        "Elegant design",
+        "Enhanced comfort",
+        "Suitable for longer rides",
+        "Suitable for two passengers",
+        "Includes helmets",
+        "Includes storage space"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "International Driving License A, A1, A2, B",
+        "Passport or ID"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third-party liability insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Basic insurance included by default"
+        },
+        {
+          "type_name": "Theft protection",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Available at small extra fee"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "maggiemotorentals.com",
+      "scrape_timestamp": "2025-11-13T05:33:51.240Z",
+      "source_url": "https://maggiemotorentals.com/scooter-rental-athens",
+      "brand": "Honda",
+      "model": "Vision",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Scooter",
+      "description": "Lightweight and fuel-efficient, ideal for city commuting",
+      "rental_rates": [
+        {
+          "rate_text": "Contact for pricing",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": null
+        }
+      ],
+      "images": [
+        "https://images.squarespace-cdn.com/content/v1/6842ac506ae51209fdd32305/4e35cba5-ec46-4ed6-94f3-630b40b549c1/Products6-8585861938941771084-s0.png"
+      ],
+      "features": [
+        "Lightweight",
+        "Fuel-efficient",
+        "Ideal for city commuting",
+        "Includes helmet",
+        "Includes top case"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "International Driving License A, A1, A2, B",
+        "Passport or ID"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third-party liability insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Basic insurance included by default"
+        },
+        {
+          "type_name": "Theft protection",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Available at small extra fee"
+        }
+      ],
+      "availability_status": null
+    }
+  ]
+}

@@ -1,0 +1,245 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T10:44:45.093Z",
+    "shop_identifier": "Xe cào cào VN",
+    "provider_name": "Xe cào cào VN",
+    "place_id": "ChIJj1kly1HXdDERy_alwP7XOxc",
+    "address": "20a Trần Thị Trò, Bình Mỹ, Củ Chi, Thành phố Hồ Chí Minh 70000, Vietnam",
+    "city": "Ho Chi Minh City",
+    "province": "Ho Chi Minh City",
+    "country": "Vietnam",
+    "latitude": 10.9261351,
+    "longitude": 106.6452719,
+    "phone": "0989 168 442",
+    "website": "http://xecaocao.vn/",
+    "google_maps_url": "https://maps.google.com/?cid=1674169175652038347",
+    "business_status": "OPERATIONAL",
+    "rating": 4.3,
+    "review_count": 11,
+    "rental_conditions": {
+      "minimum_age": "18",
+      "license_required": true,
+      "security_deposit": "required",
+      "mileage_limit": "unlimited"
+    },
+    "rental_inclusions": [
+      "Basic safety gear",
+      "Brief riding instruction"
+    ],
+    "available_service_locations": [
+      "Ho Chi Minh City"
+    ],
+    "offered_tours": [
+      {
+        "name": "Off-road dirt bike experience",
+        "duration_text": "Full day",
+        "distance_km": null,
+        "price_text": "500,000 VND/day",
+        "currency": "VND"
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "xecaocao.vn",
+      "scrape_timestamp": "2025-11-13T10:44:46.111Z",
+      "source_url": "https://xecaocao.vn/kham-pha-wr155-motard-dual-sport",
+      "brand": "Yamaha",
+      "model": "WR155",
+      "year": null,
+      "engine_capacity_cc": 155,
+      "category": "Dual-sport",
+      "description": "A versatile dirt bike that can conquer all terrains and provide an excellent riding experience with sporty design and modern features",
+      "rental_rates": [
+        {
+          "rate_text": "500,000 VND/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 500000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://xecaocao.vn/thumbs/600x400x1/upload/news/z5897198424317e2431a42c944ac1e7f5675871e80e366-7287.jpg",
+        "https://xecaocao.vn/thumbs/600x400x1/upload/news/photo2024-10-09-123417-9906.jpeg",
+        "https://xecaocao.vn/thumbs/600x400x1/upload/news/photo2024-10-09-125556-5458.jpeg"
+      ],
+      "features": [
+        "155cc engine",
+        "4-stroke",
+        "6-speed transmission",
+        "LED headlights",
+        "Disc brakes front and rear",
+        "High ground clearance",
+        "Sporty design"
+      ],
+      "specifications_raw": {
+        "engine": "155cc, 4 thì, 6 cấp số",
+        "max_power": "16.4 mã lực",
+        "max_torque": "14.3 Nm",
+        "max_speed": "140 km/h",
+        "dry_weight": "141 kg",
+        "fuel_tank_capacity": "8.1 lít"
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid driver's license",
+        "ID card or passport"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "VND",
+          "deductible": 2000000,
+          "deductible_currency": "VND",
+          "notes": "Covers basic damage to the motorcycle"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "xecaocao.vn",
+      "scrape_timestamp": "2025-11-13T10:44:46.111Z",
+      "source_url": "https://xecaocao.vn/kawasaki",
+      "brand": "Kawasaki",
+      "model": "KLX150",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Dirt bike",
+      "description": "Used KLX150 dirt bike available for sale",
+      "rental_rates": [
+        {
+          "rate_text": "Liên hệ",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://xecaocao.vn/thumbs/350x300x1/upload/product/e66ycfeb0t7nrz6x76qfuc2zy-5731.jpg"
+      ],
+      "features": [
+        "Dirt bike",
+        "150cc engine"
+      ],
+      "specifications_raw": "Used condition",
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "For sale"
+    },
+    {
+      "shop_identifier": "xecaocao.vn",
+      "scrape_timestamp": "2025-11-13T10:44:46.111Z",
+      "source_url": "https://xecaocao.vn/ban-xe-wr155-cu-gia-nao-cung-co-tu-6x-den-8x-trieu",
+      "brand": "Yamaha",
+      "model": "WR155",
+      "year": null,
+      "engine_capacity_cc": 155,
+      "category": "Dual-sport",
+      "description": "Used WR155 dirt bike available for sale with prices ranging from 60-80 million VND",
+      "rental_rates": [
+        {
+          "rate_text": "Liên hệ",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://xecaocao.vn/thumbs/600x400x1/upload/news/fbimg1731422129554-7223.jpg"
+      ],
+      "features": [
+        "155cc engine",
+        "Dual-sport capability"
+      ],
+      "specifications_raw": "Used condition",
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "For sale"
+    },
+    {
+      "shop_identifier": "xecaocao.vn",
+      "scrape_timestamp": "2025-11-13T10:44:46.111Z",
+      "source_url": "https://xecaocao.vn/ban-xe-yamaha-wr155-cu",
+      "brand": "Yamaha",
+      "model": "WR155",
+      "year": null,
+      "engine_capacity_cc": 155,
+      "category": "Dual-sport",
+      "description": "Used Yamaha WR155 dirt bike for sale",
+      "rental_rates": [
+        {
+          "rate_text": "Liên hệ",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://xecaocao.vn/thumbs/600x400x1/upload/news/img8306-4672.jpeg"
+      ],
+      "features": [
+        "155cc engine",
+        "Dual-sport capability"
+      ],
+      "specifications_raw": "Used condition",
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "For sale"
+    },
+    {
+      "shop_identifier": "xecaocao.vn",
+      "scrape_timestamp": "2025-11-13T10:44:46.111Z",
+      "source_url": "https://xecaocao.vn/cho-thue-xe-cao-cao-tai-tphcm-chi-tu-500k-1-ngay",
+      "brand": "Various",
+      "model": "Dirt bikes",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Dirt bike",
+      "description": "Dirt bike rental service in Ho Chi Minh City",
+      "rental_rates": [
+        {
+          "rate_text": "500,000 VND/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 500000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://xecaocao.vn/thumbs/600x400x1/upload/news/img0686-7853.jpeg"
+      ],
+      "features": [
+        "Off-road capability",
+        "Various models available"
+      ],
+      "specifications_raw": "Multiple dirt bike models available for rent",
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid driver's license",
+        "ID card or passport",
+        "Security deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "VND",
+          "deductible": 2000000,
+          "deductible_currency": "VND",
+          "notes": "Standard coverage included"
+        }
+      ],
+      "availability_status": "Available"
+    }
+  ]
+}

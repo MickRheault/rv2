@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T07:02:02.728Z",
+    "shop_identifier": "Rental Motorbike Hanoi",
+    "provider_name": "Rental Motorbike Hanoi",
+    "place_id": "ChIJJ2klG2qrNTERHjEhrIgpoqc",
+    "address": "42 Alley Ng. 293 Đ. Ngọc Thụy, street, Long Biên, Hà Nội, Vietnam",
+    "city": "Hanoi",
+    "province": "Hanoi",
+    "country": "Vietnam",
+    "latitude": 21.0566863,
+    "longitude": 105.86292,
+    "phone": "0931 899 334",
+    "website": "http://rentalmotorbikehanoi.com/",
+    "google_maps_url": "https://maps.google.com/?cid=12079262817541239070",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 132,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

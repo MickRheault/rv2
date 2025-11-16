@@ -1,0 +1,769 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T07:27:08.931Z",
+    "shop_identifier": "Tuan Motorbike Rental Ha Noi",
+    "provider_name": "Tuan Motorbike Rental Ha Noi",
+    "place_id": "ChIJMRmOKMyrNTERNP17FJ1tn8k",
+    "address": "98 P. Xã Đàn, Nam Đồng, Đống Đa, Hà Nội, Vietnam",
+    "city": "Hanoi",
+    "province": "Hanoi",
+    "country": "Vietnam",
+    "latitude": 21.0161069,
+    "longitude": 105.8306015,
+    "phone": "0796 418 956",
+    "website": "https://tuanmotorbike.com/ha-noi",
+    "google_maps_url": "https://maps.google.com/?cid=14528451444341472564",
+    "business_status": "OPERATIONAL",
+    "rating": 4.9,
+    "review_count": 149,
+    "rental_conditions": {
+      "deposit_requirement": "One million VND ($40) or passport",
+      "operating_hours": "Open daily 7:30 AM – 7:00 PM",
+      "license_requirement": "IDP (International Driver's Permit) required",
+      "minimum_rental_period": "1 day",
+      "one_way_rental_available": true
+    },
+    "rental_inclusions": [
+      "Free helmet",
+      "24/7 support",
+      "Long-term rental options"
+    ],
+    "available_service_locations": [
+      "Hanoi",
+      "Da Nang",
+      "Hoi An",
+      "Hue",
+      "Ho Chi Minh City (coming soon 2025)"
+    ],
+    "offered_tours": [
+      {
+        "name": "Hai Van Pass Tour",
+        "duration_text": "1 day",
+        "distance_km": 50,
+        "price_text": "Included with bike rental",
+        "currency": "USD"
+      },
+      {
+        "name": "Hoi An Ancient Town Tour",
+        "duration_text": "Half day",
+        "distance_km": 5,
+        "price_text": "Included with bike rental",
+        "currency": "USD"
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "tuanmotorbike.com",
+      "scrape_timestamp": "2025-11-13T07:27:10.134Z",
+      "source_url": "https://tuanmotorbike.com/motorbikes?id=ead20174-d90e-4afb-9313-0cec0e546a8e&location=Hanoi",
+      "brand": "Honda",
+      "model": "CB500X Adventure Bike",
+      "year": null,
+      "engine_capacity_cc": 500,
+      "category": "Motorbike Rental",
+      "description": "Adventure bike suitable for exploring Vietnam's scenic routes including Hai Van Pass",
+      "rental_rates": [
+        {
+          "rate_text": "$55/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 55,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://tuanmotorbike.com/hanoi"
+      ],
+      "features": [
+        "24/7 support",
+        "Long-term rental",
+        "One-way rental option"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport or 1 million VND deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "tuanmotorbike.com",
+      "scrape_timestamp": "2025-11-13T07:27:10.134Z",
+      "source_url": "https://tuanmotorbike.com/motorbikes?id=8884e1ca-8a75-4e47-90ba-8c049fe57420&location=Hanoi",
+      "brand": "Yamaha",
+      "model": "WR155 Motocross",
+      "year": null,
+      "engine_capacity_cc": 155,
+      "category": "Motorbike Rental",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$25/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 25,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://tuanmotorbike.com/hanoi"
+      ],
+      "features": [
+        "24/7 support",
+        "Long-term rental"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport or 1 million VND deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "tuanmotorbike.com",
+      "scrape_timestamp": "2025-11-13T07:27:10.134Z",
+      "source_url": "https://tuanmotorbike.com/motorbikes?id=3141f0a1-ca5a-4820-a212-13e56f370d1c&location=Hanoi",
+      "brand": "Honda",
+      "model": "XR150L Motocross",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Motorbike Rental",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$20/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 20,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://tuanmotorbike.com/hanoi"
+      ],
+      "features": [
+        "24/7 support",
+        "Long-term rental"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport or 1 million VND deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "tuanmotorbike.com",
+      "scrape_timestamp": "2025-11-13T07:27:10.134Z",
+      "source_url": "https://tuanmotorbike.com/motorbikes?id=6c8785ba-9de7-4a04-81fb-10f3b022547d&location=Hanoi",
+      "brand": "Honda",
+      "model": "XR190L ABS",
+      "year": 2025,
+      "engine_capacity_cc": 190,
+      "category": "Motorbike Rental",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$30/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 30,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://tuanmotorbike.com/hanoi"
+      ],
+      "features": [
+        "ABS",
+        "24/7 support",
+        "Long-term rental"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport or 1 million VND deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "tuanmotorbike.com",
+      "scrape_timestamp": "2025-11-13T07:27:10.134Z",
+      "source_url": "https://tuanmotorbike.com/motorbikes?id=7a9eec0a-39e8-43d6-9647-ad7d9d6db4a6&location=Hanoi",
+      "brand": "Honda",
+      "model": "XR150L ABS",
+      "year": 2025,
+      "engine_capacity_cc": 150,
+      "category": "Motorbike Rental",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$25/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 25,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://tuanmotorbike.com/hanoi"
+      ],
+      "features": [
+        "ABS",
+        "24/7 support",
+        "Long-term rental"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport or 1 million VND deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "tuanmotorbike.com",
+      "scrape_timestamp": "2025-11-13T07:27:10.134Z",
+      "source_url": "https://tuanmotorbike.com/motorbikes?id=876cb510-01af-48c6-9554-b06c2e90c2b5&location=Hanoi",
+      "brand": "Yamaha",
+      "model": "XMAX 300",
+      "year": null,
+      "engine_capacity_cc": 300,
+      "category": "Scooter Rental",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$35/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 35,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://tuanmotorbike.com/hanoi"
+      ],
+      "features": [
+        "24/7 support",
+        "Long-term rental"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport or 1 million VND deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "tuanmotorbike.com",
+      "scrape_timestamp": "2025-11-13T07:27:10.134Z",
+      "source_url": "https://tuanmotorbike.com/motorbikes?id=c037b1ce-d0d3-4457-ab27-6ade7fbcf8f0&location=Hanoi",
+      "brand": "Honda",
+      "model": "PCX 160I ABS",
+      "year": null,
+      "engine_capacity_cc": 160,
+      "category": "Scooter Rental",
+      "description": "The PCX 160i is a premium scooter/ motorbike that sets the standard for all-around cruising and touring. The relaxed riding position and excellent maneuverability have earned PCX high ratings among its owners.",
+      "rental_rates": [
+        {
+          "rate_text": "$15/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 15,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://tuanmotorbike.com/hanoi",
+        "https://i.imgur.com/FZgINXAl.jpg"
+      ],
+      "features": [
+        "ABS",
+        "24/7 support",
+        "Long-term rental",
+        "Free helmet"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport or 1 million VND deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "tuanmotorbike.com",
+      "scrape_timestamp": "2025-11-13T07:27:10.134Z",
+      "source_url": "https://tuanmotorbike.com/motorbikes?id=6a18cd07-0126-43eb-a66e-8a2121d56377&location=Hanoi",
+      "brand": "Yamaha",
+      "model": "NVX 155CC ABS",
+      "year": null,
+      "engine_capacity_cc": 155,
+      "category": "Scooter Rental",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$15/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 15,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://tuanmotorbike.com/hanoi"
+      ],
+      "features": [
+        "ABS",
+        "24/7 support",
+        "Long-term rental"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport or 1 million VND deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "tuanmotorbike.com",
+      "scrape_timestamp": "2025-11-13T07:27:10.134Z",
+      "source_url": "https://tuanmotorbike.com/motorbikes?id=ddb81ca4-0c81-412a-921d-5a20df116fc1&location=Hanoi",
+      "brand": "Honda",
+      "model": "Vario 160",
+      "year": null,
+      "engine_capacity_cc": 160,
+      "category": "Scooter Rental",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$11/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 11,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://tuanmotorbike.com/hanoi"
+      ],
+      "features": [
+        "24/7 support",
+        "Long-term rental"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport or 1 million VND deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "tuanmotorbike.com",
+      "scrape_timestamp": "2025-11-13T07:27:10.134Z",
+      "source_url": "https://tuanmotorbike.com/motorbikes?id=ead20174-d90e-4afb-9313-0cec0e546aaa&location=Hanoi",
+      "brand": "Honda",
+      "model": "ADV 160 ABS",
+      "year": null,
+      "engine_capacity_cc": 160,
+      "category": "Scooter Rental",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$20/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 20,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://tuanmotorbike.com/hanoi"
+      ],
+      "features": [
+        "ABS",
+        "24/7 support",
+        "Long-term rental"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport or 1 million VND deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "tuanmotorbike.com",
+      "scrape_timestamp": "2025-11-13T07:27:10.134Z",
+      "source_url": "https://tuanmotorbike.com/motorbikes?id=fa33fc90-a548-42d1-b0b9-cefd98e1e6b0&location=Hanoi",
+      "brand": "Honda",
+      "model": "Adv 350",
+      "year": 2025,
+      "engine_capacity_cc": 350,
+      "category": "Scooter Rental",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$45/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 45,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://tuanmotorbike.com/hanoi"
+      ],
+      "features": [
+        "24/7 support",
+        "Long-term rental"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport or 1 million VND deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "tuanmotorbike.com",
+      "scrape_timestamp": "2025-11-13T07:27:10.134Z",
+      "source_url": "https://tuanmotorbike.com/motorbikes?id=dfbce108-b73d-4bcf-8fe9-92dc09effc5b&location=Hanoi",
+      "brand": "Honda",
+      "model": "Wave",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Semi Automatic Rental",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$10/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 10,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://tuanmotorbike.com/hanoi"
+      ],
+      "features": [
+        "24/7 support",
+        "Long-term rental"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport or 1 million VND deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "tuanmotorbike.com",
+      "scrape_timestamp": "2025-11-13T07:27:10.134Z",
+      "source_url": "https://tuanmotorbike.com/motorbikes?id=e899ac01-122b-4dea-8d43-6bcb22b016f6&location=Hanoi",
+      "brand": "Yamaha",
+      "model": "Sirius",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Semi Automatic Rental",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$6/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 6,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://tuanmotorbike.com/hanoi"
+      ],
+      "features": [
+        "24/7 support",
+        "Long-term rental"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport or 1 million VND deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "tuanmotorbike.com",
+      "scrape_timestamp": "2025-11-13T07:27:10.134Z",
+      "source_url": "https://tuanmotorbike.com/motorbikes?id=cac15ff5-b02b-456e-baee-43e0f617507f&location=Hoi%20An",
+      "brand": null,
+      "model": "Small Scooter",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Scooter Rental",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$6/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 6,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://tuanmotorbike.com/hoi-an"
+      ],
+      "features": [
+        "24/7 support",
+        "Long-term rental"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport or 1 million VND deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "tuanmotorbike.com",
+      "scrape_timestamp": "2025-11-13T07:27:10.134Z",
+      "source_url": "https://tuanmotorbike.com/motorbikes?id=1d545bef-345a-445f-b64c-0f2f1f9dd7eb&location=Hoi%20An",
+      "brand": "Vinfast",
+      "model": null,
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Electric Motorbike",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$6/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 6,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://tuanmotorbike.com/hoi-an"
+      ],
+      "features": [
+        "24/7 support",
+        "Long-term rental"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport or 1 million VND deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "tuanmotorbike.com",
+      "scrape_timestamp": "2025-11-13T07:27:10.134Z",
+      "source_url": "https://tuanmotorbike.com/motorbikes?id=830a7d7f-ff67-4dbc-a776-063f7b1adca8&location=Hoi%20An",
+      "brand": "Yadea",
+      "model": null,
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Electric Motorbike",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$5/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 5,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://tuanmotorbike.com/hoi-an"
+      ],
+      "features": [
+        "24/7 support",
+        "Long-term rental"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport or 1 million VND deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": "available"
+    }
+  ]
+}

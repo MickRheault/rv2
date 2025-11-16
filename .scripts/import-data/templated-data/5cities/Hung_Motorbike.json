@@ -1,0 +1,843 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T07:44:55.378Z",
+    "shop_identifier": "Hung Motorbike",
+    "provider_name": "Hung Motorbike",
+    "place_id": "ChIJUcn8hlAsPUQRPcrr4LDhhPc",
+    "address": "17 P. Bát Đàn, Hàng Gai, Hoàn Kiếm, Hà Nội 100000, Vietnam",
+    "city": "Hanoi",
+    "province": "Hanoi",
+    "country": "Vietnam",
+    "latitude": 21.0337317,
+    "longitude": 105.8475352,
+    "phone": "0865 874 740",
+    "website": "https://hungmotorbike.com/",
+    "google_maps_url": "https://maps.google.com/?cid=17835628574098049597",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 193,
+    "rental_conditions": {
+      "passport_required": true,
+      "deposit_required": true,
+      "door_to_door_delivery": true,
+      "simple_procedures": true
+    },
+    "rental_inclusions": [
+      "high-quality motorbikes",
+      "periodically maintained vehicles"
+    ],
+    "available_service_locations": [
+      "Hanoi",
+      "Ha Giang",
+      "Halong Bay"
+    ],
+    "offered_tours": [
+      {
+        "name": "Guided motorbike rental in Hanoi",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Ha Giang motorbike tour",
+        "duration_text": "2 days 1 night",
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Halong Bay cruise",
+        "duration_text": "2 days 1 night",
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "hungmotorbike",
+      "scrape_timestamp": "2025-11-13T07:44:56.487Z",
+      "source_url": null,
+      "brand": "Yamaha",
+      "model": "Freego",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Automatic/Scooter Motorbikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$7.00 / 1 Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 7,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hungmotorbike",
+      "scrape_timestamp": "2025-11-13T07:44:56.487Z",
+      "source_url": null,
+      "brand": "Yamaha",
+      "model": "Nouvo",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Automatic/Scooter Motorbikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$7.00 / 1 Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 7,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hungmotorbike",
+      "scrape_timestamp": "2025-11-13T07:44:56.487Z",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "Air Blade",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Automatic/Scooter Motorbikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$7.00 / 1 Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 7,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hungmotorbike",
+      "scrape_timestamp": "2025-11-13T07:44:56.487Z",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "SH Mode",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Automatic/Scooter Motorbikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$7.00 / 1 Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 7,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hungmotorbike",
+      "scrape_timestamp": "2025-11-13T07:44:56.487Z",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "Vision",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Automatic/Scooter Motorbikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$7.00 / 1 Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 7,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hungmotorbike",
+      "scrape_timestamp": "2025-11-13T07:44:56.487Z",
+      "source_url": null,
+      "brand": "Yamaha",
+      "model": "NVX",
+      "year": null,
+      "engine_capacity_cc": 155,
+      "category": "Automatic/Scooter Motorbikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$7.00 / 1 Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 7,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hungmotorbike",
+      "scrape_timestamp": "2025-11-13T07:44:56.487Z",
+      "source_url": null,
+      "brand": "Detech",
+      "model": "Win",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Manual/Off-Road Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$9.00 / 1 Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 9,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hungmotorbike",
+      "scrape_timestamp": "2025-11-13T07:44:56.487Z",
+      "source_url": null,
+      "brand": "Detech",
+      "model": "Win",
+      "year": null,
+      "engine_capacity_cc": 127,
+      "category": "Manual/Off-Road Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$11.00 / 1 Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 11,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hungmotorbike",
+      "scrape_timestamp": "2025-11-13T07:44:56.487Z",
+      "source_url": null,
+      "brand": "Detech",
+      "model": "Win",
+      "year": null,
+      "engine_capacity_cc": 140,
+      "category": "Manual/Off-Road Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$12.00 / 1 Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 12,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hungmotorbike",
+      "scrape_timestamp": "2025-11-13T07:44:56.487Z",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "CB",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Manual/Off-Road Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$17.00 / 1 Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 17,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hungmotorbike",
+      "scrape_timestamp": "2025-11-13T07:44:56.487Z",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "CBF",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Manual/Off-Road Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$15.00 / 1 Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 15,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hungmotorbike",
+      "scrape_timestamp": "2025-11-13T07:44:56.487Z",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "CRF",
+      "year": null,
+      "engine_capacity_cc": 250,
+      "category": "Manual/Off-Road Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$45.00 / 1 Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 45,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hungmotorbike",
+      "scrape_timestamp": "2025-11-13T07:44:56.487Z",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "Fortune",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Manual/Off-Road Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$15.00 / 1 Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 15,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hungmotorbike",
+      "scrape_timestamp": "2025-11-13T07:44:56.487Z",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "Master",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Manual/Off-Road Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$15.00 / 1 Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 15,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hungmotorbike",
+      "scrape_timestamp": "2025-11-13T07:44:56.487Z",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "XR",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Manual/Off-Road Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$20.00 / 1 Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 20,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hungmotorbike",
+      "scrape_timestamp": "2025-11-13T07:44:56.487Z",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "CRF",
+      "year": null,
+      "engine_capacity_cc": 300,
+      "category": "Manual/Off-Road Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$55.00 / 1 Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 55,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hungmotorbike",
+      "scrape_timestamp": "2025-11-13T07:44:56.487Z",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "CRF",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Manual/Off-Road Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$20.00 / 1 Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 20,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hungmotorbike",
+      "scrape_timestamp": "2025-11-13T07:44:56.487Z",
+      "source_url": null,
+      "brand": "Kawasaki",
+      "model": "KLX",
+      "year": null,
+      "engine_capacity_cc": 250,
+      "category": "Manual/Off-Road Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$50.00 / 1 Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 50,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hungmotorbike",
+      "scrape_timestamp": "2025-11-13T07:44:56.487Z",
+      "source_url": null,
+      "brand": "Suzuki",
+      "model": "GD",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Manual/Off-Road Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$13.00 / 1 Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 13,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hungmotorbike",
+      "scrape_timestamp": "2025-11-13T07:44:56.487Z",
+      "source_url": null,
+      "brand": "BMW",
+      "model": "G310 GS",
+      "year": null,
+      "engine_capacity_cc": 310,
+      "category": "Touring /Adventure Motorcycles",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$60.00 / 1 Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 60,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hungmotorbike",
+      "scrape_timestamp": "2025-11-13T07:44:56.487Z",
+      "source_url": null,
+      "brand": "BMW",
+      "model": "R1200GS",
+      "year": null,
+      "engine_capacity_cc": 1200,
+      "category": "Touring /Adventure Motorcycles",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$190.00 / 1 Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 190,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hungmotorbike",
+      "scrape_timestamp": "2025-11-13T07:44:56.487Z",
+      "source_url": null,
+      "brand": "Kawasaki",
+      "model": "Versys",
+      "year": null,
+      "engine_capacity_cc": 300,
+      "category": "Touring /Adventure Motorcycles",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$45.00 / 1 Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 45,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hungmotorbike",
+      "scrape_timestamp": "2025-11-13T07:44:56.487Z",
+      "source_url": null,
+      "brand": "Royal Enfield",
+      "model": "Himalayan",
+      "year": null,
+      "engine_capacity_cc": 400,
+      "category": "Touring /Adventure Motorcycles",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$50.00 / 1 Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 50,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hungmotorbike",
+      "scrape_timestamp": "2025-11-13T07:44:56.487Z",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "Future",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Semi-Automatic Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$7.00 / 1 Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 7,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hungmotorbike",
+      "scrape_timestamp": "2025-11-13T07:44:56.487Z",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "Wave",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Semi-Automatic Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$7.00 / 1 Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 7,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hungmotorbike",
+      "scrape_timestamp": "2025-11-13T07:44:56.487Z",
+      "source_url": null,
+      "brand": "Yamaha",
+      "model": "Jupiter",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Semi-Automatic Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$7.00 / 1 Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 7,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hungmotorbike",
+      "scrape_timestamp": "2025-11-13T07:44:56.487Z",
+      "source_url": null,
+      "brand": "Yamaha",
+      "model": "Sirius",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Semi-Automatic Bikes",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$7.00 / 1 Day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 7,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "passport"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    }
+  ]
+}

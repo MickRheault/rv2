@@ -1,0 +1,226 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T04:09:10.157Z",
+    "shop_identifier": "Kingfisher Adventure-Nepal Motorbike Tour",
+    "provider_name": "Kingfisher Adventure-Nepal Motorbike Tour",
+    "place_id": "ChIJrS_aHPEZ6zkRuWslayIl4TQ",
+    "address": "Basbari road Budanilkantha-7, काठमाडौँ 44600, Nepal",
+    "city": "Kathmandu",
+    "province": "Bagmati Province",
+    "country": "Nepal",
+    "latitude": 27.7488382,
+    "longitude": 85.3408045,
+    "phone": "985-1162426",
+    "website": "http://www.kingfisheradv.com/",
+    "google_maps_url": "https://maps.google.com/?cid=3810367589488880569",
+    "business_status": "OPERATIONAL",
+    "rating": 4.9,
+    "review_count": 29,
+    "rental_conditions": {
+      "required_documents": "valid two-wheeler driving license, passport",
+      "security_deposit": "required, some companies may keep original passport",
+      "minimum_rental_period": "daily",
+      "insurance_coverage": "65% repair cost covered, rider pays 35% (full amount if repair cost ≤ $250)",
+      "third_party_insurance": "65% medical costs covered up to $5,000, 75% property damage covered up to $13,000",
+      "experience_requirement": "experienced riders recommended for Himalayan region"
+    },
+    "rental_inclusions": [
+      "well-maintained motorcycles",
+      "insurance coverage",
+      "test ride option"
+    ],
+    "available_service_locations": [
+      "Kathmandu",
+      "Nepal",
+      "Tibet",
+      "Bhutan"
+    ],
+    "offered_tours": [
+      {
+        "name": "Fixed Departure Motorbike Tour in Nepal",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Nepal Motorcycle Tours",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Tibet Motorcycle Tours",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Bhutan Motorcycle Tours",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Upper Mustang Motorbike Tour for Indian Riders",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Himalayan 450 Motorbike Rental in Kathmandu-Nepal",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "kingfisheradv",
+      "scrape_timestamp": "2025-11-13T04:11:41.272Z",
+      "source_url": "https://kingfisheradv.com/tour/himalayan-450-motorbike-rent-in-nepal/",
+      "brand": "Royal Enfield",
+      "model": "Himalayan 450",
+      "year": 2024,
+      "engine_capacity_cc": 450,
+      "category": "Adventure/Touring",
+      "description": "versatile motorbike, it is easy to ride inside the city, on highway touring, and off-road Motorbike tours. It provides exciting performance with a comfortable ride experience, which is beneficial to riding along hilly roads like Nepal.",
+      "rental_rates": [
+        {
+          "rate_text": "$55.00 per day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 55,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://kingfisheradv.com/wp-content/uploads/2020/08/Himalayan-450-10.jpg",
+        "https://kingfisheradv.com/wp-content/uploads/2020/08/Untitled-1.jpg",
+        "https://kingfisheradv.com/wp-content/uploads/2020/08/Motorcycle-rental-Nepal.jpg",
+        "https://kingfisheradv.com/wp-content/uploads/2020/08/Himalayan-motorbike-rental-Nepal.jpg"
+      ],
+      "features": [
+        "fully digital TFT screen",
+        "smartphone connectivity",
+        "navigation powered by Google Maps",
+        "adjustable seat",
+        "round LED headlight",
+        "sculpted fuel tank",
+        "long wheelbase",
+        "825mm seat height (customizable to 845mm)"
+      ],
+      "specifications_raw": {
+        "engine": "452cc liquid-cooled single-cylinder",
+        "power": "40PS at 8,000rpm",
+        "torque": "40Nm at 5,500rpm",
+        "transmission": "six-speed gearbox with slip-and-assist clutch",
+        "weight": "196kg",
+        "seat_height": "825mm (customizable to 845mm)"
+      },
+      "conditions_raw": {
+        "required_documents": "valid two-wheeler driving license, passport",
+        "security_deposit": "required",
+        "insurance": "65% repair cost covered, rider pays 35% (full amount if repair cost ≤ $250)"
+      },
+      "required_documents_raw": [
+        "valid two-wheeler driving license",
+        "passport"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Motorcycle Insurance",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "USD",
+          "deductible": 35,
+          "deductible_currency": "USD",
+          "notes": "Rider pays 35% of repair cost (100% if repair cost ≤ $250)"
+        },
+        {
+          "type_name": "Third-Party Insurance",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "USD",
+          "deductible": 35,
+          "deductible_currency": "USD",
+          "notes": "65% medical costs covered up to $5,000; 75% property damage covered up to $13,000"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "kingfisheradv",
+      "scrape_timestamp": "2025-11-13T04:11:41.272Z",
+      "source_url": "https://kingfisheradv.com/tour/motorcycle-rental-in-nepal/",
+      "brand": "Royal Enfield",
+      "model": "Himalayan 411",
+      "year": null,
+      "engine_capacity_cc": 411,
+      "category": "Adventure/Touring",
+      "description": "one of the most popular choices for riders willing to ride in the mountains and hilly roads in Nepal and Tibet. You could expect quite a bit of power while riding this Royal Enfield Himalayan 411cc motorcycle.",
+      "rental_rates": [
+        {
+          "rate_text": "$40.00 per day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 40,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://kingfisheradv.com/wp-content/uploads/2020/08/Motorcycle-rental-Nepal.jpg",
+        "https://kingfisheradv.com/wp-content/uploads/2020/08/Himalayan-motorcycle-rental-Kathmandu.jpg",
+        "https://kingfisheradv.com/wp-content/uploads/2020/08/Motorbike-Rental-Kathmandu.jpg"
+      ],
+      "features": [
+        "half-duplex split cradle frame",
+        "long-travel suspension",
+        "stability on various terrains"
+      ],
+      "specifications_raw": {
+        "engine": "411cc",
+        "power": "not specified in content",
+        "torque": "not specified in content",
+        "transmission": "not specified in content",
+        "weight": "not specified in content"
+      },
+      "conditions_raw": {
+        "required_documents": "valid two-wheeler driving license, passport",
+        "security_deposit": "required",
+        "insurance": "65% repair cost covered, rider pays 35% (full amount if repair cost ≤ $250)"
+      },
+      "required_documents_raw": [
+        "valid two-wheeler driving license",
+        "passport"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Motorcycle Insurance",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "USD",
+          "deductible": 35,
+          "deductible_currency": "USD",
+          "notes": "Rider pays 35% of repair cost (100% if repair cost ≤ $250)"
+        },
+        {
+          "type_name": "Third-Party Insurance",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "USD",
+          "deductible": 35,
+          "deductible_currency": "USD",
+          "notes": "65% medical costs covered up to $5,000; 75% property damage covered up to $13,000"
+        }
+      ],
+      "availability_status": "available"
+    }
+  ]
+}

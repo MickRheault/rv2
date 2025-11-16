@@ -1,0 +1,98 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T06:02:04.196Z",
+    "shop_identifier": "DRIVESPOT RENTAL Car & Moto",
+    "provider_name": "DRIVESPOT RENTAL Car & Moto",
+    "place_id": "ChIJh4DgjnmjoRQRbn1hCaTcbl4",
+    "address": "Ἀcharnon 221, Athina 104 46, Greece",
+    "city": "Athens",
+    "province": "Attica",
+    "country": "Greece",
+    "latitude": 38.0049561,
+    "longitude": 23.7286365,
+    "phone": "698 582 3990",
+    "website": "http://drivespot.gr/",
+    "google_maps_url": "https://maps.google.com/?cid=6804618684093529454",
+    "business_status": "OPERATIONAL",
+    "rating": 4.9,
+    "review_count": 150,
+    "rental_conditions": {
+      "delivery_service": "Available (υπάρχει και η δυνατότητα παράδοσης του αυτοκινήτου στο σημείο της επιλογής σας)",
+      "minimum_rental_period": "Not specified",
+      "age_requirement": "Not specified",
+      "deposit_required": "Not specified"
+    },
+    "rental_inclusions": [
+      "Insurance (mentioned in general terms but specific details not provided)"
+    ],
+    "available_service_locations": [
+      "Αθήνα"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "drivespot.gr",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": "https://drivespot.gr/el/Enoikiaseis-Aytokiniton-Motosykleton-Athina-Attiki-O-STOLOS-MAS",
+      "brand": "Sym",
+      "model": "Symphony SR",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": "125cc scooter model from Sym brand, part of DriveSpot Rental's fleet for Athens area",
+      "rental_rates": [],
+      "images": [
+        "https://reseller-content.4ty.gr/site2/chris-ftp/2024/0drivespotrental-imga1.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "drivespot.gr",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": "https://drivespot.gr/el/Enoikiaseis-Aytokiniton-Motosykleton-Athina-Attiki-O-STOLOS-MAS",
+      "brand": "Sym",
+      "model": "Jet 14",
+      "year": null,
+      "engine_capacity_cc": 200,
+      "category": "Scooter",
+      "description": "200cc scooter model from Sym brand, part of DriveSpot Rental's fleet for Athens area",
+      "rental_rates": [],
+      "images": [
+        "https://reseller-content.4ty.gr/site2/chris-ftp/2024/0drivespotrental-imga2.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "drivespot.gr",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": "https://drivespot.gr/el/Enoikiaseis-Aytokiniton-Motosykleton-Athina-Attiki-O-STOLOS-MAS",
+      "brand": "Sym",
+      "model": "symphony ST",
+      "year": null,
+      "engine_capacity_cc": 200,
+      "category": "Scooter",
+      "description": "200cc scooter model from Sym brand, part of DriveSpot Rental's fleet for Athens area",
+      "rental_rates": [],
+      "images": [
+        "https://reseller-content.4ty.gr/site2/chris-ftp/2024/0drivespotrental-imga3.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    }
+  ]
+}

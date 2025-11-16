@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T12:50:47.230Z",
+    "shop_identifier": "Cooltra ROMA Colosseo | Noleggio di moto per giorni e mesi a Roma",
+    "provider_name": "Cooltra ROMA Colosseo | Noleggio di moto per giorni e mesi a Roma",
+    "place_id": "ChIJ5aVigFNhLxMR-u24JoBX6nY",
+    "address": "Via Capo d'Africa, 11, 00184 Roma RM, Italy",
+    "city": "Rome",
+    "province": "Lazio",
+    "country": "Italy",
+    "latitude": 41.8888243,
+    "longitude": 12.4945925,
+    "phone": null,
+    "website": "https://cooltra.com/it/noleggio-scooter-roma/colosseo-du-rote/",
+    "google_maps_url": "https://maps.google.com/?cid=8568757448942874106",
+    "business_status": "OPERATIONAL",
+    "rating": 4.6,
+    "review_count": 44,
+    "rental_conditions": null,
+    "rental_inclusions": null,
+    "available_service_locations": null,
+    "offered_tours": null
+  },
+  "motorcycle_offerings": []
+}

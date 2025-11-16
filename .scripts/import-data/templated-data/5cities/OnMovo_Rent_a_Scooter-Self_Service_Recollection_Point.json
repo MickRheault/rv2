@@ -1,0 +1,772 @@
+<think>Let me analyze the markdown files provided to extract data according to the template structure.
+
+First, I need to understand what information I'm looking for:
+1. Provider metadata (business information)
+2. Motorcycle offerings (details about each motorcycle available for rent)
+
+Let me go through each file systematically.
+
+Starting with page_0_0.md:
+This appears to be the main homepage of OnMovo. I can see:
+- Company name: OnMovo
+- Phone numbers: +39 3471011983, 800-08-22-23
+- Website: https://www.onmovo.com/en/
+- Locations: Rome, Florence, Nettuno-Anzio
+- They offer scooter rentals including electric scooters, Vespas, and Fiat Topolino
+- Monthly rental prices shown for various vehicles:
+  * Fiat Topolino Dolcevita: 569€/month
+  * Kymko xTown 300: 712€/month
+  * Vespa Primavera 50: 461€/month
+  * Vespa Gts 300: 712€/month
+  * Vespa Primavera 125: 544€/month
+  * Kymko Agility 125: 269€/month
+- They mention "Services included": Helmet, Roadside assistance, Insurance, Unlimited kilometers, Price guaranteed, Free cancellation
+- Hourly rates for E-scooter 50: 1h-6€, 4h-19€, 24h-29€, 36h-39€
+
+From page_1_13.md (FAQ page):
+- More details about rental conditions:
+  * For vehicles <125cc: category B license (car) or A license required
+  * For vehicles >125cc: category A motorcycle license required
+  * Credit card required
+  * Rental price includes: Civil liability insurance, Anti-theft lock, Helmets and disposable hygienic caps, Everything included in the chosen insurance package, VAT and vehicle taxes
+  * Mileage is unlimited for all vehicles except motorcycles with engine capacities exceeding 400cc (where available), with a limit of 200km/day
+  * Extra km costs €0.30
+  * Rain gear provided free of charge upon request
+  * Helmets are mandatory, up to two provided
+  * Children under 5 prohibited on two-wheeled vehicles
+  * Cancellation terms: can cancel without penalty 48 hours in advance
+
+From page_1_14.md (Florence page):
+- OnMovo partner in Florence: E-Dway Borgo Ognissanti 65R
+- Services offered: Railway station access, Bicycle Rental, Scooter Rental (E-Vespa 50-125cc, electric), Vespa & E-Bike tours
+
+From page_1_2.md (Privacy Policy):
+- Company information: ONMOVO MOBILITY SRL, Registered Office Via Belvedere 25, 67046, Ovindoli (AQ) VAT No. 13638461007
+- Also mentions GES.MO. Srl P.IVA/C.F. 13638461007 - REA RM - 1462585 in footer
+
+From page_1_3.md (Fiumicino Airport page):
+- Details about scooter rental at Rome Fiumicino Airport
+- Meeting point: in front of parking lot "A" reserved for motorcycles
+
+From page_1_4.md (24/7 Rental page):
+- Information about 24/7 vehicle key delivery service
+
+From page_1_5.md (Nettuno-Anzio page):
+- Details about scooter rental in Nettuno-Anzio
+- Nettuno and Anzio are described as the nerve center of the southern coast of Lazio
+
+From page_1_7.md (Fiat Topolino Dolcevita details):
+- Monthly price: 569€ (VAT included)
+- Advance payment: 0€
+- Duration: 1 month
+- Drivable kilometers: 1,750 km
+- Fuel type: E (electric)
+- Transmission: A (automatic)
+- Seats: 2
+- Displacement: 50 cm3
+- Used: No
+
+From page_1_9.md (Vespa Primavera 125 details):
+- Monthly price: 544€ (VAT included)
+- Advance payment: 0€
+- Duration: 1 month
+- Drivable kilometers: 1,750 km
+- Fuel type: B (gasoline)
+- Transmission: A (automatic)
+- Seats: 2
+- Displacement: 125 cm3
+- Used: Sì (Yes)
+
+Now, let me organize this information according to the template:
+
+For provider_metadata:
+- scrape_timestamp: Current datetime is 2025-11-13T11:27:51.141Z
+- shop_identifier: "onmovo"
+- provider_name: "OnMovo"
+- place_id: Not explicitly mentioned in the files
+- address: From privacy policy: "Via Belvedere 25"
+- city: From privacy policy: "Ovindoli"
+- province: Not explicitly mentioned, but AQ is the province code in the address
+- country: Italy
+- latitude: Not provided
+- longitude: Not provided
+- phone: "+39 3471011983, 800-08-22-23"
+- website: "https://www.onmovo.com/en/"
+- google_maps_url: Not provided
+- business_status: Not provided
+- rating: Not provided
+- review_count: Not provided
+- rental_conditions: 
+  * license_requirements: "Category B license (car) or A license for vehicles <125cc; Category A motorcycle license for vehicles >125cc"
+  * age_requirements: Not explicitly mentioned
+  * deposit_required: "Credit card required"
+  * cancellation_policy: "Can cancel without penalty 48 hours in advance"
+  * mileage_limit: "Unlimited for most vehicles; 200km/day for motorcycles >400cc"
+  * extra_km_cost: "€0.30"
+- rental_inclusions: ["Helmet", "Roadside assistance", "Insurance", "Anti-theft lock", "Disposable hygienic caps", "Unlimited kilometers", "Price guaranteed", "Free cancellation"]
+- available_service_locations: ["Rome", "Florence", "Nettuno-Anzio", "Fiumicino Airport", "Ciampino Airport"]
+- offered_tours: Not explicitly mentioned, but page_1_14.md mentions "Vespa & E-Bike tours" in Florence
+
+For motorcycle_offerings:
+I need to extract details for each motorcycle mentioned:
+
+1. Fiat Topolino Dolcevita:
+   - brand: "Fiat"
+   - model: "Topolino Dolcevita"
+   - year: Not provided
+   - engine_capacity_cc: 50
+   - category: Not explicitly mentioned, but appears to be a small electric car
+   - description: Not provided
+   - rental_rates: 
+     * rate_text: "569 €/Month"
+     * min_days: 30 (1 month)
+     * max_days: null (not specified)
+     * rate_per_day: 18.97 (569/30)
+     * currency: "EUR"
+   - images: ["https://admin.onmovo.com/immagini/cache/veicoli_grande/68c947407e8b1_topolino%20dolcevita.png"]
+   - features: ["Electric", "2 seats", "Automatic transmission"]
+   - specifications_raw: {
+        "fuel_type": "E",
+        "transmission": "A",
+        "seats": 2,
+        "displacement": "50 cm3",
+        "used": "No"
+     }
+   - conditions_raw: {
+        "advance_payment": "0 €",
+        "duration": "1 months",
+        "drivable_kilometers": "1,750 Km"
+     }
+   - required_documents_raw: ["Category B license (car) or A license", "Credit card"]
+   - insurance_details_raw: [{
+        "type_name": "Civil liability insurance",
+        "is_included": true,
+        "cost_per_day": null,
+        "currency": "EUR",
+        "deductible": null,
+        "deductible_currency": "EUR",
+        "notes": "Included in rental price"
+     }]
+   - availability_status: "ready for delivery"
+
+2. Vespa Primavera 125:
+   - brand: "Vespa"
+   - model: "Primavera 125"
+   - year: Not provided
+   - engine_capacity_cc: 125
+   - category: Scooter
+   - description: Not provided
+   - rental_rates: 
+     * rate_text: "544 €/Month"
+     * min_days: 30 (1 month)
+     * max_days: null (not specified)
+     * rate_per_day: 18.13 (544/30)
+     * currency: "EUR"
+   - images: ["https://admin.onmovo.com/immagini/cache/veicoli_grande/68c93ed08a322_vespa-primavera-50.jpg"]
+   - features: ["Gasoline", "2 seats", "Automatic transmission", "Used"]
+   - specifications_raw: {
+        "fuel_type": "B",
+        "transmission": "A",
+        "seats": 2,
+        "displacement": "125 cm3",
+        "used": "Sì"
+     }
+   - conditions_raw: {
+        "advance_payment": "0 €",
+        "duration": "1 months",
+        "drivable_kilometers": "1,750 Km"
+     }
+   - required_documents_raw: ["Category A motorcycle license", "Credit card"]
+   - insurance_details_raw: [{
+        "type_name": "Civil liability insurance",
+        "is_included": true,
+        "cost_per_day": null,
+        "currency": "EUR",
+        "deductible": null,
+        "deductible_currency": "EUR",
+        "notes": "Included in rental price"
+     }]
+   - availability_status: "ready for delivery"
+
+3. Vespa Primavera 50:
+   - brand: "Vespa"
+   - model: "Primavera 50"
+   - year: Not provided
+   - engine_capacity_cc: 50
+   - category: Scooter
+   - description: Not provided
+   - rental_rates: 
+     * rate_text: "461 €/Month"
+     * min_days: 30 (1 month)
+     * max_days: null (not specified)
+     * rate_per_day: 15.37 (461/30)
+     * currency: "EUR"
+   - images: ["https://admin.onmovo.com/immagini/cache/veicoli_piccola/68c941a864a71_Senza%20titolo%20\(320%20x%20260%20px\)%20\(1\).png"]
+   - features: []
+   - specifications_raw: null
+   - conditions_raw: null
+   - required_documents_raw: ["Category B license (car) or A license", "Credit card"]
+   - insurance_details_raw: [{
+        "type_name": "Civil liability insurance",
+        "is_included": true,
+        "cost_per_day": null,
+        "currency": "EUR",
+        "deductible": null,
+        "deductible_currency": "EUR",
+        "notes": "Included in rental price"
+     }]
+   - availability_status: null
+
+4. Vespa Gts 300:
+   - brand: "Vespa"
+   - model: "Gts 300"
+   - year: Not provided
+   - engine_capacity_cc: 300
+   - category: Scooter
+   - description: Not provided
+   - rental_rates: 
+     * rate_text: "712 €/Month"
+     * min_days: 30 (1 month)
+     * max_days: null (not specified)
+     * rate_per_day: 23.73 (712/30)
+     * currency: "EUR"
+   - images: ["https://admin.onmovo.com/immagini/cache/veicoli_piccola/68c9423806ccf_Vespa-GTS-300.jpg"]
+   - features: []
+   - specifications_raw: null
+   - conditions_raw: null
+   - required_documents_raw: ["Category A motorcycle license", "Credit card"]
+   - insurance_details_raw: [{
+        "type_name": "Civil liability insurance",
+        "is_included": true,
+        "cost_per_day": null,
+        "currency": "EUR",
+        "deductible": null,
+        "deductible_currency": "EUR",
+        "notes": "Included in rental price"
+     }]
+   - availability_status: null
+
+5. Kymko xTown 300:
+   - brand: "Kymko"
+   - model: "xTown 300"
+   - year: Not provided
+   - engine_capacity_cc: 300
+   - category: Scooter
+   - description: Not provided
+   - rental_rates: 
+     * rate_text: "712 €/Month"
+     * min_days: 30 (1 month)
+     * max_days: null (not specified)
+     * rate_per_day: 23.73 (712/30)
+     * currency: "EUR"
+   - images: ["https://admin.onmovo.com/immagini/cache/veicoli_piccola/68c9437cc940f_Progetto%20senza%20titolo%20\(12\).png"]
+   - features: []
+   - specifications_raw: null
+   - conditions_raw: null
+   - required_documents_raw: ["Category A motorcycle license", "Credit card"]
+   - insurance_details_raw: [{
+        "type_name": "Civil liability insurance",
+        "is_included": true,
+        "cost_per_day": null,
+        "currency": "EUR",
+        "deductible": null,
+        "deductible_currency": "EUR",
+        "notes": "Included in rental price"
+     }]
+   - availability_status: null
+
+6. Kymko Agility 125:
+   - brand: "Kymko"
+   - model: "Agility 125"
+   - year: Not provided
+   - engine_capacity_cc: 125
+   - category: Scooter
+   - description: Not provided
+   - rental_rates: 
+     * rate_text: "269 €/Month"
+     * min_days: 30 (1 month)
+     * max_days: null (not specified)
+     * rate_per_day: 8.97 (269/30)
+     * currency: "EUR"
+   - images: ["https://admin.onmovo.com/immagini/cache/veicoli_piccola/68c93cfb76dd4_Kymko-Agility-R16-125.jpg"]
+   - features: []
+   - specifications_raw: null
+   - conditions_raw: null
+   - required_documents_raw: ["Category A motorcycle license", "Credit card"]
+   - insurance_details_raw: [{
+        "type_name": "Civil liability insurance",
+        "is_included": true,
+        "cost_per_day": null,
+        "currency": "EUR",
+        "deductible": null,
+        "deductible_currency": "EUR",
+        "notes": "Included in rental price"
+     }]
+   - availability_status: null
+
+7. E-scooter 50 (hourly rates):
+   - brand: Not specified
+   - model: "E-scooter 50"
+   - year: Not provided
+   - engine_capacity_cc: 50
+   - category: Scooter
+   - description: Not provided
+   - rental_rates: [
+        {
+          "rate_text": "6 €/hour",
+          "min_days": 0.0417 (1 hour),
+          "max_days": 0.0417,
+          "rate_per_day": 144,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "19 €/4 hours",
+          "min_days": 0.1667 (4 hours),
+          "max_days": 0.1667,
+          "rate_per_day": 114,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "29 €/24 hours",
+          "min_days": 1,
+          "max_days": 1,
+          "rate_per_day": 29,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "39 €/36 hours",
+          "min_days": 1.5,
+          "max_days": 1.5,
+          "rate_per_day": 26,
+          "currency": "EUR"
+        }
+     ]
+   - images: Not provided
+   - features: ["Electric", "Single Battery"]
+   - specifications_raw: null
+   - conditions_raw: null
+   - required_documents_raw: ["Credit card"]
+   - insurance_details_raw: [{
+        "type_name": "Civil liability insurance",
+        "is_included": true,
+        "cost_per_day": null,
+        "currency": "EUR",
+        "deductible": null,
+        "deductible_currency": "EUR",
+        "notes": "Included in rental price"
+     }]
+   - availability_status: null
+
+Now I'll format this information according to the template structure.
+
+Let me double-check if I missed any motorcycles or important details:
+
+From page_0_0.md, I see hourly rates for E-scooter 50, which I've included.
+
+From page_1_14.md, I see that in Florence they offer "E-Vespa with various engine sizes: from 50 to 125cc, electric." This confirms the Vespa models I've extracted.
+
+I don't see any other specific motorcycle models mentioned in the files.
+
+Let me now format this information into the required JSON structure.
+</think>
+
+{
+  "provider_metadata": {
+      "scrape_timestamp": "2025-11-13T11:27:51.141Z",
+      "shop_identifier": "onmovo",
+      "provider_name": "OnMovo",
+      "place_id": null,
+      "address": "Via Belvedere 25",
+      "city": "Ovindoli",
+      "province": "AQ",
+      "country": "Italy",
+      "latitude": null,
+      "longitude": null,
+      "phone": "+39 3471011983, 800-08-22-23",
+      "website": "https://www.onmovo.com/en/",
+      "google_maps_url": null,
+      "business_status": null,
+      "rating": null,
+      "review_count": null,
+      "rental_conditions": {
+        "license_requirements": "Category B license (car) or A license for vehicles <125cc; Category A motorcycle license for vehicles >125cc",
+        "age_requirements": null,
+        "deposit_required": "Credit card required",
+        "cancellation_policy": "Can cancel without penalty 48 hours in advance",
+        "mileage_limit": "Unlimited for most vehicles; 200km/day for motorcycles >400cc",
+        "extra_km_cost": "€0.30"
+      },
+      "rental_inclusions": [
+        "Helmet",
+        "Roadside assistance",
+        "Insurance",
+        "Anti-theft lock",
+        "Disposable hygienic caps",
+        "Unlimited kilometers",
+        "Price guaranteed",
+        "Free cancellation"
+      ],
+      "available_service_locations": [
+        "Rome",
+        "Florence",
+        "Nettuno-Anzio",
+        "Fiumicino Airport",
+        "Ciampino Airport"
+      ],
+      "offered_tours": [
+        {
+          "name": "Vespa & E-Bike tours",
+          "duration_text": null,
+          "distance_km": null,
+          "price_text": null,
+          "currency": null
+        }
+      ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "onmovo",
+      "scrape_timestamp": "2025-11-13T11:27:51.141Z",
+      "source_url": "https://www.onmovo.com/en/lungo-termine-dettaglio-en/12/fiat/topolino-dolcevita/",
+      "brand": "Fiat",
+      "model": "Topolino Dolcevita",
+      "year": null,
+      "engine_capacity_cc": 50,
+      "category": "Electric car",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "569 €/Month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 18.97,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://admin.onmovo.com/immagini/cache/veicoli_grande/68c947407e8b1_topolino%20dolcevita.png"
+      ],
+      "features": [
+        "Electric",
+        "2 seats",
+        "Automatic transmission"
+      ],
+      "specifications_raw": {
+        "fuel_type": "E",
+        "transmission": "A",
+        "seats": 2,
+        "displacement": "50 cm3",
+        "used": "No"
+      },
+      "conditions_raw": {
+        "advance_payment": "0 €",
+        "duration": "1 months",
+        "drivable_kilometers": "1,750 Km"
+      },
+      "required_documents_raw": [
+        "Category B license (car) or A license",
+        "Credit card"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Civil liability insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": "ready for delivery"
+    },
+    {
+      "shop_identifier": "onmovo",
+      "scrape_timestamp": "2025-11-13T11:27:51.141Z",
+      "source_url": "https://www.onmovo.com/en/lungo-termine-dettaglio-en/8/vespa/primavera-125/",
+      "brand": "Vespa",
+      "model": "Primavera 125",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "544 €/Month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 18.13,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://admin.onmovo.com/immagini/cache/veicoli_grande/68c93ed08a322_vespa-primavera-50.jpg"
+      ],
+      "features": [
+        "Gasoline",
+        "2 seats",
+        "Automatic transmission",
+        "Used"
+      ],
+      "specifications_raw": {
+        "fuel_type": "B",
+        "transmission": "A",
+        "seats": 2,
+        "displacement": "125 cm3",
+        "used": "Sì"
+      },
+      "conditions_raw": {
+        "advance_payment": "0 €",
+        "duration": "1 months",
+        "drivable_kilometers": "1,750 Km"
+      },
+      "required_documents_raw": [
+        "Category A motorcycle license",
+        "Credit card"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Civil liability insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": "ready for delivery"
+    },
+    {
+      "shop_identifier": "onmovo",
+      "scrape_timestamp": "2025-11-13T11:27:51.141Z",
+      "source_url": "https://www.onmovo.com/en/lungo-termine-dettaglio-en/9/vespa/primavera-50/",
+      "brand": "Vespa",
+      "model": "Primavera 50",
+      "year": null,
+      "engine_capacity_cc": 50,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "461 €/Month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 15.37,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://admin.onmovo.com/immagini/cache/veicoli_piccola/68c941a864a71_Senza%20titolo%20\(320%20x%20260%20px\)%20\(1\).png"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Category B license (car) or A license",
+        "Credit card"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Civil liability insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "onmovo",
+      "scrape_timestamp": "2025-11-13T11:27:51.141Z",
+      "source_url": "https://www.onmovo.com/en/lungo-termine-dettaglio-en/10/vespa/gts-300/",
+      "brand": "Vespa",
+      "model": "Gts 300",
+      "year": null,
+      "engine_capacity_cc": 300,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "712 €/Month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 23.73,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://admin.onmovo.com/immagini/cache/veicoli_piccola/68c9423806ccf_Vespa-GTS-300.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Category A motorcycle license",
+        "Credit card"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Civil liability insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "onmovo",
+      "scrape_timestamp": "2025-11-13T11:27:51.141Z",
+      "source_url": "https://www.onmovo.com/en/lungo-termine-dettaglio-en/11/kymko/xtown-300/",
+      "brand": "Kymko",
+      "model": "xTown 300",
+      "year": null,
+      "engine_capacity_cc": 300,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "712 €/Month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 23.73,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://admin.onmovo.com/immagini/cache/veicoli_piccola/68c9437cc940f_Progetto%20senza%20titolo%20\(12\).png"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Category A motorcycle license",
+        "Credit card"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Civil liability insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "onmovo",
+      "scrape_timestamp": "2025-11-13T11:27:51.141Z",
+      "source_url": "https://www.onmovo.com/en/lungo-termine-dettaglio-en/7/kymko/agility-125/",
+      "brand": "Kymko",
+      "model": "Agility 125",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "269 €/Month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 8.97,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://admin.onmovo.com/immagini/cache/veicoli_piccola/68c93cfb76dd4_Kymko-Agility-R16-125.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Category A motorcycle license",
+        "Credit card"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Civil liability insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "onmovo",
+      "scrape_timestamp": "2025-11-13T11:27:51.141Z",
+      "source_url": "https://www.onmovo.com/en/",
+      "brand": null,
+      "model": "E-scooter 50",
+      "year": null,
+      "engine_capacity_cc": 50,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "6 €/hour",
+          "min_days": 0.0417,
+          "max_days": 0.0417,
+          "rate_per_day": 144,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "19 €/4 hours",
+          "min_days": 0.1667,
+          "max_days": 0.1667,
+          "rate_per_day": 114,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "29 €/24 hours",
+          "min_days": 1,
+          "max_days": 1,
+          "rate_per_day": 29,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "39 €/36 hours",
+          "min_days": 1.5,
+          "max_days": 1.5,
+          "rate_per_day": 26,
+          "currency": "EUR"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Electric",
+        "Single Battery"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Credit card"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Civil liability insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": null
+    }
+  ]
+}

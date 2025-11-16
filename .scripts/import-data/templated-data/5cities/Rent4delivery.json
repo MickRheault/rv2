@@ -1,0 +1,54 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T06:48:59.479Z",
+    "shop_identifier": "Rent4delivery",
+    "provider_name": "Rent4delivery",
+    "place_id": "ChIJ3fg3jUWZoRQRObj5hiT7VQA",
+    "address": "Agias Paraskevis 57, Chalandri 152 34, Greece",
+    "city": "Athens",
+    "province": "Attica",
+    "country": "Greece",
+    "latitude": 38.0202109,
+    "longitude": 23.802832,
+    "phone": "21 0754 8305",
+    "website": "https://rent4delivery.gr/",
+    "google_maps_url": "https://maps.google.com/?cid=24201507322312761",
+    "business_status": "OPERATIONAL",
+    "rating": null,
+    "review_count": null,
+    "rental_conditions": {
+      "no_mileage_commitments": true,
+      "no_down_payments": true,
+      "pickup_delivery_outside_hours": "by appointment",
+      "required_documents": "license, ID, DECO account",
+      "payment_methods": "cash or card"
+    },
+    "rental_inclusions": [
+      "next hour pickup",
+      "payment by cash or card",
+      "no mileage commitments",
+      "introductory offer -10% for professionals"
+    ],
+    "available_service_locations": [
+      "Athens (Chalandri)",
+      "Thessaloniki"
+    ],
+    "offered_tours": [
+      {
+        "name": "Daily rental for delivery/tourism",
+        "duration_text": "1 day",
+        "distance_km": null,
+        "price_text": "Varies by vehicle",
+        "currency": null
+      },
+      {
+        "name": "Monthly lease",
+        "duration_text": "1 month or more",
+        "distance_km": null,
+        "price_text": "Best prices on market",
+        "currency": null
+      }
+    ]
+  },
+  "motorcycle_offerings": []
+}

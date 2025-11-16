@@ -1,0 +1,759 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T07:31:40.433Z",
+    "shop_identifier": "Thuê Xe Máy 13535 - Motorbike Rental Hanoi - Old Quarter",
+    "provider_name": "Thuê Xe Máy 13535 - Motorbike Rental Hanoi - Old Quarter",
+    "place_id": "ChIJM2I12FGrNTERhvG7T15yRRQ",
+    "address": "6 Ng. 47 Đ. Láng, Thượng Đình, Đống Đa, Hà Nội, Vietnam",
+    "city": "Hanoi",
+    "province": "Hanoi",
+    "country": "Vietnam",
+    "latitude": 21.0036893,
+    "longitude": 105.8181586,
+    "phone": "0832 740 990",
+    "website": "http://thuexemayhanoi.vn/",
+    "google_maps_url": "https://maps.google.com/?cid=1460699403541803398",
+    "business_status": "OPERATIONAL",
+    "rating": 4.9,
+    "review_count": 365,
+    "rental_conditions": {
+      "min_deposit": "500,000 VND",
+      "first_day_duration": "24 hours",
+      "hourly_rate_after_24h_standard": "20,000 VND/hour",
+      "hourly_rate_after_24h_scooter": "30,000 VND/hour",
+      "hourly_rate_after_24h_manual": "50,000 VND/hour",
+      "hourly_rate_after_24h_big_bike": "250,000 VND/hour",
+      "partial_day_policy": "3-6 hours = half day, 6+ hours = full day",
+      "discount_10_days": "10% reduction",
+      "discount_3_days_big_bike": "10% reduction",
+      "discount_7_days_big_bike": "20% reduction"
+    },
+    "rental_inclusions": [
+      "2 high-quality helmets",
+      "Straps and luggage rack upon request",
+      "1 liter of gasoline"
+    ],
+    "available_service_locations": [
+      "Hoàn Kiếm District",
+      "Ba Đình District",
+      "Mỹ Đình/Cầu Giấy District",
+      "Thanh Xuân/Đống Đa District"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "thuexemayhanoi.vn",
+      "scrape_timestamp": "2025-11-13T07:31:41.711Z",
+      "source_url": "https://thuexemayhanoi.vn/product/blade-110/",
+      "brand": "Honda",
+      "model": "Wave RSX/Blade 110",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "XE SỐ PHỔ THÔNG",
+      "description": "Standard manual transmission motorcycle suitable for city and mountainous terrain",
+      "rental_rates": [
+        {
+          "rate_text": "Từ 150.000đ/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 150000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://thuexemayhanoi.vn/wp-content/uploads/2022/01/blade110.png"
+      ],
+      "features": [
+        "Manual transmission",
+        "Good fuel efficiency",
+        "Suitable for complex terrain"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "ID card",
+        "Motorcycle license"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "VND",
+          "deductible": null,
+          "deductible_currency": "VND",
+          "notes": "Basic insurance included with rental"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "thuexemayhanoi.vn",
+      "scrape_timestamp": "2025-11-13T07:31:41.711Z",
+      "source_url": "https://thuexemayhanoi.vn/product/jupiter/",
+      "brand": "Yamaha",
+      "model": "Jupiter",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "XE SỐ PHỔ THÔNG",
+      "description": "Standard manual transmission motorcycle with good fuel efficiency",
+      "rental_rates": [
+        {
+          "rate_text": "Từ 150.000đ/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 150000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://thuexemayhanoi.vn/wp-content/uploads/2022/01/Jupiter-Red-001-1.png"
+      ],
+      "features": [
+        "Manual transmission",
+        "Good fuel efficiency",
+        "Suitable for city and mountainous terrain"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "ID card",
+        "Motorcycle license"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "VND",
+          "deductible": null,
+          "deductible_currency": "VND",
+          "notes": "Basic insurance included with rental"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "thuexemayhanoi.vn",
+      "scrape_timestamp": "2025-11-13T07:31:41.711Z",
+      "source_url": "https://thuexemayhanoi.vn/product/yamaha-sirius/",
+      "brand": "Yamaha",
+      "model": "Sirius",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "XE SỐ PHỔ THÔNG",
+      "description": "Standard manual transmission motorcycle with good fuel efficiency",
+      "rental_rates": [
+        {
+          "rate_text": "Từ 150.000đ/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 150000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://thuexemayhanoi.vn/wp-content/uploads/2022/01/yamaha-sirius_thanhnien_twff.jpg"
+      ],
+      "features": [
+        "Manual transmission",
+        "Good fuel efficiency",
+        "Suitable for city and mountainous terrain"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "ID card",
+        "Motorcycle license"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "VND",
+          "deductible": null,
+          "deductible_currency": "VND",
+          "notes": "Basic insurance included with rental"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "thuexemayhanoi.vn",
+      "scrape_timestamp": "2025-11-13T07:31:41.711Z",
+      "source_url": "https://thuexemayhanoi.vn/product/honda-vision/",
+      "brand": "Honda",
+      "model": "Vision",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "XE TAY GA",
+      "description": "Automatic scooter with large storage compartment",
+      "rental_rates": [
+        {
+          "rate_text": "Từ 200.000đ/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 200000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://thuexemayhanoi.vn/wp-content/uploads/2020/01/db348f858ebc77e22ead.png"
+      ],
+      "features": [
+        "Automatic transmission",
+        "Large storage compartment",
+        "Comfortable seating",
+        "Suitable for city driving"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "ID card",
+        "Motorcycle license"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "VND",
+          "deductible": null,
+          "deductible_currency": "VND",
+          "notes": "Basic insurance included with rental"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "thuexemayhanoi.vn",
+      "scrape_timestamp": "2025-11-13T07:31:41.711Z",
+      "source_url": "https://thuexemayhanoi.vn/product/honda-airblade/",
+      "brand": "Honda",
+      "model": "Airblade",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "XE TAY GA",
+      "description": "Premium automatic scooter",
+      "rental_rates": [
+        {
+          "rate_text": "Từ 220.000đ/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 220000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://thuexemayhanoi.vn/wp-content/uploads/2022/01/hondaairblade.jpg"
+      ],
+      "features": [
+        "Automatic transmission",
+        "Premium model",
+        "Suitable for city driving"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "ID card",
+        "Motorcycle license"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "VND",
+          "deductible": null,
+          "deductible_currency": "VND",
+          "notes": "Basic insurance included with rental"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "thuexemayhanoi.vn",
+      "scrape_timestamp": "2025-11-13T07:31:41.711Z",
+      "source_url": "https://thuexemayhanoi.vn/product/honda-lead/",
+      "brand": "Honda",
+      "model": "Lead",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "XE TAY GA",
+      "description": "Automatic scooter with large storage compartment",
+      "rental_rates": [
+        {
+          "rate_text": "200.000đ – 250.000đ/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 200000,
+          "currency": "VND"
+        },
+        {
+          "rate_text": "200.000đ – 250.000đ/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 250000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://thuexemayhanoi.vn/wp-content/uploads/2022/01/hondalead.png"
+      ],
+      "features": [
+        "Automatic transmission",
+        "Large storage compartment",
+        "Comfortable seating"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "ID card",
+        "Motorcycle license"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "VND",
+          "deductible": null,
+          "deductible_currency": "VND",
+          "notes": "Basic insurance included with rental"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "thuexemayhanoi.vn",
+      "scrape_timestamp": "2025-11-13T07:31:41.711Z",
+      "source_url": "https://thuexemayhanoi.vn/product/thue-xe-may-yamaha-nvx155/",
+      "brand": "Yamaha",
+      "model": "NVX155",
+      "year": null,
+      "engine_capacity_cc": 155,
+      "category": "XE TAY GA",
+      "description": "Premium automatic scooter",
+      "rental_rates": [
+        {
+          "rate_text": "280.000đ/NGÀY ĐI NỘI THÀNH",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 280000,
+          "currency": "VND"
+        },
+        {
+          "rate_text": "320.000đ NGOẠI THÀNH",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 320000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://thuexemayhanoi.vn/wp-content/uploads/2022/12/NVX-Bluish-Gray-004.png"
+      ],
+      "features": [
+        "Automatic transmission",
+        "155cc engine",
+        "Premium model"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "ID card",
+        "Motorcycle license"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "VND",
+          "deductible": null,
+          "deductible_currency": "VND",
+          "notes": "Basic insurance included with rental"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "thuexemayhanoi.vn",
+      "scrape_timestamp": "2025-11-13T07:31:41.711Z",
+      "source_url": "https://thuexemayhanoi.vn/product/winner-150/",
+      "brand": "Honda",
+      "model": "Winner 150",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "XE TAY CÔN",
+      "description": "Manual clutch motorcycle with strong engine",
+      "rental_rates": [
+        {
+          "rate_text": "Từ 300.000đ/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 300000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://thuexemayhanoi.vn/wp-content/uploads/2018/12/1543984984-397-con-tay-winner-150-phien-ban-cao-cap-gia-hon-46-trieu-dong-winner1-1543937575-width640height417.jpg"
+      ],
+      "features": [
+        "Manual clutch transmission",
+        "150cc engine",
+        "Strong performance",
+        "Suitable for mountainous terrain"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "ID card",
+        "Motorcycle license",
+        "30-50 million VND deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "VND",
+          "deductible": null,
+          "deductible_currency": "VND",
+          "notes": "Basic insurance included with rental"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "thuexemayhanoi.vn",
+      "scrape_timestamp": "2025-11-13T07:31:41.711Z",
+      "source_url": "https://thuexemayhanoi.vn/product/exciter-150/",
+      "brand": "Yamaha",
+      "model": "Exciter",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "XE TAY CÔN",
+      "description": "Manual clutch motorcycle with strong engine",
+      "rental_rates": [
+        {
+          "rate_text": "Từ 300.000đ/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 300000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://thuexemayhanoi.vn/wp-content/uploads/2018/12/500x400-4-1.png"
+      ],
+      "features": [
+        "Manual clutch transmission",
+        "150cc engine",
+        "Strong performance",
+        "Suitable for mountainous terrain"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "ID card",
+        "Motorcycle license"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "VND",
+          "deductible": null,
+          "deductible_currency": "VND",
+          "notes": "Basic insurance included with rental"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "thuexemayhanoi.vn",
+      "scrape_timestamp": "2025-11-13T07:31:41.711Z",
+      "source_url": "https://thuexemayhanoi.vn/product/yamaha-ybr125g/",
+      "brand": "Yamaha",
+      "model": "Ybr125G",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "XE TAY CÔN",
+      "description": "Manual clutch motorcycle",
+      "rental_rates": [
+        {
+          "rate_text": "250.000đ/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 250000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://thuexemayhanoi.vn/wp-content/uploads/2020/01/c94b1377cb8a32d46b9b.jpg"
+      ],
+      "features": [
+        "Manual clutch transmission",
+        "125cc engine",
+        "Suitable for mountainous terrain"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "ID card",
+        "Motorcycle license"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "VND",
+          "deductible": null,
+          "deductible_currency": "VND",
+          "notes": "Basic insurance included with rental"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "thuexemayhanoi.vn",
+      "scrape_timestamp": "2025-11-13T07:31:41.711Z",
+      "source_url": "https://thuexemayhanoi.vn/product/suzuki-en150a/",
+      "brand": "Suzuki",
+      "model": "En150A",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "XE TAY CÔN",
+      "description": "Manual clutch motorcycle",
+      "rental_rates": [
+        {
+          "rate_text": "From 350.000đ/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 350000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://thuexemayhanoi.vn/wp-content/uploads/2022/05/b6e54c7d94806dde3491-1.jpg"
+      ],
+      "features": [
+        "Manual clutch transmission",
+        "150cc engine"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "ID card",
+        "Motorcycle license"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "VND",
+          "deductible": null,
+          "deductible_currency": "VND",
+          "notes": "Basic insurance included with rental"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "thuexemayhanoi.vn",
+      "scrape_timestamp": "2025-11-13T07:31:41.711Z",
+      "source_url": "https://thuexemayhanoi.vn/product/thue-xe-may-honda-cb300r/",
+      "brand": "Honda",
+      "model": "CB 300R",
+      "year": null,
+      "engine_capacity_cc": 300,
+      "category": "XE PHÂN KHỐI LỚN",
+      "description": "Big bike motorcycle",
+      "rental_rates": [
+        {
+          "rate_text": "Từ 1.100.000vnd/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 1100000,
+          "currency": "VND"
+        },
+        {
+          "rate_text": "Thuê xe từ 3 ngày trở lên giảm 10%",
+          "min_days": 3,
+          "max_days": null,
+          "rate_per_day": 990000,
+          "currency": "VND"
+        },
+        {
+          "rate_text": "Thuê xe từ 7 ngày giảm 20%",
+          "min_days": 7,
+          "max_days": null,
+          "rate_per_day": 880000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://thuexemayhanoi.vn/wp-content/uploads/2022/12/1564736484-86024cad1e83101d97359d7351051156-429-1.png"
+      ],
+      "features": [
+        "Big bike",
+        "300cc engine"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "ID card",
+        "Motorcycle license",
+        "30-50 million VND deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "VND",
+          "deductible": null,
+          "deductible_currency": "VND",
+          "notes": "Basic insurance included with rental"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "thuexemayhanoi.vn",
+      "scrape_timestamp": "2025-11-13T07:31:41.711Z",
+      "source_url": "https://thuexemayhanoi.vn/product/honda-cb500x-2020/",
+      "brand": "Honda",
+      "model": "CB500x",
+      "year": 2020,
+      "engine_capacity_cc": 471,
+      "category": "XE PHÂN KHỐI LỚN",
+      "description": "Big bike motorcycle with detailed specifications",
+      "rental_rates": [
+        {
+          "rate_text": "1.500.000đ/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 1500000,
+          "currency": "VND"
+        },
+        {
+          "rate_text": "Thuê xe từ 3 ngày trở lên giảm 10%",
+          "min_days": 3,
+          "max_days": null,
+          "rate_per_day": 1350000,
+          "currency": "VND"
+        },
+        {
+          "rate_text": "Thuê xe từ 7 ngày giảm 20%",
+          "min_days": 7,
+          "max_days": null,
+          "rate_per_day": 1200000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://thuexemayhanoi.vn/wp-content/uploads/2021/10/givi_revolution_angry_rhino_si_1610586185_2699790f_progressive.jpg"
+      ],
+      "features": [
+        "Big bike",
+        "471cc engine",
+        "DOHC, 4-stroke, 2-cylinder",
+        "Liquid-cooled",
+        "6-speed manual transmission"
+      ],
+      "specifications_raw": {
+        "weight": "195kg",
+        "dimensions": "2,095 mm x 830 mm x 1,360 mm",
+        "wheelbase": "1,420 mm",
+        "seat_height": "810 mm",
+        "ground_clearance": "170 mm",
+        "fuel_tank_capacity": "17.5 liters",
+        "front_tire": "120/70 ZR17",
+        "rear_tire": "160/60 ZR17",
+        "front_suspension": "Telescopic fork, hydraulic damper, spring preload adjustable",
+        "rear_suspension": "Single shock Pro-Link, hydraulic damper, 9 spring preload settings",
+        "engine_type": "DOHC, 4-stroke, 2-cylinder, PGM-FI, liquid-cooled",
+        "front_brake": "Single hydraulic disc, 2-piston, ABS",
+        "rear_brake": "Single hydraulic disc, 1-piston, ABS",
+        "cylinder_capacity": "471cc",
+        "bore_stroke": "67mm X 66.8mm",
+        "compression_ratio": "10.7:1",
+        "max_power": "35kw/8500 rpm",
+        "max_torque": "43 Nm/7000 rpm",
+        "oil_capacity": "2.5L when changing oil, 2.7L when changing oil and filter",
+        "transmission": "6-speed manual clutch",
+        "starting_system": "Electric"
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "ID card",
+        "Motorcycle license",
+        "30-50 million VND deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "VND",
+          "deductible": null,
+          "deductible_currency": "VND",
+          "notes": "Basic insurance included with rental"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "thuexemayhanoi.vn",
+      "scrape_timestamp": "2025-11-13T07:31:41.711Z",
+      "source_url": "https://thuexemayhanoi.vn/product/thue-xe-may-kawasaki-versys-300/",
+      "brand": "Kawasaki",
+      "model": "Versys 300",
+      "year": null,
+      "engine_capacity_cc": 300,
+      "category": "XE PHÂN KHỐI LỚN",
+      "description": "Big bike motorcycle",
+      "rental_rates": [
+        {
+          "rate_text": "1.200.000vnd/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 1200000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://thuexemayhanoi.vn/wp-content/uploads/2023/04/z4278259314803_63aeb41f85f88695ce90325b846ab037.jpg"
+      ],
+      "features": [
+        "Big bike",
+        "300cc engine"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "ID card",
+        "Motorcycle license"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "VND",
+          "deductible": null,
+          "deductible_currency": "VND",
+          "notes": "Basic insurance included with rental"
+        }
+      ],
+      "availability_status": null
+    }
+  ]
+}

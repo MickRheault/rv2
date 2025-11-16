@@ -1,0 +1,79 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T12:24:32.682Z",
+    "shop_identifier": "Rental Brothers Vespa & Scooter",
+    "provider_name": "Rental Brothers Vespa & Scooter",
+    "place_id": "ChIJjY-ivD1hLxMRBLAyeTYk0kE",
+    "address": "Borgo Vittorio, 91c, 00193 Roma RM, Italy",
+    "city": "Rome",
+    "province": "Lazio",
+    "country": "Italy",
+    "latitude": 41.9043183,
+    "longitude": 12.4603505,
+    "phone": "338 376 1858",
+    "website": "https://www.sumupbookings.com/rental-brothers-srl-semplificata",
+    "google_maps_url": "https://maps.google.com/?cid=4742893173954752516",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 47,
+    "rental_conditions": {},
+    "rental_inclusions": [
+      "Helmet",
+      "Insurance",
+      "City map"
+    ],
+    "available_service_locations": [
+      "Roma"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "rental-brothers-srl-semplificata",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": "https://www.sumupbookings.com/rental-brothers-srl-semplificata",
+      "brand": "Vespa",
+      "model": null,
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Scooter",
+      "description": "Vespa rental for exploring Rome. Includes helmet, insurance, and city map.",
+      "rental_rates": [
+        {
+          "rate_text": "€70.00",
+          "min_days": 1,
+          "max_days": 1,
+          "rate_per_day": 70,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "€140.00",
+          "min_days": 2,
+          "max_days": 2,
+          "rate_per_day": 70,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.sumupbookings.com/_next/image?url=https%3A%2F%2Fimages.sumup.com%2Fimg_7AD69HWR0W8YK8V7P1QQJJ05QW&w=3840&q=75",
+        "https://www.sumupbookings.com/_next/image?url=https%3A%2F%2Fimages.sumup.com%2Fimg_0H0GQF3FEB8Z0T5PCRSEECPDZG&w=3840&q=75"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Included Insurance",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    }
+  ]
+}

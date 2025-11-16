@@ -1,0 +1,40 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T06:10:23.112Z",
+    "shop_identifier": "Nio rental car services",
+    "provider_name": "Nio rental car services",
+    "place_id": "ChIJ5eE1mp29oRQRoLrrJfXhFSs",
+    "address": "Sachtouri 6, Athina 105 53, Greece",
+    "city": "Athens",
+    "province": "Attica",
+    "country": "Greece",
+    "latitude": 37.9797441,
+    "longitude": 23.723052,
+    "phone": "698 208 0507",
+    "website": "https://niorentalcar.gr/",
+    "google_maps_url": "https://maps.google.com/?cid=3104635961161267872",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 6,
+    "rental_conditions": {
+      "minimum_rental_period_days": 1,
+      "age_requirement_years": null,
+      "license_type_required": null,
+      "credit_card_required": null,
+      "deposit_required": null,
+      "cancellation_policy": null,
+      "insurance_included": null
+    },
+    "rental_inclusions": [
+      "vehicles from the last 10 years",
+      "expert vehicle check before delivery",
+      "24/7 roadside assistance"
+    ],
+    "available_service_locations": [
+      "Athens",
+      "Athens International Airport"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

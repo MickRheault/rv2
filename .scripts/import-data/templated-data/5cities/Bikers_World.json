@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T06:00:03.827Z",
+    "shop_identifier": "Bikers World",
+    "provider_name": "Bikers World",
+    "place_id": "ChIJgwaRjiC9oRQRJGM3PkabhSk",
+    "address": "Pireos 86, Athina 105 53, Greece",
+    "city": "Athens",
+    "province": "Attica",
+    "country": "Greece",
+    "latitude": 37.9796901,
+    "longitude": 23.7178804,
+    "phone": "21 0342 4454",
+    "website": "http://www.bikers-world.gr/",
+    "google_maps_url": "https://maps.google.com/?cid=2991968253451395876",
+    "business_status": "OPERATIONAL",
+    "rating": 4.5,
+    "review_count": 103,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

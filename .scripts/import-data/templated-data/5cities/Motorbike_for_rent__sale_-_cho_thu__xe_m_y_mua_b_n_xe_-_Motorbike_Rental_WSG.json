@@ -1,0 +1,423 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T10:41:45.706Z",
+    "shop_identifier": "Motorbike for rent, sale - cho thuê xe máy mua bán xe - Motorbike Rental WSG",
+    "provider_name": "Motorbike for rent, sale - cho thuê xe máy mua bán xe - Motorbike Rental WSG",
+    "place_id": "ChIJUYRqDgApdTERqSTCVptUEjE",
+    "address": "117/30 Nguyễn Hữu Cảnh, Phường 22, Bình Thạnh, Thành phố Hồ Chí Minh, Vietnam",
+    "city": "Ho Chi Minh City",
+    "province": "Ho Chi Minh City",
+    "country": "Vietnam",
+    "latitude": 10.7954301,
+    "longitude": 106.7176188,
+    "phone": "0707 339 669",
+    "website": "https://wheelie-saigon.com/scooter-motorcycle-rental-hcmc-daily-weekly-or-monthly/",
+    "google_maps_url": "https://maps.google.com/?cid=3535981683591488681",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 43,
+    "rental_conditions": {
+      "transparent_pricing": true,
+      "free_delivery": true,
+      "free_pickup": true,
+      "min_rental_days": 1,
+      "license_required": true,
+      "passport_copy_required": true,
+      "refundable_deposit_required": true,
+      "deposit_amount_vnd": 500000,
+      "road_trip_allowed": true
+    },
+    "rental_inclusions": [
+      "Helmet",
+      "Fuel",
+      "Insurance",
+      "Maintenance",
+      "24/7 customer support"
+    ],
+    "available_service_locations": [
+      "Ho Chi Minh City",
+      "Tan Son Nhat Airport",
+      "Vung Tau",
+      "Da Lat",
+      "Mekong Delta"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "wheelie-saigon",
+      "scrape_timestamp": "2025-11-08T16:22:28Z",
+      "source_url": "https://wheelie-saigon.com/san-pham/kawasaki-ninja-400-rent/",
+      "brand": "Kawasaki",
+      "model": "Ninja 400",
+      "year": null,
+      "engine_capacity_cc": 400,
+      "category": "Sport bike",
+      "description": "A compact 400cc sportbike that's fun, fast and efficient",
+      "rental_rates": [
+        {
+          "rate_text": "1,500,000 ₫/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 1500000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://wheelie-saigon.com/wp-content/uploads/2025/06/e8ba9ee1879b49caaa0ebc7fac65a048jpg-1680851945-300x300.webp"
+      ],
+      "features": [
+        "Sport bike",
+        "Manual transmission"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "A valid international driver's license with motorcycle endorsement (or Vietnamese license A1/A2)",
+        "A copy of your passport"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in rental"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "wheelie-saigon",
+      "scrape_timestamp": "2025-11-08T16:22:28Z",
+      "source_url": "https://wheelie-saigon.com/san-pham/ktm-rc390-rent/",
+      "brand": "KTM",
+      "model": "RC390",
+      "year": null,
+      "engine_capacity_cc": 390,
+      "category": "Sport bike",
+      "description": "A compact 390cc sportbike that's fun, fast and efficient",
+      "rental_rates": [
+        {
+          "rate_text": "1,500,000 ₫/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 1500000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://wheelie-saigon.com/wp-content/uploads/2025/06/pho_bike_90_re_1_600x600_crop_center-300x300.webp"
+      ],
+      "features": [
+        "Sport bike",
+        "Manual transmission"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "A valid international driver's license with motorcycle endorsement (or Vietnamese license A1/A2)",
+        "A copy of your passport"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in rental"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "wheelie-saigon",
+      "scrape_timestamp": "2025-11-08T16:22:28Z",
+      "source_url": "https://wheelie-saigon.com/san-pham/suzuki-gsx-r150-rent/",
+      "brand": "Suzuki",
+      "model": "GSX-R150",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Sport bike",
+      "description": "A compact 150cc sportbike that's fun, fast and efficient",
+      "rental_rates": [
+        {
+          "rate_text": "1,000,000 ₫/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 1000000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://wheelie-saigon.com/wp-content/uploads/2025/06/GSXR-blue-300x300.png"
+      ],
+      "features": [
+        "Sport bike",
+        "Manual transmission"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "A valid international driver's license with motorcycle endorsement (or Vietnamese license A1/A2)",
+        "A copy of your passport"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in rental"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "wheelie-saigon",
+      "scrape_timestamp": "2025-11-08T16:22:28Z",
+      "source_url": "https://wheelie-saigon.com/san-pham/yamaha-exciter-150-rent/",
+      "brand": "Yamaha",
+      "model": "Exciter 150",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Sport bike",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "150,000 ₫/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 150000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://wheelie-saigon.com/wp-content/uploads/2025/06/Exciter-150-Blue_004-768x645-1-300x300.webp"
+      ],
+      "features": [
+        "Sport bike",
+        "Manual transmission"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "A valid international driver's license with motorcycle endorsement (or Vietnamese license A1/A2)",
+        "A copy of your passport"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in rental"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "wheelie-saigon",
+      "scrape_timestamp": "2025-11-08T16:22:28Z",
+      "source_url": "https://wheelie-saigon.com/san-pham/yamaha-r3-rent/",
+      "brand": "Yamaha",
+      "model": "R3",
+      "year": null,
+      "engine_capacity_cc": 300,
+      "category": "Sport bike",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "1,500,000 ₫/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 1500000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://wheelie-saigon.com/wp-content/uploads/2025/06/R3-Xanh-Bong-G4-768x551-2-300x300.webp"
+      ],
+      "features": [
+        "Sport bike",
+        "Manual transmission"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "A valid international driver's license with motorcycle endorsement (or Vietnamese license A1/A2)",
+        "A copy of your passport"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in rental"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "wheelie-saigon",
+      "scrape_timestamp": "2025-11-08T16:22:28Z",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "Vision",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "120,000-150,000 ₫/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "VND"
+        },
+        {
+          "rate_text": "90,000-120,000 ₫/day (long-term)",
+          "min_days": 7,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "VND"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Scooter",
+        "Automatic transmission"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "A valid international driver's license with motorcycle endorsement (or Vietnamese license A1/A2)",
+        "A copy of your passport"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in rental"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "wheelie-saigon",
+      "scrape_timestamp": "2025-11-08T16:22:28Z",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "Air Blade",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "120,000-150,000 ₫/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "VND"
+        },
+        {
+          "rate_text": "90,000-120,000 ₫/day (long-term)",
+          "min_days": 7,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "VND"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Scooter",
+        "Automatic transmission"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "A valid international driver's license with motorcycle endorsement (or Vietnamese license A1/A2)",
+        "A copy of your passport"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in rental"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "wheelie-saigon",
+      "scrape_timestamp": "2025-11-08T16:22:28Z",
+      "source_url": null,
+      "brand": "Yamaha",
+      "model": "Sirius",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "120,000-150,000 ₫/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "VND"
+        },
+        {
+          "rate_text": "90,000-120,000 ₫/day (long-term)",
+          "min_days": 7,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "VND"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Scooter",
+        "Automatic transmission"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "A valid international driver's license with motorcycle endorsement (or Vietnamese license A1/A2)",
+        "A copy of your passport"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in rental"
+        }
+      ],
+      "availability_status": "Available"
+    }
+  ]
+}

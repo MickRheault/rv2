@@ -1,0 +1,308 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T12:48:33.115Z",
+    "shop_identifier": "Cooltra ROMA | Noleggio di moto per giorni e mesi a Roma",
+    "provider_name": "Cooltra ROMA | Noleggio di moto per giorni e mesi a Roma",
+    "place_id": "ChIJyTEys3xhLxMRErbjHi9A7xo",
+    "address": "Via Tiburtina, 909, 00154 Roma RM, Italy",
+    "city": "Rome",
+    "province": "Lazio",
+    "country": "Italy",
+    "latitude": 41.92450059999999,
+    "longitude": 12.5702827,
+    "phone": null,
+    "website": "https://cooltra.com/it/noleggio-scooter-roma/rebibia/",
+    "google_maps_url": "https://maps.google.com/?cid=1940840535545853458",
+    "business_status": "OPERATIONAL",
+    "rating": 4,
+    "review_count": 175,
+    "rental_conditions": {
+      "pickup_location": "Si prega di notare che questo è un punto di ritiro. Cooltra non dispone di un negozio fisico come tale.",
+      "advance_booking": "Ricorda che per utilizzare questo servizio devi prenotare almeno 24 ore in anticipo.",
+      "physical_store": false
+    },
+    "rental_inclusions": [
+      "Assicurazione tutto incluso con franchigia",
+      "Assistenza stradale 24/7",
+      "Riduci i tempi con Click & Ride"
+    ],
+    "available_service_locations": [
+      "Roma",
+      "Alghero",
+      "Liguria",
+      "Sardegna",
+      "Alassio",
+      "Genova",
+      "Milano",
+      "Torino"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "cooltra-roma-rebibia",
+      "scrape_timestamp": "2025-11-13T12:48:35.687Z",
+      "source_url": "https://cooltra.com/it/noleggio-scooter-roma/rebibia/",
+      "brand": "KYMCO",
+      "model": "Agility",
+      "year": null,
+      "engine_capacity_cc": 200,
+      "category": "Scooter",
+      "description": "Equilibrio nella gestione della potenza",
+      "rental_rates": [],
+      "images": [
+        "https://cooltra.com/_next/image/?url=https%3A%2F%2Fcooltra-web-assets.zeus.cooltra.com%2Fvehicle-types%2Fkymco_agility.webp&w=384&q=75"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "cooltra-roma-rebibia",
+      "scrape_timestamp": "2025-11-13T12:48:35.687Z",
+      "source_url": "https://cooltra.com/it/noleggio-scooter-roma/rebibia/",
+      "brand": "Peugeot",
+      "model": "Tweet",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": "Il nostro scooter di punta",
+      "rental_rates": [],
+      "images": [
+        "https://cooltra.com/_next/image/?url=https%3A%2F%2Fcooltra-web-assets.zeus.cooltra.com%2Fvehicle-types%2Fpeugeot_tweet_125.webp&w=384&q=75"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "cooltra-roma-rebibia",
+      "scrape_timestamp": "2025-11-13T12:48:35.687Z",
+      "source_url": "https://cooltra.com/it/noleggio-scooter-roma/rebibia/",
+      "brand": "Piaggio",
+      "model": "Vespa",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": "Il solito classico, rinnovato",
+      "rental_rates": [],
+      "images": [
+        "https://cooltra.com/_next/image/?url=https%3A%2F%2Fcooltra-web-assets.zeus.cooltra.com%2Fvehicle-types%2Fpiaggio_vespa.webp&w=384&q=75"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "cooltra-roma-rebibia",
+      "scrape_timestamp": "2025-11-13T12:48:35.687Z",
+      "source_url": "https://cooltra.com/it/noleggio-scooter-roma/rebibia/",
+      "brand": "SYM",
+      "model": "JoyMax",
+      "year": null,
+      "engine_capacity_cc": 300,
+      "category": "Scooter",
+      "description": "Prestazioni e stile",
+      "rental_rates": [],
+      "images": [
+        "https://cooltra.com/_next/image/?url=https%3A%2F%2Fcooltra-web-assets.zeus.cooltra.com%2Fvehicle-types%2Fsym_joy_max_300.webp&w=384&q=75"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "cooltra-roma-rebibia",
+      "scrape_timestamp": "2025-11-13T12:48:35.687Z",
+      "source_url": "https://cooltra.com/it/noleggio-scooter-roma/rebibia/",
+      "brand": "SYM",
+      "model": "Symphony",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": "Sym Symphony 125cc",
+      "rental_rates": [],
+      "images": [
+        "https://cooltra.com/_next/image/?url=https%3A%2F%2Fcooltra-web-assets.zeus.cooltra.com%2Fvehicle-types%2Fsym_simphony_125.webp&w=384&q=75"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "cooltra-liguria",
+      "scrape_timestamp": "2025-11-13T12:48:35.687Z",
+      "source_url": "https://cooltra.com/it/noleggio-scooter-liguria/",
+      "brand": "Peugeot",
+      "model": "Tweet",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": "Il nostro scooter di punta",
+      "rental_rates": [],
+      "images": [
+        "https://cooltra.com/_next/image/?url=https%3A%2F%2Fcooltra-web-assets.zeus.cooltra.com%2Fvehicle-types%2Fpeugeot_tweet_125.webp&w=384&q=75"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "cooltra-liguria",
+      "scrape_timestamp": "2025-11-13T12:48:35.687Z",
+      "source_url": "https://cooltra.com/it/noleggio-scooter-liguria/",
+      "brand": "Peugeot",
+      "model": "Tweet",
+      "year": null,
+      "engine_capacity_cc": 50,
+      "category": "Scooter",
+      "description": "Il nostro scooter di punta",
+      "rental_rates": [],
+      "images": [
+        "https://cooltra.com/_next/image/?url=https%3A%2F%2Fcooltra-web-assets.zeus.cooltra.com%2Fvehicle-types%2Fpeugeot_tweet_50.webp&w=384&q=75"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "cooltra-liguria",
+      "scrape_timestamp": "2025-11-13T12:48:35.687Z",
+      "source_url": "https://cooltra.com/it/noleggio-scooter-liguria/",
+      "brand": "Piaggio",
+      "model": "Vespa",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": "Il solito classico, rinnovato",
+      "rental_rates": [],
+      "images": [
+        "https://cooltra.com/_next/image/?url=https%3A%2F%2Fcooltra-web-assets.zeus.cooltra.com%2Fvehicle-types%2Fpiaggio_vespa.webp&w=384&q=75"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "cooltra-liguria",
+      "scrape_timestamp": "2025-11-13T12:48:35.687Z",
+      "source_url": "https://cooltra.com/it/noleggio-scooter-liguria/",
+      "brand": "Yamaha",
+      "model": "XMAX",
+      "year": null,
+      "engine_capacity_cc": 300,
+      "category": "Scooter",
+      "description": "Eleganza in movimento",
+      "rental_rates": [],
+      "images": [
+        "https://cooltra.com/_next/image/?url=https%3A%2F%2Fcooltra-web-assets.zeus.cooltra.com%2Fvehicle-types%2Fyamaha_xmax_300.webp&w=384&q=75"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "cooltra-roma-rebibia",
+      "scrape_timestamp": "2025-11-13T12:48:35.687Z",
+      "source_url": "https://cooltra.com/it/noleggio-mensile-lungo-termine/service-points/75e4e8d2-5a44-4af6-8e86-ce684c04b8f4/vehicle-types/57a6181d-1ba0-40f8-8780-b2c6d9e8cc6d/",
+      "brand": "Yamaha",
+      "model": "XMAX",
+      "year": null,
+      "engine_capacity_cc": 300,
+      "category": "Scooter",
+      "description": "Yamaha XMAX 300cc - 12 Mesi *242,00 €Copertura Basic0,00 €",
+      "rental_rates": [
+        {
+          "rate_text": "291,00 €/mese",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 9.7,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "266,00 €/mese",
+          "min_days": 180,
+          "max_days": null,
+          "rate_per_day": 8.87,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "242,00 €/mese",
+          "min_days": 365,
+          "max_days": null,
+          "rate_per_day": 8.07,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://cooltra.com/_next/image/?url=https%3A%2F%2Fcooltra-web-assets.zeus.cooltra.com%2Fvehicle-types%2Fyamaha_xmax_300.webp&w=1080&q=75"
+      ],
+      "features": [
+        "Urbano: Fino a 500 km/mese",
+        "Intermedio: Fino a 1000 km/mese",
+        "Extra urbano: Fino a 1500 km/mese",
+        "Lucchetto",
+        "Veicolo sostitutivo",
+        "Supporto per telefono cellulare",
+        "Secondo casco",
+        "Bauletto 26-29L"
+      ],
+      "specifications_raw": {
+        "engine_capacity": "300cc",
+        "usage_type": "Uso su strada"
+      },
+      "conditions_raw": "Per questo veicolo è necessario versare una cauzione di 750,00 € al momento del ritiro.",
+      "required_documents_raw": [
+        "Patente di guida o permesso internazionale valida e attuale"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Copertura minima obbligatoria. Include danni a terzi; i danni alla moto sono coperti fino all'importo massimo della franchigia a seconda del modello."
+        },
+        {
+          "type_name": "Premium",
+          "is_included": false,
+          "cost_per_day": 2.63,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Estendi la tua copertura e riduci del 50% il deposito e la franchigia; include anche la foratura della ruota. Le nostre coperture non includono protezione contro il furto del veicolo o degli accessori."
+        }
+      ],
+      "availability_status": "Available"
+    }
+  ]
+}

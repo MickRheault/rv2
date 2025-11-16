@@ -1,0 +1,271 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-10-14T19:35:46.863Z",
+    "shop_identifier": "Momoven | Lloguer de motos a Barcelona",
+    "provider_name": "Momoven | Lloguer de motos a Barcelona",
+    "place_id": "ChIJj0DJ282ZpBIR08Gg2R2jZZ4",
+    "address": "Carrer de la Torre d'En Damians, 34, Sants-Montjuïc, 08014 Barcelona, Spain",
+    "city": "Barcelona",
+    "province": "Barcelona",
+    "country": "Spain",
+    "latitude": 41.3767305,
+    "longitude": 2.1435379,
+    "phone": "611 14 76 71",
+    "website": "https://www.momoven.es/?utm_medium=GMB&utm_content=Barcelona",
+    "google_maps_url": "https://maps.google.com/?cid=11413708179240960467",
+    "business_status": "OPERATIONAL",
+    "rating": 4.7,
+    "review_count": 27,
+    "rental_conditions": {
+      "minimum_age": 23,
+      "license_requirements": "Spanish, European or international driving license valid in Spain",
+      "maximum_rental_period_days": 90,
+      "insurance_required": true,
+      "insurance_plans": "Basic, Standard, Premium",
+      "cancellation_policy": "Non-refundable by default, with optional cancellation insurance",
+      "minimum_license_age": 2,
+      "fuel_policy": "Return with same fuel level as received",
+      "late_return_fees": "30€ first hour, 10€/hour up to 12 hours, 20€/hour after 12 hours",
+      "excess_km_charge": 0.4,
+      "excess_km_currency": "EUR"
+    },
+    "rental_inclusions": [
+      "Basic insurance",
+      "Third-party liability coverage",
+      "Legal defense",
+      "Damage claims processing",
+      "Roadside assistance"
+    ],
+    "available_service_locations": [
+      "Madrid",
+      "Barcelona",
+      "Valencia",
+      "Alicante",
+      "Canarias",
+      "Málaga",
+      "Mallorca",
+      "Sevilla",
+      "Murcia",
+      "Other cities"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "momoven_es",
+      "scrape_timestamp": "2025-10-14T19:42:20.449Z",
+      "source_url": null,
+      "brand": null,
+      "model": "Naked, Sport and Custom motorcycles",
+      "year": null,
+      "engine_capacity_cc": 951,
+      "category": "Naked/Sport/Custom",
+      "description": "High-performance naked, sport and custom motorcycles with engine capacity of 951cc or more and Off-road all displacements",
+      "rental_rates": [],
+      "images": [],
+      "features": [
+        "High-performance engines",
+        "Sport-oriented design",
+        "Custom styling options"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid driving license (minimum 23 years old)",
+        "Credit card for security deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Plan",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Driver responsible for all damage/theft. No coverage limit specified."
+        },
+        {
+          "type_name": "Standard Plan",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": 4000,
+          "deductible_currency": "EUR",
+          "notes": "Maximum liability of 4000€ for damage/theft"
+        },
+        {
+          "type_name": "Premium Plan",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": 2000,
+          "deductible_currency": "EUR",
+          "notes": "Maximum liability of 2000€ for damage/theft"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "momoven_es",
+      "scrape_timestamp": "2025-10-14T19:42:20.449Z",
+      "source_url": null,
+      "brand": null,
+      "model": "Naked, Sport, Touring, Supermotard, Custom motorcycles",
+      "year": null,
+      "engine_capacity_cc": 500,
+      "category": "Naked/Sport/Touring/Supermotard/Custom",
+      "description": "Mid-range naked, sport, touring, supermotard, and custom motorcycles with engine capacity between 500cc and 950cc and Touring and Trail motorcycles 950cc or more",
+      "rental_rates": [],
+      "images": [],
+      "features": [
+        "Versatile riding position",
+        "Touring capabilities",
+        "Sport-oriented handling"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid driving license (minimum 23 years old)",
+        "Credit card for security deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Plan",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Driver responsible for all damage/theft. No coverage limit specified."
+        },
+        {
+          "type_name": "Standard Plan",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": 3000,
+          "deductible_currency": "EUR",
+          "notes": "Maximum liability of 3000€ for damage/theft"
+        },
+        {
+          "type_name": "Premium Plan",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": 1500,
+          "deductible_currency": "EUR",
+          "notes": "Maximum liability of 1500€ for damage/theft"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "momoven_es",
+      "scrape_timestamp": "2025-10-14T19:42:20.449Z",
+      "source_url": null,
+      "brand": null,
+      "model": "Naked, Sport, Touring, Supermotard, Custom motorcycles",
+      "year": null,
+      "engine_capacity_cc": 250,
+      "category": "Naked/Sport/Touring/Supermotard/Custom",
+      "description": "Entry-level to mid-range naked, sport, touring, supermotard, and custom motorcycles with engine capacity between 250cc and 499cc and Touring and Trail motorcycles 250-949cc",
+      "rental_rates": [],
+      "images": [],
+      "features": [
+        "Entry-level performance",
+        "Urban commuting capabilities",
+        "Lightweight design"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid driving license (minimum 23 years old)",
+        "Credit card for security deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Plan",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Driver responsible for all damage/theft. No coverage limit specified."
+        },
+        {
+          "type_name": "Standard Plan",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": 2000,
+          "deductible_currency": "EUR",
+          "notes": "Maximum liability of 2000€ for damage/theft"
+        },
+        {
+          "type_name": "Premium Plan",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": 1000,
+          "deductible_currency": "EUR",
+          "notes": "Maximum liability of 1000€ for damage/theft"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "momoven_es",
+      "scrape_timestamp": "2025-10-14T19:42:20.449Z",
+      "source_url": null,
+      "brand": null,
+      "model": "Naked, Sport, Touring, Supermotard, Custom and Trail motorcycles and Scooters",
+      "year": null,
+      "engine_capacity_cc": 249,
+      "category": "Naked/Sport/Touring/Supermotard/Custom/Trail/Scooter",
+      "description": "Entry-level motorcycles and scooters with engine capacity up to 249cc",
+      "rental_rates": [],
+      "images": [],
+      "features": [
+        "Urban commuting",
+        "Fuel efficiency",
+        "Easy handling"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid driving license (minimum 23 years old)",
+        "Credit card for security deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Plan",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Driver responsible for all damage/theft. No coverage limit specified."
+        },
+        {
+          "type_name": "Standard Plan",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": 1200,
+          "deductible_currency": "EUR",
+          "notes": "Maximum liability of 1200€ for damage/theft"
+        },
+        {
+          "type_name": "Premium Plan",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": 600,
+          "deductible_currency": "EUR",
+          "notes": "Maximum liability of 600€ for damage/theft"
+        }
+      ],
+      "availability_status": null
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T04:31:54.907Z",
+    "shop_identifier": "Motorent - Rent a motorcycle & scooter",
+    "provider_name": "Motorent - Rent a motorcycle & scooter",
+    "place_id": "ChIJn9rjExq9oRQRLOMkv76PhYA",
+    "address": "Kavalloti 4, Athina 117 42, Greece",
+    "city": "Athens",
+    "province": "Attica",
+    "country": "Greece",
+    "latitude": 37.968123,
+    "longitude": 23.7266878,
+    "phone": "21 0923 4939",
+    "website": "https://motorent.gr/",
+    "google_maps_url": "https://maps.google.com/?cid=9260966258170716972",
+    "business_status": "OPERATIONAL",
+    "rating": 4.8,
+    "review_count": 331,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

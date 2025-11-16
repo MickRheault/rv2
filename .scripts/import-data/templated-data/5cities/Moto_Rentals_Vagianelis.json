@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T05:32:22.339Z",
+    "shop_identifier": "Moto Rentals Vagianelis",
+    "provider_name": "Moto Rentals Vagianelis",
+    "place_id": "ChIJre-b4cC9oRQRgHiMWGrq820",
+    "address": "Ploutarchou 24, Athina 173 42, Greece",
+    "city": "Athens",
+    "province": "Attica",
+    "country": "Greece",
+    "latitude": 37.9248402,
+    "longitude": 23.7356973,
+    "phone": "697 764 4202",
+    "website": "https://motorentalsvagianelis.gr/",
+    "google_maps_url": "https://maps.google.com/?cid=7922933911947868288",
+    "business_status": "OPERATIONAL",
+    "rating": 4.9,
+    "review_count": 64,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

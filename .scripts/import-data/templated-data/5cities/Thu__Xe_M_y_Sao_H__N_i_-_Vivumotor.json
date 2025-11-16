@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T08:39:55.278Z",
+    "shop_identifier": "Thuê Xe Máy Sao Hà Nội - Vivumotor",
+    "provider_name": "Thuê Xe Máy Sao Hà Nội - Vivumotor",
+    "place_id": "ChIJecfSDE-rNTERjNLVKmlgmEA",
+    "address": "56 Ng. 66/18 P. Dịch Vọng Hậu, Dịch Vọng Hậu, Cầu Giấy, Hà Nội, Vietnam",
+    "city": "Hanoi",
+    "province": "Hanoi",
+    "country": "Vietnam",
+    "latitude": 21.0329576,
+    "longitude": 105.7842292,
+    "phone": "0832 740 990",
+    "website": "http://thuexemaysaohanoi.com/",
+    "google_maps_url": "https://maps.google.com/?cid=4654576219693896332",
+    "business_status": "OPERATIONAL",
+    "rating": 4.8,
+    "review_count": 863,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

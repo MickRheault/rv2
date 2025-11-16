@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T04:28:07.707Z",
+    "shop_identifier": "Trust",
+    "provider_name": "Trust",
+    "place_id": "ChIJqXRsj3fNoRQRqXAPCd1jUfg",
+    "address": "Lambonos & irioti, Egina 180 10, Greece",
+    "city": "Athens",
+    "province": "Attica",
+    "country": "Greece",
+    "latitude": 37.7467742,
+    "longitude": 23.4276617,
+    "phone": "694 506 7010",
+    "website": "https://trustrental-aegina.com/",
+    "google_maps_url": "https://maps.google.com/?cid=17893192595510620329",
+    "business_status": "OPERATIONAL",
+    "rating": 4.2,
+    "review_count": 169,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

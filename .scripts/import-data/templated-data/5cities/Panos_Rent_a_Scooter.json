@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T05:35:27.320Z",
+    "shop_identifier": "Panos Rent a Scooter",
+    "provider_name": "Panos Rent a Scooter",
+    "place_id": "ChIJNxbQlF29oRQRhNm7NvH5I0g",
+    "address": "Leof. Eth. Antistaseos 36, Καισαριανη,ΑΘηνα 161 21, Greece",
+    "city": "Athens",
+    "province": "Attica",
+    "country": "Greece",
+    "latitude": 37.968876,
+    "longitude": 23.755819,
+    "phone": "21 0721 3875",
+    "website": "http://www.rentascooter.gr/",
+    "google_maps_url": "https://maps.google.com/?cid=5198273209316399492",
+    "business_status": "OPERATIONAL",
+    "rating": 4.7,
+    "review_count": 211,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

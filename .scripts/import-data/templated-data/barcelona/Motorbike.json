@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-10-14T21:04:49.259Z",
+    "shop_identifier": "Motorbike",
+    "provider_name": "Motorbike",
+    "place_id": "ChIJBUKQMPO8pBIRKCoKeGOyQZI",
+    "address": "Av. Pallaresa, 80, 08921 Santa Coloma de Gramenet, Barcelona, Spain",
+    "city": "Barcelona",
+    "province": "Barcelona",
+    "country": "Spain",
+    "latitude": 41.453889,
+    "longitude": 2.204378,
+    "phone": "931 62 29 09",
+    "website": "http://www.motorbike.cat/",
+    "google_maps_url": "https://maps.google.com/?cid=10538900743309109800",
+    "business_status": "OPERATIONAL",
+    "rating": 4.7,
+    "review_count": 724,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

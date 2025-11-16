@@ -1,0 +1,642 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T05:55:39.211Z",
+    "shop_identifier": "Moto Rentals Greece",
+    "provider_name": "Moto Rentals Greece",
+    "place_id": "ChIJmyALQNG9oRQR1ZgMUdFsthA",
+    "address": "Ploutarchou 24, Ag. Dimitrios 173 42, Greece",
+    "city": "Athens",
+    "province": "Attica",
+    "country": "Greece",
+    "latitude": 37.9248402,
+    "longitude": 23.7356973,
+    "phone": "697 007 0030",
+    "website": "https://motorentalsgreece.gr/",
+    "google_maps_url": "https://maps.google.com/?cid=1204269596631931093",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 1,
+    "rental_conditions": {
+      "minimum_age": 21,
+      "license_requirements": "Valid license issued at least one year prior. Non-EU citizens must provide international driving permit.",
+      "additional_driver_fee": 0,
+      "security_deposit_required": true,
+      "gps_tracker_included": true,
+      "unlimited_mileage": true,
+      "damage_waiver_cost": 20,
+      "theft_fire_liability": "Full responsibility for damage due to fire or theft",
+      "delivery_outside_business_hours_fee": true,
+      "cancellation_policy": "30 days: full refund, 21-30 days: 20% withheld, 11-20 days: 40% withheld, 10 or fewer days: no refund"
+    },
+    "rental_inclusions": [
+      "GPS tracker",
+      "Full casco insurance",
+      "24/7 Roadside Assistant BMW Mobile Care"
+    ],
+    "available_service_locations": [
+      "Athens"
+    ],
+    "offered_tours": [
+      {
+        "name": "Central Greece Tour",
+        "duration_text": "8 days",
+        "distance_km": null,
+        "price_text": "Request Availability",
+        "currency": "EUR"
+      },
+      {
+        "name": "Peloponnese Tour",
+        "duration_text": "6 days",
+        "distance_km": 1000,
+        "price_text": "Request Availability",
+        "currency": "EUR"
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "motorentalsgreece",
+      "scrape_timestamp": "2025-11-13T05:55:40.262Z",
+      "source_url": "https://motorentalsgreece.gr/en/motorcycles/",
+      "brand": "BMW",
+      "model": "R 1300 GS",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Adventure/Touring",
+      "description": "Premium adventure motorcycle from BMW's latest lineup",
+      "rental_rates": [
+        {
+          "rate_text": "From 140€ / day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 140,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://motorentalsgreece.gr/wp-content/uploads/elementor/thumbs/r-1300-gs-green-1-1-2-1400x1200_1-r5qrn1luu69jq56fbsjbwfmowl5ukuo1rioc8r22sg.webp"
+      ],
+      "features": [
+        "GPS TRACKER",
+        "Full casco insurance"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid driver's license (at least 1 year old)",
+        "Passport or ID",
+        "International driving permit (for non-EU citizens)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Third-party liability and theft coverage"
+        },
+        {
+          "type_name": "Damage Waiver",
+          "is_included": false,
+          "cost_per_day": 20,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Optional coverage for damage to the motorcycle"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "motorentalsgreece",
+      "scrape_timestamp": "2025-11-13T05:55:40.262Z",
+      "source_url": "https://motorentalsgreece.gr/en/motorcycles/",
+      "brand": "BMW",
+      "model": "R 1300 GS Adventure",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Adventure/Touring",
+      "description": "Adventure-focused version of the R 1300 GS with enhanced off-road capabilities",
+      "rental_rates": [
+        {
+          "rate_text": "From 150€ / day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 150,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://motorentalsgreece.gr/wp-content/uploads/elementor/thumbs/6723570c8f419_1-r5qrm0y5fmvd5cno9uovp6vpqk6j8nmimh8eiykfj4.webp"
+      ],
+      "features": [
+        "GPS TRACKER",
+        "Full casco insurance"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid driver's license (at least 1 year old)",
+        "Passport or ID",
+        "International driving permit (for non-EU citizens)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Third-party liability and theft coverage"
+        },
+        {
+          "type_name": "Damage Waiver",
+          "is_included": false,
+          "cost_per_day": 20,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Optional coverage for damage to the motorcycle"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "motorentalsgreece",
+      "scrape_timestamp": "2025-11-13T05:55:40.262Z",
+      "source_url": "https://motorentalsgreece.gr/en/motorcycles/",
+      "brand": "BMW",
+      "model": "R 1250 GS",
+      "year": null,
+      "engine_capacity_cc": 1254,
+      "category": "Adventure/Touring",
+      "description": "Renowned for its versatility and performance, this motorbike is designed to conquer any terrain, offering an unmatched riding experience for adventurers and thrill-seekers alike.",
+      "rental_rates": [
+        {
+          "rate_text": "1-3 Days 150,00 €",
+          "min_days": 1,
+          "max_days": 3,
+          "rate_per_day": 150,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "4-7 Days 140,00 €",
+          "min_days": 4,
+          "max_days": 7,
+          "rate_per_day": 140,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "8 + Days 130,00 €",
+          "min_days": 8,
+          "max_days": null,
+          "rate_per_day": 130,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://motorentalsgreece.gr/wp-content/uploads/elementor/thumbs/4872a94449654b7eb0c6e4c17e4e4a6c-3_1-r5qrlz2h1yssi4qektvmk7csjsfst9f1y7xfken7vk.webp"
+      ],
+      "features": [
+        "GPS TRACKER",
+        "Full casco insurance",
+        "BMW ShiftCam technology",
+        "Dynamic Traction Control (DTC)",
+        "Multiple riding modes"
+      ],
+      "specifications_raw": {
+        "Engine": "1,254cc air/liquid-cooled four-stroke flat twin engine with BMW ShiftCam technology",
+        "Power": "136 hp at 7,750 rpm",
+        "Torque": "143 Nm at 6,250 rpm",
+        "Transmission": "Constant-mesh 6-speed gearbox with a hydraulically operated wet clutch",
+        "Top Speed": "124 mph (200 km/h)",
+        "Frame": "Two-section frame with a load-bearing engine",
+        "Suspension": "BMW Motorrad Telelever front suspension and Paralever rear suspension",
+        "Wheels": "Cast aluminum wheels with tubeless tires (front: 120/70 R19, rear: 170/60 R17)",
+        "Brakes": "Twin disc brakes at the front and a single disc brake at the rear, equipped with BMW Motorrad Integral ABS Pro",
+        "Seat Height": "Adjustable between 33.5″ and 34.3″",
+        "Fuel Capacity": "5.3 gallons"
+      },
+      "conditions_raw": {
+        "minimum_age": 21,
+        "license_requirements": "Valid license issued at least one year prior. Non-EU citizens must provide international driving permit.",
+        "security_deposit": "Required",
+        "delivery_time": "Same as pickup time"
+      },
+      "required_documents_raw": [
+        "Valid driver's license (at least 1 year old)",
+        "Passport or ID",
+        "International driving permit (for non-EU citizens)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Third-party liability and theft coverage"
+        },
+        {
+          "type_name": "Damage Waiver",
+          "is_included": false,
+          "cost_per_day": 20,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Optional coverage for damage to the motorcycle"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "motorentalsgreece",
+      "scrape_timestamp": "2025-11-13T05:55:40.262Z",
+      "source_url": "https://motorentalsgreece.gr/en/motorcycles/",
+      "brand": "BMW",
+      "model": "R 1250 GS Adventure",
+      "year": null,
+      "engine_capacity_cc": 1254,
+      "category": "Adventure/Touring",
+      "description": "Adventure-focused version of the R 1250 GS with enhanced off-road capabilities",
+      "rental_rates": [
+        {
+          "rate_text": "From 140€ / day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 140,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://motorentalsgreece.gr/wp-content/uploads/elementor/thumbs/unnamed_1-r5qrlshlq4js8uzyn918kr0ke3c8bdoxlbd17gwz34.webp"
+      ],
+      "features": [
+        "GPS TRACKER",
+        "Full casco insurance"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid driver's license (at least 1 year old)",
+        "Passport or ID",
+        "International driving permit (for non-EU citizens)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Third-party liability and theft coverage"
+        },
+        {
+          "type_name": "Damage Waiver",
+          "is_included": false,
+          "cost_per_day": 20,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Optional coverage for damage to the motorcycle"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "motorentalsgreece",
+      "scrape_timestamp": "2025-11-13T05:55:40.262Z",
+      "source_url": "https://motorentalsgreece.gr/en/motorcycles/",
+      "brand": "CFMOTO",
+      "model": "800 MT Sport",
+      "year": null,
+      "engine_capacity_cc": 800,
+      "category": "Adventure/Touring",
+      "description": "Sport-oriented adventure motorcycle from CFMOTO",
+      "rental_rates": [
+        {
+          "rate_text": "From 100€ / day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 100,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://motorentalsgreece.gr/wp-content/uploads/elementor/thumbs/my2025_800mt-explore_gem-black_left-45_with-side-box_1-r5qrmkorf5mdx5v02l81njwe7nh8qasvp6xllrr5wg.webp"
+      ],
+      "features": [
+        "GPS TRACKER",
+        "Full casco insurance"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid driver's license (at least 1 year old)",
+        "Passport or ID",
+        "International driving permit (for non-EU citizens)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Third-party liability and theft coverage"
+        },
+        {
+          "type_name": "Damage Waiver",
+          "is_included": false,
+          "cost_per_day": 20,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Optional coverage for damage to the motorcycle"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "motorentalsgreece",
+      "scrape_timestamp": "2025-11-13T05:55:40.262Z",
+      "source_url": "https://motorentalsgreece.gr/en/motorcycles/",
+      "brand": "QJ",
+      "model": "SRT 700 SX",
+      "year": null,
+      "engine_capacity_cc": 700,
+      "category": "Sport",
+      "description": "Sport motorcycle from QJ Motor",
+      "rental_rates": [
+        {
+          "rate_text": "From 95€ / day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 95,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20600%20400'%3E%3C/svg%3E"
+      ],
+      "features": [
+        "GPS TRACKER",
+        "Full casco insurance"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid driver's license (at least 1 year old)",
+        "Passport or ID",
+        "International driving permit (for non-EU citizens)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Third-party liability and theft coverage"
+        },
+        {
+          "type_name": "Damage Waiver",
+          "is_included": false,
+          "cost_per_day": 20,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Optional coverage for damage to the motorcycle"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "motorentalsgreece",
+      "scrape_timestamp": "2025-11-13T05:55:40.262Z",
+      "source_url": "https://motorentalsgreece.gr/en/motorcycles/",
+      "brand": "QJ",
+      "model": "SVT 650",
+      "year": null,
+      "engine_capacity_cc": 650,
+      "category": "Standard",
+      "description": "Standard motorcycle from QJ Motor",
+      "rental_rates": [
+        {
+          "rate_text": "From 95€ / day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 95,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20600%20400'%3E%3C/svg%3E"
+      ],
+      "features": [
+        "GPS TRACKER",
+        "Full casco insurance"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid driver's license (at least 1 year old)",
+        "Passport or ID",
+        "International driving permit (for non-EU citizens)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Third-party liability and theft coverage"
+        },
+        {
+          "type_name": "Damage Waiver",
+          "is_included": false,
+          "cost_per_day": 20,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Optional coverage for damage to the motorcycle"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "motorentalsgreece",
+      "scrape_timestamp": "2025-11-13T05:55:40.262Z",
+      "source_url": "https://motorentalsgreece.gr/en/motorcycles/",
+      "brand": "QJ",
+      "model": "SRT 550 SX",
+      "year": null,
+      "engine_capacity_cc": 550,
+      "category": "Sport",
+      "description": "Sport motorcycle from QJ Motor",
+      "rental_rates": [
+        {
+          "rate_text": "From 70€ / day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 70,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20600%20400'%3E%3C/svg%3E"
+      ],
+      "features": [
+        "GPS TRACKER",
+        "Full casco insurance"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid driver's license (at least 1 year old)",
+        "Passport or ID",
+        "International driving permit (for non-EU citizens)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Third-party liability and theft coverage"
+        },
+        {
+          "type_name": "Damage Waiver",
+          "is_included": false,
+          "cost_per_day": 20,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Optional coverage for damage to the motorcycle"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "motorentalsgreece",
+      "scrape_timestamp": "2025-11-13T05:55:40.262Z",
+      "source_url": "https://motorentalsgreece.gr/en/motorcycles/",
+      "brand": "QJ",
+      "model": "SRK 125-S",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": "Scooter from QJ Motor",
+      "rental_rates": [
+        {
+          "rate_text": "From 30€ / day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 30,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20600%20400'%3E%3C/svg%3E"
+      ],
+      "features": [
+        "GPS TRACKER",
+        "Full casco insurance"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid driver's license (at least 1 year old)",
+        "Passport or ID",
+        "International driving permit (for non-EU citizens)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Third-party liability and theft coverage"
+        },
+        {
+          "type_name": "Damage Waiver",
+          "is_included": false,
+          "cost_per_day": 20,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Optional coverage for damage to the motorcycle"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "motorentalsgreece",
+      "scrape_timestamp": "2025-11-13T05:55:40.262Z",
+      "source_url": "https://motorentalsgreece.gr/en/motorcycles/",
+      "brand": "QJ",
+      "model": "MTX 125",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": "Scooter from QJ Motor",
+      "rental_rates": [
+        {
+          "rate_text": "From 25€ / day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 25,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20600%20400'%3E%3C/svg%3E"
+      ],
+      "features": [
+        "GPS TRACKER",
+        "Full casco insurance"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid driver's license (at least 1 year old)",
+        "Passport or ID",
+        "International driving permit (for non-EU citizens)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Third-party liability and theft coverage"
+        },
+        {
+          "type_name": "Damage Waiver",
+          "is_included": false,
+          "cost_per_day": 20,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Optional coverage for damage to the motorcycle"
+        }
+      ],
+      "availability_status": "Available"
+    }
+  ]
+}

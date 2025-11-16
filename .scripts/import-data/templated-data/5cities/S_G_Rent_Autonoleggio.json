@@ -1,0 +1,59 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T12:14:16.668Z",
+    "shop_identifier": "S&G Rent Autonoleggio",
+    "provider_name": "S&G Rent Autonoleggio",
+    "place_id": "ChIJI85EddZfLxMRk34dCYVJHFQ",
+    "address": "Via di Boccea, 654, 00166 Roma RM, Italy",
+    "city": "Rome",
+    "province": "Lazio",
+    "country": "Italy",
+    "latitude": 41.9221612,
+    "longitude": 12.3754351,
+    "phone": "06 4559 9960",
+    "website": "https://www.sgrentautonoleggio.it/",
+    "google_maps_url": "https://maps.google.com/?cid=6060800034266250899",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 40,
+    "rental_conditions": {
+      "no_credit_card_required": true,
+      "minimum_age": null,
+      "deposit_required": null,
+      "mileage_limit": "60000 km per 48 months"
+    },
+    "rental_inclusions": [
+      "Assistance",
+      "Maintenance",
+      "Roadside assistance",
+      "Taxes"
+    ],
+    "available_service_locations": [
+      "Rome"
+    ],
+    "offered_tours": [
+      {
+        "name": "Breve Termine",
+        "duration_text": "1 day to 12 months",
+        "distance_km": null,
+        "price_text": "from 29 €/day",
+        "currency": "EUR"
+      },
+      {
+        "name": "Medio Termine",
+        "duration_text": "9 to 24 months",
+        "distance_km": null,
+        "price_text": "from 299 €/month",
+        "currency": "EUR"
+      },
+      {
+        "name": "Lungo Termine",
+        "duration_text": "24 to 72 months",
+        "distance_km": null,
+        "price_text": "from 199 €/month",
+        "currency": "EUR"
+      }
+    ]
+  },
+  "motorcycle_offerings": []
+}

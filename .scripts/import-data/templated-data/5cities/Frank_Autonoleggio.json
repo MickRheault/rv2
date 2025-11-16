@@ -1,0 +1,39 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T11:30:27.125Z",
+    "shop_identifier": "Frank Autonoleggio",
+    "provider_name": "Frank Autonoleggio",
+    "place_id": "ChIJl94Lr6NhLxMRlF0SfIp4E0U",
+    "address": "Via Giovanni Giolitti, 34, 00185 Roma RM, Italy",
+    "city": "Rome",
+    "province": "Lazio",
+    "country": "Italy",
+    "latitude": 41.8991173,
+    "longitude": 12.5033247,
+    "phone": "06 4891 3412",
+    "website": "https://www.autonoleggiofranksrl.it/",
+    "google_maps_url": "https://maps.google.com/?cid=4977454549356928404",
+    "business_status": "OPERATIONAL",
+    "rating": 3.6,
+    "review_count": 422,
+    "rental_conditions": {
+      "no_credit_card_required": true,
+      "payment_options": "cash, PostePay, debit cards"
+    },
+    "rental_inclusions": [
+      "VAT",
+      "CDW-TP insurance",
+      "RCA"
+    ],
+    "available_service_locations": [
+      "Rome Fiumicino Airport",
+      "Rome Termini Station",
+      "Rome Viale dei Sardi",
+      "Naples Capodichino Airport",
+      "Naples Afragola TAV station",
+      "Catania Fontanarossa Airport"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

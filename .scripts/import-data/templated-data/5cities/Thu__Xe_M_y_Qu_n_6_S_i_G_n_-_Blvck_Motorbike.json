@@ -1,0 +1,412 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T10:08:24.411Z",
+    "shop_identifier": "Thuê Xe Máy Quận 6 Sài Gòn - Blvck Motorbike",
+    "provider_name": "Thuê Xe Máy Quận 6 Sài Gòn - Blvck Motorbike",
+    "place_id": "ChIJaz3hjk4tdTERgL3j0m5wKVE",
+    "address": "9A Đ. Lý Chiêu Hoàng, Phường 10, Quận 6, Thành phố Hồ Chí Minh, Vietnam",
+    "city": "Ho Chi Minh City",
+    "province": "Ho Chi Minh City",
+    "country": "Vietnam",
+    "latitude": 10.7383381,
+    "longitude": 106.6282439,
+    "phone": "0877 686 126",
+    "website": "https://thuexemaysaigon.vn/thue-xe-may-quan-6/",
+    "google_maps_url": "https://maps.google.com/?cid=5848329212404153728",
+    "business_status": "OPERATIONAL",
+    "rating": 4.3,
+    "review_count": 6,
+    "rental_conditions": {
+      "required_documents": "Driver's license and ID card (CCCD/CMND) required",
+      "contract_terms": "Check rental agreement, rental date, return date, and price details",
+      "safety_check": "Inspect vehicle condition, especially brakes before riding",
+      "minimum_age": "18 years old",
+      "deposit_required": "Yes"
+    },
+    "rental_inclusions": [
+      "Basic insurance",
+      "Helmets",
+      "24/7 roadside assistance",
+      "Free delivery within service areas"
+    ],
+    "available_service_locations": [
+      "Quận 1",
+      "Quận 3",
+      "Quận 4",
+      "Quận 5",
+      "Quận 6",
+      "Quận 7",
+      "Quận 8",
+      "Quận 10",
+      "Quận 11",
+      "Quận Phú Nhuận",
+      "Quận Gò Vấp",
+      "Quận Bình Thạnh",
+      "Quận Tân Bình",
+      "Quận Tân Phú"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "blvck_motorbike",
+      "scrape_timestamp": "2025-11-13T10:08:25.659Z",
+      "source_url": "https://thuexemaysaigon.vn/",
+      "brand": "Honda",
+      "model": "Vision",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "150000 VND/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 150000,
+          "currency": "VND"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Driver's license",
+        "ID card (CCCD/CMND)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Standard coverage included in rental price"
+        }
+      ],
+      "availability_status": "AVAILABLE"
+    },
+    {
+      "shop_identifier": "blvck_motorbike",
+      "scrape_timestamp": "2025-11-13T10:08:25.659Z",
+      "source_url": "https://thuexemaysaigon.vn/",
+      "brand": "Yamaha",
+      "model": "Janus",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "150000 VND/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 150000,
+          "currency": "VND"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Driver's license",
+        "ID card (CCCD/CMND)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Standard coverage included in rental price"
+        }
+      ],
+      "availability_status": "AVAILABLE"
+    },
+    {
+      "shop_identifier": "blvck_motorbike",
+      "scrape_timestamp": "2025-11-13T10:08:25.659Z",
+      "source_url": "https://thuexemaysaigon.vn/",
+      "brand": "Yamaha",
+      "model": "Exciter",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Sport bike",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "250000 VND/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 250000,
+          "currency": "VND"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Driver's license",
+        "ID card (CCCD/CMND)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Standard coverage included in rental price"
+        }
+      ],
+      "availability_status": "AVAILABLE"
+    },
+    {
+      "shop_identifier": "blvck_motorbike",
+      "scrape_timestamp": "2025-11-13T10:08:25.659Z",
+      "source_url": "https://thuexemaysaigon.vn/",
+      "brand": "Honda",
+      "model": "Winner",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Sport bike",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "250000 VND/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 250000,
+          "currency": "VND"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Driver's license",
+        "ID card (CCCD/CMND)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Standard coverage included in rental price"
+        }
+      ],
+      "availability_status": "AVAILABLE"
+    },
+    {
+      "shop_identifier": "blvck_motorbike",
+      "scrape_timestamp": "2025-11-13T10:08:25.659Z",
+      "source_url": "https://thuexemaysaigon.vn/",
+      "brand": "Honda",
+      "model": "Air Blade",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "150000 VND/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 150000,
+          "currency": "VND"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Driver's license",
+        "ID card (CCCD/CMND)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Standard coverage included in rental price"
+        }
+      ],
+      "availability_status": "AVAILABLE"
+    },
+    {
+      "shop_identifier": "blvck_motorbike",
+      "scrape_timestamp": "2025-11-13T10:08:25.659Z",
+      "source_url": "https://thuexemaysaigon.vn/",
+      "brand": "Honda",
+      "model": "Future",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "150000 VND/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 150000,
+          "currency": "VND"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Driver's license",
+        "ID card (CCCD/CMND)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Standard coverage included in rental price"
+        }
+      ],
+      "availability_status": "AVAILABLE"
+    },
+    {
+      "shop_identifier": "blvck_motorbike",
+      "scrape_timestamp": "2025-11-13T10:08:25.659Z",
+      "source_url": "https://thuexemaysaigon.vn/",
+      "brand": "Honda",
+      "model": "Lead",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "150000 VND/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 150000,
+          "currency": "VND"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Driver's license",
+        "ID card (CCCD/CMND)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Standard coverage included in rental price"
+        }
+      ],
+      "availability_status": "AVAILABLE"
+    },
+    {
+      "shop_identifier": "blvck_motorbike",
+      "scrape_timestamp": "2025-11-13T10:08:25.659Z",
+      "source_url": "https://thuexemaysaigon.vn/",
+      "brand": "Yamaha",
+      "model": "Grande",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "150000 VND/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 150000,
+          "currency": "VND"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Driver's license",
+        "ID card (CCCD/CMND)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Standard coverage included in rental price"
+        }
+      ],
+      "availability_status": "AVAILABLE"
+    },
+    {
+      "shop_identifier": "blvck_motorbike",
+      "scrape_timestamp": "2025-11-13T10:08:25.659Z",
+      "source_url": "https://thuexemaysaigon.vn/",
+      "brand": "Suzuki",
+      "model": "Raider",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Sport bike",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "250000 VND/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 250000,
+          "currency": "VND"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Driver's license",
+        "ID card (CCCD/CMND)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Standard coverage included in rental price"
+        }
+      ],
+      "availability_status": "AVAILABLE"
+    }
+  ]
+}

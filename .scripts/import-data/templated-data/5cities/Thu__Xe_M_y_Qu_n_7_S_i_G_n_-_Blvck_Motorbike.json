@@ -1,0 +1,319 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T10:11:09.772Z",
+    "shop_identifier": "Thuê Xe Máy Quận 7 Sài Gòn - Blvck Motorbike",
+    "provider_name": "Thuê Xe Máy Quận 7 Sài Gòn - Blvck Motorbike",
+    "place_id": "ChIJ9xmVa4AvdTERNIINWAxJ4m0",
+    "address": "163 Đ. Lê Văn Lương, Tân Kiểng, Quận 7, Thành phố Hồ Chí Minh, Vietnam",
+    "city": "Ho Chi Minh City",
+    "province": "Ho Chi Minh City",
+    "country": "Vietnam",
+    "latitude": 10.7481673,
+    "longitude": 106.7048308,
+    "phone": "0878 077 027",
+    "website": null,
+    "google_maps_url": "https://maps.google.com/?cid=7917971412236468788",
+    "business_status": "OPERATIONAL",
+    "rating": 4.1,
+    "review_count": 9,
+    "rental_conditions": {
+      "license_required": true,
+      "id_required": true,
+      "safety_check": "Customer must check vehicle safety before renting",
+      "contract_terms": "Must review rental contract, rental date, return date",
+      "minimum_age": null,
+      "deposit_required": null
+    },
+    "rental_inclusions": [
+      "Helmet",
+      "Raincoat",
+      "Free delivery",
+      "Basic repair tools"
+    ],
+    "available_service_locations": [
+      "Quận 7, Thành phố Hồ Chí Minh",
+      "Cao Bằng",
+      "Quận 8",
+      "Quận 10",
+      "Quận 5",
+      "Quận 2",
+      "Quận Bình Thạnh",
+      "Quảng Ninh",
+      "Quảng Bình",
+      "Sapa",
+      "Hà Giang",
+      "Hải Phòng",
+      "Phú Quốc"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "blvck-motorbike",
+      "scrape_timestamp": "2025-11-13T10:11:10.882Z",
+      "source_url": "https://thuexemaysaigon.vn/xe-dien/",
+      "brand": "VinFast",
+      "model": "Evo 200",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Xe Điện",
+      "description": "Electric motorcycle with modern design and comfortable ride",
+      "rental_rates": [
+        {
+          "rate_text": "150,000 ₫",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 150000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://thuexemaysaigon.vn/wp-content/uploads/2024/05/evo-1-300x300.jpg",
+        "https://thuexemaysaigon.vn/wp-content/uploads/2024/05/evo-2-300x300.jpg"
+      ],
+      "features": [
+        "Electric motor",
+        "Modern design",
+        "Comfortable seating"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "CMND/CCCD",
+        "Driver's license"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Basic insurance coverage included with rental"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "blvck-motorbike",
+      "scrape_timestamp": "2025-11-13T10:11:10.882Z",
+      "source_url": "https://thuexemaysaigon.vn/thue-xe-may-tai-quan-7/",
+      "brand": null,
+      "model": "Xe Số",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Xe Số",
+      "description": "Manual transmission motorcycles for economical city riding",
+      "rental_rates": [
+        {
+          "rate_text": "100,000 - 300,000 ₫",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 100000,
+          "currency": "VND"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Manual transmission",
+        "Economical fuel consumption",
+        "Reliable for city traffic"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "CMND/CCCD",
+        "Driver's license"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Basic insurance coverage included with rental"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "blvck-motorbike",
+      "scrape_timestamp": "2025-11-13T10:11:10.882Z",
+      "source_url": "https://thuexemaysaigon.vn/thue-xe-may-tai-quan-7/",
+      "brand": null,
+      "model": "Xe Tay Ga",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Xe Tay Ga",
+      "description": "Automatic scooters for comfortable city riding",
+      "rental_rates": [
+        {
+          "rate_text": "100,000 - 300,000 ₫",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 100000,
+          "currency": "VND"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Automatic transmission",
+        "Comfortable seating",
+        "Storage compartment"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "CMND/CCCD",
+        "Driver's license"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Basic insurance coverage included with rental"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "blvck-motorbike",
+      "scrape_timestamp": "2025-11-13T10:11:10.882Z",
+      "source_url": "https://thuexemaysaigon.vn/thue-xe-may-tai-quan-7/",
+      "brand": null,
+      "model": "Xe Điện",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Xe Điện",
+      "description": "Electric motorcycles for eco-friendly city transportation",
+      "rental_rates": [
+        {
+          "rate_text": "100,000 - 300,000 ₫",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 100000,
+          "currency": "VND"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Zero emissions",
+        "Quiet operation",
+        "Low maintenance"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "CMND/CCCD",
+        "Driver's license"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Basic insurance coverage included with rental"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "blvck-motorbike",
+      "scrape_timestamp": "2025-11-13T10:11:10.882Z",
+      "source_url": "https://thuexemaysaigon.vn/thue-xe-may-tai-quan-7/",
+      "brand": null,
+      "model": "Xe 50CC",
+      "year": null,
+      "engine_capacity_cc": 50,
+      "category": "Xe 50CC",
+      "description": "Small displacement motorcycles for beginners and short trips",
+      "rental_rates": [
+        {
+          "rate_text": "100,000 - 300,000 ₫",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 100000,
+          "currency": "VND"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Small engine size",
+        "Easy to handle",
+        "Fuel efficient"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "CMND/CCCD",
+        "Driver's license"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Basic insurance coverage included with rental"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "blvck-motorbike",
+      "scrape_timestamp": "2025-11-13T10:11:10.882Z",
+      "source_url": "https://thuexemaysaigon.vn/thue-xe-may-tai-quan-7/",
+      "brand": null,
+      "model": "Xe Tay Côn",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Xe Tay Côn",
+      "description": "Manual clutch motorcycles for experienced riders",
+      "rental_rates": [
+        {
+          "rate_text": "100,000 - 300,000 ₫",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 100000,
+          "currency": "VND"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Manual clutch",
+        "Sporty performance",
+        "Better control"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "CMND/CCCD",
+        "Driver's license"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Basic insurance coverage included with rental"
+        }
+      ],
+      "availability_status": "available"
+    }
+  ]
+}

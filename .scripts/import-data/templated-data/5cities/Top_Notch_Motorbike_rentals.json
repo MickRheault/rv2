@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T09:30:43.691Z",
+    "shop_identifier": "Top Notch Motorbike rentals",
+    "provider_name": "Top Notch Motorbike rentals",
+    "place_id": "ChIJ_ZEc2lMpdTER6DMWiFM4t8g",
+    "address": "77 Đ. Số 8, Binh An, Thủ Đức, Thành phố Hồ Chí Minh, Vietnam",
+    "city": "Ho Chi Minh City",
+    "province": "Ho Chi Minh City",
+    "country": "Vietnam",
+    "latitude": 10.793752,
+    "longitude": 106.7336285,
+    "phone": "0898 782 308",
+    "website": "http://motorbikerentalvietnam.com/",
+    "google_maps_url": "https://maps.google.com/?cid=14463090659740234728",
+    "business_status": "OPERATIONAL",
+    "rating": 4.8,
+    "review_count": 126,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

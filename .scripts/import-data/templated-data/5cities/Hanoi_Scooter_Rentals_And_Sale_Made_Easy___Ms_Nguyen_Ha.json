@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T08:24:48.948Z",
+    "shop_identifier": "Hanoi Scooter Rentals And Sale Made Easy – Ms Nguyen Ha",
+    "provider_name": "Hanoi Scooter Rentals And Sale Made Easy – Ms Nguyen Ha",
+    "place_id": "ChIJaU7RusyrNTERf2tchvS6bqw",
+    "address": "No. 24, Alley 5 Đ. Nguyễn Văn Cừ, Street, Long Biên, Hà Nội 10000, Vietnam",
+    "city": "Hanoi",
+    "province": "Hanoi",
+    "country": "Vietnam",
+    "latitude": 21.0399392,
+    "longitude": 105.8669657,
+    "phone": "0334 699 969",
+    "website": "https://rentbikehanoi.com/",
+    "google_maps_url": "https://maps.google.com/?cid=12425073981350767487",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 2,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T05:36:59.253Z",
+    "shop_identifier": "Athens Moto Rent",
+    "provider_name": "Athens Moto Rent",
+    "place_id": "ChIJh2jis6OjoRQR6BjRt8BZJGM",
+    "address": "Leof. Konstantinoupoleos 138, Peristeri 121 33, Greece",
+    "city": "Athens",
+    "province": "Attica",
+    "country": "Greece",
+    "latitude": 38.0159737,
+    "longitude": 23.7023955,
+    "phone": "21 0990 1808",
+    "website": "https://athensmotorent.gr/",
+    "google_maps_url": "https://maps.google.com/?cid=7143933593168976104",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 18,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

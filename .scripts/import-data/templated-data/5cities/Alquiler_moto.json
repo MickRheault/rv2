@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T13:27:29.254Z",
+    "shop_identifier": "Alquiler moto",
+    "provider_name": "Alquiler moto",
+    "place_id": "ChIJlTtO9CxhLxMRK4milIpFk2I",
+    "address": "Via Anastasio II, 146, 00165 Roma RM, Italy",
+    "city": "Rome",
+    "province": "Lazio",
+    "country": "Italy",
+    "latitude": 41.8972685,
+    "longitude": 12.442431,
+    "phone": null,
+    "website": "https://bikesbooking.com/en/",
+    "google_maps_url": "https://maps.google.com/?cid=7103097498794887467",
+    "business_status": "OPERATIONAL",
+    "rating": null,
+    "review_count": null,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

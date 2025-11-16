@@ -1,0 +1,61 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T04:51:39.547Z",
+    "shop_identifier": "MotoGreece - Motorcycle Tours & Rentals",
+    "provider_name": "MotoGreece - Motorcycle Tours & Rentals",
+    "place_id": "ChIJZf0knES9oRQRWNaxVUFBJa8",
+    "address": "Astidamantos 85, Athina 116 34, Greece",
+    "city": "Athens",
+    "province": "Attica",
+    "country": "Greece",
+    "latitude": 37.974312,
+    "longitude": 23.749486,
+    "phone": "697 797 0421",
+    "website": "https://motogreece.gr/",
+    "google_maps_url": "https://maps.google.com/?cid=12620565279642080856",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 256,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": [
+      {
+        "name": "Central & North west Greece Tour",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Tour of Peloponnese.",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Tour of Peloponnese.",
+        "duration_text": "12 days (10 days + 2 days for your travel to/from Greece)",
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Tour of Central – Northwest Greece",
+        "duration_text": "12 days (10 days + 2 days for your travel to/from Greece)",
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Tour of Peloponnese.",
+        "duration_text": "12 days (10 days + 2 days for your travel to/from Greece)",
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      }
+    ]
+  },
+  "motorcycle_offerings": []
+}

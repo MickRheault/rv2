@@ -1,0 +1,613 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T12:02:28.680Z",
+    "shop_identifier": "7 Hills Noleggio Minicar Aixam e Ligier",
+    "provider_name": "7 Hills Noleggio Minicar Aixam e Ligier",
+    "place_id": "ChIJVVUVcy5hLxMRYmTk5fSDzaw",
+    "address": "V. del Foro Italico, 501E, 00197 Roma RM, Italy",
+    "city": "Rome",
+    "province": "Lazio",
+    "country": "Italy",
+    "latitude": 41.9405182,
+    "longitude": 12.4933574,
+    "phone": "06 8068 7000",
+    "website": "https://www.noleggiominicar.com/",
+    "google_maps_url": "https://maps.google.com/?cid=12451753632601498722",
+    "business_status": "OPERATIONAL",
+    "rating": 4.1,
+    "review_count": 15,
+    "rental_conditions": {
+      "longer_rental_cheaper_daily": "Più lungo è il noleggio meno costa il giornaliero",
+      "easy_booking": "Facile prenotazione online o in sede",
+      "transparent_pricing": "Tariffe competitive e trasparenti",
+      "free_driving": "Veicoli con la guida libera",
+      "wide_selection": "Grande varietà di scelta",
+      "dedicated_assistance": "Assistenza dedicata",
+      "service_area": "il servizio di noleggio viene erogato solo per la regione Lazio"
+    },
+    "rental_inclusions": [
+      "Assistenza stradale inclusa",
+      "Assicurazioni e manutenzione incluse"
+    ],
+    "available_service_locations": [
+      "Lazio"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "7hills",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": "https://www.noleggiominicar.com/",
+      "brand": "Aixam",
+      "model": "City Pack",
+      "year": 2021,
+      "engine_capacity_cc": null,
+      "category": "minicar",
+      "description": "City Pack 2021 Euro 5",
+      "rental_rates": [
+        {
+          "rate_text": "€ 390 al mese",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 13,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.noleggiominicar.com/wp-content/uploads/2021/02/43-2-Copia-300x221.png"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazioni incluse"
+        },
+        {
+          "type_name": "Maintenance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Manutenzione inclusa"
+        }
+      ],
+      "availability_status": "PRONTA CONSEGNA"
+    },
+    {
+      "shop_identifier": "7hills",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": "https://www.noleggiominicar.com/",
+      "brand": "Aixam",
+      "model": "City Pack",
+      "year": 2022,
+      "engine_capacity_cc": null,
+      "category": "minicar",
+      "description": "City Pack 2022 Euro 5",
+      "rental_rates": [
+        {
+          "rate_text": "€ 403 al mese",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 13.43,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.noleggiominicar.com/wp-content/uploads/2024/02/Post-IG-A2P-6-300x300.png"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazioni incluse"
+        },
+        {
+          "type_name": "Maintenance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Manutenzione inclusa"
+        }
+      ],
+      "availability_status": "PRONTA CONSEGNA"
+    },
+    {
+      "shop_identifier": "7hills",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": "https://www.noleggiominicar.com/",
+      "brand": "Aixam",
+      "model": "Sport PERFOMANCE",
+      "year": 2022,
+      "engine_capacity_cc": null,
+      "category": "minicar",
+      "description": "Sport PERFOMANCE 2022 Euro 5",
+      "rental_rates": [
+        {
+          "rate_text": "€ 459 al mese",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 15.3,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.noleggiominicar.com/wp-content/uploads/2022/04/sport-perfomance-2022-300x261.jpeg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazioni incluse"
+        },
+        {
+          "type_name": "Maintenance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Manutenzione inclusa"
+        }
+      ],
+      "availability_status": "PRONTA CONSEGNA"
+    },
+    {
+      "shop_identifier": "7hills",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": "https://www.noleggiominicar.com/",
+      "brand": "Aixam",
+      "model": "City GTO Perfomance",
+      "year": 2022,
+      "engine_capacity_cc": null,
+      "category": "minicar",
+      "description": "City GTO Perfomance 2022 Euro 5",
+      "rental_rates": [
+        {
+          "rate_text": "€ 475 al mese",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 15.83,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.noleggiominicar.com/wp-content/uploads/2022/04/aixam-gto-perfomance-2022-300x200.jpeg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazioni incluse"
+        },
+        {
+          "type_name": "Maintenance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Manutenzione inclusa"
+        }
+      ],
+      "availability_status": "PRONTA CONSEGNA"
+    },
+    {
+      "shop_identifier": "7hills",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": "https://www.noleggiominicar.com/",
+      "brand": "Aixam",
+      "model": "Minauto GT",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "minicar",
+      "description": "Minauto GT Euro 2",
+      "rental_rates": [
+        {
+          "rate_text": "€ 295 al mese",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 9.83,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.noleggiominicar.com/wp-content/uploads/2024/02/Post-IG-A2P-16-300x300.png"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazioni incluse"
+        },
+        {
+          "type_name": "Maintenance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Manutenzione inclusa"
+        }
+      ],
+      "availability_status": "PRONTA CONSEGNA"
+    },
+    {
+      "shop_identifier": "7hills",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": "https://www.noleggiominicar.com/",
+      "brand": "Aixam",
+      "model": "EVO",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "minicar",
+      "description": "Aixam EVO Euro 4",
+      "rental_rates": [
+        {
+          "rate_text": "€ 340 al mese",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 11.33,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.noleggiominicar.com/wp-content/uploads/2023/12/Post-IG-A2P-10-300x300.png"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazioni incluse"
+        },
+        {
+          "type_name": "Maintenance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Manutenzione inclusa"
+        }
+      ],
+      "availability_status": "PRONTA CONSEGNA"
+    },
+    {
+      "shop_identifier": "7hills",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": "https://www.noleggiominicar.com/",
+      "brand": "Aixam",
+      "model": "City Sport",
+      "year": 2021,
+      "engine_capacity_cc": null,
+      "category": "minicar",
+      "description": "Aixam City Sport 2021 Euro 5",
+      "rental_rates": [
+        {
+          "rate_text": "€ 410 al mese",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 13.67,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.noleggiominicar.com/wp-content/uploads/2023/12/Post-IG-A2P-8-300x300.png"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazioni incluse"
+        },
+        {
+          "type_name": "Maintenance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Manutenzione inclusa"
+        }
+      ],
+      "availability_status": "PRONTA CONSEGNA"
+    },
+    {
+      "shop_identifier": "7hills",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": "https://www.noleggiominicar.com/",
+      "brand": "Aixam",
+      "model": "City GTO",
+      "year": 2021,
+      "engine_capacity_cc": null,
+      "category": "minicar",
+      "description": "Aixam City GTO 2021 Euro 5",
+      "rental_rates": [
+        {
+          "rate_text": "€ 450 al mese",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 15,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.noleggiominicar.com/wp-content/uploads/2023/12/Post-IG-5-300x300.png"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazioni incluse"
+        },
+        {
+          "type_name": "Maintenance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Manutenzione inclusa"
+        }
+      ],
+      "availability_status": "PRONTA CONSEGNA"
+    },
+    {
+      "shop_identifier": "7hills",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": "https://www.noleggiominicar.com/",
+      "brand": "Aixam",
+      "model": "Gamma Sensation",
+      "year": 2016,
+      "engine_capacity_cc": null,
+      "category": "minicar",
+      "description": "Gamma Sensation 2016/2019",
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazioni incluse"
+        },
+        {
+          "type_name": "Maintenance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Manutenzione inclusa"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "7hills",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": "https://www.noleggiominicar.com/",
+      "brand": "Aixam",
+      "model": "Gamma Sensation Plus",
+      "year": 2018,
+      "engine_capacity_cc": null,
+      "category": "minicar",
+      "description": "Gamma Sensation Plus 2018/2020",
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazioni incluse"
+        },
+        {
+          "type_name": "Maintenance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Manutenzione inclusa"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "7hills",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": "https://www.noleggiominicar.com/",
+      "brand": "Aixam",
+      "model": "City Pack",
+      "year": 2021,
+      "engine_capacity_cc": null,
+      "category": "minicar",
+      "description": "AIXAM City Pack (Gamma Emotion) 21/22",
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazioni incluse"
+        },
+        {
+          "type_name": "Maintenance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Manutenzione inclusa"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "7hills",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": "https://www.noleggiominicar.com/",
+      "brand": "Aixam",
+      "model": "City Sport",
+      "year": 2021,
+      "engine_capacity_cc": null,
+      "category": "minicar",
+      "description": "AIXAM City Sport (Gamma Emotion) 21/22",
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazioni incluse"
+        },
+        {
+          "type_name": "Maintenance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Manutenzione inclusa"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "7hills",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": "https://www.noleggiominicar.com/",
+      "brand": "Aixam",
+      "model": "City GTO",
+      "year": 2021,
+      "engine_capacity_cc": null,
+      "category": "minicar",
+      "description": "AIXAM City GTO (Gamma Emotion) 21/22",
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazioni incluse"
+        },
+        {
+          "type_name": "Maintenance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Manutenzione inclusa"
+        }
+      ],
+      "availability_status": null
+    }
+  ]
+}

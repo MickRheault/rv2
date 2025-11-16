@@ -1,0 +1,517 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T10:16:40.456Z",
+    "shop_identifier": "Saigon motorbike rental, sales, 오토바이 대여, прокат мотоциклов",
+    "provider_name": "Saigon motorbike rental, sales, 오토바이 대여, прокат мотоциклов",
+    "place_id": "ChIJTS3SiUsvdTERGqUUG4PVZZw",
+    "address": "2E, 1 Đề Thám, Phường Cầu Ông Lãnh, Thành phố Hồ Chí Minh, Vietnam",
+    "city": "Ho Chi Minh City",
+    "province": "Ho Chi Minh City",
+    "country": "Vietnam",
+    "latitude": 10.7628314,
+    "longitude": 106.6963977,
+    "phone": "0819 869 351",
+    "website": "https://www.sgmotorbikerental.com/",
+    "google_maps_url": "https://maps.google.com/?cid=11269648401636304154",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 101,
+    "rental_conditions": {
+      "delivery": "Delivery bikes to your hotel",
+      "deposit": "Flexible deposit",
+      "distance": "Unlimited travel distance",
+      "partners": "Partners in Da Lat - Nha Trang - Quy Nhon- Hoi An - Da Nang - Hue - Phong Nha - Ninh Binh - Ha Noi - Ha Giang",
+      "payment": "Offer installment payment (for expats in HoChiMinh city)"
+    },
+    "rental_inclusions": [
+      "Good helmets"
+    ],
+    "available_service_locations": [
+      "Da Lat",
+      "Nha Trang",
+      "Quy Nhon",
+      "Hoi An",
+      "Da Nang",
+      "Hue",
+      "Phong Nha",
+      "Ninh Binh",
+      "Ha Noi",
+      "Ha Giang"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "saigon-motorbike-rental",
+      "scrape_timestamp": "2025-11-13T10:16:41.499Z",
+      "source_url": "https://www.sgmotorbikerental.com/rent-motorbike/honda-cb500x-adventure-touring-motorcycle/index.html",
+      "brand": "Honda",
+      "model": "CB500X",
+      "year": null,
+      "engine_capacity_cc": 500,
+      "category": "Adventure/Touring motorcycle",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$49",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 49,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://247motorbikes.com/wp-content/uploads/2024/05/Honda-CB500X-450x300.jpg"
+      ],
+      "features": [
+        "Adventure/Touring motorcycle"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "instock"
+    },
+    {
+      "shop_identifier": "saigon-motorbike-rental",
+      "scrape_timestamp": "2025-11-13T10:16:41.499Z",
+      "source_url": "https://www.sgmotorbikerental.com/rent-motorbike/kawasaki-versys-300-adventure-touring-motorcycle/index.html",
+      "brand": "Kawasaki",
+      "model": "Versys 300",
+      "year": null,
+      "engine_capacity_cc": 300,
+      "category": "Adventure/Touring motorcycle",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$34",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 34,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://247motorbikes.com/wp-content/uploads/2024/05/Kawasaki-Versys-300-450x300.jpg"
+      ],
+      "features": [
+        "Adventure/Touring motorcycle"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "instock"
+    },
+    {
+      "shop_identifier": "saigon-motorbike-rental",
+      "scrape_timestamp": "2025-11-13T10:16:41.499Z",
+      "source_url": "https://www.sgmotorbikerental.com/rent-motorbike/honda-cb150x-adventure-touring-motorcycle/index.html",
+      "brand": "Honda",
+      "model": "CB150X",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Adventure/Touring motorcycle",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$23",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 23,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://247motorbikes.com/wp-content/uploads/2024/10/honda-cb150x-450x300.jpg"
+      ],
+      "features": [
+        "Adventure/Touring motorcycle"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "instock"
+    },
+    {
+      "shop_identifier": "saigon-motorbike-rental",
+      "scrape_timestamp": "2025-11-13T10:16:41.499Z",
+      "source_url": "https://www.sgmotorbikerental.com/rent-motorbike/honda-pcx-150/index.html",
+      "brand": "Honda",
+      "model": "PCX 150",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Scooter",
+      "description": "The Honda PCX 150 for sale at Saigon Motorbikes is a stylish, fuel-efficient scooter designed to excel in city riding. Powered by a 150cc liquid-cooled, fuel-injected engine, it delivers smooth acceleration and great gas mileage for daily commutes. This sleek scooter stands out with modern LED lighting, comfortable seating for two, and ample underseat storage for a helmet or groceries.",
+      "rental_rates": [
+        {
+          "rate_text": "$15",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 15,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://www.sgmotorbikerental.com/wp-content/uploads/2025/04/882_pcx-150-450x300.jpg",
+        "https://www.sgmotorbikerental.com/wp-content/uploads/2025/04/z6503344091463_ffbf59c4082c7a7de30a53601ea03e2b-150x150.jpg",
+        "https://www.sgmotorbikerental.com/wp-content/uploads/2025/04/z6503344084597_00b9feff2f82bba198b40a4cb67c4527-150x150.jpg",
+        "https://www.sgmotorbikerental.com/wp-content/uploads/2025/04/z6503344077985_148f5d2ece24bad4d3f07d82c79e6567-150x150.jpg",
+        "https://www.sgmotorbikerental.com/wp-content/uploads/2025/04/pcx-with-aris-insert-1562753322-150x150.jpg"
+      ],
+      "features": [
+        "Automatic (CVT)",
+        "LED lighting system",
+        "30-liter underseat storage",
+        "USB charging port",
+        "Smart Key system",
+        "Idling Stop system"
+      ],
+      "specifications_raw": {
+        "Engine": {
+          "Type": "156.9cc liquid-cooled, 80º single-cylinder, four-stroke",
+          "Valve Train": "SOHC; four valves",
+          "Bore x Stroke": "60.0 mm x 55.5 mm",
+          "Compression Ratio": "12.0:1",
+          "Fuel System": "PGM-FI (Programmed Fuel Injection)",
+          "Starter": "Electric",
+          "Transmission": "V-Matic (CVT)",
+          "Final Drive": "Belt"
+        },
+        "Performance": {
+          "Maximum Power": "15.8 HP",
+          "Maximum Torque": "11.1 lb-ft",
+          "Fuel Consumption": "Approximately 2.2 L/100 km (106 mpg)"
+        },
+        "Chassis & Dimensions": {
+          "Frame Type": "Duplex-cradle steel frame",
+          "Front Suspension": "31 mm telescopic fork; 3.9 in (100 mm) travel",
+          "Rear Suspension": "Twin shocks; 3.7 in (94 mm) travel",
+          "Front Brake": "Hydraulic disc, 220 mm with ABS",
+          "Rear Brake": "Mechanical drum, 130 mm",
+          "Front Tire": "110/70-14",
+          "Rear Tire": "130/70-13",
+          "Wheelbase": "51.7 in (1313 mm)",
+          "Seat Height": "30.1 in (764 mm)",
+          "Ground Clearance": "5.3 in (134 mm)",
+          "Curb Weight": "288 lbs (130.6 kg)",
+          "Fuel Tank Capacity": "2.1 gal (7.9 liters)"
+        }
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "instock"
+    },
+    {
+      "shop_identifier": "saigon-motorbike-rental",
+      "scrape_timestamp": "2025-11-13T10:16:41.499Z",
+      "source_url": "https://www.sgmotorbikerental.com/rent-motorbike/honda-airblade-125cc/index.html",
+      "brand": "Honda",
+      "model": "airblade 125cc",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$8",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 8,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://247motorbikes.com/wp-content/uploads/2024/05/Honda-airblade-125cc-450x300.jpg"
+      ],
+      "features": [
+        "Scooter"
+      ],
+      "specifications_raw": {
+        "Specification": {
+          "Engine": "SOHC, 4 strokes, 2 valves, 125cc",
+          "Gear box": "Fully automatic",
+          "Weight": "115kg",
+          "Fuel consumption": "2,2L/100km",
+          "Power": "11HP / 8000rpm",
+          "Fuel Capacity": "4,5L",
+          "Oil Capacity": "0.8L",
+          "Dimension (LxWxH)": "1890 x 680 x 1110mm",
+          "Seat Height": "769 mm",
+          "Starting system": "Electric",
+          "Wheel size": "14inch",
+          "Cooler system": "by liquid cooling",
+          "Fuel injection system": "Electronic fuel injection",
+          "Break": "Rear brake : Drum brake, Front brake : Disc brake"
+        }
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "instock"
+    },
+    {
+      "shop_identifier": "saigon-motorbike-rental",
+      "scrape_timestamp": "2025-11-13T10:16:41.499Z",
+      "source_url": "https://www.sgmotorbikerental.com/rent-motorbike/yamaha-fz150i/index.html",
+      "brand": "Yamaha",
+      "model": "FZ150i",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": null,
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$10",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 10,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://www.sgmotorbikerental.com/wp-content/uploads/2024/06/zscaled-450x300.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "instock"
+    },
+    {
+      "shop_identifier": "saigon-motorbike-rental",
+      "scrape_timestamp": "2025-11-13T10:16:41.499Z",
+      "source_url": "https://www.sgmotorbikerental.com/rent-motorbike/winner/index.html",
+      "brand": "Honda",
+      "model": "Winner",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": null,
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$10",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 10,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://www.sgmotorbikerental.com/wp-content/uploads/2024/05/Winner-0-1680706598-450x300.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "instock"
+    },
+    {
+      "shop_identifier": "saigon-motorbike-rental",
+      "scrape_timestamp": "2025-11-13T10:16:41.499Z",
+      "source_url": "https://www.sgmotorbikerental.com/rent-motorbike/honda-future/index.html",
+      "brand": "Honda",
+      "model": "Future",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": null,
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$8",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 8,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://www.sgmotorbikerental.com/wp-content/uploads/2024/05/Wave-RSX-0-1680707555-450x300.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "instock"
+    },
+    {
+      "shop_identifier": "saigon-motorbike-rental",
+      "scrape_timestamp": "2025-11-13T10:16:41.499Z",
+      "source_url": "https://www.sgmotorbikerental.com/rent-motorbike/wave-blade/index.html",
+      "brand": "Honda",
+      "model": "Wave Blade",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": null,
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$7.5",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 7.5,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://www.sgmotorbikerental.com/wp-content/uploads/2024/05/Wave-Blade-0-1680705526-450x300.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "instock"
+    },
+    {
+      "shop_identifier": "saigon-motorbike-rental",
+      "scrape_timestamp": "2025-11-13T10:16:41.499Z",
+      "source_url": "https://www.sgmotorbikerental.com/rent-motorbike/airblade/index.html",
+      "brand": "Honda",
+      "model": "Airblade",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": null,
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$7",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 7,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://www.sgmotorbikerental.com/wp-content/uploads/2024/05/Airblade-450x300.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "instock"
+    },
+    {
+      "shop_identifier": "saigon-motorbike-rental",
+      "scrape_timestamp": "2025-11-13T10:16:41.499Z",
+      "source_url": "https://www.sgmotorbikerental.com/rent-motorbike/vision/index.html",
+      "brand": "Honda",
+      "model": "Vision",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": null,
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$8",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 8,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://www.sgmotorbikerental.com/wp-content/uploads/2024/05/Honda-Vision-450x300.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "instock"
+    },
+    {
+      "shop_identifier": "saigon-motorbike-rental",
+      "scrape_timestamp": "2025-11-13T10:16:41.499Z",
+      "source_url": "https://www.sgmotorbikerental.com/rent-motorbike/nvx/index.html",
+      "brand": "Yamaha",
+      "model": "NVX",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": null,
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$13",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 13,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://www.sgmotorbikerental.com/wp-content/uploads/2024/05/NVX-0-1680706295-450x300.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "instock"
+    },
+    {
+      "shop_identifier": "saigon-motorbike-rental",
+      "scrape_timestamp": "2025-11-13T10:16:41.499Z",
+      "source_url": "https://www.sgmotorbikerental.com/rent-motorbike/nouvo-lx/index.html",
+      "brand": "Yamaha",
+      "model": "Nouvo LX",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": null,
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$7",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 7,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://www.sgmotorbikerental.com/wp-content/uploads/2024/05/Nouvo-LX-0-1680706069-450x300.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "instock"
+    },
+    {
+      "shop_identifier": "saigon-motorbike-rental",
+      "scrape_timestamp": "2025-11-13T10:16:41.499Z",
+      "source_url": "https://www.sgmotorbikerental.com/rent-motorbike/nouvo-6/index.html",
+      "brand": "Yamaha",
+      "model": "Nouvo 6",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": null,
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$7.5",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 7.5,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://www.sgmotorbikerental.com/wp-content/uploads/2024/05/Nouvo-6-14-0-1682263588-450x300.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "instock"
+    }
+  ]
+}

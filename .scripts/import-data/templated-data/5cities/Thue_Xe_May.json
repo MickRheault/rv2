@@ -1,0 +1,765 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T09:21:15.353Z",
+    "shop_identifier": "Thue Xe May",
+    "provider_name": "Thue Xe May",
+    "place_id": "ChIJubWPuWsvdTERCIM6sYxbOUA",
+    "address": "413/82 Đ. Lê Văn Sỹ, Phường 12, Quận 3, Thành phố Hồ Chí Minh 700000, Vietnam",
+    "city": "Ho Chi Minh City",
+    "province": "Ho Chi Minh City",
+    "country": "Vietnam",
+    "latitude": 10.7878851,
+    "longitude": 106.674568,
+    "phone": "0974 424 163",
+    "website": "https://www.bikesaigon.vn/",
+    "google_maps_url": "https://maps.google.com/?cid=4627830751926846216",
+    "business_status": "OPERATIONAL",
+    "rating": 4.6,
+    "review_count": 261,
+    "rental_conditions": {
+      "no_deposit_policy": "Khách hàng không phải đặt cọc nếu có đầy đủ giấy tờ",
+      "required_documents": "CMND/CCCD, GPLX và sổ hộ khẩu gốc",
+      "24h_rental_calculation": true,
+      "document_return_service": "Có thể mang giấy tờ qua địa chỉ khách yêu cầu",
+      "delivery_time": "15 phút"
+    },
+    "rental_inclusions": [
+      "Xe máy mới 100%",
+      "Bảo dưỡng định kỳ",
+      "Kiểm tra an toàn trước giao xe"
+    ],
+    "available_service_locations": [
+      "TP. Hồ Chí Minh",
+      "nội thành TP HCM",
+      "quận 3",
+      "quận 9",
+      "gò vấp",
+      "TP. Thủ Đức",
+      "Quận 12"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "bikesaigon",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "Wave",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Xe Số",
+      "description": "Xe số phổ thông, tiết kiệm nhiên liệu",
+      "rental_rates": [
+        {
+          "rate_text": "100,000 VNĐ/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 100000,
+          "currency": "VNĐ"
+        },
+        {
+          "rate_text": "50,000 VNĐ/tháng",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 50000,
+          "currency": "VNĐ"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Xe số phổ thông",
+        "Tiết kiệm nhiên liệu",
+        "Mới 100%"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "CMND/CCCD",
+        "GPLX",
+        "Sổ hộ khẩu gốc (hoặc đặt cọc nếu không có)"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "bikesaigon",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": null,
+      "brand": "Suzuki",
+      "model": "Smart",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Xe Số",
+      "description": "Xe số phổ thông, tiết kiệm nhiên liệu",
+      "rental_rates": [
+        {
+          "rate_text": "100,000 VNĐ/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 100000,
+          "currency": "VNĐ"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Xe số phổ thông",
+        "Tiết kiệm nhiên liệu",
+        "Mới 100%"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "CMND/CCCD",
+        "GPLX",
+        "Sổ hộ khẩu gốc (hoặc đặt cọc nếu không có)"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "bikesaigon",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": null,
+      "brand": "Yamaha",
+      "model": "Jupiter",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Xe Số",
+      "description": "Xe số phổ thông, tiết kiệm nhiên liệu",
+      "rental_rates": [
+        {
+          "rate_text": "100,000 VNĐ/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 100000,
+          "currency": "VNĐ"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Xe số phổ thông",
+        "Tiết kiệm nhiên liệu",
+        "Mới 100%"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "CMND/CCCD",
+        "GPLX",
+        "Sổ hộ khẩu gốc (hoặc đặt cọc nếu không có)"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "bikesaigon",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": null,
+      "brand": null,
+      "model": "Elagant 50cc",
+      "year": null,
+      "engine_capacity_cc": 50,
+      "category": "Xe Số",
+      "description": "Xe số 50cc, phù hợp cho người mới bắt đầu",
+      "rental_rates": [
+        {
+          "rate_text": "100,000 VNĐ/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 100000,
+          "currency": "VNĐ"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Xe số 50cc",
+        "Phù hợp người mới bắt đầu",
+        "Mới 100%"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "CMND/CCCD",
+        "GPLX",
+        "Sổ hộ khẩu gốc (hoặc đặt cọc nếu không có)"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "bikesaigon",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": null,
+      "brand": "Suzuki",
+      "model": "Viva Fi",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Xe Số",
+      "description": "Xe số phổ thông, tiết kiệm nhiên liệu",
+      "rental_rates": [
+        {
+          "rate_text": "120,000 VNĐ/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 120000,
+          "currency": "VNĐ"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Xe số phổ thông",
+        "Tiết kiệm nhiên liệu",
+        "Mới 100%"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "CMND/CCCD",
+        "GPLX",
+        "Sổ hộ khẩu gốc (hoặc đặt cọc nếu không có)"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "bikesaigon",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "Future",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Xe Số",
+      "description": "Xe số phổ thông, tiết kiệm nhiên liệu",
+      "rental_rates": [
+        {
+          "rate_text": "120,000 VNĐ/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 120000,
+          "currency": "VNĐ"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Xe số phổ thông",
+        "Tiết kiệm nhiên liệu",
+        "Mới 100%"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "CMND/CCCD",
+        "GPLX",
+        "Sổ hộ khẩu gốc (hoặc đặt cọc nếu không có)"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "bikesaigon",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": null,
+      "brand": "Yamaha",
+      "model": "Sirius Fi",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Xe Số",
+      "description": "Xe số phổ thông, tiết kiệm nhiên liệu",
+      "rental_rates": [
+        {
+          "rate_text": "120,000 VNĐ/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 120000,
+          "currency": "VNĐ"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Xe số phổ thông",
+        "Tiết kiệm nhiên liệu",
+        "Mới 100%"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "CMND/CCCD",
+        "GPLX",
+        "Sổ hộ khẩu gốc (hoặc đặt cọc nếu không có)"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "bikesaigon",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": null,
+      "brand": "SYM",
+      "model": "Attila Elizabeth",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Xe Số",
+      "description": "Xe số phổ thông, tiết kiệm nhiên liệu",
+      "rental_rates": [
+        {
+          "rate_text": "120,000 VNĐ/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 120000,
+          "currency": "VNĐ"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Xe số phổ thông",
+        "Tiết kiệm nhiên liệu",
+        "Mới 100%"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "CMND/CCCD",
+        "GPLX",
+        "Sổ hộ khẩu gốc (hoặc đặt cọc nếu không có)"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "bikesaigon",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": null,
+      "brand": "Yamaha",
+      "model": "Exciter tự động",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Xe Tay Ga",
+      "description": "Xe côn tay tự động, phù hợp cho di chuyển trong thành phố",
+      "rental_rates": [
+        {
+          "rate_text": "150,000 VNĐ/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 150000,
+          "currency": "VNĐ"
+        },
+        {
+          "rate_text": "90,000 VNĐ/tháng",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 90000,
+          "currency": "VNĐ"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Xe côn tay tự động",
+        "Phù hợp di chuyển trong thành phố",
+        "Mới 100%"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "CMND/CCCD",
+        "GPLX",
+        "Sổ hộ khẩu gốc (hoặc đặt cọc nếu không có)"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "bikesaigon",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": null,
+      "brand": "Yamaha",
+      "model": "Nouvo",
+      "year": null,
+      "engine_capacity_cc": 135,
+      "category": "Xe Tay Ga",
+      "description": "Xe tay ga phổ thông, tiết kiệm nhiên liệu",
+      "rental_rates": [
+        {
+          "rate_text": "150,000 VNĐ/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 150000,
+          "currency": "VNĐ"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Xe tay ga phổ thông",
+        "Tiết kiệm nhiên liệu",
+        "Mới 100%"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "CMND/CCCD",
+        "GPLX",
+        "Sổ hộ khẩu gốc (hoặc đặt cọc nếu không có)"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "bikesaigon",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "Vision",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Xe Tay Ga",
+      "description": "Xe tay ga phổ thông, tiết kiệm nhiên liệu",
+      "rental_rates": [
+        {
+          "rate_text": "150,000 VNĐ/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 150000,
+          "currency": "VNĐ"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Xe tay ga phổ thông",
+        "Tiết kiệm nhiên liệu",
+        "Mới 100%"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "CMND/CCCD",
+        "GPLX",
+        "Sổ hộ khẩu gốc (hoặc đặt cọc nếu không có)"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "bikesaigon",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "AirBlade",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Xe Tay Ga",
+      "description": "Xe tay ga phổ thông, tiết kiệm nhiên liệu",
+      "rental_rates": [
+        {
+          "rate_text": "150,000 VNĐ/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 150000,
+          "currency": "VNĐ"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Xe tay ga phổ thông",
+        "Tiết kiệm nhiên liệu",
+        "Mới 100%"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "CMND/CCCD",
+        "GPLX",
+        "Sổ hộ khẩu gốc (hoặc đặt cọc nếu không có)"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "bikesaigon",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "Lead",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Xe Tay Ga",
+      "description": "Xe tay ga phổ thông, tiết kiệm nhiên liệu",
+      "rental_rates": [
+        {
+          "rate_text": "150,000 VNĐ/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 150000,
+          "currency": "VNĐ"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Xe tay ga phổ thông",
+        "Tiết kiệm nhiên liệu",
+        "Mới 100%"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "CMND/CCCD",
+        "GPLX",
+        "Sổ hộ khẩu gốc (hoặc đặt cọc nếu không có)"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "bikesaigon",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "Scoopy 50cc",
+      "year": null,
+      "engine_capacity_cc": 50,
+      "category": "Xe Tay Ga",
+      "description": "Xe tay ga 50cc, phù hợp cho người mới bắt đầu",
+      "rental_rates": [
+        {
+          "rate_text": "150,000 VNĐ/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 150000,
+          "currency": "VNĐ"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Xe tay ga 50cc",
+        "Phù hợp người mới bắt đầu",
+        "Mới 100%"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "CMND/CCCD",
+        "GPLX",
+        "Sổ hộ khẩu gốc (hoặc đặt cọc nếu không có)"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "bikesaigon",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": null,
+      "brand": "Piaggio",
+      "model": "Vespa",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Xe Tay Ga",
+      "description": "Xe tay ga cao cấp, thiết kế sang trọng",
+      "rental_rates": [
+        {
+          "rate_text": "200,000 VNĐ/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 200000,
+          "currency": "VNĐ"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Xe tay ga cao cấp",
+        "Thiết kế sang trọng",
+        "Mới 100%"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "CMND/CCCD",
+        "GPLX",
+        "Sổ hộ khẩu gốc (hoặc đặt cọc nếu không có)"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "bikesaigon",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": null,
+      "brand": "Yamaha",
+      "model": "Exciter",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Xe Côn Tay",
+      "description": "Xe côn tay thể thao, phù hợp cho di chuyển đường dài",
+      "rental_rates": [
+        {
+          "rate_text": "250,000 VNĐ/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 250000,
+          "currency": "VNĐ"
+        },
+        {
+          "rate_text": "150,000 VNĐ/tháng",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 150000,
+          "currency": "VNĐ"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Xe côn tay thể thao",
+        "Phù hợp di chuyển đường dài",
+        "Mới 100%"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "CMND/CCCD",
+        "GPLX",
+        "Sổ hộ khẩu gốc (hoặc đặt cọc nếu không có)"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "bikesaigon",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "Winner",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Xe Côn Tay",
+      "description": "Xe côn tay thể thao, phù hợp cho di chuyển đường dài",
+      "rental_rates": [
+        {
+          "rate_text": "300,000 VNĐ/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 300000,
+          "currency": "VNĐ"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Xe côn tay thể thao",
+        "Phù hợp di chuyển đường dài",
+        "Mới 100%"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "CMND/CCCD",
+        "GPLX",
+        "Sổ hộ khẩu gốc (hoặc đặt cọc nếu không có)"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "bikesaigon",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "PCX",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Xe Tay Ga",
+      "description": "Xe tay ga cao cấp, thiết kế sang trọng",
+      "rental_rates": [
+        {
+          "rate_text": "300,000 VNĐ/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 300000,
+          "currency": "VNĐ"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Xe tay ga cao cấp",
+        "Thiết kế sang trọng",
+        "Mới 100%"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "CMND/CCCD",
+        "GPLX",
+        "Sổ hộ khẩu gốc (hoặc đặt cọc nếu không có)"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "bikesaigon",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "Vario",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Xe Tay Ga",
+      "description": "Xe tay ga phổ thông, tiết kiệm nhiên liệu",
+      "rental_rates": [
+        {
+          "rate_text": "300,000 VNĐ/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 300000,
+          "currency": "VNĐ"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Xe tay ga phổ thông",
+        "Tiết kiệm nhiên liệu",
+        "Mới 100%"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "CMND/CCCD",
+        "GPLX",
+        "Sổ hộ khẩu gốc (hoặc đặt cọc nếu không có)"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "bikesaigon",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": null,
+      "brand": null,
+      "model": "Candy 50cc",
+      "year": null,
+      "engine_capacity_cc": 50,
+      "category": "Xe Tay Ga",
+      "description": "Xe tay ga 50cc, phù hợp cho người mới bắt đầu",
+      "rental_rates": [
+        {
+          "rate_text": "100,000 VNĐ/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 100000,
+          "currency": "VNĐ"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Xe tay ga 50cc",
+        "Phù hợp người mới bắt đầu",
+        "Mới 100%"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "CMND/CCCD",
+        "GPLX",
+        "Sổ hộ khẩu gốc (hoặc đặt cọc nếu không có)"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    }
+  ]
+}

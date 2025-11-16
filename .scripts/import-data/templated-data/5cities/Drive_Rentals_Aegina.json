@@ -1,0 +1,682 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T04:22:07.473Z",
+    "shop_identifier": "Drive Rentals Aegina",
+    "provider_name": "Drive Rentals Aegina",
+    "place_id": "ChIJfdcMbHfNoRQRbCfdtzGUB0Y",
+    "address": "Plateia Einegersias, Egina 180 10, Greece",
+    "city": "Athens",
+    "province": "Attica",
+    "country": "Greece",
+    "latitude": 37.7474224,
+    "longitude": 23.4265955,
+    "phone": "694 942 1411",
+    "website": "http://www.driverentals.gr/",
+    "google_maps_url": "https://maps.google.com/?cid=5046164848750962540",
+    "business_status": "OPERATIONAL",
+    "rating": 3.3,
+    "review_count": 259,
+    "rental_conditions": {
+      "pickup_delivery": "Παραλαβή ή παράδοση οχήματος σε οποιοδήποτε σημείο της Αίγινας",
+      "vehicle_cleaning": "Καθαρισμός Αυτοκινήτου",
+      "rental_contract": "Συμβόλαιο Ενοικίασης",
+      "family_cars": "Οικογενειακά Αυτοκίνητα",
+      "passenger_safety": "Ασφάλεια Επιβατών",
+      "technical_inspection": "Τεχνικός Έλεγχος",
+      "road_assistance": "Οδική Βοήθεια"
+    },
+    "rental_inclusions": [
+      "Κράνος",
+      "Ασφάλεια",
+      "Οδική Βοήθεια",
+      "Τεχνικός Έλεγχος",
+      "Ασφάλεια Επιβατών"
+    ],
+    "available_service_locations": [
+      "Αίγινα",
+      "Πέρδικα",
+      "Μαραθώνα",
+      "Σουβάλα",
+      "Αγίους",
+      "Μεσαγρός",
+      "Αγ. Μαρίνα",
+      "Βαγία",
+      "Αιγινήτισσα"
+    ],
+    "offered_tours": [
+      {
+        "name": "Scooter Tours",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": "from 24,19 EUR / day",
+        "currency": "EUR"
+      },
+      {
+        "name": "ATV Tours",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": "from 48,50 EUR / day",
+        "currency": "EUR"
+      },
+      {
+        "name": "Jeep Tours",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": "from 40,32 EUR / day",
+        "currency": "EUR"
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "drive-rentals-aegina",
+      "scrape_timestamp": "2025-11-13T04:22:08.911Z",
+      "source_url": "http://www.driverentals.gr/cars/kimco-agility-125-cc/",
+      "brand": "Kimco",
+      "model": "Agility 125 cc",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": "Scooter with ABS, Helmet, Storage Box, and Third Party Insurance",
+      "rental_rates": [
+        {
+          "rate_text": "24,19 EUR / day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 24.19,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "http://www.driverentals.gr/wp-content/uploads/car-rental-gallery/1485422530_kimco-125.jpg"
+      ],
+      "features": [
+        "ABS",
+        "Helmet",
+        "Storage Box",
+        "Third Party Insurance"
+      ],
+      "specifications_raw": {
+        "Fuel": "Petrol",
+        "Class": "Scooter",
+        "Gearbox": "Automatic",
+        "Max passengers": 2
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "drive-rentals-aegina",
+      "scrape_timestamp": "2025-11-13T04:22:08.911Z",
+      "source_url": "http://www.driverentals.gr/cars/sym-symphony-50cc-model-2024/",
+      "brand": "Sym",
+      "model": "Symphony 50cc - Model 2024",
+      "year": 2024,
+      "engine_capacity_cc": 50,
+      "category": "Scooter",
+      "description": "Scooter with Helmet, Storage Box, and Third Party Insurance",
+      "rental_rates": [
+        {
+          "rate_text": "24,20 EUR / day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 24.2,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "http://www.driverentals.gr/wp-content/uploads/car-rental-gallery/1744094455_sym-50-2024-a.jpg"
+      ],
+      "features": [
+        "Helmet",
+        "Storage Box",
+        "Third Party Insurance"
+      ],
+      "specifications_raw": {
+        "Fuel": "Petrol",
+        "Class": "Scooter",
+        "Gearbox": "Automatic",
+        "Max passengers": 2
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "drive-rentals-aegina",
+      "scrape_timestamp": "2025-11-13T04:22:08.911Z",
+      "source_url": "http://www.driverentals.gr/cars/kimco-agility-125cc-model-2024/",
+      "brand": "Kimco",
+      "model": "Agility 125cc - Model 2024",
+      "year": 2024,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": "Scooter with ABS, Helmet, Storage Box, and Third Party Insurance",
+      "rental_rates": [
+        {
+          "rate_text": "24,30 EUR / day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 24.3,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "http://www.driverentals.gr/wp-content/uploads/car-rental-gallery/1744040703_kimco-Agility-125-2024.jpg"
+      ],
+      "features": [
+        "ABS",
+        "Helmet",
+        "Storage Box",
+        "Third Party Insurance"
+      ],
+      "specifications_raw": {
+        "Fuel": "Petrol",
+        "Class": "Scooter",
+        "Gearbox": "Automatic",
+        "Max passengers": 2
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "drive-rentals-aegina",
+      "scrape_timestamp": "2025-11-13T04:22:08.911Z",
+      "source_url": "http://www.driverentals.gr/cars/piaggio-liberty-125/",
+      "brand": "Piaggio",
+      "model": "Liberty 125",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": "Scooter with Helmet and Third Party Insurance",
+      "rental_rates": [
+        {
+          "rate_text": "24,50 EUR / day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 24.5,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "http://www.driverentals.gr/wp-content/uploads/car-rental-gallery/1714316975_piaggio-liberty-125-a.jpg"
+      ],
+      "features": [
+        "Helmet",
+        "Third Party Insurance"
+      ],
+      "specifications_raw": {
+        "Fuel": "Petrol",
+        "Class": "Scooter",
+        "Gearbox": "Automatic",
+        "Max passengers": 2
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "drive-rentals-aegina",
+      "scrape_timestamp": "2025-11-13T04:22:08.911Z",
+      "source_url": "http://www.driverentals.gr/cars/sym-symphony-50cc/",
+      "brand": "Sym",
+      "model": "Symphony 50cc",
+      "year": null,
+      "engine_capacity_cc": 50,
+      "category": "Scooter",
+      "description": "Scooter with Helmet and Third Party Insurance",
+      "rental_rates": [
+        {
+          "rate_text": "25,00 EUR / day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 25,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "http://www.driverentals.gr/wp-content/uploads/car-rental-gallery/1714293445_sym-symphony-50-sm.jpg"
+      ],
+      "features": [
+        "Helmet",
+        "Third Party Insurance"
+      ],
+      "specifications_raw": {
+        "Fuel": "Petrol",
+        "Class": "Scooter",
+        "Gearbox": "Automatic",
+        "Max passengers": 2
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "drive-rentals-aegina",
+      "scrape_timestamp": "2025-11-13T04:22:08.911Z",
+      "source_url": "http://www.driverentals.gr/cars/okai-bikes-electric-bike/",
+      "brand": "Okai",
+      "model": "Electric Bike",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Electric Bike",
+      "description": "Electric bike with Helmet and Third Party Insurance",
+      "rental_rates": [
+        {
+          "rate_text": "20,20 EUR / day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 20.2,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "http://www.driverentals.gr/wp-content/uploads/car-rental-gallery/1744274136_electric-bike-okai-1.jpg"
+      ],
+      "features": [
+        "Helmet",
+        "Third Party Insurance"
+      ],
+      "specifications_raw": {
+        "Fuel": "Battery Power",
+        "Class": "Electric Bike",
+        "Gearbox": "Automatic",
+        "Max passengers": 1
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "drive-rentals-aegina",
+      "scrape_timestamp": "2025-11-13T04:22:08.911Z",
+      "source_url": "http://www.driverentals.gr/cars/emw-city-mountain-fat-tyres/",
+      "brand": "EMW",
+      "model": "City Mountain Fat Tyres",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Electric Bike",
+      "description": "Electric bike",
+      "rental_rates": [
+        {
+          "rate_text": "20,50 EUR / day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 20.5,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "http://www.driverentals.gr/wp-content/uploads/car-rental-gallery/1652167016_emw-mountain-sm-1.jpg"
+      ],
+      "features": [],
+      "specifications_raw": {
+        "Fuel": "Battery Power",
+        "Class": "Electric Bike",
+        "Gearbox": "Automatic",
+        "Max passengers": 1
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "drive-rentals-aegina",
+      "scrape_timestamp": "2025-11-13T04:22:08.911Z",
+      "source_url": "http://www.driverentals.gr/cars/emw-city-bike-fat-tyres/",
+      "brand": "EMW",
+      "model": "City Bike Fat Tyres",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Electric Bike",
+      "description": "Electric bike",
+      "rental_rates": [
+        {
+          "rate_text": "20,50 EUR / day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 20.5,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "http://www.driverentals.gr/wp-content/uploads/car-rental-gallery/1652166864_emw-city-sm-1.jpg"
+      ],
+      "features": [],
+      "specifications_raw": {
+        "Fuel": "Battery Power",
+        "Class": "Electric Bike",
+        "Gearbox": "Automatic",
+        "Max passengers": 1
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "drive-rentals-aegina",
+      "scrape_timestamp": "2025-11-13T04:22:08.911Z",
+      "source_url": "http://www.driverentals.gr/cars/bike-aluminium-clermont-simple-mountain/",
+      "brand": null,
+      "model": "Clermont Simple Mountain",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Bike",
+      "description": "Aluminium mountain bike",
+      "rental_rates": [
+        {
+          "rate_text": "8,20 EUR / day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 8.2,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "http://www.driverentals.gr/wp-content/uploads/car-rental-gallery/1744701126_clermont-bike-1.jpg"
+      ],
+      "features": [],
+      "specifications_raw": {
+        "Class": "Bike",
+        "Gearbox": "Manual"
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "drive-rentals-aegina",
+      "scrape_timestamp": "2025-11-13T04:22:08.911Z",
+      "source_url": "http://www.driverentals.gr/cars/bike-aluminium-ballistic/",
+      "brand": null,
+      "model": "Mountain Ballistic",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Bike",
+      "description": "Aluminium mountain bike",
+      "rental_rates": [
+        {
+          "rate_text": "16,15 EUR / day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 16.15,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "http://www.driverentals.gr/wp-content/uploads/car-rental-gallery/1744618420_balistic-bike-1.jpg"
+      ],
+      "features": [],
+      "specifications_raw": {
+        "Class": "Bike",
+        "Gearbox": "Manual"
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "drive-rentals-aegina",
+      "scrape_timestamp": "2025-11-13T04:22:08.911Z",
+      "source_url": "http://www.driverentals.gr/cars/kimco-mxu-150cc/",
+      "brand": "Kimco",
+      "model": "MXU 150CC",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "ATV",
+      "description": "ATV with Helmet, Storage Box, and Third Party Insurance",
+      "rental_rates": [
+        {
+          "rate_text": "48,50 EUR / day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 48.5,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "http://www.driverentals.gr/wp-content/uploads/car-rental-gallery/1485423276_kymco-atv-170cc.jpg"
+      ],
+      "features": [
+        "Helmet",
+        "Storage Box",
+        "Third Party Insurance"
+      ],
+      "specifications_raw": {
+        "Fuel": "Petrol",
+        "Class": "ATV",
+        "Gearbox": "Automatic",
+        "Max passengers": 2
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "drive-rentals-aegina",
+      "scrape_timestamp": "2025-11-13T04:22:08.911Z",
+      "source_url": "http://www.driverentals.gr/cars/kimco-mx-170-cc/",
+      "brand": "Kimco",
+      "model": "MX 170 cc",
+      "year": null,
+      "engine_capacity_cc": 170,
+      "category": "ATV",
+      "description": "ATV with ABS, Helmet, Storage Box, and Third Party Insurance",
+      "rental_rates": [
+        {
+          "rate_text": "48,50 EUR / day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 48.5,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "http://www.driverentals.gr/wp-content/uploads/car-rental-gallery/1485423276_kymco-atv-170cc.jpg"
+      ],
+      "features": [
+        "ABS",
+        "Helmet",
+        "Storage Box",
+        "Third Party Insurance"
+      ],
+      "specifications_raw": {
+        "Fuel": "Petrol",
+        "Class": "ATV",
+        "Gearbox": "Automatic",
+        "Max passengers": 2
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "drive-rentals-aegina",
+      "scrape_timestamp": "2025-11-13T04:22:08.911Z",
+      "source_url": "http://www.driverentals.gr/cars/daytona-kayo-atv-300cc/",
+      "brand": "Daytona",
+      "model": "KAYO ATV 300cc",
+      "year": null,
+      "engine_capacity_cc": 300,
+      "category": "ATV",
+      "description": "ATV with Helmet, Storage Box, and Third Party Insurance",
+      "rental_rates": [
+        {
+          "rate_text": "64,60 EUR / day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 64.6,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "http://www.driverentals.gr/wp-content/uploads/car-rental-gallery/1744474029_KAYO-Daytona-300-Atv-1.jpg"
+      ],
+      "features": [
+        "Helmet",
+        "Storage Box",
+        "Third Party Insurance"
+      ],
+      "specifications_raw": {
+        "Fuel": "Petrol",
+        "Class": "ATV",
+        "Gearbox": "Automatic",
+        "Max passengers": 2
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "drive-rentals-aegina",
+      "scrape_timestamp": "2025-11-13T04:22:08.911Z",
+      "source_url": "http://www.driverentals.gr/cars/odes-tiger-150cc/",
+      "brand": "Odes",
+      "model": "Tiger 150cc",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Buggy",
+      "description": "Buggy with Third Party Insurance",
+      "rental_rates": [
+        {
+          "rate_text": "40,32 EUR / day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 40.32,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "http://www.driverentals.gr/wp-content/uploads/car-rental-gallery/1484911454_odes-tiger-sm.jpg"
+      ],
+      "features": [
+        "Third Party Insurance"
+      ],
+      "specifications_raw": {
+        "Fuel": "Petrol",
+        "Class": "Buggy",
+        "Gearbox": "Automatic",
+        "Max passengers": 2
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    }
+  ]
+}

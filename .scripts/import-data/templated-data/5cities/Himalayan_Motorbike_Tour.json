@@ -1,0 +1,158 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T03:47:19.806Z",
+    "shop_identifier": "Himalayan Motorbike Tour",
+    "provider_name": "Himalayan Motorbike Tour",
+    "place_id": "ChIJAQAAALMe6zkREZt_nxzlqCg",
+    "address": "Himalayan Motorbike Tour, 6 Khadka Bhadrakali Rd, Kathmandu 44600, Nepal",
+    "city": "Kathmandu",
+    "province": "Bagmati Province",
+    "country": "Nepal",
+    "latitude": 27.7612114,
+    "longitude": 85.3433431,
+    "phone": "985-1285888",
+    "website": "https://himalayanmotorbiketour.com/",
+    "google_maps_url": "https://maps.google.com/?cid=2929843468702292753",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 3,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [
+      "Nepal",
+      "Tibet",
+      "Bhutan",
+      "India"
+    ],
+    "offered_tours": [
+      {
+        "name": "9 Days Motorbike Adventure in Mustang",
+        "duration_text": "9 days",
+        "distance_km": null,
+        "price_text": "$3,500.00",
+        "currency": "USD"
+      },
+      {
+        "name": "Annapurna Circuit Motorbike Tour",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Guided Road Trip to Mustang",
+        "duration_text": "12 days",
+        "distance_km": null,
+        "price_text": "$3,180.00",
+        "currency": "USD"
+      },
+      {
+        "name": "Guided Motorbike Trip to Manang",
+        "duration_text": "10 days",
+        "distance_km": null,
+        "price_text": "$2,999.00",
+        "currency": "USD"
+      },
+      {
+        "name": "Motorbike Tour to Upper Mustang",
+        "duration_text": "12 days",
+        "distance_km": null,
+        "price_text": "$3,500.00",
+        "currency": "USD"
+      },
+      {
+        "name": "Guided Motorbike Tour to Rara Lake",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": "$2,400.00",
+        "currency": "USD"
+      },
+      {
+        "name": "Adventure Ride of Nomadic Lo-Manthang",
+        "duration_text": "12 days",
+        "distance_km": null,
+        "price_text": "$3,500.00",
+        "currency": "USD"
+      },
+      {
+        "name": "Road Riding to Everest in Nepal",
+        "duration_text": "12 days",
+        "distance_km": null,
+        "price_text": "$5,245.00",
+        "currency": "USD"
+      },
+      {
+        "name": "13 Days Overland Jeep 4×4 Tour to Mustang",
+        "duration_text": "13 days",
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "16 Days of Mount Kailash Motorbike Tours",
+        "duration_text": "16 days",
+        "distance_km": null,
+        "price_text": "$5,500.00",
+        "currency": "USD"
+      },
+      {
+        "name": "15 Days Kathmandu to Lhasa Overland Jeep Tour",
+        "duration_text": "15 days",
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Nepal & Tibet Motorcycle Tour",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Road Riding to Everest Motorbike Tour via Lhasa",
+        "duration_text": "15 days",
+        "distance_km": null,
+        "price_text": "$5,245.00",
+        "currency": "USD"
+      },
+      {
+        "name": "Manali Leh Motorbike Tour – India",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": "$3,600.00",
+        "currency": "USD"
+      },
+      {
+        "name": "Motorbike Ride to Bhutan",
+        "duration_text": "10 days",
+        "distance_km": null,
+        "price_text": "$3,795.00",
+        "currency": "USD"
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "himalayanmotorbiketour",
+      "scrape_timestamp": "2025-11-13T03:47:20.565Z",
+      "source_url": "https://himalayanmotorbiketour.com/tour/manali-leh-motorbike-tour/",
+      "brand": "Royal Enfield",
+      "model": null,
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Touring bikes",
+      "description": "Motorbike used for Manali Leh Motorbike Tour on Royal Enfield: A Journey of a Lifetime",
+      "rental_rates": [],
+      "images": [
+        "https://himalayanmotorbiketour.com/wp-content/uploads/2024/12/Manali-leh-Motorbike-ride-08-820x520.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    }
+  ]
+}

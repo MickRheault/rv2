@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T06:44:25.899Z",
+    "shop_identifier": "Lygnos, D., & Co E.E.",
+    "provider_name": "Lygnos, D., & Co E.E.",
+    "place_id": "ChIJvTJdZwy9oRQRBv6r8EOCjVA",
+    "address": "Karpou 24, Athina 116 31, Greece",
+    "city": "Athens",
+    "province": "Attica",
+    "country": "Greece",
+    "latitude": 37.9582172,
+    "longitude": 23.7360138,
+    "phone": "21 0901 8066",
+    "website": "https://www.wheelcity.gr/",
+    "google_maps_url": "https://maps.google.com/?cid=5804438723062660614",
+    "business_status": "OPERATIONAL",
+    "rating": 4.7,
+    "review_count": 527,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

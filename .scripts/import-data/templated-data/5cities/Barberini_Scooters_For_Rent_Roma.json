@@ -1,0 +1,370 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T11:20:37.797Z",
+    "shop_identifier": "Barberini Scooters For Rent Roma",
+    "provider_name": "Barberini Scooters For Rent Roma",
+    "place_id": "ChIJ25XQr6thLxMRbun9PdunKI4",
+    "address": "Via della Purificazione, 84, 00187 Roma RM, Italy",
+    "city": "Rome",
+    "province": "Lazio",
+    "country": "Italy",
+    "latitude": 41.9045532,
+    "longitude": 12.4875296,
+    "phone": "06 488 5485",
+    "website": "http://www.rentscooter.it/",
+    "google_maps_url": "https://maps.google.com/?cid=10243621912533920110",
+    "business_status": "OPERATIONAL",
+    "rating": 4.9,
+    "review_count": 160,
+    "rental_conditions": {
+      "driver_license_required": "Valid driver's license (European license for up to 125cc, international license for non-EU residents)",
+      "experience_required": "Good riding experience required",
+      "ztl_restrictions": "Motorcycles allowed in ZTL areas except during restricted hours for Tridente (A1) zone: 6:30-19:00 Mon-Fri",
+      "parking_rules": "Must use designated two-wheeler parking areas, no payment required for blue-striped parking zones",
+      "fuel_policy": "Must return with same fuel level as pickup",
+      "traffic_rules": "Prohibited from using bus/taxi lanes",
+      "security_deposit": "Required (credit card or cash), amount varies by model",
+      "operating_hours": "9:30 AM - 6:00 PM daily"
+    },
+    "rental_inclusions": [
+      "R.C.A. insurance",
+      "2 certified helmets",
+      "Chain and lock",
+      "Training on scooter mechanisms and accessories",
+      "Taxes",
+      "Full tank of petrol"
+    ],
+    "available_service_locations": [
+      "Rome historical center",
+      "All Rome areas (with ZTL restrictions)",
+      "Outside city limits"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "rentscooter.it",
+      "scrape_timestamp": "2025-11-13T11:20:38.637Z",
+      "source_url": "https://www.rentscooter.it/i-nostri-scooter/",
+      "brand": "Piaggio",
+      "model": "Liberty",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": "Urban scooter with automatic transmission",
+      "rental_rates": [
+        {
+          "rate_text": "€50 – 1 Day",
+          "min_days": 1,
+          "max_days": 1,
+          "rate_per_day": 50,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "€250 – 1 Week",
+          "min_days": 7,
+          "max_days": 7,
+          "rate_per_day": 35.71,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.rentscooter.it/wp-content/uploads/2024/03/nclq8znu15-01-s.png.webp"
+      ],
+      "features": [
+        "Automatic transmission",
+        "Petrol",
+        "Passenger capacity: 1/2"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid driver's license",
+        "Passport or ID",
+        "Credit card for security deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "R.C.A. insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Basic liability insurance included"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rentscooter.it",
+      "scrape_timestamp": "2025-11-13T11:20:38.637Z",
+      "source_url": "https://www.rentscooter.it/i-nostri-scooter/",
+      "brand": "Vespa",
+      "model": "Sprint",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": "Urban scooter with automatic transmission",
+      "rental_rates": [
+        {
+          "rate_text": "€70 – 1 Day",
+          "min_days": 1,
+          "max_days": 1,
+          "rate_per_day": 70,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "€350 – 1 Week",
+          "min_days": 7,
+          "max_days": 7,
+          "rate_per_day": 50,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.rentscooter.it/wp-content/uploads/2024/03/nvf5r7cu01-01-m.png.webp"
+      ],
+      "features": [
+        "Automatic transmission",
+        "Petrol",
+        "Passenger capacity: 1/2"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid driver's license",
+        "Passport or ID",
+        "Credit card for security deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "R.C.A. insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Basic liability insurance included"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rentscooter.it",
+      "scrape_timestamp": "2025-11-13T11:20:38.637Z",
+      "source_url": "https://www.rentscooter.it/i-nostri-scooter/",
+      "brand": "Piaggio",
+      "model": "Primavera",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": "Urban scooter with automatic transmission",
+      "rental_rates": [
+        {
+          "rate_text": "€70 – 1 Day",
+          "min_days": 1,
+          "max_days": 1,
+          "rate_per_day": 70,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "€350 – 1 Week",
+          "min_days": 7,
+          "max_days": 7,
+          "rate_per_day": 50,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.rentscooter.it/wp-content/uploads/2024/03/nvf2brlu01-01-m.png.webp"
+      ],
+      "features": [
+        "Automatic transmission",
+        "Petrol",
+        "Passenger capacity: 1/2"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid driver's license",
+        "Passport or ID",
+        "Credit card for security deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "R.C.A. insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Basic liability insurance included"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rentscooter.it",
+      "scrape_timestamp": "2025-11-13T11:20:38.637Z",
+      "source_url": "https://www.rentscooter.it/i-nostri-scooter/",
+      "brand": "Vespa",
+      "model": "GTS Super",
+      "year": null,
+      "engine_capacity_cc": 300,
+      "category": "Scooter",
+      "description": "Premium scooter with automatic transmission",
+      "rental_rates": [
+        {
+          "rate_text": "€80 – 1 Day",
+          "min_days": 1,
+          "max_days": 1,
+          "rate_per_day": 80,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "€400 – 1 Week",
+          "min_days": 7,
+          "max_days": 7,
+          "rate_per_day": 57.14,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.rentscooter.it/wp-content/uploads/2024/03/nvh2r7uu04-01-m.png.webp"
+      ],
+      "features": [
+        "Automatic transmission",
+        "Petrol",
+        "Passenger capacity: 1/2"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid driver's license (motorcycle license required for >125cc)",
+        "Passport or ID",
+        "Credit card for security deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "R.C.A. insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Basic liability insurance included"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rentscooter.it",
+      "scrape_timestamp": "2025-11-13T11:20:38.637Z",
+      "source_url": "https://www.rentscooter.it/i-nostri-scooter/",
+      "brand": "Honda",
+      "model": "Vision",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Scooter",
+      "description": "Urban scooter with automatic transmission",
+      "rental_rates": [
+        {
+          "rate_text": "€50 – 1 Day",
+          "min_days": 1,
+          "max_days": 1,
+          "rate_per_day": 50,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "€250 – 1 Week",
+          "min_days": 7,
+          "max_days": 7,
+          "rate_per_day": 35.71,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.rentscooter.it/wp-content/uploads/2024/03/honda-vision-110-2017-01.jpeg-scaled.webp"
+      ],
+      "features": [
+        "Automatic transmission",
+        "Petrol",
+        "Passenger capacity: 1/2"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid driver's license",
+        "Passport or ID",
+        "Credit card for security deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "R.C.A. insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Basic liability insurance included"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rentscooter.it",
+      "scrape_timestamp": "2025-11-13T11:20:38.637Z",
+      "source_url": "https://www.rentscooter.it/i-nostri-scooter/",
+      "brand": "Piaggio",
+      "model": "Medley S",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": "Urban scooter with automatic transmission",
+      "rental_rates": [
+        {
+          "rate_text": "€60 – 1 Day",
+          "min_days": 1,
+          "max_days": 1,
+          "rate_per_day": 60,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "€300 – 1 Week",
+          "min_days": 7,
+          "max_days": 7,
+          "rate_per_day": 42.86,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.rentscooter.it/wp-content/uploads/2024/03/ncq1brru31-01-s.png.webp"
+      ],
+      "features": [
+        "Automatic transmission",
+        "Petrol",
+        "Passenger capacity: 1/2"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid driver's license",
+        "Passport or ID",
+        "Credit card for security deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "R.C.A. insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Basic liability insurance included"
+        }
+      ],
+      "availability_status": null
+    }
+  ]
+}

@@ -1,0 +1,232 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T09:17:55.103Z",
+    "shop_identifier": "Juan Drake Motorbikes - Rental & Sale",
+    "provider_name": "Juan Drake Motorbikes - Rental & Sale",
+    "place_id": "ChIJq76kQAAvdTERc3snH8CeXkk",
+    "address": "64/63 Nguyễn Khoái, Phường 2, Quận 4, Thành phố Hồ Chí Minh, Vietnam",
+    "city": "Ho Chi Minh City",
+    "province": "Ho Chi Minh City",
+    "country": "Vietnam",
+    "latitude": 10.75566,
+    "longitude": 106.6960661,
+    "phone": "0383 533 725",
+    "website": "https://juandrakemotorbikes.com/",
+    "google_maps_url": "https://maps.google.com/?cid=5286837560573131635",
+    "business_status": "OPERATIONAL",
+    "rating": 4.8,
+    "review_count": 65,
+    "rental_conditions": {
+      "one_way_rental": "Yes, with shipping fees (e.g., $50 to Hanoi for a bike)",
+      "extension_allowed": true,
+      "extension_pricing_discounted": false,
+      "early_return_refund": false,
+      "maintenance_required": true,
+      "maintenance_interval_km": 600,
+      "warranty_engine": true,
+      "warranty_tires": false,
+      "insurance_available": false,
+      "crash_policy": "Pay for damages from deposit, if deposit insufficient then pay the rest",
+      "stolen_policy": "Pay market price",
+      "blue_card_provided": false
+    },
+    "rental_inclusions": [
+      "Custom luggage racks",
+      "Free pick-up or delivery at your hotel in Saigon",
+      "Engine warranty"
+    ],
+    "available_service_locations": [
+      "Ho Chi Minh City",
+      "Hanoi"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "juandrakemotorbikes",
+      "scrape_timestamp": "2025-11-13T09:17:55.754Z",
+      "source_url": "https://juandrakemotorbikes.com/honda-blade-110cc-20162",
+      "brand": "Honda",
+      "model": "Blade",
+      "year": 2016,
+      "engine_capacity_cc": 110,
+      "category": "Manual",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://cdn.zyrosite.com/cdn-cgi/image/format=auto,w=375,h=211,fit=crop,q=100/cdn-ecommerce/store_01JEAFE4YTF7CHVNPWWV8NC05Y/assets/9a2cf2b3-2615-462b-ac97-e9a286f5ec3f.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Liability",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "No insurance available for foreign renters in Vietnam"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "juandrakemotorbikes",
+      "scrape_timestamp": "2025-11-13T09:17:55.754Z",
+      "source_url": "https://juandrakemotorbikes.com/yamaha-nouvo-5-fi-125cc",
+      "brand": "Yamaha",
+      "model": "Nouvo 5 FI",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Automatic",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://cdn.zyrosite.com/cdn-cgi/image/format=auto,w=375,h=211,fit=crop,q=100/cdn-ecommerce/store_01JEAFE4YTF7CHVNPWWV8NC05Y/assets/c3590a18-ba8b-4ce3-b3a5-88b423a5f60d.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Liability",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "No insurance available for foreign renters in Vietnam"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "juandrakemotorbikes",
+      "scrape_timestamp": "2025-11-13T09:17:55.754Z",
+      "source_url": "https://juandrakemotorbikes.com/sym-shark-125cc-2012",
+      "brand": "Sym",
+      "model": "Shark",
+      "year": 2012,
+      "engine_capacity_cc": 125,
+      "category": "Automatic",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://cdn.zyrosite.com/cdn-cgi/image/format=auto,w=375,h=211,fit=crop,q=100/cdn-ecommerce/store_01JEAFE4YTF7CHVNPWWV8NC05Y/assets/19e5c0ef-e556-44b6-87cd-4c005b0c7ae3.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Liability",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "No insurance available for foreign renters in Vietnam"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "juandrakemotorbikes",
+      "scrape_timestamp": "2025-11-13T09:17:55.754Z",
+      "source_url": "https://juandrakemotorbikes.com/honda-xr-150cc",
+      "brand": "Honda",
+      "model": "XR",
+      "year": 2019,
+      "engine_capacity_cc": 150,
+      "category": "Manual",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://cdn.zyrosite.com/cdn-cgi/image/format=auto,w=375,h=211,fit=crop,q=100/cdn-ecommerce/store_01JEAFE4YTF7CHVNPWWV8NC05Y%2Fassets%2F1733741685114-Motobike6.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Liability",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "No insurance available for foreign renters in Vietnam"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "juandrakemotorbikes",
+      "scrape_timestamp": "2025-11-13T09:17:55.754Z",
+      "source_url": "https://juandrakemotorbikes.com/yamaha-fz150i-150cc-2016",
+      "brand": "Yamaha",
+      "model": "fz150i",
+      "year": 2016,
+      "engine_capacity_cc": 150,
+      "category": "Manual",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://cdn.zyrosite.com/cdn-cgi/image/format=auto,w=375,h=211,fit=crop,q=100/cdn-ecommerce/store_01JEAFE4YTF7CHVNPWWV8NC05Y/assets/81217f91-7066-4bc3-a45f-53307fa6cc5a.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Liability",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "No insurance available for foreign renters in Vietnam"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "juandrakemotorbikes",
+      "scrape_timestamp": "2025-11-13T09:17:55.754Z",
+      "source_url": "https://juandrakemotorbikes.com/honda-wave-rsx-110cc1",
+      "brand": "Honda",
+      "model": "PCX",
+      "year": 2012,
+      "engine_capacity_cc": 125,
+      "category": "Automatic",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://cdn.zyrosite.com/cdn-cgi/image/format=auto,w=375,h=211,fit=crop,q=100/cdn-ecommerce/store_01JEAFE4YTF7CHVNPWWV8NC05Y%2Fassets%2F1738728225444-1000016964.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Liability",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "No insurance available for foreign renters in Vietnam"
+        }
+      ],
+      "availability_status": null
+    }
+  ]
+}

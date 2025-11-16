@@ -1,0 +1,252 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-10-20T17:01:52.402Z",
+    "shop_identifier": "Vespa Soul Barcelona Consell de Cent",
+    "provider_name": "Vespa Soul Barcelona Consell de Cent",
+    "place_id": "ChIJ5aahwUOjpBIRiXs2Tt0MT74",
+    "address": "Carrer del Consell de Cent, 225, L'Eixample, 08011 Barcelona, Spain",
+    "city": "Barcelona",
+    "province": "Barcelona",
+    "country": "Spain",
+    "latitude": 41.38555119999999,
+    "longitude": 2.1580133,
+    "phone": "935 01 94 85",
+    "website": "https://www.vespasoul.com/",
+    "google_maps_url": "https://maps.google.com/?cid=13713193535005948809",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 43,
+    "rental_conditions": {
+      "minimum_age": 21,
+      "required_license_type": "Valid driving license according to Spanish law",
+      "delivery_fee": 35,
+      "maximum_distance_50cc": 25,
+      "maximum_distance_125cc": 60,
+      "maximum_distance_300cc": 150,
+      "maximum_distance_400cc": 180,
+      "cancellation_policy_more_than_48h": "10% fee",
+      "cancellation_policy_less_than_48h": "Voucher with 1 year validity",
+      "no_show_policy": "No refund",
+      "fuel_policy": "Must return with same fuel level as received",
+      "late_return_fee": 50,
+      "security_deposit": 300,
+      "required_documents": "Valid driving license",
+      "experience_requirement": "Sufficient experience riding two-wheeled vehicles"
+    },
+    "rental_inclusions": [
+      "one or two Helmets",
+      "Insurance",
+      "Lock",
+      "unlimited km",
+      "taxes"
+    ],
+    "available_service_locations": [
+      "Barcelona"
+    ],
+    "offered_tours": [
+      {
+        "name": "Vespa Tours with GPS",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "vespa-soul-barcelona",
+      "scrape_timestamp": "2025-10-20T17:01:53.773Z",
+      "source_url": "https://www.vespasoul.com/barcelona/de/preise-motorradvermietung-in-barcelona/",
+      "brand": "Vespa",
+      "model": "Primavera",
+      "year": null,
+      "engine_capacity_cc": 50,
+      "category": "Scooter",
+      "description": "Vespa scooter with classic Italian design, perfect for navigating Barcelona's streets",
+      "rental_rates": [
+        {
+          "rate_text": "9€ / Stunde",
+          "min_days": 0,
+          "max_days": 0.0417,
+          "rate_per_day": 216,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "42 € (10-20)",
+          "min_days": 1,
+          "max_days": 1,
+          "rate_per_day": 42,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "52 €",
+          "min_days": 1,
+          "max_days": 1,
+          "rate_per_day": 52,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "88 €",
+          "min_days": 2,
+          "max_days": 2,
+          "rate_per_day": 44,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "123 €",
+          "min_days": 3,
+          "max_days": 3,
+          "rate_per_day": 41,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "259 €",
+          "min_days": 7,
+          "max_days": 7,
+          "rate_per_day": 37,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.vespasoul.com/barcelona/wp-content/uploads/2016/12/moto-rental-barcelona-piaggio-1.jpg",
+        "https://www.vespasoul.com/barcelona/wp-content/uploads/2016/11/image2.png",
+        "https://www.vespasoul.com/barcelona/wp-content/uploads/2016/03/image3.png",
+        "https://www.vespasoul.com/barcelona/wp-content/uploads/2016/11/image1.png",
+        "https://www.vespasoul.com/barcelona/wp-content/uploads/2016/03/image4.png"
+      ],
+      "features": [
+        "GPS with pre-recorded routes",
+        "Classic Italian design"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": {
+        "maximum_distance": 25,
+        "required_license": "Valid driving license according to Spanish law",
+        "security_deposit": 300,
+        "fuel_policy": "Must return with same fuel level as received"
+      },
+      "required_documents_raw": [
+        "Valid driving license"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Liability",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Mandatory insurance included in rental price"
+        },
+        {
+          "type_name": "Theft and Damage",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": 800,
+          "deductible_currency": "EUR",
+          "notes": "Optional insurance with 800€ deductible"
+        }
+      ],
+      "availability_status": "AVAILABLE"
+    },
+    {
+      "shop_identifier": "vespa-soul-barcelona",
+      "scrape_timestamp": "2025-10-20T17:01:53.773Z",
+      "source_url": "https://www.vespasoul.com/barcelona/de/preise-motorradvermietung-in-barcelona/",
+      "brand": "Vespa",
+      "model": "Primavera",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": "Vespa scooter with 125cc engine, perfect for exploring Barcelona with more power",
+      "rental_rates": [
+        {
+          "rate_text": "11€ / Stunde",
+          "min_days": 0,
+          "max_days": 0.0417,
+          "rate_per_day": 264,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "52 € (10-20)",
+          "min_days": 1,
+          "max_days": 1,
+          "rate_per_day": 52,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "59 €",
+          "min_days": 1,
+          "max_days": 1,
+          "rate_per_day": 59,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "105 €",
+          "min_days": 2,
+          "max_days": 2,
+          "rate_per_day": 52.5,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "141 €",
+          "min_days": 3,
+          "max_days": 3,
+          "rate_per_day": 47,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "287 €",
+          "min_days": 7,
+          "max_days": 7,
+          "rate_per_day": 41,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.vespasoul.com/barcelona/wp-content/uploads/2016/12/moto-rental-barcelona-piaggio-1.jpg",
+        "https://www.vespasoul.com/barcelona/wp-content/uploads/2016/11/image2.png",
+        "https://www.vespasoul.com/barcelona/wp-content/uploads/2016/03/image3.png",
+        "https://www.vespasoul.com/barcelona/wp-content/uploads/2016/11/image1.png",
+        "https://www.vespasoul.com/barcelona/wp-content/uploads/2016/03/image4.png"
+      ],
+      "features": [
+        "GPS with pre-recorded routes",
+        "Classic Italian design"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": {
+        "maximum_distance": 60,
+        "required_license": "Valid driving license according to Spanish law",
+        "security_deposit": 300,
+        "fuel_policy": "Must return with same fuel level as received"
+      },
+      "required_documents_raw": [
+        "Valid driving license"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Liability",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Mandatory insurance included in rental price"
+        },
+        {
+          "type_name": "Theft and Damage",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": 800,
+          "deductible_currency": "EUR",
+          "notes": "Optional insurance with 800€ deductible"
+        }
+      ],
+      "availability_status": "AVAILABLE"
+    }
+  ]
+}

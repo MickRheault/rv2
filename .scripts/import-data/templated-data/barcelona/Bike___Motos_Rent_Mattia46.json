@@ -1,0 +1,231 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-10-14T19:33:03.911Z",
+    "shop_identifier": "Bike & Motos Rent Mattia46",
+    "provider_name": "Bike & Motos Rent Mattia46",
+    "place_id": "ChIJn9CiinuipBIRGGhhyroeGxQ",
+    "address": "Gran Via de les Corts Catalanes, 392, L'Eixample, 08015 Barcelona, Spain",
+    "city": "Barcelona",
+    "province": "Barcelona",
+    "country": "Spain",
+    "latitude": 41.3760616,
+    "longitude": 2.1510376,
+    "phone": "933 02 85 21",
+    "website": "http://www.mattia46.com/",
+    "google_maps_url": "https://maps.google.com/?cid=1448785492737878040",
+    "business_status": "OPERATIONAL",
+    "rating": 4.5,
+    "review_count": 452,
+    "rental_conditions": {
+      "driving_license_required": true,
+      "driving_license_type": "car or motorcycle license valid for Spain",
+      "minimum_driving_experience_years": 3,
+      "minimum_age_50cc": 18,
+      "minimum_age_125cc": 18,
+      "deposit_required": true,
+      "deposit_amount": 200,
+      "deposit_currency": "EUR",
+      "operating_hours": "9:30 to 19:30",
+      "fuel_policy": "return with full tank or pay 10€ extra",
+      "late_return_policy": "charged for daily rental after 30 minutes",
+      "insurance_coverage": "third party",
+      "max_passengers": 2,
+      "geographical_coverage": "whole Spain territory"
+    },
+    "rental_inclusions": [
+      "lock",
+      "unlimited km",
+      "insurance"
+    ],
+    "available_service_locations": [
+      "Barcelona"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "mattia46",
+      "scrape_timestamp": "2025-10-08T00:12:26",
+      "source_url": "https://www.mattia46.com/en/scooter-rental-in-barcelona/",
+      "brand": null,
+      "model": "50cc scooter",
+      "year": null,
+      "engine_capacity_cc": 50,
+      "category": "Scooter",
+      "description": "Entry-level scooter for city transportation in Barcelona",
+      "rental_rates": [
+        {
+          "rate_text": "15 €",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 15,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.mattia46.com/wp-content/uploads/moto125-mattia46.png"
+      ],
+      "features": [
+        "suitable for city transportation",
+        "minimum age 18 years"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": "Driving license valid for Spain required. Deposit of 200€ cash or credit card. Return with full tank or pay 10€ extra.",
+      "required_documents_raw": [
+        "I.D. or passport",
+        "driving license valid for Spain",
+        "200€ deposit (cash or credit card)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third party",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "mattia46",
+      "scrape_timestamp": "2025-10-08T00:12:26",
+      "source_url": "https://www.mattia46.com/en/scooter-rental-in-barcelona/",
+      "brand": null,
+      "model": "125cc scooter",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": "Mid-size scooter for city transportation in Barcelona",
+      "rental_rates": [
+        {
+          "rate_text": null,
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.mattia46.com/wp-content/uploads/moto125-mattia46.png"
+      ],
+      "features": [
+        "suitable for city transportation",
+        "minimum age 18 years with 3+ years driving experience"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": "Driving license valid for Spain required (minimum 3 years). Deposit of 200€ cash or credit card. Return with full tank or pay 10€ extra.",
+      "required_documents_raw": [
+        "I.D. or passport",
+        "driving license valid for Spain (minimum 3 years)",
+        "200€ deposit (cash or credit card)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third party",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "mattia46",
+      "scrape_timestamp": "2025-10-08T00:12:26",
+      "source_url": "https://www.mattia46.com/en/scooter-rental-in-barcelona/",
+      "brand": null,
+      "model": "150cc scooter",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Scooter",
+      "description": "Larger scooter for city transportation in Barcelona",
+      "rental_rates": [
+        {
+          "rate_text": null,
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.mattia46.com/wp-content/uploads/moto150-mattia46.png"
+      ],
+      "features": [
+        "suitable for city transportation",
+        "minimum age 18 years with 3+ years driving experience"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": "Driving license valid for Spain required (minimum 3 years). Deposit of 200€ cash or credit card. Return with full tank or pay 10€ extra.",
+      "required_documents_raw": [
+        "I.D. or passport",
+        "driving license valid for Spain (minimum 3 years)",
+        "200€ deposit (cash or credit card)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third party",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "mattia46",
+      "scrape_timestamp": "2025-10-08T00:12:26",
+      "source_url": "https://www.mattia46.com/en/scooter-rental-in-barcelona/",
+      "brand": null,
+      "model": "200cc scooter",
+      "year": null,
+      "engine_capacity_cc": 200,
+      "category": "Scooter",
+      "description": "Largest scooter available for city transportation in Barcelona",
+      "rental_rates": [
+        {
+          "rate_text": null,
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.mattia46.com/wp-content/uploads/moto200-mattia46.png"
+      ],
+      "features": [
+        "suitable for city transportation",
+        "minimum age 18 years with 3+ years driving experience"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": "Driving license valid for Spain required (minimum 3 years). Deposit of 200€ cash or credit card. Return with full tank or pay 10€ extra.",
+      "required_documents_raw": [
+        "I.D. or passport",
+        "driving license valid for Spain (minimum 3 years)",
+        "200€ deposit (cash or credit card)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third party",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    }
+  ]
+}

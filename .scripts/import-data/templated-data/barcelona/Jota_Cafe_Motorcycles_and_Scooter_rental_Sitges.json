@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-10-14T18:07:16.475Z",
+    "shop_identifier": "Jota Cafe Motorcycles and Scooter rental Sitges",
+    "provider_name": "Jota Cafe Motorcycles and Scooter rental Sitges",
+    "place_id": "ChIJJ3Kf83GBoxIRs1-6InORcZ4",
+    "address": "Avinguda d'Artur Carbonell, 24, 08870 Sitges, Barcelona, Spain",
+    "city": "Barcelona",
+    "province": "Barcelona",
+    "country": "Spain",
+    "latitude": 41.2386133,
+    "longitude": 1.8090942,
+    "phone": "635 42 14 65",
+    "website": "https://www.jotacafe.com/",
+    "google_maps_url": "https://maps.google.com/?cid=11417066454050824115",
+    "business_status": "OPERATIONAL",
+    "rating": 3,
+    "review_count": 2,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

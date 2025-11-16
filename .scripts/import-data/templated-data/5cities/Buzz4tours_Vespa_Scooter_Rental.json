@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T12:18:25.807Z",
+    "shop_identifier": "Buzz4tours Vespa Scooter Rental",
+    "provider_name": "Buzz4tours Vespa Scooter Rental",
+    "place_id": "ChIJy2TMi11gLxMRTewUCFuf9Ho",
+    "address": "Vicolo d'Orfeo, 8, 00193 Roma RM, Italy",
+    "city": "Rome",
+    "province": "Lazio",
+    "country": "Italy",
+    "latitude": 41.903496,
+    "longitude": 12.4609629,
+    "phone": "335 523 6173",
+    "website": "https://www.buzz4tours.com/",
+    "google_maps_url": "https://maps.google.com/?cid=8859881580271037517",
+    "business_status": "OPERATIONAL",
+    "rating": 4.9,
+    "review_count": 374,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

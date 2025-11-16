@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T12:30:58.950Z",
+    "shop_identifier": "Corvisieri",
+    "provider_name": "Corvisieri",
+    "place_id": "ChIJI6ZDWgpiLxMRlOUvtsT6X58",
+    "address": "Viale Angelico, 251, 00195 Roma RM, Italy",
+    "city": "Rome",
+    "province": "Lazio",
+    "country": "Italy",
+    "latitude": 41.9215397,
+    "longitude": 12.4584894,
+    "phone": "06 3751 5477",
+    "website": "http://www.corvisieri.it/",
+    "google_maps_url": "https://maps.google.com/?cid=11484173297595180436",
+    "business_status": "OPERATIONAL",
+    "rating": 4.9,
+    "review_count": 179,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

@@ -1,0 +1,234 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T03:41:50.672Z",
+    "shop_identifier": "Nepal Motorbike Tour",
+    "provider_name": "Nepal Motorbike Tour",
+    "place_id": "ChIJdYiV4pkZ6zkRg5z9M3UzM8k",
+    "address": "Thamel Marg, Kathmandu 44600, Nepal",
+    "city": "Kathmandu",
+    "province": "Bagmati Province",
+    "country": "Nepal",
+    "latitude": 27.7138139,
+    "longitude": 85.31132819999999,
+    "phone": "985-1235837",
+    "website": "http://www.nepalmotorcycletour.com/",
+    "google_maps_url": "https://maps.google.com/?cid=14497988203912207491",
+    "business_status": "OPERATIONAL",
+    "rating": 4.7,
+    "review_count": 28,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [
+      "Kathmandu",
+      "Pokhara",
+      "Chitwan"
+    ],
+    "offered_tours": [
+      {
+        "name": "Nepal Motorbike Tour",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Upper Mustang Motorbike Tour",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Rara Lake Motorbike Tour- 10 days",
+        "duration_text": "10 days",
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Kathmandu Pokhara and Chitwan motorcycle tour- 7 days ",
+        "duration_text": "7 days",
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Nepal Motorcycle Tour – 7 days",
+        "duration_text": "7 days",
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Motorbike Tour in Nepal",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Royal Enfield Motorcycle Tour in Nepal",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Motorcycle Tour in Nepal",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "9 Days Best of Nepal Motorcycle Tour",
+        "duration_text": "9 days",
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Tibet Motorbike Tour ",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Pillion ride in Nepal",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "nepalmotorcycletour",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": "http://www.nepalmotorcycletour.com/cross-x.html",
+      "brand": null,
+      "model": "Cross X",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": null,
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "http://www.nepalmotorcycletour.com/pagegallery/thumb/cross-x38.png"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "nepalmotorcycletour",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": "http://www.nepalmotorcycletour.com/ktm-adventure.html",
+      "brand": "KTM",
+      "model": "Adventure 250",
+      "year": null,
+      "engine_capacity_cc": 250,
+      "category": null,
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "http://www.nepalmotorcycletour.com/pagegallery/thumb/bajaj-pulsar81.png"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "nepalmotorcycletour",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": "http://www.nepalmotorcycletour.com/cross-fire.html",
+      "brand": null,
+      "model": "Cross Fire",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": null,
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "http://www.nepalmotorcycletour.com/pagegallery/thumb/cross-fire37.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "nepalmotorcycletour",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": "http://www.nepalmotorcycletour.com/honda-crf.html",
+      "brand": "Honda",
+      "model": "CRF",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": null,
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "http://www.nepalmotorcycletour.com/pagegallery/thumb/honda-crf36.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "nepalmotorcycletour",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": "http://www.nepalmotorcycletour.com/royal-enfield-classic.html",
+      "brand": "Royal Enfield",
+      "model": "Classic 350",
+      "year": null,
+      "engine_capacity_cc": 350,
+      "category": null,
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "http://www.nepalmotorcycletour.com/pagegallery/thumb/royal-enfield-classic55.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "nepalmotorcycletour",
+      "scrape_timestamp": "2025-11-08T16:22:28",
+      "source_url": "http://www.nepalmotorcycletour.com/royal-en-field-himalayan.html",
+      "brand": "Royal Enfield",
+      "model": "Himalayan",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": null,
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "http://www.nepalmotorcycletour.com/pagegallery/thumb/royal-en-field-himalaya91.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    }
+  ]
+}

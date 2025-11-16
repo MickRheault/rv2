@@ -1,0 +1,386 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T13:27:32.653Z",
+    "shop_identifier": "On Movo",
+    "provider_name": "On Movo",
+    "place_id": "ChIJHSFIQJdhLxMRqgQwwp2BARo",
+    "address": "Via Giovanni Giolitti, 389, 00185 Roma RM, Italy",
+    "city": "Rome",
+    "province": "Lazio",
+    "country": "Italy",
+    "latitude": 41.893951,
+    "longitude": 12.5111918,
+    "phone": "800 082 223",
+    "website": "https://www.onmovo.com/it/noleggio-roma/",
+    "google_maps_url": "https://maps.google.com/?cid=1873921434530612394",
+    "business_status": "CLOSED_TEMPORARILY",
+    "rating": 3.9,
+    "review_count": 7,
+    "rental_conditions": {
+      "min_age": null,
+      "license_requirements_under_125cc": "Patente di categoria B (per le vetture) oppure A",
+      "license_requirements_over_125cc": "Patente di guida per motoveicoli di categoria A",
+      "required_documents": "Carta di credito",
+      "min_experience": "Sconsigliato a chi non ha precedente esperienza di guida",
+      "child_transport_rules": "Divieto assoluto di trasportare bambini minori di 5 anni",
+      "speed_limits": null,
+      "mileage_limit_under_400cc": "Illimitato",
+      "mileage_limit_over_400cc": "200 Km al giorno",
+      "extra_km_cost": "€ 0.30",
+      "cancellation_policy": "Cancellazione senza penali entro 48 ore prima"
+    },
+    "rental_inclusions": [
+      "Assicurazione R.C",
+      "Lucchetto antifurto",
+      "Caschi e sottocaschi usa e getta",
+      "Copertura per danni, furto e incendio (per noleggi a lungo termine)",
+      "Spese amministrative",
+      "Manutenzione ordinaria",
+      "Assistenza stradale 7 giorni su 7"
+    ],
+    "available_service_locations": [
+      "Roma-Stazione Termini-Via Cavour",
+      "Roma-Corso Vittorio Emanuele II",
+      "Roma-Concierge Evolution",
+      "Roma-Stazione Ostiense",
+      "Roma-Stazione Tiburtina",
+      "Roma-Aeroporto Ciampino",
+      "Roma-Aeroporto Leonardo Da Vinci-Fiumicino",
+      "Roma-Ostia Lido",
+      "Nettuno-Anzio"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "onmovo",
+      "scrape_timestamp": "2025-11-13T13:27:33.333Z",
+      "source_url": "https://www.onmovo.com/en/lungo-termine-dettaglio-en/12/fiat/topolino-dolcevita/",
+      "brand": "Fiat",
+      "model": "Topolino Dolcevita",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Electric vehicle",
+      "description": "Electric vehicle for city mobility",
+      "rental_rates": [
+        {
+          "rate_text": "569 € Monthly - VAT included",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://admin.onmovo.com/immagini/cache/veicoli_piccola/68c947407e8b1_topolino%20dolcevita.png"
+      ],
+      "features": [
+        "Advance payment zero",
+        "All inclusive (documents, taxes, insurance)",
+        "Without advance payment"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Patente di categoria B",
+        "Carta di credito"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "RC Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Included in rental price"
+        },
+        {
+          "type_name": "Damage, Theft, and Fire Coverage",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Included in long-term rental"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "onmovo",
+      "scrape_timestamp": "2025-11-13T13:27:33.333Z",
+      "source_url": "https://www.onmovo.com/en/lungo-termine-dettaglio-en/11/kymko/xtown-300/",
+      "brand": "Kymko",
+      "model": "xTown 300",
+      "year": null,
+      "engine_capacity_cc": 300,
+      "category": "Scooter",
+      "description": "300cc scooter for city and longer rides",
+      "rental_rates": [
+        {
+          "rate_text": "712 € Monthly - VAT included",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://admin.onmovo.com/immagini/cache/veicoli_piccola/68c9437cc940f_Progetto%20senza%20titolo%20%2812%29.png"
+      ],
+      "features": [
+        "Advance payment zero",
+        "All inclusive (documents, taxes, insurance)",
+        "Without advance payment"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Patente di categoria A",
+        "Carta di credito"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "RC Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Included in rental price"
+        },
+        {
+          "type_name": "Damage, Theft, and Fire Coverage",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Included in long-term rental"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "onmovo",
+      "scrape_timestamp": "2025-11-13T13:27:33.333Z",
+      "source_url": "https://www.onmovo.com/en/lungo-termine-dettaglio-en/9/vespa/primavera-50/",
+      "brand": "Vespa",
+      "model": "Primavera 50",
+      "year": null,
+      "engine_capacity_cc": 50,
+      "category": "Scooter",
+      "description": "50cc scooter for city mobility",
+      "rental_rates": [
+        {
+          "rate_text": "461 € Monthly - VAT included",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://admin.onmovo.com/immagini/cache/veicoli_piccola/68c941a864a71_Senza%20titolo%20%28320%20x%20260%20px%29%20%281%29.png"
+      ],
+      "features": [
+        "Advance payment zero",
+        "All inclusive (documents, taxes, insurance)",
+        "Without advance payment"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Patente di categoria B o A",
+        "Carta di credito"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "RC Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Included in rental price"
+        },
+        {
+          "type_name": "Damage, Theft, and Fire Coverage",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Included in long-term rental"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "onmovo",
+      "scrape_timestamp": "2025-11-13T13:27:33.333Z",
+      "source_url": "https://www.onmovo.com/en/lungo-termine-dettaglio-en/10/vespa/gts-300/",
+      "brand": "Vespa",
+      "model": "Gts 300",
+      "year": null,
+      "engine_capacity_cc": 300,
+      "category": "Scooter",
+      "description": "300cc premium scooter",
+      "rental_rates": [
+        {
+          "rate_text": "712 € Monthly - VAT included",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://admin.onmovo.com/immagini/cache/veicoli_piccola/68c9423806ccf_Vespa-GTS-300.jpg"
+      ],
+      "features": [
+        "Advance payment zero",
+        "All inclusive (documents, taxes, insurance)",
+        "Without advance payment"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Patente di categoria A",
+        "Carta di credito"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "RC Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Included in rental price"
+        },
+        {
+          "type_name": "Damage, Theft, and Fire Coverage",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Included in long-term rental"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "onmovo",
+      "scrape_timestamp": "2025-11-13T13:27:33.333Z",
+      "source_url": "https://www.onmovo.com/en/lungo-termine-dettaglio-en/8/vespa/primavera-125/",
+      "brand": "Vespa",
+      "model": "Primavera 125",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": "125cc scooter for city mobility",
+      "rental_rates": [
+        {
+          "rate_text": "544 € Monthly - VAT included",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://admin.onmovo.com/immagini/cache/veicoli_piccola/68c93ed08a322_vespa-primavera-50.jpg"
+      ],
+      "features": [
+        "Advance payment zero",
+        "All inclusive (documents, taxes, insurance)",
+        "Without advance payment"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Patente di categoria A",
+        "Carta di credito"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "RC Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Included in rental price"
+        },
+        {
+          "type_name": "Damage, Theft, and Fire Coverage",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Included in long-term rental"
+        }
+      ],
+      "availability_status": "Available"
+    },
+    {
+      "shop_identifier": "onmovo",
+      "scrape_timestamp": "2025-11-13T13:27:33.333Z",
+      "source_url": "https://www.onmovo.com/en/lungo-termine-dettaglio-en/7/kymko/agility-125/",
+      "brand": "Kymko",
+      "model": "Agility 125",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": "125cc scooter for city mobility",
+      "rental_rates": [
+        {
+          "rate_text": "269 € Monthly - VAT included",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://admin.onmovo.com/immagini/cache/veicoli_piccola/68c93cfb76dd4_Kymko-Agility-R16-125.jpg"
+      ],
+      "features": [
+        "Advance payment zero",
+        "All inclusive (documents, taxes, insurance)",
+        "Without advance payment"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Patente di categoria A",
+        "Carta di credito"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "RC Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Included in rental price"
+        },
+        {
+          "type_name": "Damage, Theft, and Fire Coverage",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Included in long-term rental"
+        }
+      ],
+      "availability_status": "Available"
+    }
+  ]
+}

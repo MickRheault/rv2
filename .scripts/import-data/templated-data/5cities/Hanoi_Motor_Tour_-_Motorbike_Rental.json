@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T08:17:16.274Z",
+    "shop_identifier": "Hanoi Motor Tour - Motorbike Rental",
+    "provider_name": "Hanoi Motor Tour - Motorbike Rental",
+    "place_id": "ChIJj3CxFtCrNTERJvY3Q03EtZI",
+    "address": "48 P. Phan Bội Châu, Cửa Nam, Hoàn Kiếm, Hà Nội 000000, Vietnam",
+    "city": "Hanoi",
+    "province": "Hanoi",
+    "country": "Vietnam",
+    "latitude": 21.0240714,
+    "longitude": 105.842778,
+    "phone": "0928 290 000",
+    "website": "http://www.hanoimotortour.com/",
+    "google_maps_url": "https://maps.google.com/?cid=10571571536441374246",
+    "business_status": "OPERATIONAL",
+    "rating": 4.9,
+    "review_count": 672,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

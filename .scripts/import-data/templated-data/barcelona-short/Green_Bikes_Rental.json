@@ -1,0 +1,130 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-10-14T21:40:16.601Z",
+    "shop_identifier": "Green Bikes Rental",
+    "provider_name": "Green Bikes Rental",
+    "place_id": "ChIJqcYiBPujpBIRwzzBWCrlBLs",
+    "address": "Carrer d'Ataülf, 8, Ciutat Vella, 08002 Barcelona, Spain",
+    "city": "Barcelona",
+    "province": "Barcelona",
+    "country": "Spain",
+    "latitude": 41.3812604,
+    "longitude": 2.1787111,
+    "phone": "930 15 40 10",
+    "website": "http://www.greenbikesbarcelona.com/",
+    "google_maps_url": "https://maps.google.com/?cid=13476147955039812803",
+    "business_status": "OPERATIONAL",
+    "rating": 4.6,
+    "review_count": 81,
+    "rental_conditions": {
+      "deposit_required": "Driver's license or passport and a 1Euro charge on customer credit card",
+      "operating_hours": "7 days a week from 10:00 – 18:00",
+      "rental_shop_address": "Carrer Ataulf 8, Barcelona, Spain 08002",
+      "tour_shop_address": "Carrer Escudellers, 48 Barcelona, Spain 08002",
+      "lock_policy": "All rentals come with high-quality LOCKS to make sure the bikes are not stolen. We will show you how to use the locks correctly as part of the rental process.",
+      "helmet_policy": "Helmets and child seats available at no extra charge. Helmets are not obligatory in Barcelona (except for those under 16 years old).",
+      "child_bikes": "Children's bikes also available in a wide range of sizes; normal prices apply."
+    },
+    "rental_inclusions": [
+      "locks",
+      "child seats",
+      "helmets"
+    ],
+    "available_service_locations": [
+      "Barcelona"
+    ],
+    "offered_tours": [
+      {
+        "name": "City Tour Dutch",
+        "duration_text": "3 Hours - 10:30 & 14:30",
+        "distance_km": null,
+        "price_text": "€32.50 per adult / €25.00 per child (under 16 year old)",
+        "currency": "EUR"
+      },
+      {
+        "name": "City Tour German",
+        "duration_text": "3 Hours - 11:00",
+        "distance_km": null,
+        "price_text": "€32.50 per adult / €25.00 per child (under 16 year old)",
+        "currency": "EUR"
+      },
+      {
+        "name": "City Tour English",
+        "duration_text": "3 Hours - 11:00",
+        "distance_km": null,
+        "price_text": "€32.50 per adult / €25.00 per child (under 16 year old)",
+        "currency": "EUR"
+      },
+      {
+        "name": "Private Tour",
+        "duration_text": "3 Hours - Different times available",
+        "distance_km": null,
+        "price_text": "Private tour price (1-5 people): €195,00; Additional people: €35,00 per person; E-bikes available upon request for 20,00€ extra",
+        "currency": "EUR"
+      },
+      {
+        "name": "Student & Business Trips",
+        "duration_text": "3 Hours",
+        "distance_km": null,
+        "price_text": "Contact for pricing",
+        "currency": "EUR"
+      },
+      {
+        "name": "Montjuic Tour",
+        "duration_text": "3 Hours - 14:30 - Available Thursday to Sunday",
+        "distance_km": null,
+        "price_text": "€39,50 per person (E-BIKE INCLUDED)",
+        "currency": "EUR"
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "greenbikesbarcelona",
+      "scrape_timestamp": "2025-10-14T21:40:17.604Z",
+      "source_url": "http://www.greenbikesbarcelona.com/rentals",
+      "brand": null,
+      "model": "Standard City Bike",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "City Bike",
+      "description": "Standard bicycle for city exploration in Barcelona. Comfortable for all ages and skill levels.",
+      "rental_rates": [
+        {
+          "rate_text": "1.50€ per hour",
+          "min_days": 0,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://images.squarespace-cdn.com/content/v1/52af1f14e4b0cb06a59488a6/1564485265688-RU7YZW91NSQKKL36JEAL/IMG_0114.jpg"
+      ],
+      "features": [
+        "Comfortable seating",
+        "Safety locks provided",
+        "Child seats available",
+        "Helmets available",
+        "Multiple sizes available"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": "The Renter agrees to take responsibility for possible damages or loss of bicycle(s) & accessories during the rental period. Traffic rules must always be respected; this is your responsibility & obligation.",
+      "required_documents_raw": [
+        "Driver's license or passport"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Damage Coverage",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Renter is responsible for damages or loss of bicycle"
+        }
+      ],
+      "availability_status": "Available"
+    }
+  ]
+}

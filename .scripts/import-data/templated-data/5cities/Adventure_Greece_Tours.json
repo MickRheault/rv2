@@ -1,0 +1,58 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T06:56:13.936Z",
+    "shop_identifier": "Adventure Greece Tours",
+    "provider_name": "Adventure Greece Tours",
+    "place_id": "ChIJ0-rmLeeFoRQRmaUu7FZCvbI",
+    "address": "Leof. Marathonos 24 klm, Rafina 190 09, Greece",
+    "city": "Athens",
+    "province": "Attica",
+    "country": "Greece",
+    "latitude": 38.0129964,
+    "longitude": 23.9745537,
+    "phone": "694 496 8027",
+    "website": "https://adventuregreece.eu/",
+    "google_maps_url": "https://maps.google.com/?cid=12879523450446587289",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 6,
+    "rental_conditions": null,
+    "rental_inclusions": null,
+    "available_service_locations": [
+      "Evia",
+      "Central Greece",
+      "Peloponnese"
+    ],
+    "offered_tours": [
+      {
+        "name": "Evia Tour",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Central Greece – Evia Tour",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Peloponnese Tour",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Enduro Tours",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      }
+    ]
+  },
+  "motorcycle_offerings": []
+}

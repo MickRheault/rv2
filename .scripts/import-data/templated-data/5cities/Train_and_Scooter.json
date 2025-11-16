@@ -1,0 +1,45 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T12:13:42.176Z",
+    "shop_identifier": "Train and Scooter",
+    "provider_name": "Train and Scooter",
+    "place_id": "ChIJy5awsaZhLxMRI1U_Up8etWU",
+    "address": "Via Castelfidardo, 70/72, 00185 Roma RM, Italy",
+    "city": "Rome",
+    "province": "Lazio",
+    "country": "Italy",
+    "latitude": 41.9053542,
+    "longitude": 12.5024474,
+    "phone": "349 416 9730",
+    "website": "https://rent.trenoescooter.com/",
+    "google_maps_url": "https://maps.google.com/?cid=7328797638243865891",
+    "business_status": "OPERATIONAL",
+    "rating": 4.5,
+    "review_count": 173,
+    "rental_conditions": {
+      "online_booking_discount": "5%",
+      "payment_terms": "pay at pickup",
+      "cancellation_policy": "no penalty",
+      "minimum_rental_period": null,
+      "age_requirement": null,
+      "license_requirement": null
+    },
+    "rental_inclusions": [
+      "porta-smartphone",
+      "presa USB"
+    ],
+    "available_service_locations": [
+      "Roma"
+    ],
+    "offered_tours": [
+      {
+        "name": "tour Roma Segreta",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      }
+    ]
+  },
+  "motorcycle_offerings": []
+}

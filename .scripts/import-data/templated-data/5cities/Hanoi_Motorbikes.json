@@ -1,0 +1,479 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T06:59:30.747Z",
+    "shop_identifier": "Hanoi Motorbikes",
+    "provider_name": "Hanoi Motorbikes",
+    "place_id": "ChIJdT6XAK-rNTERpsinSGRJGa4",
+    "address": "2 P. Nguyễn Siêu, Hàng Buồm, Hoàn Kiếm, Hà Nội, Vietnam",
+    "city": "Hanoi",
+    "province": "Hanoi",
+    "country": "Vietnam",
+    "latitude": 21.0367277,
+    "longitude": 105.852481,
+    "phone": "0866 569 998",
+    "website": "http://hanoimotorbike.com/",
+    "google_maps_url": "https://maps.google.com/?cid=12545138932081739942",
+    "business_status": "OPERATIONAL",
+    "rating": 4.8,
+    "review_count": 223,
+    "rental_conditions": {
+      "deposit": "Passport or $200",
+      "one_way_rental": "Pick up and drop off in Hanoi, Hue, Da Nang, Hoi An, or Ho Chi Minh City",
+      "support": "24/7 Customer Support"
+    },
+    "rental_inclusions": [
+      "Free good helmet",
+      "Free luggage rack",
+      "Free bungee cords",
+      "Free driver lessons",
+      "Engine breakdown warranty",
+      "Committed to repurchase"
+    ],
+    "available_service_locations": [
+      "Hanoi",
+      "Hue",
+      "Da Nang",
+      "Hoi An",
+      "Ho Chi Minh City"
+    ],
+    "offered_tours": [
+      {
+        "name": "Ha Giang Loop Tour 2 days",
+        "duration_text": "2 days",
+        "distance_km": null,
+        "price_text": "$120.00 /pax",
+        "currency": "USD"
+      },
+      {
+        "name": "Ha Giang Loop Tour 3 days",
+        "duration_text": "3 days",
+        "distance_km": null,
+        "price_text": "$160.00 /pax",
+        "currency": "USD"
+      },
+      {
+        "name": "Ha Giang Loop Tour 4 days",
+        "duration_text": "4 days",
+        "distance_km": null,
+        "price_text": "$200.00 /pax",
+        "currency": "USD"
+      },
+      {
+        "name": "Ha Giang – Cao Bang 4 days",
+        "duration_text": "4 days",
+        "distance_km": null,
+        "price_text": "$280.00 /pax",
+        "currency": "USD"
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "hanoimotorbike.com",
+      "scrape_timestamp": "2025-11-13T06:59:31.624Z",
+      "source_url": "https://hanoimotorbike.com/tour/honda-wave-110cc-for-sale-hanoi/",
+      "brand": "Honda",
+      "model": "Wave 110cc",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Economy scooter",
+      "description": "Honda Wave 110cc for sale in Hanoi",
+      "rental_rates": [
+        {
+          "rate_text": "5-7 usd",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 6,
+          "currency": "USD"
+        },
+        {
+          "rate_text": "100 – 150",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 125,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://hanoimotorbike.com/wp-content/uploads/wave-rsx.jpg"
+      ],
+      "features": [
+        "Economy scooter",
+        "Good for all purposes",
+        "Cheap on gas",
+        "Reliable"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Passport or $200 deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Engine breakdown warranty included"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hanoimotorbike.com",
+      "scrape_timestamp": "2025-11-13T06:59:31.624Z",
+      "source_url": "https://hanoimotorbike.com/tour/honda-future-125cc-rental-sales/",
+      "brand": "Honda",
+      "model": "Future 125cc",
+      "year": 2012,
+      "engine_capacity_cc": 125,
+      "category": "Standard scooter",
+      "description": "Honda Future 125cc for sale in Hanoi",
+      "rental_rates": [
+        {
+          "rate_text": "6-8 usd",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 7,
+          "currency": "USD"
+        },
+        {
+          "rate_text": "200 – 250",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 225,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://hanoimotorbike.com/wp-content/uploads/future125.jpg"
+      ],
+      "features": [
+        "Standard scooter"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Passport or $200 deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Engine breakdown warranty included"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hanoimotorbike.com",
+      "scrape_timestamp": "2025-11-13T06:59:31.624Z",
+      "source_url": "https://hanoimotorbike.com/tour/honda-air-blade-125cc-rental-sales/",
+      "brand": "Honda",
+      "model": "Air Blade 125cc",
+      "year": 2012,
+      "engine_capacity_cc": 125,
+      "category": "Standard scooter",
+      "description": "Honda Air Blade 125cc for sale in Hanoi",
+      "rental_rates": [
+        {
+          "rate_text": "6-8 usd",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 7,
+          "currency": "USD"
+        },
+        {
+          "rate_text": "200 – 250",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 225,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://hanoimotorbike.com/wp-content/uploads/airblade-125cc.jpg"
+      ],
+      "features": [
+        "Standard scooter",
+        "Large storage under seat",
+        "Automatic transmission"
+      ],
+      "specifications_raw": {
+        "gears": "0",
+        "fuel_tank": "4,4 litres",
+        "transmission": "Automatic",
+        "riders": "1-2"
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Passport or $200 deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Engine breakdown warranty included"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hanoimotorbike.com",
+      "scrape_timestamp": "2025-11-13T06:59:31.624Z",
+      "source_url": "https://hanoimotorbike.com/tour/honda-xr150cc-rental/",
+      "brand": "Honda",
+      "model": "XR150cc",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Big bike",
+      "description": "Honda XR150cc Rental (model 2023-2024)",
+      "rental_rates": [
+        {
+          "rate_text": "14-18 usd",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 16,
+          "currency": "USD"
+        },
+        {
+          "rate_text": "300 – 350",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 325,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://hanoimotorbike.com/wp-content/uploads/honda-xr150l-768x512.jpg"
+      ],
+      "features": [
+        "Big bike",
+        "Model 2023-2024"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Passport or $200 deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Engine breakdown warranty included"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hanoimotorbike.com",
+      "scrape_timestamp": "2025-11-13T06:59:31.624Z",
+      "source_url": "https://hanoimotorbike.com/tour/honda-winner-x150cc-rental-sales/",
+      "brand": "Honda",
+      "model": "Winner X150cc",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Sport bike",
+      "description": "Honda Winner X150cc rental & sales",
+      "rental_rates": [
+        {
+          "rate_text": "8-10 usd",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 9,
+          "currency": "USD"
+        },
+        {
+          "rate_text": "200 – 250",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 225,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://hanoimotorbike.com/wp-content/uploads/winner-x-768x512.jpg"
+      ],
+      "features": [
+        "Sport bike"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Passport or $200 deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Engine breakdown warranty included"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hanoimotorbike.com",
+      "scrape_timestamp": "2025-11-13T06:59:31.624Z",
+      "source_url": "https://hanoimotorbike.com/yamaha-nvx-155cc/",
+      "brand": "Yamaha",
+      "model": "NVX 155cc",
+      "year": null,
+      "engine_capacity_cc": 155,
+      "category": "Premium scooter",
+      "description": "Yamaha NVX 155cc",
+      "rental_rates": [
+        {
+          "rate_text": "8-10 usd",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 9,
+          "currency": "USD"
+        },
+        {
+          "rate_text": "200 – 250",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 225,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://hanoimotorbike.com/wp-content/uploads/nvx.jpg"
+      ],
+      "features": [
+        "Premium scooter"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Passport or $200 deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Engine breakdown warranty included"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hanoimotorbike.com",
+      "scrape_timestamp": "2025-11-13T06:59:31.624Z",
+      "source_url": "https://hanoimotorbike.com/contact-us/",
+      "brand": "Honda",
+      "model": "Lead 110cc",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Economy scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "5-7 usd",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 6,
+          "currency": "USD"
+        },
+        {
+          "rate_text": "100 – 150",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 125,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Economy scooter"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Passport or $200 deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Engine breakdown warranty included"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "hanoimotorbike.com",
+      "scrape_timestamp": "2025-11-13T06:59:31.624Z",
+      "source_url": "https://hanoimotorbike.com/contact-us/",
+      "brand": "Honda",
+      "model": "Vision 110cc",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Economy scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "5-7 usd",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 6,
+          "currency": "USD"
+        },
+        {
+          "rate_text": "100 – 150",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 125,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Economy scooter"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Passport or $200 deposit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Engine breakdown warranty included"
+        }
+      ],
+      "availability_status": null
+    }
+  ]
+}
