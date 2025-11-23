@@ -77,8 +77,8 @@ export default async function CountryPage({ params }: CountryPageProps) {
       notFound()
     }
 
-    // Fetch shops for this country
-    const shopsResult = await shopService.getShops({
+    // Fetch shops for this country with motorcycle counts
+    const shopsResult = await shopService.getShopsWithCounts({
       countryCode: countryData.code,
       sortBy: 'rating_desc',
       limit: 100 // Show all shops for now, as per PRD requirements

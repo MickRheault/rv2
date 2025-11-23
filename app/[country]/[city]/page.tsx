@@ -96,8 +96,8 @@ export default async function CityPage({ params }: CityPageProps) {
       notFound()
     }
 
-    // Fetch shops for this specific city
-    const shopsResult = await shopService.getShops({
+    // Fetch shops for this specific city with motorcycle counts
+    const shopsResult = await shopService.getShopsWithCounts({
       cityId: cityData.id,
       sortBy: 'rating_desc',
       limit: 100 // Show all shops for now, as per PRD requirements
