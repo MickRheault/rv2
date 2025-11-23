@@ -122,6 +122,16 @@ module.exports = {
       
       const additionalPaths = []
       
+      // Helper function to format location for URL
+      const formatLocationForUrl = (name) => {
+        return name
+          .toLowerCase()
+          .replace(/\s+/g, '-')
+          .replace(/[^a-z0-9-]/g, '')
+          .replace(/-+/g, '-')
+          .replace(/^-|-$/g, '')
+      }
+      
       // Fetch all motorcycles
       const { data: motorcycles, error: motorcyclesError } = await supabase
         .from('motorcycle_rentals')
@@ -136,6 +146,69 @@ module.exports = {
             priority: 0.9,
             lastmod: motorcycle.updated_at || new Date().toISOString(),
           })
+        })
+      }
+      
+      // Fetch all locations with shops for country and city pages
+      const { data: locations, error: locationsError } = await supabase
+        .from('cities')
+        .select(`
+          id,
+          name,
+          updated_at,
+          provinces (
+            name,
+            countries (
+              code,
+              name
+            )
+          )
+        `)
+        .limit(5000)
+      
+      // Add country pages
+      if (!locationsError && locations) {
+        const countriesMap = new Map()
+        
+        locations.forEach(city => {
+          const countryCode = city.provinces?.countries?.code
+          const countryName = city.provinces?.countries?.name
+          
+          if (countryCode && countryName && !countriesMap.has(countryCode)) {
+            countriesMap.set(countryCode, {
+              name: countryName,
+              updated_at: city.updated_at
+            })
+          }
+        })
+        
+        // Add country pages to sitemap
+        countriesMap.forEach((country) => {
+          const countrySlug = formatLocationForUrl(country.name)
+          additionalPaths.push({
+            loc: `/${countrySlug}`,
+            changefreq: 'weekly',
+            priority: 0.8,
+            lastmod: country.updated_at || new Date().toISOString(),
+          })
+        })
+        
+        // Add city pages to sitemap
+        locations.forEach(city => {
+          const countryName = city.provinces?.countries?.name
+          const cityName = city.name
+          
+          if (countryName && cityName) {
+            const countrySlug = formatLocationForUrl(countryName)
+            const citySlug = formatLocationForUrl(cityName)
+            
+            additionalPaths.push({
+              loc: `/${countrySlug}/${citySlug}`,
+              changefreq: 'weekly',
+              priority: 0.8,
+              lastmod: city.updated_at || new Date().toISOString(),
+            })
+          }
         })
       }
       
@@ -158,16 +231,6 @@ module.exports = {
         .limit(2000)
       
       if (!shopsError && shops) {
-        // Helper function to format location for URL
-        const formatLocationForUrl = (name) => {
-          return name
-            .toLowerCase()
-            .replace(/\s+/g, '-')
-            .replace(/[^a-z0-9-]/g, '')
-            .replace(/-+/g, '-')
-            .replace(/^-|-$/g, '')
-        }
-
         shops.forEach(shop => {
           // Skip shops without complete location data (country/city required for new URL format)
           if (!shop.cities?.provinces?.countries?.name || !shop.cities?.name) {
@@ -201,9 +264,17 @@ module.exports = {
         })
       })
       
+      // Count different route types
+      const countryCount = additionalPaths.filter(p => p.loc.split('/').length === 2 && p.loc !== '/search' && p.loc !== '/browse').length
+      const cityCount = additionalPaths.filter(p => p.loc.split('/').length === 3 && !p.loc.includes('/motorcycle/') && !p.loc.includes('/shop/')).length
+      const shopCount = shops?.length || 0
+      const motorcycleCount = motorcycles?.length || 0
+      
       console.log(`✅ Generated ${additionalPaths.length} dynamic routes:`)
-      console.log(`   📍 ${motorcycles?.length || 0} motorcycle pages`)
-      console.log(`   🏪 ${shops?.length || 0} shop pages`)
+      console.log(`   🌍 ${countryCount} country pages`)
+      console.log(`   🏙️  ${cityCount} city pages`)
+      console.log(`   🏪 ${shopCount} shop pages`)
+      console.log(`   📍 ${motorcycleCount} motorcycle pages`)
       console.log(`   🔍 ${searchPaths.length} search pages`)
       
       return additionalPaths

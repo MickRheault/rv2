@@ -162,7 +162,7 @@ export const searchService = {
     }
 
     if (contentType === 'shops' || contentType === 'all') {
-      const rawShopResults = await shopService.getShops({
+      const rawShopResults = await shopService.getShopsWithCounts({
         ...resolvedLocationFilters,
         query: otherFilters.query,
         sortBy: otherFilters.sortBy === 'rating_desc' ? 'rating_desc' : 'newest',
@@ -211,7 +211,7 @@ export const searchService = {
       }
     } else {
       // When only showing motorcycles, return empty shop results but get count
-      const countResults = await shopService.getShops({
+      const countResults = await shopService.getShopsWithCounts({
         ...resolvedLocationFilters,
         query: otherFilters.query,
         sortBy: otherFilters.sortBy === 'rating_desc' ? 'rating_desc' : 'newest',
@@ -478,7 +478,7 @@ export const searchService = {
     if (searchQuery) {
              const [motorcycleResults, shopResults, locationResults] = await Promise.all([
         motorcycleService.searchMotorcycles(searchQuery, otherFilters.limit),
-        shopService.getShops({
+        shopService.getShopsWithCounts({
           query: searchQuery,
           cityId: otherFilters.cityId,
           provinceId: otherFilters.provinceId,
