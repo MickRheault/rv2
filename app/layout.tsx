@@ -9,6 +9,7 @@ import CookieConsentBanner from '@/components/analytics/CookieConsentBanner'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { generateMetadata as generateSEOMetadata, PAGE_CONFIGS } from '@/lib/seo/config'
 import { StructuredData, generateOrganizationSchema, generateWebsiteSchema } from '@/lib/seo/structured-data'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -24,6 +25,7 @@ export default function RootLayout({
       <body className={`${inter.className} bg-white text-gray-900 antialiased min-h-screen flex flex-col`}>
         <QueryProvider>
           <GoogleAnalytics />
+          <SpeedInsights />
           
           {/* Structured Data for SEO */}
           <StructuredData schema={generateOrganizationSchema()} />
