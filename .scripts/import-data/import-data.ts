@@ -406,34 +406,8 @@ async function findOrCreateConditionType(name: string): Promise<string> {
 
 async function findOrCreateRentalShop(metadata: ScrapedJsonData['provider_metadata']): Promise<string> {
     if (!metadata) throw new Error("Provider metadata is required to find or create a rental shop.");
-    if (!metadata.place_id && (!metadata.name || !metadata.address)) {
-         throw new Error("Cannot uniquely identify shop: Missing place_id or name/address combination.");
-    }
 
-    let query = supabase.from('rental_shops').select('id');
-    if (metadata.place_id) {
-        query = query.eq('place_id', metadata.place_id);
-    } else {
-        // Fallback to name and address - less reliable
-        if (!metadata.name || !metadata.address) { // Extra check for fallback
-            throw new Error("Cannot uniquely identify shop by name/address: Missing name or address.");
-        }
-        query = query.eq('provider_name', metadata.name).eq('full_address', metadata.address);
-    }
-
-    const { data: existingShop, error: findError } = await query.maybeSingle();
-
-    if (findError) {
-        console.error('Supabase error finding rental shop:', findError);
-        throw new Error(`Error finding rental shop ${metadata.name || metadata.place_id}: ${findError.message}`);
-    }
-    if (existingShop && existingShop.id) return existingShop.id;
-    if (existingShop && !existingShop.id) {
-        console.error('Rental shop found but no id property:', existingShop);
-        throw new Error(`Rental shop ${metadata.name || metadata.place_id} found but no id property.`);
-    }
-
-    // --- Create Shop if Not Found ---
+    // --- Create Shop (duplicates already checked in main loop) ---
     console.log(`Creating rental shop: ${metadata.name || 'Unnamed Shop'} (${metadata.place_id || 'No Place ID'})`);
 
     // 1. Resolve Foreign Keys
@@ -770,6 +744,12 @@ interface ErrorSummary {
   conditionErrors: { file: string; shop: string; condition: string; error: string }[];
 }
 
+interface WarningSummary {
+  skippedNoMetadata: string[];
+  skippedNoMotorcycles: string[];
+  skippedDuplicates: { file: string; place_id: string; shop_name: string }[];
+}
+
 interface ImportStats {
   totalFiles: number;
   successfulFiles: number;
@@ -796,6 +776,13 @@ async function importData() {
     insuranceErrors: [],
     rateTierErrors: [],
     conditionErrors: [],
+  };
+
+  // Initialize warning tracking
+  const warnings: WarningSummary = {
+    skippedNoMetadata: [],
+    skippedNoMotorcycles: [],
+    skippedDuplicates: [],
   };
 
   const stats: ImportStats = {
@@ -843,9 +830,46 @@ Processing file: ${file}`);
 
         if (!jsonData.provider_metadata) {
             console.warn(`Skipping ${file}: Missing provider_metadata.`);
-            errors.fileErrors.push({ file, error: 'Missing provider_metadata' });
+            warnings.skippedNoMetadata.push(file);
             stats.failedFiles++;
             continue;
+        }
+
+        // Skip businesses with no motorcycles to rent
+        if (!jsonData.motorcycle_offerings || jsonData.motorcycle_offerings.length === 0) {
+            console.warn(`Skipping ${file}: No motorcycle offerings (business doesn't rent motorcycles).`);
+            warnings.skippedNoMotorcycles.push(file);
+            stats.failedFiles++;
+            continue;
+        }
+
+        // --- Check for Duplicate Shop (by place_id) ---
+        if (jsonData.provider_metadata.place_id) {
+            const { data: existingShop, error: dupCheckError } = await supabase
+                .from('rental_shops')
+                .select('id, provider_name')
+                .eq('place_id', jsonData.provider_metadata.place_id)
+                .maybeSingle();
+
+            if (dupCheckError) {
+                console.error(`Error checking for duplicate shop: ${dupCheckError.message}`);
+                const shopName = jsonData.provider_metadata.name || jsonData.provider_metadata.shop_identifier || 'Unknown';
+                errors.shopErrors.push({ file, shop: shopName, error: `Duplicate check failed: ${dupCheckError.message}` });
+                stats.failedFiles++;
+                continue;
+            }
+
+            if (existingShop) {
+                const shopName = jsonData.provider_metadata.name || existingShop.provider_name || 'Unknown';
+                console.warn(`Skipping ${file}: Shop already exists (place_id: ${jsonData.provider_metadata.place_id}, shop: ${shopName})`);
+                warnings.skippedDuplicates.push({ 
+                    file, 
+                    place_id: jsonData.provider_metadata.place_id, 
+                    shop_name: shopName 
+                });
+                stats.failedFiles++;
+                continue;
+            }
         }
 
         // --- Process Provider / Shop ---
@@ -1092,6 +1116,48 @@ Processing file: ${file}`);
     console.log(`  \n  Offerings Processed: ${stats.totalOfferings}`);
     console.log(`  ✅ Successful: ${stats.successfulOfferings}`);
     console.log(`  ❌ Failed: ${stats.failedOfferings}`);
+    
+    // Calculate total warnings
+    const totalWarnings = 
+      warnings.skippedNoMetadata.length +
+      warnings.skippedNoMotorcycles.length +
+      warnings.skippedDuplicates.length;
+    
+    console.log(`\n⚠️  TOTAL WARNINGS (Skipped Files): ${totalWarnings}`);
+    
+    // Print warnings if any
+    if (totalWarnings > 0) {
+      if (warnings.skippedNoMetadata.length > 0) {
+        console.log(`\n⚠️  Skipped - Missing Metadata: ${warnings.skippedNoMetadata.length} files`);
+        warnings.skippedNoMetadata.slice(0, 10).forEach((file, idx) => {
+          console.log(`     ${idx + 1}. ${file}`);
+        });
+        if (warnings.skippedNoMetadata.length > 10) {
+          console.log(`     ... and ${warnings.skippedNoMetadata.length - 10} more files`);
+        }
+      }
+      
+      if (warnings.skippedNoMotorcycles.length > 0) {
+        console.log(`\n⚠️  Skipped - No Motorcycles to Rent: ${warnings.skippedNoMotorcycles.length} files`);
+        warnings.skippedNoMotorcycles.slice(0, 10).forEach((file, idx) => {
+          console.log(`     ${idx + 1}. ${file}`);
+        });
+        if (warnings.skippedNoMotorcycles.length > 10) {
+          console.log(`     ... and ${warnings.skippedNoMotorcycles.length - 10} more files`);
+        }
+      }
+      
+      if (warnings.skippedDuplicates.length > 0) {
+        console.log(`\n⚠️  Skipped - Duplicate Shops (Already Imported): ${warnings.skippedDuplicates.length} files`);
+        warnings.skippedDuplicates.slice(0, 10).forEach((dup, idx) => {
+          console.log(`     ${idx + 1}. ${dup.file}`);
+          console.log(`        Shop: ${dup.shop_name} (place_id: ${dup.place_id})`);
+        });
+        if (warnings.skippedDuplicates.length > 10) {
+          console.log(`     ... and ${warnings.skippedDuplicates.length - 10} more duplicate shops`);
+        }
+      }
+    }
     
     // Calculate total errors
     const totalErrors = 
