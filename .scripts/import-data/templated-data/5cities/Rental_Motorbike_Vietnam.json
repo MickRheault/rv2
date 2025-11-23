@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T07:04:43.754Z",
+    "shop_identifier": "Rental Motorbike Vietnam",
+    "provider_name": "Rental Motorbike Vietnam",
+    "place_id": "ChIJK_c2HQirNTERx7L2aUO5VYA",
+    "address": "29A P. Đào Duy Từ, Hàng Buồm, Hoàn Kiếm, Hà Nội 100000, Vietnam",
+    "city": "Hanoi",
+    "province": "Hanoi",
+    "country": "Vietnam",
+    "latitude": 21.0357348,
+    "longitude": 105.8529549,
+    "phone": "0866 651 484",
+    "website": "https://rentalmotorbikevietnam.com/",
+    "google_maps_url": "https://maps.google.com/?cid=9247501109066904263",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 778,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

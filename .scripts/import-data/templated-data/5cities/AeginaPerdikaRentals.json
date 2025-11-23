@@ -1,0 +1,196 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T04:30:04.386Z",
+    "shop_identifier": "AeginaPerdikaRentals",
+    "provider_name": "AeginaPerdikaRentals",
+    "place_id": "ChIJi_Q3lrvToRQRxKM_6Uxeel4",
+    "address": "28h Oktombrioy, Perdika 180 10, Greece",
+    "city": "Athens",
+    "province": "Attica",
+    "country": "Greece",
+    "latitude": 37.69092699999999,
+    "longitude": 23.4554471,
+    "phone": "694 860 4590",
+    "website": "http://www.aeginaperdikarentals.com/",
+    "google_maps_url": "https://maps.google.com/?cid=6807857471147713476",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 50,
+    "rental_conditions": {
+      "mandatory_helmet": true,
+      "battery_range_km": "40-100",
+      "daily_ride_hours": "3-5",
+      "assistance_levels": true,
+      "safety_requirements": "MTB helmet mandatory"
+    },
+    "rental_inclusions": [
+      "backpack",
+      "locker",
+      "certified MTB helmet"
+    ],
+    "available_service_locations": [
+      "Aegina",
+      "Perdika"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "aeginaperdikarentals.com",
+      "scrape_timestamp": "2025-11-13T04:30:05.161Z",
+      "source_url": "https://aeginaperdikarentals.com/product/symphony-st50/",
+      "brand": "SYMPHONY",
+      "model": "ST50",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "scooter",
+      "description": "Comfortable for both riders, lightweight, and with low fuel consumption, it is a scooter that meets demands without compromises, offered at a particularly attractive and affordable price",
+      "rental_rates": [],
+      "images": [
+        "https://aeginaperdikarentals.com/wp-content/uploads/2025/05/scooter-700x700.jpeg"
+      ],
+      "features": [
+        "comfortable for two riders",
+        "lightweight",
+        "low fuel consumption"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "aeginaperdikarentals.com",
+      "scrape_timestamp": "2025-11-13T04:30:05.161Z",
+      "source_url": "https://aeginaperdikarentals.com/product/ultra-27-5-e-bike/",
+      "brand": "ORIENT",
+      "model": "ULTRA 27.5",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "e-bike",
+      "description": "The ULTRA 27.5 e-bike is a cutting-edge electric bicycle that combines advanced technology with versatile performance.",
+      "rental_rates": [],
+      "images": [
+        "https://aeginaperdikarentals.com/wp-content/uploads/2024/02/ULTRAA.jpg"
+      ],
+      "features": [
+        "cutting-edge",
+        "advanced technology",
+        "versatile performance",
+        "electrically assisted"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "aeginaperdikarentals.com",
+      "scrape_timestamp": "2025-11-13T04:30:05.161Z",
+      "source_url": "https://aeginaperdikarentals.com/product/levit-calvia-e-bike/",
+      "brand": "LEVIT",
+      "model": "CALVIA",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "e-bike",
+      "description": "The LEVIT CALVIA e-bike is a sleek and modern electric bicycle designed for urban commuting and leisurely rides.",
+      "rental_rates": [],
+      "images": [
+        "https://aeginaperdikarentals.com/wp-content/uploads/2024/02/b.jpg"
+      ],
+      "features": [
+        "sleek",
+        "modern",
+        "urban commuting",
+        "leisurely rides",
+        "electrically assisted"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "aeginaperdikarentals.com",
+      "scrape_timestamp": "2025-11-13T04:30:05.161Z",
+      "source_url": "https://aeginaperdikarentals.com/product/style-1-0-700c-e-bike/",
+      "brand": "STYLE",
+      "model": "1.0 700C",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "e-bike",
+      "description": "The STYLE 1.0 700C e-bike is a sleek and stylish electric bicycle designed for urban commuting and recreational riding.",
+      "rental_rates": [],
+      "images": [
+        "https://aeginaperdikarentals.com/wp-content/uploads/2024/02/a.jpg"
+      ],
+      "features": [
+        "sleek",
+        "stylish",
+        "urban commuting",
+        "recreational riding",
+        "electrically assisted"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "aeginaperdikarentals.com",
+      "scrape_timestamp": "2025-11-13T04:30:05.161Z",
+      "source_url": "https://aeginaperdikarentals.com/product/emv-fat-26-black-bike/",
+      "brand": "EMW",
+      "model": "Fat 26\" Black",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "fat tire bike",
+      "description": "The EMW Fat 26\" Black is a rugged and versatile off-road bicycle designed for adventure seekers and outdoor enthusiasts.",
+      "rental_rates": [],
+      "images": [
+        "https://aeginaperdikarentals.com/wp-content/uploads/2024/02/e.jpg"
+      ],
+      "features": [
+        "rugged",
+        "versatile",
+        "off-road",
+        "adventure",
+        "fat tire"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "aeginaperdikarentals.com",
+      "scrape_timestamp": "2025-11-13T04:30:05.161Z",
+      "source_url": "https://aeginaperdikarentals.com/product/volta-lady-21s-p-cross/",
+      "brand": "VOLTA",
+      "model": "Lady 21sp Cross",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "cross bike",
+      "description": "The VOLTA Lady 21sp is a sleek and versatile cross bike.",
+      "rental_rates": [],
+      "images": [
+        "https://aeginaperdikarentals.com/wp-content/uploads/2024/02/voltalady.jpg"
+      ],
+      "features": [
+        "sleek",
+        "versatile",
+        "cross bike"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    }
+  ]
+}

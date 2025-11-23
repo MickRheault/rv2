@@ -1,0 +1,496 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T07:22:31.581Z",
+    "shop_identifier": "Happy Zip Motorbikes Rental & Sale Hanoi",
+    "provider_name": "Happy Zip Motorbikes Rental & Sale Hanoi",
+    "place_id": "ChIJiSxqBJerNTERjdQeorj5_UQ",
+    "address": "451 Hồng Hà, Phúc Tân, Hoàn Kiếm, Hà Nội 100000, Vietnam",
+    "city": "Hanoi",
+    "province": "Hanoi",
+    "country": "Vietnam",
+    "latitude": 21.0363378,
+    "longitude": 105.8544054,
+    "phone": "0924 715 678",
+    "website": "https://happyzipmotorbikes.com/",
+    "google_maps_url": "https://maps.google.com/?cid=4971404135076123789",
+    "business_status": "OPERATIONAL",
+    "rating": 4.8,
+    "review_count": 308,
+    "rental_conditions": {
+      "deposit_process": "We accept either money or a valid passport",
+      "reimbursement_locations": "Hue, Ho Chi Minh",
+      "one_way_rental": "Available",
+      "free_service_locations": "Ninh Binh, Hue, Hoi An, Ho Chi Minh",
+      "buy_back_guarantee": "Available for purchases"
+    },
+    "rental_inclusions": [
+      "breakdown warranty",
+      "free service in Ninh Binh, Hue, Ho Chi Minh"
+    ],
+    "available_service_locations": [
+      "Hanoi",
+      "Meo Vac town (Ha Giang)",
+      "Ninh Binh",
+      "Hue",
+      "Hoi An",
+      "Ho Chi Minh"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "happyzipmotorbikes",
+      "scrape_timestamp": "2025-11-13T07:22:32.622Z",
+      "source_url": "https://happyzipmotorbikes.com/bike/honda-future-125-fi/",
+      "brand": "Honda",
+      "model": "Future 125 FI",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Semi-automatic",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://happyzipmotorbikes.com/wp-content/uploads/2025/10/honda-future-125cc-2-409x258.jpg"
+      ],
+      "features": [],
+      "specifications_raw": {
+        "Engine": "125cc",
+        "Gears": "4",
+        "Transmission": "Semi-automatic"
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "happyzipmotorbikes",
+      "scrape_timestamp": "2025-11-13T07:22:32.622Z",
+      "source_url": "https://happyzipmotorbikes.com/bike/honda-wave-anpha-2024/",
+      "brand": "Honda",
+      "model": "WAVE ANPHA 2024",
+      "year": 2024,
+      "engine_capacity_cc": 110,
+      "category": "Semi-automatic",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://happyzipmotorbikes.com/wp-content/uploads/2018/09/z6088702568161_08adecec1f069de0514b4398975f5ebd-409x258.jpg"
+      ],
+      "features": [],
+      "specifications_raw": {
+        "Engine": "110cc",
+        "Fuel Tank": "3-5 litre",
+        "Gears": "4",
+        "Transmission": "Semi-automatic"
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "happyzipmotorbikes",
+      "scrape_timestamp": "2025-11-13T07:22:32.622Z",
+      "source_url": "https://happyzipmotorbikes.com/bike/honda-wave-white/",
+      "brand": "Honda",
+      "model": "WAVE ANPHA WHITE",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Semi-automatic",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://happyzipmotorbikes.com/wp-content/uploads/2018/09/11-847x534.jpg",
+        "https://happyzipmotorbikes.com/wp-content/uploads/2018/09/z6088702582453_e399f3885f52317ffa4e28f76ab336b3-847x534.jpg",
+        "https://happyzipmotorbikes.com/wp-content/uploads/2018/09/169-847x534.jpg",
+        "https://happyzipmotorbikes.com/wp-content/uploads/2018/09/168-847x534.jpg",
+        "https://happyzipmotorbikes.com/wp-content/uploads/2018/09/183-847x534.jpg"
+      ],
+      "features": [],
+      "specifications_raw": {
+        "Engine": "110cc",
+        "Fuel Tank": "3-5 litre",
+        "Gears": "4",
+        "Transmission": "Semi-automatic"
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "happyzipmotorbikes",
+      "scrape_timestamp": "2025-11-13T07:22:32.622Z",
+      "source_url": "https://happyzipmotorbikes.com/bike/honda-125cc/",
+      "brand": "Honda",
+      "model": "AIR BLACE WHITE 125CC",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Automatic",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://happyzipmotorbikes.com/wp-content/uploads/2018/09/z6011528883343_5b86559ddaba6f1a6617eb0da753ed5d-847x534.jpg"
+      ],
+      "features": [],
+      "specifications_raw": {
+        "Engine": "125cc",
+        "Fuel Tank": "3-5 litre",
+        "Break": "Abs, Disc",
+        "Transmission": "Automatic"
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "happyzipmotorbikes",
+      "scrape_timestamp": "2025-11-13T07:22:32.622Z",
+      "source_url": "https://happyzipmotorbikes.com/bike/honda-cbx/",
+      "brand": "Honda",
+      "model": "CBX",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Manual",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://happyzipmotorbikes.com/wp-content/uploads/2025/02/CBX-4-409x258.jpg"
+      ],
+      "features": [],
+      "specifications_raw": {
+        "Fuel Tank": "10-12 litre",
+        "Engine": "150cc",
+        "Gears": "6",
+        "Break": "Abs, Disc",
+        "Transmission": "Manual"
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "happyzipmotorbikes",
+      "scrape_timestamp": "2025-11-13T07:22:32.622Z",
+      "source_url": "https://happyzipmotorbikes.com/bike/honda-air-blade-110-white/",
+      "brand": "Honda",
+      "model": "AIR BLADE 110 WHITE",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Automatic",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://happyzipmotorbikes.com/wp-content/uploads/2024/12/174-409x258.jpg"
+      ],
+      "features": [],
+      "specifications_raw": {
+        "Engine": "110cc",
+        "Fuel Tank": "3-5 litre",
+        "Transmission": "Automatic",
+        "Break": "Disc"
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "happyzipmotorbikes",
+      "scrape_timestamp": "2025-11-13T07:22:32.622Z",
+      "source_url": "https://happyzipmotorbikes.com/bike/honda-xr-2023/",
+      "brand": "Honda",
+      "model": "XR 2023",
+      "year": 2023,
+      "engine_capacity_cc": 150,
+      "category": "Manual",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://happyzipmotorbikes.com/wp-content/uploads/2023/07/z6011528934314_8c84e3abc314b113eb9115c2218434a8-409x258.jpg"
+      ],
+      "features": [],
+      "specifications_raw": {
+        "Fuel Tank": "10-12 litre",
+        "Engine": "150cc",
+        "Gears": "5",
+        "Transmission": "Manual"
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "happyzipmotorbikes",
+      "scrape_timestamp": "2025-11-13T07:22:32.622Z",
+      "source_url": "https://happyzipmotorbikes.com/bike/honda-cb-2023/",
+      "brand": "Honda",
+      "model": "CB 2023",
+      "year": 2023,
+      "engine_capacity_cc": 150,
+      "category": "Manual",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://happyzipmotorbikes.com/wp-content/uploads/2024/11/z6073945819146_a2e177695c138f56ef795dbab8a896c8-409x258.jpg"
+      ],
+      "features": [],
+      "specifications_raw": {
+        "Fuel Tank": "10-12 litre",
+        "Engine": "150cc",
+        "Gears": "6",
+        "Break": "Abs, Disc",
+        "Transmission": "Manual"
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "happyzipmotorbikes",
+      "scrape_timestamp": "2025-11-13T07:22:32.622Z",
+      "source_url": "https://happyzipmotorbikes.com/bike/honda-cb150/",
+      "brand": "Honda",
+      "model": "CB150 WITH BOXES",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Manual",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://happyzipmotorbikes.com/wp-content/uploads/2024/11/z6073945822551_7743960479140ea40d515fe6a4c52468-409x258.jpg"
+      ],
+      "features": [],
+      "specifications_raw": {
+        "Fuel Tank": "10-12 litre",
+        "Engine": "150cc",
+        "Gears": "6",
+        "Break": "Abs, Disc",
+        "Transmission": "Manual"
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "happyzipmotorbikes",
+      "scrape_timestamp": "2025-11-13T07:22:32.622Z",
+      "source_url": "https://happyzipmotorbikes.com/bike/yamaha-nvx-155cc/",
+      "brand": "Yamaha",
+      "model": "NVX 155CC",
+      "year": null,
+      "engine_capacity_cc": 155,
+      "category": "Automatic",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://happyzipmotorbikes.com/wp-content/uploads/2024/11/z5952265458858_f93efbd26732f7396156d77990be375c-409x258.jpg"
+      ],
+      "features": [],
+      "specifications_raw": {
+        "Engine": "150cc",
+        "Fuel Tank": "6-7 litre",
+        "Break": "Abs, Disc",
+        "Transmission": "Automatic"
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "happyzipmotorbikes",
+      "scrape_timestamp": "2025-11-13T07:22:32.622Z",
+      "source_url": "https://happyzipmotorbikes.com/bike/honda-air-blade-125cc/",
+      "brand": "Honda",
+      "model": "AIR BLADE 125CC ORANGE",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Automatic",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://happyzipmotorbikes.com/wp-content/uploads/2024/11/z6011528903975_4db6b4b468397cab32d5cbf0e8fe10a9-409x258.jpg"
+      ],
+      "features": [],
+      "specifications_raw": {
+        "Engine": "125cc",
+        "Fuel Tank": "3-5 litre",
+        "Break": "Abs, Disc",
+        "Transmission": "Automatic"
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "happyzipmotorbikes",
+      "scrape_timestamp": "2025-11-13T07:22:32.622Z",
+      "source_url": "https://happyzipmotorbikes.com/bike/honda-airblade125/",
+      "brand": "Honda",
+      "model": "AIR BLADE 125CC BLACK",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Automatic",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://happyzipmotorbikes.com/wp-content/uploads/2023/07/z6011528912660_96862a0cc0958ffa2f2b6ea9808d7ab8-409x258.jpg"
+      ],
+      "features": [],
+      "specifications_raw": {
+        "Engine": "125cc",
+        "Fuel Tank": "3-5 litre",
+        "Break": "Abs, Disc",
+        "Transmission": "Automatic"
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "happyzipmotorbikes",
+      "scrape_timestamp": "2025-11-13T07:22:32.622Z",
+      "source_url": "https://happyzipmotorbikes.com/bike/honda-air-blade-black/",
+      "brand": "Honda",
+      "model": "AIR BLADE BLACK 110CC",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Automatic",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://happyzipmotorbikes.com/wp-content/uploads/2023/07/200-409x258.jpg"
+      ],
+      "features": [],
+      "specifications_raw": {
+        "Engine": "110cc",
+        "Fuel Tank": "3-5 litre",
+        "Break": "Disc",
+        "Transmission": "Automatic"
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "happyzipmotorbikes",
+      "scrape_timestamp": "2025-11-13T07:22:32.622Z",
+      "source_url": "https://happyzipmotorbikes.com/bike/hondaairblade/",
+      "brand": "Honda",
+      "model": "AIRBLADE GOLD BLACK 125CC",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Automatic",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://happyzipmotorbikes.com/wp-content/uploads/2023/07/z6011528899441_4ebd8c6f47858fcad87f9df4f0779b0b-409x258.jpg"
+      ],
+      "features": [],
+      "specifications_raw": {
+        "Engine": "125cc",
+        "Fuel Tank": "3-5 litre",
+        "Break": "Abs, Disc",
+        "Transmission": "Automatic"
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "happyzipmotorbikes",
+      "scrape_timestamp": "2025-11-13T07:22:32.622Z",
+      "source_url": "https://happyzipmotorbikes.com/bike/honda-xr-red/",
+      "brand": "Honda",
+      "model": "XR RED",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": null,
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://happyzipmotorbikes.com/wp-content/uploads/2023/07/3-409x258.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "happyzipmotorbikes",
+      "scrape_timestamp": "2025-11-13T07:22:32.622Z",
+      "source_url": "https://happyzipmotorbikes.com/bike/honda-xr-black/",
+      "brand": "Honda",
+      "model": "XR BLACK",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": null,
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://happyzipmotorbikes.com/wp-content/uploads/2023/07/245-409x258.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "happyzipmotorbikes",
+      "scrape_timestamp": "2025-11-13T07:22:32.622Z",
+      "source_url": "https://happyzipmotorbikes.com/bike/honda-winner-v2/",
+      "brand": "Honda",
+      "model": "WINNER VERSION 2",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": null,
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://happyzipmotorbikes.com/wp-content/uploads/2023/07/164-1-409x258.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "happyzipmotorbikes",
+      "scrape_timestamp": "2025-11-13T07:22:32.622Z",
+      "source_url": "https://happyzipmotorbikes.com/bike/detech-win/",
+      "brand": "Detech",
+      "model": "WIN 125CC",
+      "year": 2022,
+      "engine_capacity_cc": 125,
+      "category": null,
+      "description": "LIKE-NEW",
+      "rental_rates": [],
+      "images": [
+        "https://happyzipmotorbikes.com/wp-content/uploads/2022/05/detech-win-125cc-2022-new-409x258.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    }
+  ]
+}

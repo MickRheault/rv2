@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T12:14:16.504Z",
+    "shop_identifier": "Rome for You",
+    "provider_name": "Rome for You",
+    "place_id": "ChIJz8UpkU5gLxMR69p1_ZSLuVg",
+    "address": "Piazza dei Calcarari, 2, 00186 Roma RM, Italy",
+    "city": "Rome",
+    "province": "Lazio",
+    "country": "Italy",
+    "latitude": 41.8950205,
+    "longitude": 12.4775736,
+    "phone": "06 4543 7855",
+    "website": "http://www.romeforyou.net/",
+    "google_maps_url": "https://maps.google.com/?cid=6393294618052909803",
+    "business_status": "OPERATIONAL",
+    "rating": 4.7,
+    "review_count": 86,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

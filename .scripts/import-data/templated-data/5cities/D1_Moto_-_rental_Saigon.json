@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T10:23:56.409Z",
+    "shop_identifier": "D1 Moto - rental Saigon",
+    "provider_name": "D1 Moto - rental Saigon",
+    "place_id": "ChIJQw9qTOsvdTERIOIqVRrdURk",
+    "address": "69/9 Đ. Lương Hữu Khánh, Phường Phạm Ngũ Lão, Quận 1, Thành phố Hồ Chí Minh, Vietnam",
+    "city": "Ho Chi Minh City",
+    "province": "Ho Chi Minh City",
+    "country": "Vietnam",
+    "latitude": 10.7695569,
+    "longitude": 106.6865697,
+    "phone": "0375 908 782",
+    "website": "https://www.instagram.com/d1.moto",
+    "google_maps_url": "https://maps.google.com/?cid=1824482429229523488",
+    "business_status": "OPERATIONAL",
+    "rating": 4.9,
+    "review_count": 122,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T05:52:05.091Z",
+    "shop_identifier": "VINS RENT A MOTO | ΕΝΟΙΚΙΑΣΗ ΜΟΤΟΣΥΚΛΕΤΑΣ - SCOOTER",
+    "provider_name": "VINS RENT A MOTO | ΕΝΟΙΚΙΑΣΗ ΜΟΤΟΣΥΚΛΕΤΑΣ - SCOOTER",
+    "place_id": "ChIJI5vRaM69oRQRFKyvTo4JLRA",
+    "address": "Kallirrois 24, Athina 117 43, Greece",
+    "city": "Athens",
+    "province": "Attica",
+    "country": "Greece",
+    "latitude": 37.9658754,
+    "longitude": 23.730183,
+    "phone": "21 0922 6612",
+    "website": "https://vinsrentabike.gr/",
+    "google_maps_url": "https://maps.google.com/?cid=1165598385368968212",
+    "business_status": "OPERATIONAL",
+    "rating": 4.9,
+    "review_count": 59,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

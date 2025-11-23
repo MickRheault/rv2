@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T13:03:01.914Z",
+    "shop_identifier": "Pro Bike S. R. L.",
+    "provider_name": "Pro Bike S. R. L.",
+    "place_id": "ChIJJwqY8Y5jLxMRis8b7kqCSsA",
+    "address": "Via Alfredo Catalani, 9, 00199 Roma RM, Italy",
+    "city": "Rome",
+    "province": "Lazio",
+    "country": "Italy",
+    "latitude": 41.93655,
+    "longitude": 12.5092764,
+    "phone": "06 8879 4572",
+    "website": "https://www.pro-bike.it/",
+    "google_maps_url": "https://maps.google.com/?cid=13856030461892743050",
+    "business_status": "OPERATIONAL",
+    "rating": 4.5,
+    "review_count": 214,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

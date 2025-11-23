@@ -1,0 +1,152 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T09:27:54.810Z",
+    "shop_identifier": "Thuê xe máy giá rẻ_95MOTO. - Chi nhánh Bình Tân",
+    "provider_name": "Thuê xe máy giá rẻ_95MOTO. - Chi nhánh Bình Tân",
+    "place_id": "ChIJM5IX9BEtdTER3UaI8GI0lWk",
+    "address": "103/84/1, Chiến Lược, Bình Trị Đông, Bình Tân, Thành phố Hồ Chí Minh, Vietnam",
+    "city": "Ho Chi Minh City",
+    "province": "Ho Chi Minh City",
+    "country": "Vietnam",
+    "latitude": 10.7591826,
+    "longitude": 106.6177186,
+    "phone": "0908 622 340",
+    "website": "http://thuexemaygiare.vn/",
+    "google_maps_url": "https://maps.google.com/?cid=7608044745059223261",
+    "business_status": "OPERATIONAL",
+    "rating": 4.9,
+    "review_count": 59,
+    "rental_conditions": {
+      "return_on_time": "Quý khách hãy trả xe đúng thời gian thuê",
+      "id_required": "Khi thuê xe máy quý khách nhớ mang theo chứng minh nhân dân",
+      "ownership_documents": "Chỉ cầm xe chính chủ các loại, kể cả xe tỉnh",
+      "vehicle_condition": "Đảm bảo giữ sản phẩm xe vẹn nguyên",
+      "damage_policy": "Sẽ phát sinh nếu xe có hư hại",
+      "booking_method": "Đặt xe trực tiếp trên Website của chúng tôi hoặc gọi điện vào hotline",
+      "overtime_policy": "Sau mỗi 24 tiếng, nếu thuê thêm ít hơn 3 tiếng thì sẽ tính bằng nửa ngày. Trên 3 tiếng tính bằng 1 ngày.",
+      "minimum_rental_period": "1 ngày",
+      "deposit_policy": "Tiền cọc từ 1,000,000₫ tùy dòng xe. Miễn phí tiền cọc nếu khách hàng có đem Sổ Hộ Khẩu"
+    },
+    "rental_inclusions": [
+      "Xe luôn tốt và sẵn sàng phục vụ",
+      "Bảo dưỡng miễn phí",
+      "Giao xe miễn phí trong nội thành (cho thuê từ 05 ngày trở lên)"
+    ],
+    "available_service_locations": [
+      "Quận 1",
+      "Quận 2",
+      "Quận 3",
+      "Quận 4",
+      "Quận 5",
+      "Quận 6",
+      "Quận 7",
+      "Quận 8",
+      "Quận 9",
+      "Quận 10",
+      "Quận 11",
+      "Quận 12",
+      "Hóc Môn",
+      "Gò Vấp",
+      "Bình Thạnh",
+      "Bình Tân",
+      "Bình Chánh",
+      "Thủ Đức",
+      "Tân Bình",
+      "Tân Phú"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "thuexemaygiare.vn",
+      "scrape_timestamp": "2025-11-13T09:27:55.410Z",
+      "source_url": null,
+      "brand": null,
+      "model": "XE SỐ",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Manual transmission bikes",
+      "description": "Các dòng xe số phổ thông, phù hợp cho người biết lái xe số",
+      "rental_rates": [
+        {
+          "rate_text": "120,000₫/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 120000,
+          "currency": "VND"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Thủ tục nhanh chóng",
+        "Xe luôn tốt và sẵn sàng phục vụ"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": "Chỉ cần CMND và sổ hộ khẩu",
+      "required_documents_raw": [
+        "Chứng minh thư",
+        "Hộ chiếu",
+        "Thẻ căn cước công dân",
+        "Sổ hộ khẩu (miễn phí cọc)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Bảo hiểm cơ bản",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "VND",
+          "deductible": null,
+          "deductible_currency": "VND",
+          "notes": "Cam kết hoàn cọc, chi phí rõ ràng"
+        }
+      ],
+      "availability_status": "AVAILABLE"
+    },
+    {
+      "shop_identifier": "thuexemaygiare.vn",
+      "scrape_timestamp": "2025-11-13T09:27:55.410Z",
+      "source_url": null,
+      "brand": null,
+      "model": "XE TAY GA",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Scooters",
+      "description": "Các dòng xe tay ga phổ biến, phù hợp cho người không biết lái xe số",
+      "rental_rates": [
+        {
+          "rate_text": "120,000₫/ngày",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 120000,
+          "currency": "VND"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Thủ tục nhanh chóng",
+        "Xe luôn tốt và sẵn sàng phục vụ",
+        "Giao xe tận nơi"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": "Chỉ cần CMND và sổ hộ khẩu",
+      "required_documents_raw": [
+        "Chứng minh thư",
+        "Hộ chiếu",
+        "Thẻ căn cước công dân",
+        "Sổ hộ khẩu (miễn phí cọc)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Bảo hiểm cơ bản",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "VND",
+          "deductible": null,
+          "deductible_currency": "VND",
+          "notes": "Cam kết hoàn cọc, chi phí rõ ràng"
+        }
+      ],
+      "availability_status": "AVAILABLE"
+    }
+  ]
+}

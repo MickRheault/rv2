@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-10-14T19:30:31.056Z",
+    "shop_identifier": "Best Rent a Scooter",
+    "provider_name": "Best Rent a Scooter",
+    "place_id": "ChIJyxGhVsKipBIRPPbv_WvS_jM",
+    "address": "C. de Sicília, 322, Eixample, 08025 Barcelona, Spain",
+    "city": "Barcelona",
+    "province": "Barcelona",
+    "country": "Spain",
+    "latitude": 41.4029898,
+    "longitude": 2.1718181,
+    "phone": "935 32 02 89",
+    "website": "https://www.bestrentscooterbarcelona.com/",
+    "google_maps_url": "https://maps.google.com/?cid=3746663301282526780",
+    "business_status": "OPERATIONAL",
+    "rating": 4.8,
+    "review_count": 626,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

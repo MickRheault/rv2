@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-10-14T21:43:29.293Z",
+    "shop_identifier": "Motobike - RENT BIKE Rent Scooters - Lugage STORE",
+    "provider_name": "Motobike - RENT BIKE Rent Scooters - Lugage STORE",
+    "place_id": "ChIJ_RCnCbajpBIRwbv8sti0-yw",
+    "address": "Carrer de València, 419, L'Eixample, 08013 Barcelona, Spain",
+    "city": "Barcelona",
+    "province": "Barcelona",
+    "country": "Spain",
+    "latitude": 41.402034,
+    "longitude": 2.1753172,
+    "phone": "697 17 66 24",
+    "website": "http://motobikebarcelona.com/",
+    "google_maps_url": "https://maps.google.com/?cid=3241383199632047041",
+    "business_status": "OPERATIONAL",
+    "rating": 4.8,
+    "review_count": 80,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T10:40:46.468Z",
+    "shop_identifier": "Sagobike Givi shop",
+    "provider_name": "Sagobike Givi shop",
+    "place_id": "ChIJOU2iWq0vdTERjFCIVhjKt58",
+    "address": "4/4E Ngô Tất Tố, Phường 22, Bình Thạnh, Thành phố Hồ Chí Minh, Vietnam",
+    "city": "Ho Chi Minh City",
+    "province": "Ho Chi Minh City",
+    "country": "Vietnam",
+    "latitude": 10.788402,
+    "longitude": 106.716614,
+    "phone": "0918 827 733",
+    "website": "http://sagobike.com/",
+    "google_maps_url": "https://maps.google.com/?cid=11508889578648391820",
+    "business_status": "OPERATIONAL",
+    "rating": 4.7,
+    "review_count": 51,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

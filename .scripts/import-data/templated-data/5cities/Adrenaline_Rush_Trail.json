@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T09:58:36.037Z",
+    "shop_identifier": "Adrenaline Rush Trail",
+    "provider_name": "Adrenaline Rush Trail",
+    "place_id": "ChIJVSl-dzgndTERF6p2QA0IbqQ",
+    "address": "City, No. 58 Street 31C, Khu đô thị An Phú An Khánh, Thủ Đức, Thành phố Hồ Chí Minh 700000, Vietnam",
+    "city": "Ho Chi Minh City",
+    "province": "Ho Chi Minh City",
+    "country": "Vietnam",
+    "latitude": 10.7932328,
+    "longitude": 106.7432779,
+    "phone": "0867 101 318",
+    "website": "https://adrenalinrushtrail.com/",
+    "google_maps_url": "https://maps.google.com/?cid=11848416522667469335",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 46,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

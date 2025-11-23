@@ -1,0 +1,558 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T09:24:56.327Z",
+    "shop_identifier": "Rentabike Vietnam- Saigon - Motorbike Rentals + Tours",
+    "provider_name": "Rentabike Vietnam- Saigon - Motorbike Rentals + Tours",
+    "place_id": "ChIJ8Yh4YEQvdTERKb7qfGic8io",
+    "address": "86B Trần Phú, Phường 4, Thành phố Hồ Chí Minh, Vietnam",
+    "city": "Ho Chi Minh City",
+    "province": "Ho Chi Minh City",
+    "country": "Vietnam",
+    "latitude": 10.7620405,
+    "longitude": 106.6784275,
+    "phone": "0904 392 423",
+    "website": "http://rentabikevn.com/",
+    "google_maps_url": "https://maps.google.com/?cid=3094707866543242793",
+    "business_status": "OPERATIONAL",
+    "rating": 4.8,
+    "review_count": 4,
+    "rental_conditions": {
+      "minimum_age": "18+",
+      "license_requirements": "International Driving Permit required",
+      "security_deposit": "Required",
+      "fuel_policy": "Return with same fuel level",
+      "road_assistance": "24/7 assistance line",
+      "one_way_rentals": "Available with additional fee"
+    },
+    "rental_inclusions": [
+      "Well-maintained motorcycle",
+      "Basic insurance",
+      "Helmet",
+      "Briefing on bike operation",
+      "Roadside assistance"
+    ],
+    "available_service_locations": [
+      "Hanoi",
+      "Danang",
+      "Ho Chi Minh City"
+    ],
+    "offered_tours": [
+      {
+        "name": "10-Day Due North",
+        "duration_text": "10 days, 9 nights",
+        "distance_km": 1470,
+        "price_text": "from US $1500",
+        "currency": "USD"
+      },
+      {
+        "name": "Black River Loop",
+        "duration_text": "3 days, 2 nights",
+        "distance_km": 310,
+        "price_text": "from US $450",
+        "currency": "USD"
+      },
+      {
+        "name": "VN/Laos Big Bike Adventure",
+        "duration_text": "11 Days, 10 Nights",
+        "distance_km": 2240,
+        "price_text": "from US $1650",
+        "currency": "USD"
+      },
+      {
+        "name": "Great Loop",
+        "duration_text": "12 days, 11 nights",
+        "distance_km": 1850,
+        "price_text": "from US $1800",
+        "currency": "USD"
+      },
+      {
+        "name": "Run to the Sun",
+        "duration_text": "8 days, 7 nights",
+        "distance_km": 1210,
+        "price_text": "from US $1440",
+        "currency": "USD"
+      },
+      {
+        "name": "3-Day Ha Giang Loop Tour",
+        "duration_text": "3 days, 5 nights",
+        "distance_km": 335,
+        "price_text": "from US $630",
+        "currency": "USD"
+      },
+      {
+        "name": "4-Day Ha Giang Loop Tour",
+        "duration_text": "4 days, 6 nights",
+        "distance_km": 370,
+        "price_text": "from US $840",
+        "currency": "USD"
+      },
+      {
+        "name": "Laos on Two Wheels",
+        "duration_text": "9 Days, 8 Nights",
+        "distance_km": 1680,
+        "price_text": "from US $1980",
+        "currency": "USD"
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "rentabikevn",
+      "scrape_timestamp": "2025-11-13T09:24:57.707Z",
+      "source_url": "https://rentabikevn.com/rental/honda-xr-190/",
+      "brand": "Honda",
+      "model": "XR 190",
+      "year": null,
+      "engine_capacity_cc": 184,
+      "category": "Dual-Sport",
+      "description": "Vietnam's favourite, now with more power",
+      "rental_rates": [
+        {
+          "rate_text": "US $30/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 30,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://rentabikevn.com/rental/honda-xr-190/"
+      ],
+      "features": [
+        "5 speed",
+        "electric + kick",
+        "880 mm seat height",
+        "137 kg weight",
+        "12 litres fuel capacity"
+      ],
+      "specifications_raw": {
+        "Engine": {
+          "Engine Type": "air cooled, OHC, single cylinder",
+          "Displacement": "184 cc",
+          "Bore X Stroke": null,
+          "Ignition": null,
+          "Fuel System": null,
+          "Compression Ratio": null
+        },
+        "Transmission": {
+          "Starter": "electric with kick starter backup",
+          "Gearbox": "5-speed"
+        },
+        "Wheels, Suspension and Brakes": {
+          "Front Suspension": "telescopic fork, 180 mm axle travel",
+          "Rear Suspension": "single shock swing arm, 150 mm axle travel",
+          "Front Brakes": "dual piston caliper, 240 mm disc",
+          "Rear Brakes": "mechanical drum",
+          "Front Tyres": "90/90 19",
+          "Rear Tyres": "110/90 17"
+        },
+        "Dimensions and Weight": {
+          "Wheelbase": "1362 mm",
+          "Seat Height": "825 mm",
+          "Ground Clearance": "243 mm",
+          "Kerb Weight": "129 kg",
+          "Fuel Capacity": "12 litres",
+          "Dimensions": "2091 mm (L) x 811 mm (W) x 1125 mm (H)"
+        }
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rentabikevn",
+      "scrape_timestamp": "2025-11-13T09:24:57.707Z",
+      "source_url": "https://rentabikevn.com/rental/honda-xr-150/",
+      "brand": "Honda",
+      "model": "XR 150",
+      "year": null,
+      "engine_capacity_cc": 149,
+      "category": "Dual-Sport",
+      "description": "Hugely popular 150cc",
+      "rental_rates": [
+        {
+          "rate_text": "US $20/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 20,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://rentabikevn.com/rental/honda-xr-150/"
+      ],
+      "features": [
+        "5 speed",
+        "electric + kick",
+        "825 mm seat height",
+        "129 kg weight",
+        "12 litres fuel capacity"
+      ],
+      "specifications_raw": {
+        "Engine": {
+          "Engine Type": "air cooled, OHC, single cylinder",
+          "Displacement": "149 cc",
+          "Bore X Stroke": "57.3 mm x 57.8 mm",
+          "Ignition": "CDI",
+          "Fuel System": "20 mm piston valve carburettor",
+          "Compression Ratio": "9.5:1"
+        },
+        "Transmission": {
+          "Starter": "electric with kick starter backup",
+          "Gearbox": "5-speed"
+        },
+        "Wheels, Suspension and Brakes": {
+          "Front Suspension": "telescopic fork, 180 mm axle travel",
+          "Rear Suspension": "single shock swing arm, 150 mm axle travel",
+          "Front Brakes": "dual piston caliper, 240 mm disc",
+          "Rear Brakes": "mechanical drum",
+          "Front Tyres": "90/90 19",
+          "Rear Tyres": "110/90 17"
+        },
+        "Dimensions and Weight": {
+          "Wheelbase": "1362 mm",
+          "Seat Height": "825 mm",
+          "Ground Clearance": "243 mm",
+          "Kerb Weight": "129 kg",
+          "Fuel Capacity": "12 litres",
+          "Dimensions": "2091 mm (L) x 811 mm (W) x 1125 mm (H)"
+        }
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rentabikevn",
+      "scrape_timestamp": "2025-11-13T09:24:57.707Z",
+      "source_url": "https://rentabikevn.com/rental/honda-cb-500x/",
+      "brand": "Honda",
+      "model": "CB 500X",
+      "year": null,
+      "engine_capacity_cc": 470,
+      "category": "Touring",
+      "description": "Excellent mid-sized tourer",
+      "rental_rates": [
+        {
+          "rate_text": "US $55/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 55,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://rentabikevn.com/rental/honda-cb-500x/"
+      ],
+      "features": [
+        "6 speed",
+        "electric",
+        "830 mm seat height",
+        "199 kg weight",
+        "17.7 litres fuel capacity"
+      ],
+      "specifications_raw": {
+        "Engine": {
+          "Engine Type": "liquid cooled parallel-twin four stroke",
+          "Displacement": "470 cc",
+          "Bore X Stroke": "67 mm x 66.8 mm",
+          "Ignition": "PGMI – FI",
+          "Fuel System": "fuel injection",
+          "Compression Ratio": "10.7:1"
+        },
+        "Transmission": {
+          "Starter": "electric",
+          "Gearbox": "6-speed"
+        },
+        "Wheels, Suspension and Brakes": {
+          "Front Suspension": "41 mm SFF-BP USD Forks",
+          "Rear Suspension": "Prolink Mono with 5 stage pre load adjuster",
+          "Front Brakes": "dual 296 mm discs with 4 piston calipers; ABS",
+          "Rear Brakes": "240 mm disc; ABS",
+          "Front Tyres": "110/80R19M/C (59H)",
+          "Rear Tyres": "160/60R17M/C"
+        },
+        "Dimensions and Weight": {
+          "Wheelbase": "1445 mm",
+          "Seat Height": "830 mm",
+          "Ground Clearance": "180 mm",
+          "Kerb Weight": "199 kg",
+          "Fuel Capacity": "17.7 litres",
+          "Dimensions": "2,155 mm (L) x 830 mm (W) x 1,410 mm (H)"
+        }
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rentabikevn",
+      "scrape_timestamp": "2025-11-13T09:24:57.707Z",
+      "source_url": "https://rentabikevn.com/rental/vinfast-evo-lite-neo/",
+      "brand": "Vinfast",
+      "model": "Evo Lite Neo",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Scooter",
+      "description": "Daily rides, with zero emissions",
+      "rental_rates": [
+        {
+          "rate_text": "US $10/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 10,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://rentabikevn.com/rental/vinfast-evo-lite-neo/"
+      ],
+      "features": [
+        "78 km range",
+        "49 km/h",
+        "electric",
+        "750 mm seat height",
+        "105 kg weight",
+        "8-10 hours charging"
+      ],
+      "specifications_raw": "Electric scooter with 78 km range, 49 km/h top speed, 750 mm seat height, 105 kg weight, 8-10 hours charging time",
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rentabikevn",
+      "scrape_timestamp": "2025-11-13T09:24:57.707Z",
+      "source_url": "https://rentabikevn.com/rental/honda-future/",
+      "brand": "Honda",
+      "model": "Future",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": "Our most powerful semi-auto",
+      "rental_rates": [
+        {
+          "rate_text": "US $10/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 10,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://rentabikevn.com/rental/honda-future/"
+      ],
+      "features": [
+        "125 cc",
+        "4 speed semi-auto",
+        "electric/kick",
+        "767 mm seat height",
+        "105 kg weight",
+        "5.4 litres fuel capacity"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rentabikevn",
+      "scrape_timestamp": "2025-11-13T09:24:57.707Z",
+      "source_url": "https://rentabikevn.com/rental/honda-vision/",
+      "brand": "Honda",
+      "model": "Vision",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Scooter",
+      "description": "Light, modern city bike",
+      "rental_rates": [
+        {
+          "rate_text": "US $10/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 10,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://rentabikevn.com/rental/honda-vision/"
+      ],
+      "features": [
+        "110 cc",
+        "automatic",
+        "electric",
+        "785 mm seat height",
+        "99 kg weight",
+        "5.2 litres fuel capacity"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rentabikevn",
+      "scrape_timestamp": "2025-11-13T09:24:57.707Z",
+      "source_url": "https://rentabikevn.com/rental/honda-wave-blade/",
+      "brand": "Honda",
+      "model": "Wave Blade",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Scooter",
+      "description": "Upgrade of the Honda Wave Alpha",
+      "rental_rates": [
+        {
+          "rate_text": "US $10/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 10,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://rentabikevn.com/rental/honda-wave-blade/"
+      ],
+      "features": [
+        "110 cc",
+        "4 speed semi-auto",
+        "electric + kick",
+        "769 mm seat height",
+        "98 kg weight",
+        "3.7 litres fuel capacity"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rentabikevn",
+      "scrape_timestamp": "2025-11-13T09:24:57.707Z",
+      "source_url": "https://rentabikevn.com/rental/honda-crf-300/",
+      "brand": "Honda",
+      "model": "CRF 300",
+      "year": null,
+      "engine_capacity_cc": 286,
+      "category": "Dual-Sport",
+      "description": "Honda's most popular dual-sport",
+      "rental_rates": [
+        {
+          "rate_text": "US $55/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 55,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "https://rentabikevn.com/rental/honda-crf-300/"
+      ],
+      "features": [
+        "286 cc",
+        "5 speed",
+        "electric",
+        "880 mm seat height",
+        "142 kg weight",
+        "7.8 litres fuel capacity"
+      ],
+      "specifications_raw": {
+        "Engine": {
+          "Engine Type": "single cylinder, DOHC, liquid cooled",
+          "Displacement": "286 cc",
+          "Bore X Stroke": "76 mm x 63 mm",
+          "Ignition": "Full Transistor Digital",
+          "Fuel System": "PGM-FI electronic fuel injection",
+          "Compression Ratio": "10.7:1"
+        },
+        "Transmission": {
+          "Starter": "electric",
+          "Gearbox": "5-speed"
+        },
+        "Wheels, Suspension and Brakes": {
+          "Front Suspension": "43 mm telescopic upside down",
+          "Rear Suspension": "Prolink Mono with 5 stage pre load adjuster",
+          "Front Brakes": "256 mm disc, 2 piston caliper",
+          "Rear Brakes": "220 mm disc, single piston caliper",
+          "Front Tyres": "80/100 21",
+          "Rear Tyres": "120/80 18"
+        },
+        "Dimensions and Weight": {
+          "Wheelbase": "1455 mm",
+          "Seat Height": "880 mm",
+          "Ground Clearance": "285 mm",
+          "Kerb Weight": "142 kg",
+          "Fuel Capacity": "7.8 litres",
+          "Dimensions": "2230 mm (L) x 820 mm (W) x 1200 mm (H)"
+        }
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rentabikevn",
+      "scrape_timestamp": "2025-11-13T09:24:57.707Z",
+      "source_url": "https://rentabikevn.com/rental/bmw-1250-gs/",
+      "brand": "BMW",
+      "model": "1250 GS",
+      "year": null,
+      "engine_capacity_cc": 1255,
+      "category": "Touring",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://rentabikevn.com/rental/bmw-1250-gs/"
+      ],
+      "features": [
+        "air-liquid cooled, twin cylinder, DOHC, boxer engine",
+        "1255 cc",
+        "6-speed",
+        "electric starter",
+        "BMW Motorrad Telelever front suspension",
+        "single-sided swing arm rear suspension"
+      ],
+      "specifications_raw": {
+        "Engine": {
+          "Engine Type": "air-liquid cooled, twin cylinder, DOHC, boxer engine",
+          "Displacement": "1255 cc",
+          "Bore X Stroke": "102.5 mm x 76 mm",
+          "Ignition": "FI",
+          "Fuel System": "fuel injection",
+          "Compression Ratio": "12.5:1"
+        },
+        "Transmission": {
+          "Starter": "electric",
+          "Gearbox": "6-speed"
+        },
+        "Wheels, Suspension and Brakes": {
+          "Front Suspension": "BMW Motorrad Telelever; stanchion diameter 37 mm",
+          "Rear Suspension": "single-sided swing arm with BMW Motorrad Paralever",
+          "Front Brakes": "dual disc brake, floating brake discs, diameter 305 mm, 4-piston radial calipers",
+          "Rear Brakes": "single disc brake, diameter 276 mm, double-piston floating caliper",
+          "Front Tyres": "120/70 R19",
+          "Rear Tyres": "170/60 R17"
+        },
+        "Dimensions and Weight": {
+          "Wheelbase": "1514 mm",
+          "Seat Height": "850 mm",
+          "Ground Clearance": "790 mm",
+          "Kerb Weight": "249 kg",
+          "Fuel Capacity": "20 litres",
+          "Dimensions": "2207 mm (L) x 952.5mm (W) x 1430 mm (H)"
+        }
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    }
+  ]
+}

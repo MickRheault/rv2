@@ -1,0 +1,1143 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T11:53:20.094Z",
+    "shop_identifier": "Million Rent",
+    "provider_name": "Million Rent",
+    "place_id": "ChIJh_dFhZVeLxMR5dJYuu3mFuY",
+    "address": "Presso La Caramella Bar, Via Palestro, 12, 00166 Roma RM, Italy",
+    "city": "Rome",
+    "province": "Lazio",
+    "country": "Italy",
+    "latitude": 41.9071076,
+    "longitude": 12.5017671,
+    "phone": "338 760 1857",
+    "website": "http://www.noleggiomotoroma.it/",
+    "google_maps_url": "https://maps.google.com/?cid=16579692986919080677",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 32,
+    "rental_conditions": {
+      "driver_license_required": true,
+      "security_deposit_required": true,
+      "no_credit_card_option": true,
+      "125cc_without_motorcycle_license": true,
+      "minimum_age_requirement": null,
+      "international_drivers_permit": null
+    },
+    "rental_inclusions": [
+      "Immatricolazione e bollo",
+      "Assicurazione RCA",
+      "Assistenza stradale 24 ore su 24"
+    ],
+    "available_service_locations": [
+      "Roma",
+      "Rieti",
+      "L'Aquila",
+      "Ascoli Piceno",
+      "Sardegna"
+    ],
+    "offered_tours": [
+      {
+        "name": "Tour in Enduro e Maxi-enduro in Italia",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": "da € 299 a coppia",
+        "currency": "EUR"
+      },
+      {
+        "name": "Noleggio quad e pernottamento",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Escursioni quad nel Reatino",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "noleggiomotoroma",
+      "scrape_timestamp": "2025-11-13T11:53:21.026Z",
+      "source_url": "https://www.noleggiomotoroma.it/noleggio_yamaha_r1.php",
+      "brand": "Yamaha",
+      "model": "YZF R1",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Sport",
+      "description": "Moto supersportiva carenata disponibile per noleggio a Roma e in tutto il centro Italia",
+      "rental_rates": [
+        {
+          "rate_text": "€ 57,00 al giorno",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 57,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.noleggiomotoroma.it/images/noleggio_moto_roma_sportive_r1_lato.webp"
+      ],
+      "features": [
+        "Supersportiva carenata",
+        "Consegna a domicilio disponibile"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Patente valida per categoria A"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "RCA",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione responsabilità civile obbligatoria inclusa"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "noleggiomotoroma",
+      "scrape_timestamp": "2025-11-13T11:53:21.026Z",
+      "source_url": "https://www.noleggiomotoroma.it/noleggio_kawasaki_ninja_roma.php",
+      "brand": "Kawasaki",
+      "model": "Ninja ZX 600",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Sport",
+      "description": "Moto sportiva disponibile per noleggio a Roma e in tutto il centro Italia",
+      "rental_rates": [
+        {
+          "rate_text": "€ 57,00 al giorno",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 57,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.noleggiomotoroma.it/images/noleggio_moto_roma_ninja.webp"
+      ],
+      "features": [
+        "Sportiva carenata",
+        "Consegna a domicilio disponibile"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Patente valida per categoria A"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "RCA",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione responsabilità civile obbligatoria inclusa"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "noleggiomotoroma",
+      "scrape_timestamp": "2025-11-13T11:53:21.026Z",
+      "source_url": "https://www.noleggiomotoroma.it/noleggio_ducati_panigale_v4.php",
+      "brand": "Ducati",
+      "model": "Panigale V4",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Sport",
+      "description": "Moto supersportiva di alta gamma disponibile per noleggio a Roma",
+      "rental_rates": [
+        {
+          "rate_text": "€ 150,00 al giorno",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 150,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.noleggiomotoroma.it/images/noleggio_ducati_panigale_v4.webp"
+      ],
+      "features": [
+        "Supersportiva di alta gamma",
+        "Consegna a domicilio disponibile"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Patente valida per categoria A"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "RCA",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione responsabilità civile obbligatoria inclusa"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "noleggiomotoroma",
+      "scrape_timestamp": "2025-11-13T11:53:21.026Z",
+      "source_url": "https://www.noleggiomotoroma.it/noleggio_suzuki_gsxr_750.php",
+      "brand": "Suzuki",
+      "model": "GSX-R 750 K7",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Sport",
+      "description": "Moto sportiva disponibile per noleggio a Roma e in tutto il centro Italia",
+      "rental_rates": [
+        {
+          "rate_text": "€ 57,00 al giorno",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 57,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.noleggiomotoroma.it/images/gsxr-750.jpg"
+      ],
+      "features": [
+        "Sportiva carenata",
+        "Consegna a domicilio disponibile"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Patente valida per categoria A"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "RCA",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione responsabilità civile obbligatoria inclusa"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "noleggiomotoroma",
+      "scrape_timestamp": "2025-11-13T11:53:21.026Z",
+      "source_url": "https://www.noleggiomotoroma.it/noleggio_suzuki_gsxr_1000.php",
+      "brand": "Suzuki",
+      "model": "GSX-R 1000 K4",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Sport",
+      "description": "Moto sportiva disponibile per noleggio a Roma e in tutto il centro Italia",
+      "rental_rates": [
+        {
+          "rate_text": "€ 57,00 al giorno",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 57,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.noleggiomotoroma.it/images/gsxr-1000.jpg"
+      ],
+      "features": [
+        "Sportiva carenata",
+        "Consegna a domicilio disponibile"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Patente valida per categoria A"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "RCA",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione responsabilità civile obbligatoria inclusa"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "noleggiomotoroma",
+      "scrape_timestamp": "2025-11-13T11:53:21.026Z",
+      "source_url": "https://www.noleggiomotoroma.it/noleggio_honda_hornet.php",
+      "brand": "Honda",
+      "model": "Hornet 600",
+      "year": null,
+      "engine_capacity_cc": 600,
+      "category": "Naked",
+      "description": "Moto naked perfetta per la città o una passeggiata tranquilla",
+      "rental_rates": [
+        {
+          "rate_text": "€ 59,00 al giorno",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 59,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.noleggiomotoroma.it/images/noleggio_honda_hornet.jpg"
+      ],
+      "features": [
+        "Naked bike",
+        "Perfetta per la città",
+        "Consegna a domicilio disponibile"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Patente valida per categoria A2"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "RCA",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione responsabilità civile obbligatoria inclusa"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "noleggiomotoroma",
+      "scrape_timestamp": "2025-11-13T11:53:21.026Z",
+      "source_url": "https://www.noleggiomotoroma.it/noleggio_ducati_monster.php",
+      "brand": "Ducati",
+      "model": "Monster 696",
+      "year": null,
+      "engine_capacity_cc": 696,
+      "category": "Naked",
+      "description": "Moto naked perfetta per la città o una passeggiata tranquilla",
+      "rental_rates": [
+        {
+          "rate_text": "€ 59,00 al giorno",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 59,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.noleggiomotoroma.it/images/ducati696.jpg"
+      ],
+      "features": [
+        "Naked bike",
+        "Perfetta per la città",
+        "Consegna a domicilio disponibile"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Patente valida per categoria A2"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "RCA",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione responsabilità civile obbligatoria inclusa"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "noleggiomotoroma",
+      "scrape_timestamp": "2025-11-13T11:53:21.026Z",
+      "source_url": "https://www.noleggiomotoroma.it/noleggio_enduro_husqvarna_te_250.php",
+      "brand": "Husqvarna",
+      "model": "TE 250 4t",
+      "year": null,
+      "engine_capacity_cc": 250,
+      "category": "Enduro",
+      "description": "Moto enduro specializzata per terreni impegnativi",
+      "rental_rates": [
+        {
+          "rate_text": "€ 49,00 al giorno",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 49,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.noleggiomotoroma.it/images/noleggio_enduro_husqvarna_te_250.jpg"
+      ],
+      "features": [
+        "Enduro specializzata",
+        "Per terreni impegnativi",
+        "Consegna a domicilio disponibile"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Patente valida per categoria A2"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "RCA",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione responsabilità civile obbligatoria inclusa"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "noleggiomotoroma",
+      "scrape_timestamp": "2025-11-13T11:53:21.026Z",
+      "source_url": "https://www.noleggiomotoroma.it/noleggio_enduro_husqvarna_te_450.php",
+      "brand": "Husqvarna",
+      "model": "TE 450 4t",
+      "year": null,
+      "engine_capacity_cc": 450,
+      "category": "Enduro",
+      "description": "Moto enduro specializzata per terreni impegnativi",
+      "rental_rates": [
+        {
+          "rate_text": "€ 49,00 al giorno",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 49,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.noleggiomotoroma.it/images/noleggio_enduro_husqvarna_te_450.jpg"
+      ],
+      "features": [
+        "Enduro specializzata",
+        "Per terreni impegnativi",
+        "Consegna a domicilio disponibile"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Patente valida per categoria A2"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "RCA",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione responsabilità civile obbligatoria inclusa"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "noleggiomotoroma",
+      "scrape_timestamp": "2025-11-13T11:53:21.026Z",
+      "source_url": "https://www.noleggiomotoroma.it/noleggio_enduro_husqvarna_tr_650.php",
+      "brand": "Husqvarna",
+      "model": "TR 650",
+      "year": null,
+      "engine_capacity_cc": 650,
+      "category": "Enduro",
+      "description": "Moto enduro da viaggio adatta anche per due passeggeri",
+      "rental_rates": [
+        {
+          "rate_text": "€ 49,00 al giorno",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 49,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.noleggiomotoroma.it/images/noleggio_enduro_husqvarna_tr_650.jpg"
+      ],
+      "features": [
+        "Enduro da viaggio",
+        "Adatta per due passeggeri",
+        "Consegna a domicilio disponibile"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Patente valida per categoria A"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "RCA",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione responsabilità civile obbligatoria inclusa"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "noleggiomotoroma",
+      "scrape_timestamp": "2025-11-13T11:53:21.026Z",
+      "source_url": "https://www.noleggiomotoroma.it/noleggio_yamaha_xt_600.php",
+      "brand": "Yamaha",
+      "model": "XT 600",
+      "year": null,
+      "engine_capacity_cc": 600,
+      "category": "Enduro",
+      "description": "Moto enduro da viaggio adatta anche per due passeggeri",
+      "rental_rates": [
+        {
+          "rate_text": "€ 49,00 al giorno",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 49,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.noleggiomotoroma.it/images/noleggio_yamaha_xt_600.jpg"
+      ],
+      "features": [
+        "Enduro da viaggio",
+        "Adatta per due passeggeri",
+        "Consegna a domicilio disponibile"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Patente valida per categoria A"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "RCA",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione responsabilità civile obbligatoria inclusa"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "noleggiomotoroma",
+      "scrape_timestamp": "2025-11-13T11:53:21.026Z",
+      "source_url": "https://www.noleggiomotoroma.it/noleggio_harley_davidson_883_iron.php",
+      "brand": "Harley Davidson",
+      "model": "883 Iron",
+      "year": null,
+      "engine_capacity_cc": 883,
+      "category": "Cruiser",
+      "description": "Moto Harley Davidson per noleggio libero a Roma",
+      "rental_rates": [
+        {
+          "rate_text": "€ 79,00 al giorno",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 79,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.noleggiomotoroma.it/images/harley-davidson-883-iron.jpg"
+      ],
+      "features": [
+        "Cruiser",
+        "Noleggio senza carta di credito disponibile",
+        "Consegna a domicilio disponibile"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Patente valida per categoria A"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "RCA",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione responsabilità civile obbligatoria inclusa"
+        }
+      ],
+      "availability_status": "in_arrivo"
+    },
+    {
+      "shop_identifier": "noleggiomotoroma",
+      "scrape_timestamp": "2025-11-13T11:53:21.026Z",
+      "source_url": "https://www.noleggiomotoroma.it/noleggio_benelli_trk.php",
+      "brand": "Benelli",
+      "model": "TRK",
+      "year": null,
+      "engine_capacity_cc": 502,
+      "category": "Touring",
+      "description": "Moto da turismo completa di borse e accessori",
+      "rental_rates": [
+        {
+          "rate_text": "€ 57,00 al giorno",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 57,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.noleggiomotoroma.it/images/noleggio_benelli_trk.webp"
+      ],
+      "features": [
+        "Moto da turismo",
+        "Completa di borse e accessori",
+        "Consegna a domicilio disponibile"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Patente valida per categoria A"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "RCA",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione responsabilità civile obbligatoria inclusa"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "noleggiomotoroma",
+      "scrape_timestamp": "2025-11-13T11:53:21.026Z",
+      "source_url": "https://www.noleggiomotoroma.it/noleggio_moto_bmw_turismo_roma.php",
+      "brand": "BMW",
+      "model": "F800 GS",
+      "year": null,
+      "engine_capacity_cc": 800,
+      "category": "Touring",
+      "description": "Moto da turismo completa di borse e accessori",
+      "rental_rates": [
+        {
+          "rate_text": "€ 65,00 al giorno",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 65,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.noleggiomotoroma.it/images/bmw-gs.jpeg"
+      ],
+      "features": [
+        "Moto da turismo",
+        "Completa di borse e accessori",
+        "Consegna a domicilio disponibile"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Patente valida per categoria A"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "RCA",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione responsabilità civile obbligatoria inclusa"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "noleggiomotoroma",
+      "scrape_timestamp": "2025-11-13T11:53:21.026Z",
+      "source_url": "https://www.noleggiomotoroma.it/noleggio_moto_bmw_turismo_roma.php",
+      "brand": "Husqvarna",
+      "model": "TR 650 Terra",
+      "year": null,
+      "engine_capacity_cc": 650,
+      "category": "Touring",
+      "description": "Moto da turismo completa di borse e accessori",
+      "rental_rates": [
+        {
+          "rate_text": "€ 57,00 al giorno",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 57,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.noleggiomotoroma.it/images/noleggio_moto_viaggio.jpg"
+      ],
+      "features": [
+        "Moto da turismo",
+        "Completa di borse e accessori",
+        "Consegna a domicilio disponibile"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Patente valida per categoria A"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "RCA",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione responsabilità civile obbligatoria inclusa"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "noleggiomotoroma",
+      "scrape_timestamp": "2025-11-13T11:53:21.026Z",
+      "source_url": "https://www.noleggiomotoroma.it/noleggio_moto_lungo_termine.php",
+      "brand": "Yamaha",
+      "model": "R6",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Sport",
+      "description": "Noleggio lungo termine minimo 12 mesi",
+      "rental_rates": [],
+      "images": [
+        "https://www.noleggiomotoroma.it/images/r6-lungo-termine.jpg"
+      ],
+      "features": [
+        "Noleggio lungo termine",
+        "Spese di immatricolazione e bollo incluse",
+        "Assicurazione RCA inclusa",
+        "Assicurazione Furto/incendio/atti vandalici inclusa",
+        "Assicurazione Full Casco inclusa",
+        "Manutenzione ordinaria inclusa",
+        "Manutenzione straordinaria inclusa",
+        "Assistenza stradale 24 ore su 24 inclusa"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Patente valida per categoria A"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "RCA",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione responsabilità civile obbligatoria inclusa"
+        },
+        {
+          "type_name": "Furto/incendio/atti vandalici",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione inclusa nel noleggio lungo termine"
+        },
+        {
+          "type_name": "Full Casco",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione inclusa nel noleggio lungo termine"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "noleggiomotoroma",
+      "scrape_timestamp": "2025-11-13T11:53:21.026Z",
+      "source_url": "https://www.noleggiomotoroma.it/noleggio_moto_lungo_termine.php",
+      "brand": "Yamaha",
+      "model": "R1",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Sport",
+      "description": "Noleggio lungo termine",
+      "rental_rates": [],
+      "images": [],
+      "features": [
+        "Noleggio lungo termine",
+        "Spese di immatricolazione e bollo incluse",
+        "Assicurazione RCA inclusa",
+        "Assicurazione Furto/incendio/atti vandalici inclusa",
+        "Assicurazione Full Casco inclusa",
+        "Manutenzione ordinaria inclusa",
+        "Manutenzione straordinaria inclusa",
+        "Assistenza stradale 24 ore su 24 inclusa"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Patente valida per categoria A"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "RCA",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione responsabilità civile obbligatoria inclusa"
+        },
+        {
+          "type_name": "Furto/incendio/atti vandalici",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione inclusa nel noleggio lungo termine"
+        },
+        {
+          "type_name": "Full Casco",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione inclusa nel noleggio lungo termine"
+        }
+      ],
+      "availability_status": "in_arrivo"
+    },
+    {
+      "shop_identifier": "noleggiomotoroma",
+      "scrape_timestamp": "2025-11-13T11:53:21.026Z",
+      "source_url": "https://www.noleggiomotoroma.it/noleggio_moto_lungo_termine.php",
+      "brand": "Yamaha",
+      "model": "TMAX 530",
+      "year": null,
+      "engine_capacity_cc": 530,
+      "category": "Scooter",
+      "description": "Noleggio lungo termine",
+      "rental_rates": [],
+      "images": [],
+      "features": [
+        "Noleggio lungo termine",
+        "Spese di immatricolazione e bollo incluse",
+        "Assicurazione RCA inclusa",
+        "Assicurazione Furto/incendio/atti vandalici inclusa",
+        "Assicurazione Full Casco inclusa",
+        "Manutenzione ordinaria inclusa",
+        "Manutenzione straordinaria inclusa",
+        "Assistenza stradale 24 ore su 24 inclusa"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Patente valida per categoria A"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "RCA",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione responsabilità civile obbligatoria inclusa"
+        },
+        {
+          "type_name": "Furto/incendio/atti vandalici",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione inclusa nel noleggio lungo termine"
+        },
+        {
+          "type_name": "Full Casco",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione inclusa nel noleggio lungo termine"
+        }
+      ],
+      "availability_status": "in_arrivo"
+    },
+    {
+      "shop_identifier": "noleggiomotoroma",
+      "scrape_timestamp": "2025-11-13T11:53:21.026Z",
+      "source_url": "https://www.noleggiomotoroma.it/noleggio_moto_lungo_termine.php",
+      "brand": "Ducati",
+      "model": "1299 Panigale",
+      "year": null,
+      "engine_capacity_cc": 1299,
+      "category": "Sport",
+      "description": "Noleggio lungo termine",
+      "rental_rates": [],
+      "images": [],
+      "features": [
+        "Noleggio lungo termine",
+        "Spese di immatricolazione e bollo incluse",
+        "Assicurazione RCA inclusa",
+        "Assicurazione Furto/incendio/atti vandalici inclusa",
+        "Assicurazione Full Casco inclusa",
+        "Manutenzione ordinaria inclusa",
+        "Manutenzione straordinaria inclusa",
+        "Assistenza stradale 24 ore su 24 inclusa"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Patente valida per categoria A"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "RCA",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione responsabilità civile obbligatoria inclusa"
+        },
+        {
+          "type_name": "Furto/incendio/atti vandalici",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione inclusa nel noleggio lungo termine"
+        },
+        {
+          "type_name": "Full Casco",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione inclusa nel noleggio lungo termine"
+        }
+      ],
+      "availability_status": "in_arrivo"
+    },
+    {
+      "shop_identifier": "noleggiomotoroma",
+      "scrape_timestamp": "2025-11-13T11:53:21.026Z",
+      "source_url": "https://www.noleggiomotoroma.it/noleggio_moto_lungo_termine.php",
+      "brand": "BMW",
+      "model": "GS 1200 R Adventure",
+      "year": null,
+      "engine_capacity_cc": 1200,
+      "category": "Touring",
+      "description": "Noleggio lungo termine",
+      "rental_rates": [],
+      "images": [],
+      "features": [
+        "Noleggio lungo termine",
+        "Spese di immatricolazione e bollo incluse",
+        "Assicurazione RCA inclusa",
+        "Assicurazione Furto/incendio/atti vandalici inclusa",
+        "Assicurazione Full Casco inclusa",
+        "Manutenzione ordinaria inclusa",
+        "Manutenzione straordinaria inclusa",
+        "Assistenza stradale 24 ore su 24 inclusa"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Patente valida per categoria A"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "RCA",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione responsabilità civile obbligatoria inclusa"
+        },
+        {
+          "type_name": "Furto/incendio/atti vandalici",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione inclusa nel noleggio lungo termine"
+        },
+        {
+          "type_name": "Full Casco",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione inclusa nel noleggio lungo termine"
+        }
+      ],
+      "availability_status": "in_arrivo"
+    },
+    {
+      "shop_identifier": "noleggiomotoroma",
+      "scrape_timestamp": "2025-11-13T11:53:21.026Z",
+      "source_url": "https://www.noleggiomotoroma.it/noleggio_moto_lungo_termine.php",
+      "brand": "Harley Davidson",
+      "model": null,
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Cruiser",
+      "description": "Noleggio lungo termine",
+      "rental_rates": [],
+      "images": [],
+      "features": [
+        "Noleggio lungo termine",
+        "Spese di immatricolazione e bollo incluse",
+        "Assicurazione RCA inclusa",
+        "Assicurazione Furto/incendio/atti vandalici inclusa",
+        "Assicurazione Full Casco inclusa",
+        "Manutenzione ordinaria inclusa",
+        "Manutenzione straordinaria inclusa",
+        "Assistenza stradale 24 ore su 24 inclusa"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Patente valida per categoria A"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "RCA",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione responsabilità civile obbligatoria inclusa"
+        },
+        {
+          "type_name": "Furto/incendio/atti vandalici",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione inclusa nel noleggio lungo termine"
+        },
+        {
+          "type_name": "Full Casco",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione inclusa nel noleggio lungo termine"
+        }
+      ],
+      "availability_status": "in_arrivo"
+    },
+    {
+      "shop_identifier": "noleggiomotoroma",
+      "scrape_timestamp": "2025-11-13T11:53:21.026Z",
+      "source_url": "https://www.noleggiomotoroma.it/noleggio_moto_lungo_termine.php",
+      "brand": "Honda",
+      "model": "Africa Twin ABS Adventure",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Touring",
+      "description": "Noleggio lungo termine",
+      "rental_rates": [],
+      "images": [],
+      "features": [
+        "Noleggio lungo termine",
+        "Spese di immatricolazione e bollo incluse",
+        "Assicurazione RCA inclusa",
+        "Assicurazione Furto/incendio/atti vandalici inclusa",
+        "Assicurazione Full Casco inclusa",
+        "Manutenzione ordinaria inclusa",
+        "Manutenzione straordinaria inclusa",
+        "Assistenza stradale 24 ore su 24 inclusa"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Patente valida per categoria A"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "RCA",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione responsabilità civile obbligatoria inclusa"
+        },
+        {
+          "type_name": "Furto/incendio/atti vandalici",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione inclusa nel noleggio lungo termine"
+        },
+        {
+          "type_name": "Full Casco",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Assicurazione inclusa nel noleggio lungo termine"
+        }
+      ],
+      "availability_status": "in_arrivo"
+    }
+  ]
+}

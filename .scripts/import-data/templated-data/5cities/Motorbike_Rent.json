@@ -1,0 +1,569 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T05:27:43.848Z",
+    "shop_identifier": "Motorbike Rent",
+    "provider_name": "Motorbike Rent",
+    "place_id": "ChIJD0S5Bmm9oRQRjGUxzKxSJnA",
+    "address": "Λαγουμιτζή 60 &, Trikkis, Athina 117 45, Greece",
+    "city": "Athens",
+    "province": "Attica",
+    "country": "Greece",
+    "latitude": 37.9563717,
+    "longitude": 23.7238812,
+    "phone": "21 0901 6300",
+    "website": "https://motorbikerent.gr/",
+    "google_maps_url": "https://maps.google.com/?cid=8081237483476575628",
+    "business_status": "OPERATIONAL",
+    "rating": 4.9,
+    "review_count": 162,
+    "rental_conditions": {
+      "min_rental_days": 1,
+      "late_return_fee_eur": 5,
+      "cdw_cost_eur": 10,
+      "cdw_coverage_eur": 250,
+      "theft_insurance_available": true,
+      "fuel_policy": "return_full",
+      "daily_mileage_limit_km": 250,
+      "excess_mileage_cost_eur": 0.2,
+      "required_license_type": "Class A (unrestricted)",
+      "security_deposit_required": true,
+      "cancellation_policy": "20% non-refundable deposit",
+      "road_assistance": "24-hour free throughout Greece (except some islands)"
+    },
+    "rental_inclusions": [
+      "Helmet",
+      "Basic liability insurance"
+    ],
+    "available_service_locations": [
+      "Athens"
+    ],
+    "offered_tours": [
+      {
+        "name": "Moto Trip to Vouliagmeni",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": "€200",
+        "currency": "EUR"
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "motorbikerent.gr",
+      "scrape_timestamp": "2025-11-13T05:27:44.736Z",
+      "source_url": "http://motorbikerent.gr/rent-motorcycle/rent-scooter-piaggio-beverly-300",
+      "brand": "Piaggio",
+      "model": "Beverly 300",
+      "year": null,
+      "engine_capacity_cc": 300,
+      "category": "Scooter",
+      "description": "Scooter rentals in Athens, check out our low prices. Rent a scooter on line, we offer the right scooter for you. Rent scooter and explore Athens. The Piaggio 300cc is a win-win as far as scooters go. With a big 16inch wheel up front, monster size brakes usually seen on full size motorcycles, an assortment of tech acronyms and an ample touring windscreen, the Beverly 300cc is a downright proper little touring scooter.",
+      "rental_rates": [
+        {
+          "rate_text": "€48 per day",
+          "min_days": 1,
+          "max_days": 3,
+          "rate_per_day": 48,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "€43 per day",
+          "min_days": 4,
+          "max_days": 6,
+          "rate_per_day": 43,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "€40 per day",
+          "min_days": 7,
+          "max_days": null,
+          "rate_per_day": 40,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://motorbikerent.gr/images/uploads/34/motorcycle_rentas_athens__small.jpg",
+        "https://motorbikerent.gr/images/uploads/34/motorcycle_rentas_athens__large.jpg"
+      ],
+      "features": [
+        "Riders: 2",
+        "Gearbox: Automatic",
+        "Horsepower: 27hp",
+        "Engine strokes: 4T",
+        "Disc brakes: 2",
+        "Helmet case",
+        "Liquid cool"
+      ],
+      "specifications_raw": {
+        "engine_cc": 300,
+        "engine_type": "4T",
+        "brakes": "2 disc brakes",
+        "wheel_size": "16 inch front"
+      },
+      "conditions_raw": "Scooter rentals in Athens, check out our low prices. Rent a scooter on line, we offer the right scooter for you. Rent scooter and explore Athens.",
+      "required_documents_raw": [
+        "European or international driver's license (Class A for unrestricted motorcycles)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Liability",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Lessee responsible for damage up to market value"
+        },
+        {
+          "type_name": "CDW",
+          "is_included": false,
+          "cost_per_day": 10,
+          "currency": "EUR",
+          "deductible": 250,
+          "deductible_currency": "EUR",
+          "notes": "Does not cover bottom of motorcycle, tires, rims and exhaust"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "motorbikerent.gr",
+      "scrape_timestamp": "2025-11-13T05:27:44.736Z",
+      "source_url": "http://motorbikerent.gr/rent-motorcycle/rent-honda-cbx-500",
+      "brand": "Honda",
+      "model": "CB500X",
+      "year": null,
+      "engine_capacity_cc": 500,
+      "category": "Motorcycle",
+      "description": "Motorcycle rentals in Athens, check out our low prices. Rent a motorcycle on line, we offer the right Motorcycle for you. Rent Motorcycle and explore Athens.",
+      "rental_rates": [
+        {
+          "rate_text": "€70 per day",
+          "min_days": 1,
+          "max_days": 3,
+          "rate_per_day": 70,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "€65 per day",
+          "min_days": 4,
+          "max_days": 6,
+          "rate_per_day": 65,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "€60 per day",
+          "min_days": 7,
+          "max_days": null,
+          "rate_per_day": 60,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://motorbikerent.gr/images/uploads/24/6cb500x..__small.jpg",
+        "https://motorbikerent.gr/images/uploads/24/6cb500x..__large.jpg"
+      ],
+      "features": [
+        "Riders: 2",
+        "Gearbox: Automatic",
+        "Horsepower: 47hp",
+        "Engine strokes: 4T",
+        "Disc brakes: 2",
+        "Helmet case",
+        "Starter Liquid cooled"
+      ],
+      "specifications_raw": {
+        "engine_cc": 500,
+        "engine_type": "4T",
+        "horsepower": "47hp",
+        "brakes": "2 disc brakes"
+      },
+      "conditions_raw": "Motorcycle rentals in Athens, check out our low prices. Rent a motorcycle on line, we offer the right Motorcycle for you. Rent Motorcycle and explore Athens.",
+      "required_documents_raw": [
+        "European or international driver's license (Class A for unrestricted motorcycles)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Liability",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Lessee responsible for damage up to market value"
+        },
+        {
+          "type_name": "CDW",
+          "is_included": false,
+          "cost_per_day": 10,
+          "currency": "EUR",
+          "deductible": 250,
+          "deductible_currency": "EUR",
+          "notes": "Does not cover bottom of motorcycle, tires, rims and exhaust"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "motorbikerent.gr",
+      "scrape_timestamp": "2025-11-13T05:27:44.736Z",
+      "source_url": "http://motorbikerent.gr/rent-motorcycle/rent-honda-sh-150",
+      "brand": "Honda",
+      "model": "SH 150",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "€20 per day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 20,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://motorbikerent.gr/images/uploads/21/4honda-sh-150__small.jpg",
+        "https://motorbikerent.gr/images/uploads/21/4honda-sh-150__large.jpg"
+      ],
+      "features": [],
+      "specifications_raw": {
+        "engine_cc": 150
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "European or international driver's license (Class A for unrestricted motorcycles)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Liability",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Lessee responsible for damage up to market value"
+        },
+        {
+          "type_name": "CDW",
+          "is_included": false,
+          "cost_per_day": 10,
+          "currency": "EUR",
+          "deductible": 250,
+          "deductible_currency": "EUR",
+          "notes": "Does not cover bottom of motorcycle, tires, rims and exhaust"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "motorbikerent.gr",
+      "scrape_timestamp": "2025-11-13T05:27:44.736Z",
+      "source_url": "http://motorbikerent.gr/rent-motorcycle/piaggio-mp3-300lt",
+      "brand": "Piaggio",
+      "model": "MP3 300LT",
+      "year": null,
+      "engine_capacity_cc": 300,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "€40 per day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 40,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://motorbikerent.gr/images/uploads/26/8mp3-300__small.jpg"
+      ],
+      "features": [],
+      "specifications_raw": {
+        "engine_cc": 300
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "European or international driver's license (Class A for unrestricted motorcycles)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Liability",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Lessee responsible for damage up to market value"
+        },
+        {
+          "type_name": "CDW",
+          "is_included": false,
+          "cost_per_day": 10,
+          "currency": "EUR",
+          "deductible": 250,
+          "deductible_currency": "EUR",
+          "notes": "Does not cover bottom of motorcycle, tires, rims and exhaust"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "motorbikerent.gr",
+      "scrape_timestamp": "2025-11-13T05:27:44.736Z",
+      "source_url": "http://motorbikerent.gr/rent-motorcycle/rent-scooter-piaggio-beverly-350",
+      "brand": "Piaggio",
+      "model": "Beverly 350",
+      "year": null,
+      "engine_capacity_cc": 350,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "€40 per day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 40,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://motorbikerent.gr/images/uploads/25/tn_7piaggio-beverly-350__small.jpg"
+      ],
+      "features": [],
+      "specifications_raw": {
+        "engine_cc": 350
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "European or international driver's license (Class A for unrestricted motorcycles)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Liability",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Lessee responsible for damage up to market value"
+        },
+        {
+          "type_name": "CDW",
+          "is_included": false,
+          "cost_per_day": 10,
+          "currency": "EUR",
+          "deductible": 250,
+          "deductible_currency": "EUR",
+          "notes": "Does not cover bottom of motorcycle, tires, rims and exhaust"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "motorbikerent.gr",
+      "scrape_timestamp": "2025-11-13T05:27:44.736Z",
+      "source_url": "http://motorbikerent.gr/rent-motorcycle/rent-honda-beat-110",
+      "brand": "Honda",
+      "model": "Beat 110",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "€20 per day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 20,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://motorbikerent.gr/images/uploads/23/5honda-beat_110.__small.jpg"
+      ],
+      "features": [],
+      "specifications_raw": {
+        "engine_cc": 110
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "European or international driver's license (Class A for unrestricted motorcycles)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Liability",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Lessee responsible for damage up to market value"
+        },
+        {
+          "type_name": "CDW",
+          "is_included": false,
+          "cost_per_day": 10,
+          "currency": "EUR",
+          "deductible": 250,
+          "deductible_currency": "EUR",
+          "notes": "Does not cover bottom of motorcycle, tires, rims and exhaust"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "motorbikerent.gr",
+      "scrape_timestamp": "2025-11-13T05:27:44.736Z",
+      "source_url": "http://motorbikerent.gr/rent-motorcycle/rent-honda-sh-300",
+      "brand": "Honda",
+      "model": "SH 300",
+      "year": null,
+      "engine_capacity_cc": 300,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "€34 per day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 34,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://motorbikerent.gr/images/uploads/22/3honda-sh-300__small.jpg"
+      ],
+      "features": [],
+      "specifications_raw": {
+        "engine_cc": 300
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "European or international driver's license (Class A for unrestricted motorcycles)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Liability",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Lessee responsible for damage up to market value"
+        },
+        {
+          "type_name": "CDW",
+          "is_included": false,
+          "cost_per_day": 10,
+          "currency": "EUR",
+          "deductible": 250,
+          "deductible_currency": "EUR",
+          "notes": "Does not cover bottom of motorcycle, tires, rims and exhaust"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "motorbikerent.gr",
+      "scrape_timestamp": "2025-11-13T05:27:44.736Z",
+      "source_url": "http://motorbikerent.gr/rent-motorcycle/rent-honda-nx750x",
+      "brand": "Honda",
+      "model": "NX750X",
+      "year": null,
+      "engine_capacity_cc": 750,
+      "category": "Motorcycle",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "€70 per day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 70,
+          "currency": "EUR"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": {
+        "engine_cc": 750
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "European or international driver's license (Class A for unrestricted motorcycles)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Liability",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Lessee responsible for damage up to market value"
+        },
+        {
+          "type_name": "CDW",
+          "is_included": false,
+          "cost_per_day": 10,
+          "currency": "EUR",
+          "deductible": 250,
+          "deductible_currency": "EUR",
+          "notes": "Does not cover bottom of motorcycle, tires, rims and exhaust"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "motorbikerent.gr",
+      "scrape_timestamp": "2025-11-13T05:27:44.736Z",
+      "source_url": "http://motorbikerent.gr/rent-motorcycle/rent-suzuki-dl650v-v-strom",
+      "brand": "Suzuki",
+      "model": "DL650V V-strom",
+      "year": null,
+      "engine_capacity_cc": 650,
+      "category": "Motorcycle",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "€65 per day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 65,
+          "currency": "EUR"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": {
+        "engine_cc": 650
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "European or international driver's license (Class A for unrestricted motorcycles)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Liability",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Lessee responsible for damage up to market value"
+        },
+        {
+          "type_name": "CDW",
+          "is_included": false,
+          "cost_per_day": 10,
+          "currency": "EUR",
+          "deductible": 250,
+          "deductible_currency": "EUR",
+          "notes": "Does not cover bottom of motorcycle, tires, rims and exhaust"
+        }
+      ],
+      "availability_status": null
+    }
+  ]
+}

@@ -1,0 +1,555 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T08:08:21.032Z",
+    "shop_identifier": "Ha Noi Pearl Motorbikes",
+    "provider_name": "Ha Noi Pearl Motorbikes",
+    "place_id": "ChIJd9x9Rr2rNTER6eNsq5qg-IE",
+    "address": "8 Ng. Trạm, Hàng Bông, Hoàn Kiếm, Hà Nội 10000, Vietnam",
+    "city": "Hanoi",
+    "province": "Hanoi",
+    "country": "Vietnam",
+    "latitude": 21.0308252,
+    "longitude": 105.8457902,
+    "phone": "0374 548 265",
+    "website": "http://pearlmotorbikes.com/",
+    "google_maps_url": "https://maps.google.com/?cid=9365412011278394345",
+    "business_status": "OPERATIONAL",
+    "rating": 4.9,
+    "review_count": 170,
+    "rental_conditions": {
+      "international_driving_permit_required": "Valid International Driving Permit (IDP) required for non-Vietnamese riders for motorcycles over 50cc",
+      "price_negotiation": "Some prices require calling for quote",
+      "one_way_rental_available": "One-way rentals available from Hanoi to Ho Chi Minh City and other destinations",
+      "minimum_rental_period": "1 day"
+    },
+    "rental_inclusions": [
+      "Basic insurance",
+      "Helmet",
+      "Basic roadside assistance"
+    ],
+    "available_service_locations": [
+      "Hanoi",
+      "Ho Chi Minh City",
+      "Northern Vietnam (Sapa, Ha Giang, Cao Bang)",
+      "Central Vietnam (Halong Bay, Danang, Hoi An)"
+    ],
+    "offered_tours": [
+      {
+        "name": "travel to Hagiang",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Halong bay deluxe tours",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Halong bay standard cruise",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Bai Tu Long Bay Cruises",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Sapa Market Tour",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Sapa - Fansipan Tour",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Sapa Trekking Tour",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "10days travel in the Northern vietnam",
+        "duration_text": "10 days",
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "Northern Vietnam Motorbike Trip – 10-Day Itinerary",
+        "duration_text": "10 days",
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "pearlmotorbikes",
+      "scrape_timestamp": "2025-11-13T08:08:22.957Z",
+      "source_url": "https://pearlmotorbikes.com/honda-cb155cc-for-travel-c-766---647.html",
+      "brand": "Honda",
+      "model": "CB155cc",
+      "year": null,
+      "engine_capacity_cc": 155,
+      "category": "Standard",
+      "description": "The Honda CB150 is the one of option we have, offering great value whilst providing great performance. It is not as good off-road as the Honda XR150L, but it...",
+      "rental_rates": [
+        {
+          "rate_text": "Call",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://pearlmotorbikes.com/images/product/thumbs/thumb_1762247686.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid International Driving Permit (IDP) if not Vietnamese"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "pearlmotorbikes",
+      "scrape_timestamp": "2025-11-13T08:08:22.957Z",
+      "source_url": "https://pearlmotorbikes.com/honda-cb150cc-c-772---645.html",
+      "brand": "Honda",
+      "model": "CB150cc",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Standard",
+      "description": "Discover Northern Vietnam on a Honda CB150cc!",
+      "rental_rates": [
+        {
+          "rate_text": "Call",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://pearlmotorbikes.com/images/product/thumbs/thumb_1760175080.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid International Driving Permit (IDP) if not Vietnamese"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "pearlmotorbikes",
+      "scrape_timestamp": "2025-11-13T08:08:22.957Z",
+      "source_url": "https://pearlmotorbikes.com/yamaha-nvx155cc-c-772---644.html",
+      "brand": "Yamaha",
+      "model": "NVX155CC",
+      "year": null,
+      "engine_capacity_cc": 155,
+      "category": "Premium scooter",
+      "description": "The Yamaha NVX 155 is a good choice for traveling, especially short and medium trips. It has a sporty design, a powerful engine and many modern features.",
+      "rental_rates": [
+        {
+          "rate_text": "Call",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://pearlmotorbikes.com/images/product/thumbs/thumb_1750912359.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid International Driving Permit (IDP) if not Vietnamese"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "pearlmotorbikes",
+      "scrape_timestamp": "2025-11-13T08:08:22.957Z",
+      "source_url": "https://pearlmotorbikes.com/honda-vision-c-766---635.html",
+      "brand": "Honda",
+      "model": "Vision",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Economy scooter",
+      "description": "The Honda Vision is a lightweight, fuel-efficient scooter, perfect for city commuting and short-distance travel. Its 110cc engine delivers smooth performance, while its compact design ensures easy maneuverability. With comfortable...",
+      "rental_rates": [
+        {
+          "rate_text": "150.000 VND",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 150000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://pearlmotorbikes.com/images/product/thumbs/thumb_1750912359.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid International Driving Permit (IDP) if not Vietnamese"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "pearlmotorbikes",
+      "scrape_timestamp": "2025-11-13T08:08:22.957Z",
+      "source_url": "https://pearlmotorbikes.com/honda-winner-x-manuel-motorbikes-c-772---639.html",
+      "brand": "Honda",
+      "model": "Winner X",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Manual bike",
+      "description": "The Honda Winner X 150cc is a top-tier manual motorbike in Vietnam, highly favored by both locals and travelers for long-distance journeys. If you're planning a cross-country or one-way ride...",
+      "rental_rates": [
+        {
+          "rate_text": "Call",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "VND"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid International Driving Permit (IDP) if not Vietnamese"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "pearlmotorbikes",
+      "scrape_timestamp": "2025-11-13T08:08:22.957Z",
+      "source_url": "https://pearlmotorbikes.com/scooter-c-772---638.html",
+      "brand": null,
+      "model": "Scooter",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Scooter",
+      "description": "If you're planning to travel Vietnam by scooter, you'll want a comfortable, reliable, and fuel-efficient model. Here's a guide to choosing the best scooter for your adventure. The Honda...",
+      "rental_rates": [
+        {
+          "rate_text": "Call",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "VND"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid International Driving Permit (IDP) if not Vietnamese"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "pearlmotorbikes",
+      "scrape_timestamp": "2025-11-13T08:08:22.957Z",
+      "source_url": "https://pearlmotorbikes.com/honda-xr150cc-c-766---617.html",
+      "brand": "Honda",
+      "model": "XR150cc",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Off-road",
+      "description": "The Honda XR 150cc is the best motorbike in Vietnam for travelling through the mountainous north or going off road on the back roads. These are very reliable bikes, they have...",
+      "rental_rates": [
+        {
+          "rate_text": "300.000 VND",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 300000,
+          "currency": "VND"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid International Driving Permit (IDP) if not Vietnamese"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "pearlmotorbikes",
+      "scrape_timestamp": "2025-11-13T08:08:22.957Z",
+      "source_url": "https://pearlmotorbikes.com/honda-winnerx-150cc-c-766---637.html",
+      "brand": "Honda",
+      "model": "WinnerX 150cc",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Manual bike",
+      "description": "The Honda Winner X is a powerful and stylish 150cc motorcycle, designed for both city commutes and long-distance travel. With a sleek design, efficient engine, and advanced suspension, it offers...",
+      "rental_rates": [
+        {
+          "rate_text": "200.000 VND",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 200000,
+          "currency": "VND"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid International Driving Permit (IDP) if not Vietnamese"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "pearlmotorbikes",
+      "scrape_timestamp": "2025-11-13T08:08:22.957Z",
+      "source_url": "https://pearlmotorbikes.com/yamaha-nvx155cc-c-766---623.html",
+      "brand": "Yamaha",
+      "model": "NVX155cc",
+      "year": null,
+      "engine_capacity_cc": 155,
+      "category": "Premium scooter",
+      "description": "The Yamaha NVX 155cc is a sporty, high-performance scooter designed for both city commuting and longer travels. Its 155cc engine offers impressive power, while advanced features like a smooth CVT...",
+      "rental_rates": [
+        {
+          "rate_text": "250.000 VND",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 250000,
+          "currency": "VND"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid International Driving Permit (IDP) if not Vietnamese"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "pearlmotorbikes",
+      "scrape_timestamp": "2025-11-13T08:08:22.957Z",
+      "source_url": "https://pearlmotorbikes.com/honda-airblade-125cc-c-766---634.html",
+      "brand": "Honda",
+      "model": "Airblade 125cc",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Standard scooter",
+      "description": "Honda Airblade is one of best automatic bike for travel, sport body and strong engine",
+      "rental_rates": [
+        {
+          "rate_text": "150.000 VND",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 150000,
+          "currency": "VND"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid International Driving Permit (IDP) if not Vietnamese"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "pearlmotorbikes",
+      "scrape_timestamp": "2025-11-13T08:08:22.957Z",
+      "source_url": "https://pearlmotorbikes.com/yamaha-exciter-c-766---537.html",
+      "brand": "Yamaha",
+      "model": "Exciter",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Manual bike",
+      "description": "good condition and strong bike, good for travel",
+      "rental_rates": [
+        {
+          "rate_text": "200.000 VND",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 200000,
+          "currency": "VND"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid International Driving Permit (IDP) if not Vietnamese"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "pearlmotorbikes",
+      "scrape_timestamp": "2025-11-13T08:08:22.957Z",
+      "source_url": "https://pearlmotorbikes.com/honda-blade-110-c-723---493.html",
+      "brand": "Honda",
+      "model": "Blade 110",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Semi-automatic",
+      "description": "It's almost brand new Honda Blade 110 cc. Perfect condition.",
+      "rental_rates": [
+        {
+          "rate_text": "130.000 VND",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 130000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://pearlmotorbikes.com/images/product/thumbs/thumb_1667638164.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid International Driving Permit (IDP) if not Vietnamese"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "pearlmotorbikes",
+      "scrape_timestamp": "2025-11-13T08:08:22.957Z",
+      "source_url": "https://pearlmotorbikes.com/honda-wave-c-723---494.html",
+      "brand": "Honda",
+      "model": "Wave",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Semi-automatic",
+      "description": "It's almost brand new Honda Blade 110 cc. Perfect condition.",
+      "rental_rates": [
+        {
+          "rate_text": "130.000 VND",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 130000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://pearlmotorbikes.com/images/product/thumbs/thumb_1667638065.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid International Driving Permit (IDP) if not Vietnamese"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "pearlmotorbikes",
+      "scrape_timestamp": "2025-11-13T08:08:22.957Z",
+      "source_url": "https://pearlmotorbikes.com/honda-wave-rs-110-cc-c-723---495.html",
+      "brand": "Honda",
+      "model": "Wave RS 110",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Semi-automatic",
+      "description": "",
+      "rental_rates": [
+        {
+          "rate_text": "130.000 VND",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 130000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://pearlmotorbikes.com/images/product/thumbs/thumb_1667637947.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid International Driving Permit (IDP) if not Vietnamese"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "pearlmotorbikes",
+      "scrape_timestamp": "2025-11-13T08:08:22.957Z",
+      "source_url": "https://pearlmotorbikes.com/honda-wave-110-c-723---497.html",
+      "brand": "Honda",
+      "model": "Wave 110",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Semi-automatic",
+      "description": "It's old bike but good condition and reliable! It runs smooth, good for the people use it for going around cyti for working",
+      "rental_rates": [
+        {
+          "rate_text": "130.000 VND",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 130000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://pearlmotorbikes.com/images/product/thumbs/thumb_1667637793.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid International Driving Permit (IDP) if not Vietnamese"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T09:01:33.939Z",
+    "shop_identifier": "DC Motorbikes (Rental | License | Lesson | Repair | Accessories)",
+    "provider_name": "DC Motorbikes (Rental | License | Lesson | Repair | Accessories)",
+    "place_id": "ChIJIz5Vbt0vdTERPYZO1kqH7oA",
+    "address": "40 Khu Phố Hưng Gia 1, Tân Phong, Quận 7, Thành phố Hồ Chí Minh 70000, Vietnam",
+    "city": "Ho Chi Minh City",
+    "province": "Ho Chi Minh City",
+    "country": "Vietnam",
+    "latitude": 10.7333903,
+    "longitude": 106.7089171,
+    "phone": "0938 509 032",
+    "website": "https://www.dcmotorbikes.com/",
+    "google_maps_url": "https://maps.google.com/?cid=9290511836804711997",
+    "business_status": "OPERATIONAL",
+    "rating": 4.9,
+    "review_count": 611,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

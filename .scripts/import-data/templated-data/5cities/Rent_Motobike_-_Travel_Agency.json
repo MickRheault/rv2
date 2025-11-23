@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T08:20:33.231Z",
+    "shop_identifier": "Rent Motobike - Travel Agency",
+    "provider_name": "Rent Motobike - Travel Agency",
+    "place_id": "ChIJrV8EJQCrNTERUmJlDtv3QpE",
+    "address": "70 P. Hàng Gà, Hàng Bồ, Hoàn Kiếm, Hà Nội, Vietnam",
+    "city": "Hanoi",
+    "province": "Hanoi",
+    "country": "Vietnam",
+    "latitude": 21.0340191,
+    "longitude": 105.8469674,
+    "phone": "0971 964 100",
+    "website": "http://www.hagiangtop.com/",
+    "google_maps_url": "https://maps.google.com/?cid=10467201004173877842",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 68,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

@@ -1,0 +1,92 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-10-14T18:21:49.946Z",
+    "shop_identifier": "I Love Scooter",
+    "provider_name": "I Love Scooter",
+    "place_id": "ChIJtScbgdqjpBIRwlgPfNtuBtw",
+    "address": "Pg. de Colom, 19, Ciutat Vella, 08002 Barcelona, Spain",
+    "city": "Barcelona",
+    "province": "Barcelona",
+    "country": "Spain",
+    "latitude": 41.378687,
+    "longitude": 2.1796578,
+    "phone": "664 20 79 39",
+    "website": "https://www.ilovescooter.es/",
+    "google_maps_url": "https://maps.google.com/?cid=15854481427162683586",
+    "business_status": "OPERATIONAL",
+    "rating": 4.7,
+    "review_count": 535,
+    "rental_conditions": {
+      "security_requirements": "Cascos y Candados",
+      "mileage_policy": "Kilómetros Ilimitados",
+      "route_recommendations": "Rutas Recomendadas",
+      "booking_policy": "Los precios pueden variar en tienda según disponibilidad y temporada. ¡Compra ahora en línea y obtén precios exclusivos!",
+      "tour_booking_notice": "las reservas para recorridos deben hacerse con al menos 48 horas de anticipación"
+    },
+    "rental_inclusions": [
+      "Cascos",
+      "Candados",
+      "Kilómetros Ilimitados",
+      "Rutas Recomendadas"
+    ],
+    "available_service_locations": [
+      "Barcelona"
+    ],
+    "offered_tours": [
+      {
+        "name": "I Love Scooter Excursiones",
+        "duration_text": "3 horas",
+        "distance_km": null,
+        "price_text": "€40 Por Persona",
+        "currency": "EUR"
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "ilovescooter_es",
+      "scrape_timestamp": "2025-10-14T18:21:51.144Z",
+      "source_url": "https://www.ilovescooter.es/alquiler-diario-por-hora/SYM-Symphony-125cc-Moto-p625694460",
+      "brand": "SYM",
+      "model": "Symphony",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Moto",
+      "description": "SYM Symphony 125cc Moto",
+      "rental_rates": [
+        {
+          "rate_text": "50,00 €",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 50,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://d2j6dbq0eux0bg.cloudfront.net/images/98289254/4111058100.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "DNI en vigor",
+        "NIE",
+        "DNI o pasaporte",
+        "carnet de conducir",
+        "Padronmiento"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Seguro",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Seguro incluido!"
+        }
+      ],
+      "availability_status": null
+    }
+  ]
+}

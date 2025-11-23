@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T06:43:23.570Z",
+    "shop_identifier": "Goride",
+    "provider_name": "Goride",
+    "place_id": "ChIJWYmaUiy9oRQRpJyv9kcuahg",
+    "address": "Kapodistriou 1, Athina 106 77, Greece",
+    "city": "Athens",
+    "province": "Attica",
+    "country": "Greece",
+    "latitude": 37.9860202,
+    "longitude": 23.7321181,
+    "phone": "21 0380 9239",
+    "website": "http://www.goride.bike/",
+    "google_maps_url": "https://maps.google.com/?cid=1759269491057859748",
+    "business_status": "OPERATIONAL",
+    "rating": 4.3,
+    "review_count": 59,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

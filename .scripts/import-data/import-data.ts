@@ -5,15 +5,26 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Database, Tables, TablesInsert } from '../../lib/supabase/database.types'; // Adjust path as necessary
 import { fileURLToPath } from 'url'; // Import fileURLToPath
 
-// Load environment variables from .env.local
+// Load environment variables from .env
 // ES Module equivalent for __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+
+const envPath = path.resolve(__dirname, '../../.env');
+console.log(`DEBUG: Loading .env from: ${envPath}`);
+console.log(`DEBUG: NEXT_PUBLIC_SUPABASE_URL before dotenv: ${process.env.NEXT_PUBLIC_SUPABASE_URL || '(not set)'}`);
+
+const dotenvResult = dotenv.config({ path: envPath, override: true });
+if (dotenvResult.error) {
+  console.error(`ERROR: Failed to load .env file: ${dotenvResult.error.message}`);
+  throw dotenvResult.error;
+}
+console.log(`DEBUG: .env loaded successfully`);
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+console.log(`DEBUG: NEXT_PUBLIC_SUPABASE_URL after dotenv: ${supabaseUrl}`);
 console.log(`DEBUG: Using Supabase URL: ${supabaseUrl}`); // Add logging for URL
 
 if (!supabaseUrl || !supabaseServiceRoleKey) {
@@ -64,8 +75,8 @@ type ScrapedJsonData = {
     description?: string | null;
     rental_rates?: {
       rate_text?: string | null;
-      min_days: number;
-      max_days?: number | null;
+      min_days: number; // Supports decimals: 0.5 = half day, 0.042 (1/24) = 1 hour, etc.
+      max_days?: number | null; // Supports decimals: 0.5 = half day, 0.042 (1/24) = 1 hour, etc.
       rate_per_day?: number | null;
       currency?: string | null;
     }[];
@@ -97,7 +108,7 @@ const supabase: SupabaseClient<Database> = createClient<Database>(supabaseUrl, s
   }
 });
 
-const DATA_DIR = path.resolve(__dirname, './templated-data/siem-reap');
+const DATA_DIR = path.resolve(__dirname, './templated-data/5cities');
 
 // --- Load Category Mapping ---
 interface CategoryMapping {
@@ -132,6 +143,9 @@ async function loadCategoryMapping(): Promise<MappingData> {
 function getMappedCategory(brand: string, model: string, originalCategory?: string): string | null {
   if (!categoryMapping) return originalCategory || null;
   
+  // Handle null/undefined brand or model
+  if (!brand || !model) return originalCategory || null;
+  
   // Normalize brand and model for lookup
   const normalizedBrand = brand.trim();
   const normalizedModel = model.trim();
@@ -161,6 +175,42 @@ function getMappedCategory(brand: string, model: string, originalCategory?: stri
 
 // --- Helper Functions for Find/Create ---
 
+// Country name to ISO code mapping
+const COUNTRY_CODE_MAP: Record<string, string> = {
+  'Thailand': 'TH',
+  'Cambodia': 'KH',
+  'Vietnam': 'VN',
+  'Spain': 'ES',
+  'Portugal': 'PT',
+  'France': 'FR',
+  'Italy': 'IT',
+  'Germany': 'DE',
+  'United Kingdom': 'GB',
+  'United States': 'US',
+  'Canada': 'CA',
+  'Australia': 'AU',
+  'New Zealand': 'NZ',
+  'Japan': 'JP',
+  'Indonesia': 'ID',
+  'Malaysia': 'MY',
+  'Singapore': 'SG',
+  'Philippines': 'PH',
+  'India': 'IN',
+  'Nepal': 'NP',
+  'Sri Lanka': 'LK',
+  'Greece': 'GR',
+  'Croatia': 'HR',
+  'Turkey': 'TR',
+  'Morocco': 'MA',
+  'South Africa': 'ZA',
+  'Mexico': 'MX',
+  'Brazil': 'BR',
+  'Argentina': 'AR',
+  'Chile': 'CL',
+  'Peru': 'PE',
+  'Colombia': 'CO',
+};
+
 async function findOrCreateCountry(code: string, name: string): Promise<string> {
     // Simplified: Assumes code is unique primary key from template/CSV if available
     // More robust: Query by name if code is missing, handle conflicts
@@ -181,8 +231,8 @@ async function findOrCreateCountry(code: string, name: string): Promise<string> 
     }
 
     // Create if not found
-    // Need a valid code (like 'TH'). If only name provided, need mapping or default.
-    const insertCode = code || (name === 'Thailand' ? 'TH' : name === 'Cambodia' ? 'KH' : 'XX'); // Example fallback
+    // Use mapping table or default to 'XX' for unknown countries
+    const insertCode = code || COUNTRY_CODE_MAP[name] || 'XX';
     console.log(`Creating country: ${name} (${insertCode})`);
     const { data: newData, error: insertError } = await supabase
         .from('countries')
@@ -356,39 +406,13 @@ async function findOrCreateConditionType(name: string): Promise<string> {
 
 async function findOrCreateRentalShop(metadata: ScrapedJsonData['provider_metadata']): Promise<string> {
     if (!metadata) throw new Error("Provider metadata is required to find or create a rental shop.");
-    if (!metadata.place_id && (!metadata.name || !metadata.address)) {
-         throw new Error("Cannot uniquely identify shop: Missing place_id or name/address combination.");
-    }
 
-    let query = supabase.from('rental_shops').select('id');
-    if (metadata.place_id) {
-        query = query.eq('place_id', metadata.place_id);
-    } else {
-        // Fallback to name and address - less reliable
-        if (!metadata.name || !metadata.address) { // Extra check for fallback
-            throw new Error("Cannot uniquely identify shop by name/address: Missing name or address.");
-        }
-        query = query.eq('provider_name', metadata.name).eq('full_address', metadata.address);
-    }
-
-    const { data: existingShop, error: findError } = await query.maybeSingle();
-
-    if (findError) {
-        console.error('Supabase error finding rental shop:', findError);
-        throw new Error(`Error finding rental shop ${metadata.name || metadata.place_id}: ${findError.message}`);
-    }
-    if (existingShop && existingShop.id) return existingShop.id;
-    if (existingShop && !existingShop.id) {
-        console.error('Rental shop found but no id property:', existingShop);
-        throw new Error(`Rental shop ${metadata.name || metadata.place_id} found but no id property.`);
-    }
-
-    // --- Create Shop if Not Found ---
+    // --- Create Shop (duplicates already checked in main loop) ---
     console.log(`Creating rental shop: ${metadata.name || 'Unnamed Shop'} (${metadata.place_id || 'No Place ID'})`);
 
     // 1. Resolve Foreign Keys
     // Added null checks before calling findOrCreate functions if dependent values are null
-    const countryCode = metadata.country ? await findOrCreateCountry(metadata.country === 'Thailand' ? 'TH' : 'XX', metadata.country) : null;
+    const countryCode = metadata.country ? await findOrCreateCountry('', metadata.country) : null;
     const provinceId = (metadata.province && countryCode) ? await findOrCreateProvince(metadata.province, countryCode) : null;
     const cityId = (metadata.city && provinceId) ? await findOrCreateCity(metadata.city, provinceId) : null;
     const statusId = metadata.business_status ? await findOrCreateBusinessStatus(metadata.business_status) : null;
@@ -707,10 +731,69 @@ async function findOrCreateInsuranceType(name: string): Promise<string> {
     return newData.id;
 }
 
+// --- Error Tracking Types ---
+interface ErrorSummary {
+  fileErrors: { file: string; error: string }[];
+  shopErrors: { file: string; shop: string; error: string }[];
+  offeringErrors: { file: string; offering: string; error: string }[];
+  imageErrors: { file: string; offering: string; imageUrl: string; error: string }[];
+  featureErrors: { file: string; offering: string; feature: string; error: string }[];
+  documentErrors: { file: string; offering: string; document: string; error: string }[];
+  insuranceErrors: { file: string; offering: string; insurance: string; error: string }[];
+  rateTierErrors: { file: string; offering: string; error: string }[];
+  conditionErrors: { file: string; shop: string; condition: string; error: string }[];
+}
+
+interface WarningSummary {
+  skippedNoMetadata: string[];
+  skippedNoMotorcycles: string[];
+  skippedDuplicates: { file: string; place_id: string; shop_name: string }[];
+}
+
+interface ImportStats {
+  totalFiles: number;
+  successfulFiles: number;
+  failedFiles: number;
+  totalShops: number;
+  totalOfferings: number;
+  successfulOfferings: number;
+  failedOfferings: number;
+}
+
 // --- Main Import Logic ---
 
 async function importData() {
   console.log('Starting data import...');
+
+  // Initialize error tracking
+  const errors: ErrorSummary = {
+    fileErrors: [],
+    shopErrors: [],
+    offeringErrors: [],
+    imageErrors: [],
+    featureErrors: [],
+    documentErrors: [],
+    insuranceErrors: [],
+    rateTierErrors: [],
+    conditionErrors: [],
+  };
+
+  // Initialize warning tracking
+  const warnings: WarningSummary = {
+    skippedNoMetadata: [],
+    skippedNoMotorcycles: [],
+    skippedDuplicates: [],
+  };
+
+  const stats: ImportStats = {
+    totalFiles: 0,
+    successfulFiles: 0,
+    failedFiles: 0,
+    totalShops: 0,
+    totalOfferings: 0,
+    successfulOfferings: 0,
+    failedOfferings: 0,
+  };
 
   // *** Add Test Query Here ***
   try {
@@ -734,6 +817,7 @@ async function importData() {
 
     const files = await fs.readdir(DATA_DIR);
     const jsonFiles = files.filter(file => file.endsWith('.json'));
+    stats.totalFiles = jsonFiles.length;
     console.log(`Found ${jsonFiles.length} JSON files in ${DATA_DIR}`);
 
     for (const file of jsonFiles) {
@@ -746,26 +830,79 @@ Processing file: ${file}`);
 
         if (!jsonData.provider_metadata) {
             console.warn(`Skipping ${file}: Missing provider_metadata.`);
+            warnings.skippedNoMetadata.push(file);
+            stats.failedFiles++;
             continue;
         }
 
-        // --- Process Provider / Shop ---
-        const shopId = await findOrCreateRentalShop(jsonData.provider_metadata);
-        if (!shopId) {
-             console.error(`Failed to find or create shop for ${file}. Skipping offerings.`);
-             continue;
+        // Skip businesses with no motorcycles to rent
+        if (!jsonData.motorcycle_offerings || jsonData.motorcycle_offerings.length === 0) {
+            console.warn(`Skipping ${file}: No motorcycle offerings (business doesn't rent motorcycles).`);
+            warnings.skippedNoMotorcycles.push(file);
+            stats.failedFiles++;
+            continue;
         }
-         console.log(` > Shop ID: ${shopId}`);
+
+        // --- Check for Duplicate Shop (by place_id) ---
+        if (jsonData.provider_metadata.place_id) {
+            const { data: existingShop, error: dupCheckError } = await supabase
+                .from('rental_shops')
+                .select('id, provider_name')
+                .eq('place_id', jsonData.provider_metadata.place_id)
+                .maybeSingle();
+
+            if (dupCheckError) {
+                console.error(`Error checking for duplicate shop: ${dupCheckError.message}`);
+                const shopName = jsonData.provider_metadata.name || jsonData.provider_metadata.shop_identifier || 'Unknown';
+                errors.shopErrors.push({ file, shop: shopName, error: `Duplicate check failed: ${dupCheckError.message}` });
+                stats.failedFiles++;
+                continue;
+            }
+
+            if (existingShop) {
+                const shopName = jsonData.provider_metadata.name || existingShop.provider_name || 'Unknown';
+                console.warn(`Skipping ${file}: Shop already exists (place_id: ${jsonData.provider_metadata.place_id}, shop: ${shopName})`);
+                warnings.skippedDuplicates.push({ 
+                    file, 
+                    place_id: jsonData.provider_metadata.place_id, 
+                    shop_name: shopName 
+                });
+                stats.failedFiles++;
+                continue;
+            }
+        }
+
+        // --- Process Provider / Shop ---
+        let shopId: string;
+        try {
+          shopId = await findOrCreateRentalShop(jsonData.provider_metadata);
+          stats.totalShops++;
+          console.log(` > Shop ID: ${shopId}`);
+        } catch (shopError: any) {
+          console.error(`Failed to find or create shop for ${file}. Skipping offerings.`);
+          const shopName = jsonData.provider_metadata.name || jsonData.provider_metadata.shop_identifier || 'Unknown';
+          errors.shopErrors.push({ file, shop: shopName, error: shopError.message || String(shopError) });
+          stats.failedFiles++;
+          continue;
+        }
 
 
         // --- Process Motorcycle Offerings ---
         for (const offering of jsonData.motorcycle_offerings) {
-          // Use empty string for missing brand name (to be fixed manually)
-          const brandName = offering.brand || '';
-          console.log(`   - Processing offering: ${brandName || '(empty brand)'} ${offering.model}`);
+          stats.totalOfferings++;
+          // Use default values for missing data
+          const brandName = offering.brand || 'N/A';
+          const modelName = offering.model || 'N/A';
+          const offeringName = `${brandName} ${modelName}`;
           
-          if (!brandName) {
-             console.warn(`     Processing offering with empty brand name (to be fixed manually).`);
+          console.log(`   - Processing offering: ${offeringName}`);
+          
+          if (!offering.brand) {
+             console.warn(`     Using default brand name "N/A" for missing brand`);
+          }
+          
+          if (!offering.model) {
+             console.warn(`     Using default model name "N/A" for missing model`);
           }
 
           try {
@@ -773,7 +910,7 @@ Processing file: ${file}`);
             const brandId = await findOrCreateBrand(brandName);
             
             // 2. Get mapped category using the mapping table
-            const mappedCategory = getMappedCategory(brandName, offering.model, offering.category || undefined);
+            const mappedCategory = getMappedCategory(brandName, modelName, offering.category || undefined);
             const categoryId = mappedCategory ? await findOrCreateCategory(mappedCategory) : null;
 
             // 3. Prepare Core Rental Data
@@ -784,7 +921,7 @@ Processing file: ${file}`);
                 shop_id: shopId,
                 brand_id: brandId,
                 category_id: categoryId,
-                model: offering.model,
+                model: modelName,
                 year: offering.year || null,
                 engine_capacity_cc: offering.engine_capacity_cc || null,
                 rental_rate_per_day: dailyRateInfo?.rate_per_day || null, // Store basic daily rate here if available
@@ -804,7 +941,8 @@ Processing file: ${file}`);
 
             if (rentalInsertError) throw new Error(`Error inserting rental for ${brandName} ${offering.model}: ${rentalInsertError.message}`);
             const motorcycleId = newRental.id;
-             console.log(`     > Created motorcycle_rental record: ${motorcycleId}`);
+            stats.successfulOfferings++;
+            console.log(`     > Created motorcycle_rental record: ${motorcycleId}`);
 
             // 5. Process Rental Rate Tiers
             if (offering.rental_rates && offering.rental_rates.length > 0) {
@@ -825,6 +963,7 @@ Processing file: ${file}`);
 
                     if (rateTierError) {
                         console.error(`Error inserting rate tiers for ${motorcycleId}: ${rateTierError.message}`);
+                        errors.rateTierErrors.push({ file, offering: offeringName, error: rateTierError.message });
                     } else {
                         console.log(`Inserted ${rateTiersData.length} rate tiers for ${motorcycleId}`);
                     }
@@ -839,13 +978,19 @@ Processing file: ${file}`);
                         const imageId = await findOrCreateImage(imageUrl);
                         imageLinks.push({ motorcycle_id: motorcycleId, image_id: imageId, sort_order: index });
                     } catch (imgError: any) {
-                        console.error(`     ! Error processing image ${imageUrl}: ${imgError.message ? imgError.message : imgError}`);
+                        const errorMsg = imgError.message ? imgError.message : String(imgError);
+                        console.error(`     ! Error processing image ${imageUrl}: ${errorMsg}`);
+                        errors.imageErrors.push({ file, offering: offeringName, imageUrl, error: errorMsg });
                     }
                 }
                  if (imageLinks.length > 0) {
                     const { error: imageLinkError } = await supabase.from('motorcycle_images').insert(imageLinks);
-                    if (imageLinkError) console.error(`     ! Error inserting image links for ${motorcycleId}: ${imageLinkError.message}`);
-                     else console.log(`     > Inserted ${imageLinks.length} image links.`);
+                    if (imageLinkError) {
+                        console.error(`     ! Error inserting image links for ${motorcycleId}: ${imageLinkError.message}`);
+                        errors.imageErrors.push({ file, offering: offeringName, imageUrl: 'bulk insert', error: imageLinkError.message });
+                    } else {
+                        console.log(`     > Inserted ${imageLinks.length} image links.`);
+                    }
                  }
             }
 
@@ -857,13 +1002,19 @@ Processing file: ${file}`);
                          const featureId = await findOrCreateFeature(featureName);
                          featureLinks.push({ motorcycle_id: motorcycleId, feature_id: featureId });
                      } catch (featError: any) {
-                         console.error(`     ! Error processing feature ${featureName}: ${featError.message}`);
+                         const errorMsg = featError.message || String(featError);
+                         console.error(`     ! Error processing feature ${featureName}: ${errorMsg}`);
+                         errors.featureErrors.push({ file, offering: offeringName, feature: featureName, error: errorMsg });
                      }
                  }
                  if (featureLinks.length > 0) {
                      const { error: featureLinkError } = await supabase.from('motorcycle_features').insert(featureLinks);
-                     if (featureLinkError) console.error(`     ! Error inserting feature links for ${motorcycleId}: ${featureLinkError.message}`);
-                      else console.log(`     > Inserted ${featureLinks.length} feature links.`);
+                     if (featureLinkError) {
+                        console.error(`     ! Error inserting feature links for ${motorcycleId}: ${featureLinkError.message}`);
+                        errors.featureErrors.push({ file, offering: offeringName, feature: 'bulk insert', error: featureLinkError.message });
+                     } else {
+                        console.log(`     > Inserted ${featureLinks.length} feature links.`);
+                     }
                  }
              }
 
@@ -875,14 +1026,20 @@ Processing file: ${file}`);
                         const docTypeId = await findOrCreateRequiredDocumentType(docName);
                         docLinks.push({ motorcycle_id: motorcycleId, document_type_id: docTypeId });
                     } catch (docError: any) {
-                        console.error(`     ! Error processing required document ${docName}: ${docError.message}`);
+                        const errorMsg = docError.message || String(docError);
+                        console.error(`     ! Error processing required document ${docName}: ${errorMsg}`);
+                        errors.documentErrors.push({ file, offering: offeringName, document: docName, error: errorMsg });
                     }
                 }
                 if (docLinks.length > 0) {
                     // Use upsert to avoid errors if the link already exists (e.g., running script twice)
                     const { error: docLinkError } = await supabase.from('motorcycle_required_documents').upsert(docLinks);
-                    if (docLinkError) console.error(`     ! Error inserting required document links for ${motorcycleId}: ${docLinkError.message}`);
-                     else console.log(`     > Inserted/Upserted ${docLinks.length} required document links.`);
+                    if (docLinkError) {
+                        console.error(`     ! Error inserting required document links for ${motorcycleId}: ${docLinkError.message}`);
+                        errors.documentErrors.push({ file, offering: offeringName, document: 'bulk insert', error: docLinkError.message });
+                    } else {
+                        console.log(`     > Inserted/Upserted ${docLinks.length} required document links.`);
+                    }
                 }
             }
 
@@ -903,7 +1060,9 @@ Processing file: ${file}`);
                              notes: detail.notes || null,
                          });
                      } catch (insError: any) {
-                          console.error(`     ! Error processing insurance detail ${detail.type_name}: ${insError.message}`);
+                          const errorMsg = insError.message || String(insError);
+                          console.error(`     ! Error processing insurance detail ${detail.type_name}: ${errorMsg}`);
+                          errors.insuranceErrors.push({ file, offering: offeringName, insurance: detail.type_name, error: errorMsg });
                      }
                  }
                   if (insuranceData.length > 0) {
@@ -911,8 +1070,12 @@ Processing file: ${file}`);
                       const { error: insuranceError } = await supabase
                             .from('motorcycle_insurance_details')
                             .upsert(insuranceData, { onConflict: 'motorcycle_id, insurance_type_id' });
-                      if (insuranceError) console.error(`     ! Error inserting insurance details for ${motorcycleId}: ${insuranceError.message}`);
-                       else console.log(`     > Inserted/Upserted ${insuranceData.length} insurance details.`);
+                      if (insuranceError) {
+                        console.error(`     ! Error inserting insurance details for ${motorcycleId}: ${insuranceError.message}`);
+                        errors.insuranceErrors.push({ file, offering: offeringName, insurance: 'bulk insert', error: insuranceError.message });
+                      } else {
+                        console.log(`     > Inserted/Upserted ${insuranceData.length} insurance details.`);
+                      }
                   }
              }
 
@@ -922,16 +1085,206 @@ Processing file: ${file}`);
 
 
           } catch (offerError: any) {
-             console.error(`   ! Failed to process offering ${brandName} ${offering.model}: ${offerError.message}`);
+             const errorMsg = offerError.message || String(offerError);
+             console.error(`   ! Failed to process offering ${offeringName}: ${errorMsg}`);
+             errors.offeringErrors.push({ file, offering: offeringName, error: errorMsg });
+             stats.failedOfferings++;
           }
         } // End of offerings loop
+        
+        // Mark file as successful if we got here (shop was created successfully)
+        stats.successfulFiles++;
 
       } catch (fileError: any) {
-        console.error(`Failed to process file ${file}: ${fileError.message}`);
+        const errorMsg = fileError.message || String(fileError);
+        console.error(`Failed to process file ${file}: ${errorMsg}`);
+        errors.fileErrors.push({ file, error: errorMsg });
+        stats.failedFiles++;
       }
     } // End of file loop
 
-    console.log('\nImport process finished.');
+    console.log('\n' + '='.repeat(80));
+    console.log('IMPORT SUMMARY');
+    console.log('='.repeat(80));
+    
+    // Print Statistics
+    console.log('\n📊 STATISTICS:');
+    console.log(`  Files Processed: ${stats.totalFiles}`);
+    console.log(`  ✅ Successful: ${stats.successfulFiles}`);
+    console.log(`  ❌ Failed: ${stats.failedFiles}`);
+    console.log(`  \n  Shops Created: ${stats.totalShops}`);
+    console.log(`  \n  Offerings Processed: ${stats.totalOfferings}`);
+    console.log(`  ✅ Successful: ${stats.successfulOfferings}`);
+    console.log(`  ❌ Failed: ${stats.failedOfferings}`);
+    
+    // Calculate total warnings
+    const totalWarnings = 
+      warnings.skippedNoMetadata.length +
+      warnings.skippedNoMotorcycles.length +
+      warnings.skippedDuplicates.length;
+    
+    console.log(`\n⚠️  TOTAL WARNINGS (Skipped Files): ${totalWarnings}`);
+    
+    // Print warnings if any
+    if (totalWarnings > 0) {
+      if (warnings.skippedNoMetadata.length > 0) {
+        console.log(`\n⚠️  Skipped - Missing Metadata: ${warnings.skippedNoMetadata.length} files`);
+        warnings.skippedNoMetadata.slice(0, 10).forEach((file, idx) => {
+          console.log(`     ${idx + 1}. ${file}`);
+        });
+        if (warnings.skippedNoMetadata.length > 10) {
+          console.log(`     ... and ${warnings.skippedNoMetadata.length - 10} more files`);
+        }
+      }
+      
+      if (warnings.skippedNoMotorcycles.length > 0) {
+        console.log(`\n⚠️  Skipped - No Motorcycles to Rent: ${warnings.skippedNoMotorcycles.length} files`);
+        warnings.skippedNoMotorcycles.slice(0, 10).forEach((file, idx) => {
+          console.log(`     ${idx + 1}. ${file}`);
+        });
+        if (warnings.skippedNoMotorcycles.length > 10) {
+          console.log(`     ... and ${warnings.skippedNoMotorcycles.length - 10} more files`);
+        }
+      }
+      
+      if (warnings.skippedDuplicates.length > 0) {
+        console.log(`\n⚠️  Skipped - Duplicate Shops (Already Imported): ${warnings.skippedDuplicates.length} files`);
+        warnings.skippedDuplicates.slice(0, 10).forEach((dup, idx) => {
+          console.log(`     ${idx + 1}. ${dup.file}`);
+          console.log(`        Shop: ${dup.shop_name} (place_id: ${dup.place_id})`);
+        });
+        if (warnings.skippedDuplicates.length > 10) {
+          console.log(`     ... and ${warnings.skippedDuplicates.length - 10} more duplicate shops`);
+        }
+      }
+    }
+    
+    // Calculate total errors
+    const totalErrors = 
+      errors.fileErrors.length +
+      errors.shopErrors.length +
+      errors.offeringErrors.length +
+      errors.imageErrors.length +
+      errors.featureErrors.length +
+      errors.documentErrors.length +
+      errors.insuranceErrors.length +
+      errors.rateTierErrors.length +
+      errors.conditionErrors.length;
+    
+    console.log(`\n🚨 TOTAL ERRORS: ${totalErrors}`);
+    
+    // Print detailed errors if any
+    if (totalErrors > 0) {
+      console.log('\n' + '-'.repeat(80));
+      console.log('DETAILED ERRORS:');
+      console.log('-'.repeat(80));
+      
+      if (errors.fileErrors.length > 0) {
+        console.log(`\n❌ File Errors (${errors.fileErrors.length}):`);
+        errors.fileErrors.forEach((err, idx) => {
+          console.log(`  ${idx + 1}. File: ${err.file}`);
+          console.log(`     Error: ${err.error}`);
+        });
+      }
+      
+      if (errors.shopErrors.length > 0) {
+        console.log(`\n❌ Shop Errors (${errors.shopErrors.length}):`);
+        errors.shopErrors.forEach((err, idx) => {
+          console.log(`  ${idx + 1}. File: ${err.file}`);
+          console.log(`     Shop: ${err.shop}`);
+          console.log(`     Error: ${err.error}`);
+        });
+      }
+      
+      if (errors.offeringErrors.length > 0) {
+        console.log(`\n❌ Offering Errors (${errors.offeringErrors.length}):`);
+        errors.offeringErrors.forEach((err, idx) => {
+          console.log(`  ${idx + 1}. File: ${err.file}`);
+          console.log(`     Offering: ${err.offering}`);
+          console.log(`     Error: ${err.error}`);
+        });
+      }
+      
+      if (errors.rateTierErrors.length > 0) {
+        console.log(`\n❌ Rate Tier Errors (${errors.rateTierErrors.length}):`);
+        errors.rateTierErrors.forEach((err, idx) => {
+          console.log(`  ${idx + 1}. File: ${err.file}`);
+          console.log(`     Offering: ${err.offering}`);
+          console.log(`     Error: ${err.error}`);
+        });
+      }
+      
+      if (errors.imageErrors.length > 0) {
+        console.log(`\n❌ Image Errors (${errors.imageErrors.length}):`);
+        errors.imageErrors.slice(0, 10).forEach((err, idx) => {
+          console.log(`  ${idx + 1}. File: ${err.file}`);
+          console.log(`     Offering: ${err.offering}`);
+          console.log(`     Image URL: ${err.imageUrl}`);
+          console.log(`     Error: ${err.error}`);
+        });
+        if (errors.imageErrors.length > 10) {
+          console.log(`  ... and ${errors.imageErrors.length - 10} more image errors`);
+        }
+      }
+      
+      if (errors.featureErrors.length > 0) {
+        console.log(`\n❌ Feature Errors (${errors.featureErrors.length}):`);
+        errors.featureErrors.slice(0, 10).forEach((err, idx) => {
+          console.log(`  ${idx + 1}. File: ${err.file}`);
+          console.log(`     Offering: ${err.offering}`);
+          console.log(`     Feature: ${err.feature}`);
+          console.log(`     Error: ${err.error}`);
+        });
+        if (errors.featureErrors.length > 10) {
+          console.log(`  ... and ${errors.featureErrors.length - 10} more feature errors`);
+        }
+      }
+      
+      if (errors.documentErrors.length > 0) {
+        console.log(`\n❌ Document Errors (${errors.documentErrors.length}):`);
+        errors.documentErrors.slice(0, 10).forEach((err, idx) => {
+          console.log(`  ${idx + 1}. File: ${err.file}`);
+          console.log(`     Offering: ${err.offering}`);
+          console.log(`     Document: ${err.document}`);
+          console.log(`     Error: ${err.error}`);
+        });
+        if (errors.documentErrors.length > 10) {
+          console.log(`  ... and ${errors.documentErrors.length - 10} more document errors`);
+        }
+      }
+      
+      if (errors.insuranceErrors.length > 0) {
+        console.log(`\n❌ Insurance Errors (${errors.insuranceErrors.length}):`);
+        errors.insuranceErrors.slice(0, 10).forEach((err, idx) => {
+          console.log(`  ${idx + 1}. File: ${err.file}`);
+          console.log(`     Offering: ${err.offering}`);
+          console.log(`     Insurance: ${err.insurance}`);
+          console.log(`     Error: ${err.error}`);
+        });
+        if (errors.insuranceErrors.length > 10) {
+          console.log(`  ... and ${errors.insuranceErrors.length - 10} more insurance errors`);
+        }
+      }
+      
+      if (errors.conditionErrors.length > 0) {
+        console.log(`\n❌ Condition Errors (${errors.conditionErrors.length}):`);
+        errors.conditionErrors.slice(0, 10).forEach((err, idx) => {
+          console.log(`  ${idx + 1}. File: ${err.file}`);
+          console.log(`     Shop: ${err.shop}`);
+          console.log(`     Condition: ${err.condition}`);
+          console.log(`     Error: ${err.error}`);
+        });
+        if (errors.conditionErrors.length > 10) {
+          console.log(`  ... and ${errors.conditionErrors.length - 10} more condition errors`);
+        }
+      }
+    } else {
+      console.log('\n✅ No errors encountered!');
+    }
+    
+    console.log('\n' + '='.repeat(80));
+    console.log('Import process finished.');
+    console.log('='.repeat(80));
 
   } catch (error: any) {
     console.error('An error occurred during the import process:', error.message);

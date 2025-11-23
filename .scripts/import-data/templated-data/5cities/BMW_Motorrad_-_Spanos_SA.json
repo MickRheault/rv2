@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T06:44:25.888Z",
+    "shop_identifier": "BMW Motorrad - Spanos SA",
+    "provider_name": "BMW Motorrad - Spanos SA",
+    "place_id": "ChIJmWYrTZa9oRQR5XJuOOFn3iE",
+    "address": "Par. Leof. Vouliagmenis 339, Ilioupoli 163 46, Greece",
+    "city": "Athens",
+    "province": "Attica",
+    "country": "Greece",
+    "latitude": 37.9381865,
+    "longitude": 23.7417619,
+    "phone": "21 0971 6726",
+    "website": "http://www.bmw-spanos.gr/contact-us",
+    "google_maps_url": "https://maps.google.com/?cid=2440502265093452517",
+    "business_status": "OPERATIONAL",
+    "rating": 4.4,
+    "review_count": 445,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

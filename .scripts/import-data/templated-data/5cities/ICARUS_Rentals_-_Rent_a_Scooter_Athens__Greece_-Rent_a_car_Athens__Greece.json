@@ -1,0 +1,494 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T06:22:29.765Z",
+    "shop_identifier": "ICARUS Rentals - Rent a Scooter Athens, Greece -Rent a car Athens, Greece",
+    "provider_name": "ICARUS Rentals - Rent a Scooter Athens, Greece -Rent a car Athens, Greece",
+    "place_id": "ChIJE7CMOZq9oRQRFrogh0DzDqw",
+    "address": "Dimitrakopoulou 66, Athina 117 41, Greece",
+    "city": "Athens",
+    "province": "Attica",
+    "country": "Greece",
+    "latitude": 37.9646485,
+    "longitude": 23.7244886,
+    "phone": "21 0922 0458",
+    "website": "https://rent-a-car-athens-greece.com/",
+    "google_maps_url": "https://maps.google.com/?cid=12398114282668079638",
+    "business_status": "OPERATIONAL",
+    "rating": 4.7,
+    "review_count": 215,
+    "rental_conditions": {
+      "minimum_driver_age": 21,
+      "required_driving_license": "European or International held for at least one year",
+      "payment_method": "Valid credit card required",
+      "deposit_for_car": 400,
+      "deposit_for_scooter": 200,
+      "rental_period_calculation": "1 day = 24 hours",
+      "additional_driver": "No extra charge",
+      "kilometer_limit": "100 km per day for 1-2 day rentals",
+      "booking_cancellation_policy": "72 hours prior for refund",
+      "fuel_policy": "Return with same fuel level as pickup",
+      "off_frontier_rental": "Only with prior written approval",
+      "transport_by_ship": "Only with prior written approval",
+      "scooter_prohibitions": "No delivery services, no highway use, no exceeding 80km/h, limited to Athens district"
+    },
+    "rental_inclusions": [
+      "Third-party property damage insurance",
+      "24/7 road assistance",
+      "Driver and passenger helmets (for scooters)",
+      "Additional driver at no extra charge"
+    ],
+    "available_service_locations": [
+      "Athens city center",
+      "Athens Airport (pickup/dropoff for 20€)",
+      "Piraeus Port (pickup/dropoff for 20€)",
+      "Rafina Port (pickup/dropoff for 20€)"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "icarus-rentals",
+      "scrape_timestamp": "2025-11-13T06:22:30.617Z",
+      "source_url": "https://rent-a-car-athens-greece.com/rent-a-scooter-athens/piaggio-liberty-50",
+      "brand": "Piaggio",
+      "model": "Liberty 50",
+      "year": null,
+      "engine_capacity_cc": 50,
+      "category": "Economy scooter",
+      "description": "Compact scooter ideal for navigating Athens city center with ease",
+      "rental_rates": [
+        {
+          "rate_text": "Daily rate + insurance options",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://rent-a-car-athens-greece.com/wp-content/uploads/2020/06/rent-a-scooter-athens-greece-opt.jpg"
+      ],
+      "features": [
+        "24/7 road assistance",
+        "Driver and passenger helmets included",
+        "Additional driver allowed at no extra charge"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": {
+        "minimum_driver_age": 21,
+        "required_driving_license": "European or International held for at least one year",
+        "deposit": 200,
+        "kilometer_limit": "100 km per day for 1-2 day rentals",
+        "unlimited_km_package": "25€ (for rentals of 3+ days)"
+      },
+      "required_documents_raw": [
+        "Valid European or International driving license held for at least one year",
+        "Valid credit card"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Property Damage",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Excludes driver and passenger of vehicles, and ICARUS property"
+        },
+        {
+          "type_name": "C.D.W. (Collision Damage Waiver)",
+          "is_included": false,
+          "cost_per_day": 5,
+          "currency": "EUR",
+          "deductible": 700,
+          "deductible_currency": "EUR",
+          "notes": "Damage to wheels, underside and glass not covered"
+        },
+        {
+          "type_name": "S.C.D.W. (Super Collision Damage Waiver)",
+          "is_included": false,
+          "cost_per_day": 10,
+          "currency": "EUR",
+          "deductible": 400,
+          "deductible_currency": "EUR",
+          "notes": "Damage to wheels, underside and glass not covered"
+        },
+        {
+          "type_name": "W.U.G. (Wheels.Underside.Glass)",
+          "is_included": false,
+          "cost_per_day": 10,
+          "currency": "EUR",
+          "deductible": 400,
+          "deductible_currency": "EUR",
+          "notes": "Covers wheels, underside part of vehicle and glass"
+        },
+        {
+          "type_name": "F.C. (Fire Cover)",
+          "is_included": false,
+          "cost_per_day": 10,
+          "currency": "EUR",
+          "deductible": 400,
+          "deductible_currency": "EUR",
+          "notes": "Covers fire damage to the vehicle"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "icarus-rentals",
+      "scrape_timestamp": "2025-11-13T06:22:30.617Z",
+      "source_url": "https://rent-a-car-athens-greece.com/rent-a-scooter-athens/peugeot-tweet-125",
+      "brand": "Peugeot",
+      "model": "Tweet 125",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Standard scooter",
+      "description": "Reliable 125cc scooter for comfortable city exploration in Athens",
+      "rental_rates": [
+        {
+          "rate_text": "Daily rate + insurance options",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://rent-a-car-athens-greece.com/wp-content/uploads/2018/11/rent-a-scooter-Athens-Greece.jpg"
+      ],
+      "features": [
+        "24/7 road assistance",
+        "Driver and passenger helmets included",
+        "Additional driver allowed at no extra charge",
+        "GPS available for 5€/day"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": {
+        "minimum_driver_age": 21,
+        "required_driving_license": "European or International held for at least one year",
+        "deposit": 200,
+        "kilometer_limit": "100 km per day for 1-2 day rentals",
+        "unlimited_km_package": "25€ (for rentals of 3+ days)"
+      },
+      "required_documents_raw": [
+        "Valid European or International driving license held for at least one year",
+        "Valid credit card"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Property Damage",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Excludes driver and passenger of vehicles, and ICARUS property"
+        },
+        {
+          "type_name": "C.D.W. (Collision Damage Waiver)",
+          "is_included": false,
+          "cost_per_day": 5,
+          "currency": "EUR",
+          "deductible": 700,
+          "deductible_currency": "EUR",
+          "notes": "Damage to wheels, underside and glass not covered"
+        },
+        {
+          "type_name": "S.C.D.W. (Super Collision Damage Waiver)",
+          "is_included": false,
+          "cost_per_day": 10,
+          "currency": "EUR",
+          "deductible": 400,
+          "deductible_currency": "EUR",
+          "notes": "Damage to wheels, underside and glass not covered"
+        },
+        {
+          "type_name": "W.U.G. (Wheels.Underside.Glass)",
+          "is_included": false,
+          "cost_per_day": 10,
+          "currency": "EUR",
+          "deductible": 400,
+          "deductible_currency": "EUR",
+          "notes": "Covers wheels, underside part of vehicle and glass"
+        },
+        {
+          "type_name": "F.C. (Fire Cover)",
+          "is_included": false,
+          "cost_per_day": 10,
+          "currency": "EUR",
+          "deductible": 400,
+          "deductible_currency": "EUR",
+          "notes": "Covers fire damage to the vehicle"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "icarus-rentals",
+      "scrape_timestamp": "2025-11-13T06:22:30.617Z",
+      "source_url": "https://rent-a-car-athens-greece.com/rent-a-scooter-athens/piaggio-medley-125",
+      "brand": "Piaggio",
+      "model": "Medley 125",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Standard scooter",
+      "description": "Modern 125cc scooter with comfortable ride for city exploration",
+      "rental_rates": [
+        {
+          "rate_text": "Daily rate + insurance options",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://rent-a-car-athens-greece.com/wp-content/uploads/2020/06/symphony-sr-BLUE-WHITE1-1024x941-opt.jpg"
+      ],
+      "features": [
+        "24/7 road assistance",
+        "Driver and passenger helmets included",
+        "Additional driver allowed at no extra charge",
+        "GPS available for 5€/day"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": {
+        "minimum_driver_age": 21,
+        "required_driving_license": "European or International held for at least one year",
+        "deposit": 200,
+        "kilometer_limit": "100 km per day for 1-2 day rentals",
+        "unlimited_km_package": "25€ (for rentals of 3+ days)"
+      },
+      "required_documents_raw": [
+        "Valid European or International driving license held for at least one year",
+        "Valid credit card"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Property Damage",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Excludes driver and passenger of vehicles, and ICARUS property"
+        },
+        {
+          "type_name": "C.D.W. (Collision Damage Waiver)",
+          "is_included": false,
+          "cost_per_day": 5,
+          "currency": "EUR",
+          "deductible": 700,
+          "deductible_currency": "EUR",
+          "notes": "Damage to wheels, underside and glass not covered"
+        },
+        {
+          "type_name": "S.C.D.W. (Super Collision Damage Waiver)",
+          "is_included": false,
+          "cost_per_day": 10,
+          "currency": "EUR",
+          "deductible": 400,
+          "deductible_currency": "EUR",
+          "notes": "Damage to wheels, underside and glass not covered"
+        },
+        {
+          "type_name": "W.U.G. (Wheels.Underside.Glass)",
+          "is_included": false,
+          "cost_per_day": 10,
+          "currency": "EUR",
+          "deductible": 400,
+          "deductible_currency": "EUR",
+          "notes": "Covers wheels, underside part of vehicle and glass"
+        },
+        {
+          "type_name": "F.C. (Fire Cover)",
+          "is_included": false,
+          "cost_per_day": 10,
+          "currency": "EUR",
+          "deductible": 400,
+          "deductible_currency": "EUR",
+          "notes": "Covers fire damage to the vehicle"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "icarus-rentals",
+      "scrape_timestamp": "2025-11-13T06:22:30.617Z",
+      "source_url": "https://rent-a-car-athens-greece.com/rent-a-scooter-athens/sym-symphony-150",
+      "brand": "SYM",
+      "model": "Symphony 150",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Standard scooter",
+      "description": "150cc scooter offering more power for comfortable city and suburban rides",
+      "rental_rates": [
+        {
+          "rate_text": "Daily rate + insurance options",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://rent-a-car-athens-greece.com/wp-content/uploads/2020/06/symphony-sr-BLUE-WHITE1-1024x941-opt.jpg"
+      ],
+      "features": [
+        "24/7 road assistance",
+        "Driver and passenger helmets included",
+        "Additional driver allowed at no extra charge",
+        "GPS available for 5€/day"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": {
+        "minimum_driver_age": 21,
+        "required_driving_license": "European or International held for at least one year",
+        "deposit": 200,
+        "kilometer_limit": "100 km per day for 1-2 day rentals",
+        "unlimited_km_package": "25€ (for rentals of 3+ days)"
+      },
+      "required_documents_raw": [
+        "Valid European or International driving license held for at least one year",
+        "Valid credit card"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Property Damage",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Excludes driver and passenger of vehicles, and ICARUS property"
+        },
+        {
+          "type_name": "C.D.W. (Collision Damage Waiver)",
+          "is_included": false,
+          "cost_per_day": 5,
+          "currency": "EUR",
+          "deductible": 700,
+          "deductible_currency": "EUR",
+          "notes": "Damage to wheels, underside and glass not covered"
+        },
+        {
+          "type_name": "S.C.D.W. (Super Collision Damage Waiver)",
+          "is_included": false,
+          "cost_per_day": 10,
+          "currency": "EUR",
+          "deductible": 400,
+          "deductible_currency": "EUR",
+          "notes": "Damage to wheels, underside and glass not covered"
+        },
+        {
+          "type_name": "W.U.G. (Wheels.Underside.Glass)",
+          "is_included": false,
+          "cost_per_day": 10,
+          "currency": "EUR",
+          "deductible": 400,
+          "deductible_currency": "EUR",
+          "notes": "Covers wheels, underside part of vehicle and glass"
+        },
+        {
+          "type_name": "F.C. (Fire Cover)",
+          "is_included": false,
+          "cost_per_day": 10,
+          "currency": "EUR",
+          "deductible": 400,
+          "deductible_currency": "EUR",
+          "notes": "Covers fire damage to the vehicle"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "icarus-rentals",
+      "scrape_timestamp": "2025-11-13T06:22:30.617Z",
+      "source_url": "https://rent-a-car-athens-greece.com/rent-a-scooter-athens/sym-symphony-200",
+      "brand": "SYM",
+      "model": "Symphony 200",
+      "year": null,
+      "engine_capacity_cc": 200,
+      "category": "Premium scooter",
+      "description": "200cc scooter providing enhanced performance for longer rides around Athens",
+      "rental_rates": [
+        {
+          "rate_text": "Daily rate + insurance options",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://rent-a-car-athens-greece.com/wp-content/uploads/2020/06/symphony-sr-BLUE-WHITE1-1024x941-opt.jpg"
+      ],
+      "features": [
+        "24/7 road assistance",
+        "Driver and passenger helmets included",
+        "Additional driver allowed at no extra charge",
+        "GPS available for 5€/day"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": {
+        "minimum_driver_age": 21,
+        "required_driving_license": "European or International held for at least one year",
+        "deposit": 200,
+        "kilometer_limit": "100 km per day for 1-2 day rentals",
+        "unlimited_km_package": "25€ (for rentals of 3+ days)"
+      },
+      "required_documents_raw": [
+        "Valid European or International driving license held for at least one year",
+        "Valid credit card"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Property Damage",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Excludes driver and passenger of vehicles, and ICARUS property"
+        },
+        {
+          "type_name": "C.D.W. (Collision Damage Waiver)",
+          "is_included": false,
+          "cost_per_day": 5,
+          "currency": "EUR",
+          "deductible": 700,
+          "deductible_currency": "EUR",
+          "notes": "Damage to wheels, underside and glass not covered"
+        },
+        {
+          "type_name": "S.C.D.W. (Super Collision Damage Waiver)",
+          "is_included": false,
+          "cost_per_day": 10,
+          "currency": "EUR",
+          "deductible": 400,
+          "deductible_currency": "EUR",
+          "notes": "Damage to wheels, underside and glass not covered"
+        },
+        {
+          "type_name": "W.U.G. (Wheels.Underside.Glass)",
+          "is_included": false,
+          "cost_per_day": 10,
+          "currency": "EUR",
+          "deductible": 400,
+          "deductible_currency": "EUR",
+          "notes": "Covers wheels, underside part of vehicle and glass"
+        },
+        {
+          "type_name": "F.C. (Fire Cover)",
+          "is_included": false,
+          "cost_per_day": 10,
+          "currency": "EUR",
+          "deductible": 400,
+          "deductible_currency": "EUR",
+          "notes": "Covers fire damage to the vehicle"
+        }
+      ],
+      "availability_status": null
+    }
+  ]
+}

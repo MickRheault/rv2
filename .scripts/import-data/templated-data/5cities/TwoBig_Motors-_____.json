@@ -1,0 +1,227 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T10:36:08.227Z",
+    "shop_identifier": "TwoBig Motors-투빅모터스",
+    "provider_name": "TwoBig Motors-투빅모터스",
+    "place_id": "ChIJASVwxugldTERq5nP_r2aVUE",
+    "address": "719/28 Huỳnh Tấn Phát, Phú Thuận, Quận 7, Thành phố Hồ Chí Minh, Vietnam",
+    "city": "Ho Chi Minh City",
+    "province": "Ho Chi Minh City",
+    "country": "Vietnam",
+    "latitude": 10.7358504,
+    "longitude": 106.7318142,
+    "phone": "0707 536 791",
+    "website": "http://twobigmotors.com/",
+    "google_maps_url": "https://maps.google.com/?cid=4707839126300236203",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 24,
+    "rental_conditions": {
+      "foreign_customers_only": true,
+      "min_age": 18,
+      "required_passport": true,
+      "required_international_license": true,
+      "korean_customers_deposit_free": "<3 days",
+      "min_rental_days": 1,
+      "late_return_fee_vnd_per_hour": 10000,
+      "deposit_manual_bike_vnd": 1000000,
+      "deposit_scooter_vnd": 2000000,
+      "deposit_big_bike_vnd": 5000000
+    },
+    "rental_inclusions": [
+      "2 helmets",
+      "copy of vehicle registration papers"
+    ],
+    "available_service_locations": [
+      "Ho Chi Minh City"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "TWOBIGMOTORS",
+      "scrape_timestamp": "2025-11-13T10:36:08.736Z",
+      "source_url": "https://twobigmotors.com/cua-hang/bmw-s1000rr-2018-german-version/",
+      "brand": "BMW",
+      "model": "S1000RR",
+      "year": 2018,
+      "engine_capacity_cc": 999,
+      "category": "Sport bike",
+      "description": "German version BMW S1000RR with near-original condition, 9,000km mileage, smooth and quiet engine sound",
+      "rental_rates": [
+        {
+          "rate_text": "300,000 VND/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 300000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://twobigmotors.com/wp-content/uploads/2025/09/z7040786423354_9d26e562ee5fd108aad4d0c55edfc313.jpg"
+      ],
+      "features": [
+        "GP Racing engine cover",
+        "frame sliders",
+        "Custom switch",
+        "Tun touring lights",
+        "Austin Racing full titanium exhaust",
+        "Mitas tires (120/200)",
+        "Carbon side covers",
+        "under cowl",
+        "Evotech radiator guard",
+        "Short number plate kit",
+        "integrated signal brake light",
+        "Evotech front/rear wheel sliders"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": "Near-original condition with 9,000km mileage. Engine sounds smooth and quiet.",
+      "required_documents_raw": [
+        "Original passport",
+        "International motorbike license or valid license from home country",
+        "Cash deposit (5,000,000 VND for big bikes)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Warranty",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Covers engine, gearbox & clutch, electrical system, battery within warranty period"
+        }
+      ],
+      "availability_status": "AVAILABLE"
+    },
+    {
+      "shop_identifier": "TWOBIGMOTORS",
+      "scrape_timestamp": "2025-11-13T10:36:08.736Z",
+      "source_url": "https://twobigmotors.com/cua-hang/ducati-hypermotard-821-2015/",
+      "brand": "DUCATI",
+      "model": "HYPER 821",
+      "year": 2015,
+      "engine_capacity_cc": 821,
+      "category": "Sport bike",
+      "description": "Ducati Hypermotard 821 from 2015",
+      "rental_rates": [
+        {
+          "rate_text": "300,000 VND/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 300000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://twobigmotors.com/wp-content/uploads/2025/09/z7041501834214_e857f2a67c9317d6b39fb8aa61145e9e.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Original passport",
+        "International motorbike license or valid license from home country",
+        "Cash deposit (5,000,000 VND for big bikes)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Warranty",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Covers engine, gearbox & clutch, electrical system, battery within warranty period"
+        }
+      ],
+      "availability_status": "AVAILABLE"
+    },
+    {
+      "shop_identifier": "TWOBIGMOTORS",
+      "scrape_timestamp": "2025-11-13T10:36:08.736Z",
+      "source_url": "https://twobigmotors.com/contact-us/",
+      "brand": "YAMAHA",
+      "model": "MT10R",
+      "year": 2022,
+      "engine_capacity_cc": 998,
+      "category": "Sport bike",
+      "description": "Yamaha MT10R from 2022",
+      "rental_rates": [
+        {
+          "rate_text": "300,000 VND/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 300000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://twobigmotors.com/wp-content/uploads/2025/09/z7048126456912_ce035a901750f4c82f61707cf97c3270.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Original passport",
+        "International motorbike license or valid license from home country",
+        "Cash deposit (5,000,000 VND for big bikes)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Warranty",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Covers engine, gearbox & clutch, electrical system, battery within warranty period"
+        }
+      ],
+      "availability_status": "AVAILABLE"
+    },
+    {
+      "shop_identifier": "TWOBIGMOTORS",
+      "scrape_timestamp": "2025-11-13T10:36:08.736Z",
+      "source_url": "https://twobigmotors.com/cua-hang/bmw-s1000rr-2018-thailand-version/",
+      "brand": "BMW",
+      "model": "S1000RR",
+      "year": 2018,
+      "engine_capacity_cc": 999,
+      "category": "Sport bike",
+      "description": "Thailand version BMW S1000RR",
+      "rental_rates": [
+        {
+          "rate_text": "300,000 VND/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 300000,
+          "currency": "VND"
+        }
+      ],
+      "images": [
+        "https://twobigmotors.com/wp-content/uploads/2025/10/z7069769688765_918ac85167e65f9678753e580989d6d1.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Original passport",
+        "International motorbike license or valid license from home country",
+        "Cash deposit (5,000,000 VND for big bikes)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Warranty",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Covers engine, gearbox & clutch, electrical system, battery within warranty period"
+        }
+      ],
+      "availability_status": "AVAILABLE"
+    }
+  ]
+}

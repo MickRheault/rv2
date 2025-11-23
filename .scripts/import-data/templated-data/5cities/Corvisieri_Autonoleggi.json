@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T12:43:00.899Z",
+    "shop_identifier": "Corvisieri Autonoleggi",
+    "provider_name": "Corvisieri Autonoleggi",
+    "place_id": "ChIJI6ZDWgpiLxMRBsqQpWPJAsI",
+    "address": "Via Tuscolana, 890/a, 00175 Roma RM, Italy",
+    "city": "Rome",
+    "province": "Lazio",
+    "country": "Italy",
+    "latitude": 41.8629287,
+    "longitude": 12.5502907,
+    "phone": "06 714 0256",
+    "website": "http://www.corvisieri.it/",
+    "google_maps_url": "https://maps.google.com/?cid=13979957623128115718",
+    "business_status": "OPERATIONAL",
+    "rating": 4.9,
+    "review_count": 286,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

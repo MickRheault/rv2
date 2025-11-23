@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-10-14T21:20:51.188Z",
+    "shop_identifier": "Bike Service",
+    "provider_name": "Bike Service",
+    "place_id": "ChIJoSJSPt6ipBIRJPfOwTbZkg4",
+    "address": "Carrer del Consell de Cent, 519, L'Eixample, 08013 Barcelona, Spain",
+    "city": "Barcelona",
+    "province": "Barcelona",
+    "country": "Spain",
+    "latitude": 41.4022063,
+    "longitude": 2.1803458,
+    "phone": "932 46 48 65",
+    "website": "http://bikeservicebarcelona.com/",
+    "google_maps_url": "https://maps.google.com/?cid=1050140492333774628",
+    "business_status": "OPERATIONAL",
+    "rating": 4.3,
+    "review_count": 108,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

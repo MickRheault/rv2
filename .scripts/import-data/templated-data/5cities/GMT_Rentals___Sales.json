@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T06:13:28.366Z",
+    "shop_identifier": "GMT Rentals & Sales",
+    "provider_name": "GMT Rentals & Sales",
+    "place_id": "ChIJN4s6cwC9oRQRjaBJZobUfG8",
+    "address": "Kon/nou Paleologou 6, Ag. Ioannis Rentis 182 33, Greece",
+    "city": "Athens",
+    "province": "Attica",
+    "country": "Greece",
+    "latitude": 37.9615989,
+    "longitude": 23.6753501,
+    "phone": "21 0481 0333",
+    "website": "http://www.gmt-rentals-sales.gr/",
+    "google_maps_url": "https://maps.google.com/?cid=8033529509028929677",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 5,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

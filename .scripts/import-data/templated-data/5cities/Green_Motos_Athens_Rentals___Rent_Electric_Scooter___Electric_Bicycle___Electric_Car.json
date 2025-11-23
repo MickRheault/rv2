@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T06:28:17.432Z",
+    "shop_identifier": "Green Motos Athens Rentals | Rent Electric Scooter | Electric Bicycle | Electric Car",
+    "provider_name": "Green Motos Athens Rentals | Rent Electric Scooter | Electric Bicycle | Electric Car",
+    "place_id": "ChIJedUBQ6K9oRQRiM8Cre3RA24",
+    "address": "Kallirrois 77, Athina 117 45, Greece",
+    "city": "Athens",
+    "province": "Attica",
+    "country": "Greece",
+    "latitude": 37.961962,
+    "longitude": 23.7249832,
+    "phone": "693 241 6361",
+    "website": "http://dirt-motos.eu/",
+    "google_maps_url": "https://maps.google.com/?cid=7927410587842301832",
+    "business_status": "OPERATIONAL",
+    "rating": 4.5,
+    "review_count": 76,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

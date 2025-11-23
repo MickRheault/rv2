@@ -1,0 +1,937 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T05:02:53.700Z",
+    "shop_identifier": "MotoTravelGreece",
+    "provider_name": "MotoTravelGreece",
+    "place_id": "ChIJk2Y6a5a9oRQRJ7_QtjzHRFM",
+    "address": "Leof. Alexandras 34, Athina 114 73, Greece",
+    "city": "Athens",
+    "province": "Attica",
+    "country": "Greece",
+    "latitude": 37.99084,
+    "longitude": 23.735891,
+    "phone": "697 452 2455",
+    "website": "https://www.mototravelgreece.com/",
+    "google_maps_url": "https://maps.google.com/?cid=6000139667143442215",
+    "business_status": "OPERATIONAL",
+    "rating": 4.9,
+    "review_count": 101,
+    "rental_conditions": {
+      "minimum_rental_period": "2 days (1 day for 310 GS)",
+      "minimum_rider_age": "28 years old (24 years old for 310 GS)",
+      "license_requirements": "minimum 2 years of motorcycle category A, International Driver's Permit class A for non-European license holders",
+      "damage_deposit": "1500€ on Credit Card (Visa, Mastercard)"
+    },
+    "rental_inclusions": [
+      "All bikes are new models",
+      "Unlimited kilometers for 5+ day rentals",
+      "250 kilometers per day allowed for rentals of 2-5 days with 0.35 euro charge per extra kilometer",
+      "Third Party Liability insurance",
+      "Rear topcase",
+      "GPS Tracking system",
+      "BMW Road side assistance",
+      "VAT"
+    ],
+    "available_service_locations": [
+      "Athens",
+      "Central Greece",
+      "Peloponnese",
+      "Meteora",
+      "Ioannina",
+      "Cyprus"
+    ],
+    "offered_tours": [
+      {
+        "name": "Western Central Greece Tour",
+        "duration_text": "7 days",
+        "distance_km": 1800,
+        "price_text": "2270-2780€",
+        "currency": "EUR"
+      },
+      {
+        "name": "Cyprus 2 Days On-Off Motorcycle Tour",
+        "duration_text": "2 days",
+        "distance_km": 404,
+        "price_text": "430€",
+        "currency": "EUR"
+      },
+      {
+        "name": "South Balkan Tour",
+        "duration_text": "7 days",
+        "distance_km": 1800,
+        "price_text": "2670-4150€",
+        "currency": "EUR"
+      },
+      {
+        "name": "Can-Am Attica Riviera",
+        "duration_text": "1 day",
+        "distance_km": null,
+        "price_text": null,
+        "currency": "EUR"
+      },
+      {
+        "name": "Pindos Secrets",
+        "duration_text": "7 days",
+        "distance_km": null,
+        "price_text": null,
+        "currency": "EUR"
+      },
+      {
+        "name": "Meteora Expedition",
+        "duration_text": "5 days",
+        "distance_km": null,
+        "price_text": null,
+        "currency": "EUR"
+      },
+      {
+        "name": "In-depth Peloponnese",
+        "duration_text": "7 days",
+        "distance_km": null,
+        "price_text": null,
+        "currency": "EUR"
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "mototravelgreece",
+      "scrape_timestamp": "2025-11-13T05:02:54.839Z",
+      "source_url": "https://www.mototravelgreece.com/",
+      "brand": "BMW",
+      "model": "R1300GS",
+      "year": null,
+      "engine_capacity_cc": 1300,
+      "category": "Adventure/Touring",
+      "description": "Latest BMW adventure motorcycle, fully equipped for magical routes",
+      "rental_rates": [
+        {
+          "rate_text": "165€/day",
+          "min_days": 2,
+          "max_days": 3,
+          "rate_per_day": 165,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "155€/day",
+          "min_days": 4,
+          "max_days": 6,
+          "rate_per_day": 155,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "145€/day",
+          "min_days": 7,
+          "max_days": 13,
+          "rate_per_day": 145,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "135€/day",
+          "min_days": 14,
+          "max_days": null,
+          "rate_per_day": 135,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.mototravelgreece.com/img/Tours-Tabs/Road/4-6days/Kalamata.jpg"
+      ],
+      "features": [
+        "GPS for navigation",
+        "Touratech safety equipment",
+        "Complete rider safety equipment"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Motorcycle license (minimum 2 years of category A)",
+        "International Driver's Permit class A for non-European license holders"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Liability",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in base price"
+        },
+        {
+          "type_name": "Theft insurance",
+          "is_included": false,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Available as extra"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "mototravelgreece",
+      "scrape_timestamp": "2025-11-13T05:02:54.839Z",
+      "source_url": "https://www.mototravelgreece.com/",
+      "brand": "BMW",
+      "model": "R1250GS",
+      "year": null,
+      "engine_capacity_cc": 1250,
+      "category": "Adventure/Touring",
+      "description": "Latest BMW adventure motorcycle, fully equipped for magical routes",
+      "rental_rates": [
+        {
+          "rate_text": "145€/day",
+          "min_days": 2,
+          "max_days": 3,
+          "rate_per_day": 145,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "135€/day",
+          "min_days": 4,
+          "max_days": 6,
+          "rate_per_day": 135,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "125€/day",
+          "min_days": 7,
+          "max_days": 13,
+          "rate_per_day": 125,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "115€/day",
+          "min_days": 14,
+          "max_days": null,
+          "rate_per_day": 115,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.mototravelgreece.com/img/Tours-Tabs/Road/4-6days/Meteora.jpg"
+      ],
+      "features": [
+        "GPS for navigation",
+        "Touratech safety equipment",
+        "Complete rider safety equipment"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Motorcycle license (minimum 2 years of category A)",
+        "International Driver's Permit class A for non-European license holders"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Liability",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in base price"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "mototravelgreece",
+      "scrape_timestamp": "2025-11-13T05:02:54.839Z",
+      "source_url": "https://www.mototravelgreece.com/",
+      "brand": "BMW",
+      "model": "F900XR",
+      "year": null,
+      "engine_capacity_cc": 900,
+      "category": "Sport Touring",
+      "description": "Latest BMW sport touring motorcycle",
+      "rental_rates": [
+        {
+          "rate_text": "130€/day",
+          "min_days": 2,
+          "max_days": 3,
+          "rate_per_day": 130,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "120€/day",
+          "min_days": 4,
+          "max_days": 6,
+          "rate_per_day": 120,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "110€/day",
+          "min_days": 7,
+          "max_days": 13,
+          "rate_per_day": 110,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "100€/day",
+          "min_days": 14,
+          "max_days": null,
+          "rate_per_day": 100,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.mototravelgreece.com/img/Tours-Tabs/Road/1-3days/Attica_Can-Am.jpg"
+      ],
+      "features": [
+        "GPS for navigation",
+        "Touratech safety equipment",
+        "Complete rider safety equipment"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Motorcycle license (minimum 2 years of category A)",
+        "International Driver's Permit class A for non-European license holders"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Liability",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in base price"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "mototravelgreece",
+      "scrape_timestamp": "2025-11-13T05:02:54.839Z",
+      "source_url": "https://www.mototravelgreece.com/",
+      "brand": "BMW",
+      "model": "F850GS",
+      "year": null,
+      "engine_capacity_cc": 850,
+      "category": "Adventure/Touring",
+      "description": "Latest BMW adventure motorcycle",
+      "rental_rates": [
+        {
+          "rate_text": "125€/day",
+          "min_days": 2,
+          "max_days": 3,
+          "rate_per_day": 125,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "115€/day",
+          "min_days": 4,
+          "max_days": 6,
+          "rate_per_day": 115,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "105€/day",
+          "min_days": 7,
+          "max_days": 13,
+          "rate_per_day": 105,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "95€/day",
+          "min_days": 14,
+          "max_days": null,
+          "rate_per_day": 95,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.mototravelgreece.com/img/Tours-Tabs/Road/4-6days/Konitsa.jpg"
+      ],
+      "features": [
+        "GPS for navigation",
+        "Touratech safety equipment",
+        "Complete rider safety equipment",
+        "Off-road use: +40€"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Motorcycle license (minimum 2 years of category A)",
+        "International Driver's Permit class A for non-European license holders"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Liability",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in base price"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "mototravelgreece",
+      "scrape_timestamp": "2025-11-13T05:02:54.839Z",
+      "source_url": "https://www.mototravelgreece.com/",
+      "brand": "BMW",
+      "model": "F750GS",
+      "year": null,
+      "engine_capacity_cc": 750,
+      "category": "Adventure/Touring",
+      "description": "Latest BMW adventure motorcycle",
+      "rental_rates": [
+        {
+          "rate_text": "125€/day",
+          "min_days": 2,
+          "max_days": 3,
+          "rate_per_day": 125,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "115€/day",
+          "min_days": 4,
+          "max_days": 6,
+          "rate_per_day": 115,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "105€/day",
+          "min_days": 7,
+          "max_days": 13,
+          "rate_per_day": 105,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "95€/day",
+          "min_days": 14,
+          "max_days": null,
+          "rate_per_day": 95,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.mototravelgreece.com/img/Tours-Tabs/Road/6-days/Ioannina.jpg"
+      ],
+      "features": [
+        "GPS for navigation",
+        "Touratech safety equipment",
+        "Complete rider safety equipment"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Motorcycle license (minimum 2 years of category A)",
+        "International Driver's Permit class A for non-European license holders"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Liability",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in base price"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "mototravelgreece",
+      "scrape_timestamp": "2025-11-13T05:02:54.839Z",
+      "source_url": "https://www.mototravelgreece.com/",
+      "brand": "Yamaha",
+      "model": "Tenere 700",
+      "year": null,
+      "engine_capacity_cc": 700,
+      "category": "Adventure/Touring",
+      "description": "Latest Yamaha adventure motorcycle",
+      "rental_rates": [
+        {
+          "rate_text": "125€/day",
+          "min_days": 2,
+          "max_days": 3,
+          "rate_per_day": 125,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "115€/day",
+          "min_days": 4,
+          "max_days": 6,
+          "rate_per_day": 115,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "105€/day",
+          "min_days": 7,
+          "max_days": 13,
+          "rate_per_day": 105,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "95€/day",
+          "min_days": 14,
+          "max_days": null,
+          "rate_per_day": 95,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.mototravelgreece.com/img/Tours-Tabs/Road/6-days/Peloponnese.jpg"
+      ],
+      "features": [
+        "GPS for navigation",
+        "Touratech safety equipment",
+        "Complete rider safety equipment",
+        "Off-road use: +40€"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Motorcycle license (minimum 2 years of category A)",
+        "International Driver's Permit class A for non-European license holders"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Liability",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in base price"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "mototravelgreece",
+      "scrape_timestamp": "2025-11-13T05:02:54.839Z",
+      "source_url": "https://www.mototravelgreece.com/",
+      "brand": "Benelli",
+      "model": "TRK502X",
+      "year": null,
+      "engine_capacity_cc": 502,
+      "category": "Adventure/Touring",
+      "description": "Adventure motorcycle",
+      "rental_rates": [
+        {
+          "rate_text": "80€/day",
+          "min_days": 1,
+          "max_days": 3,
+          "rate_per_day": 80,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "75€/day",
+          "min_days": 4,
+          "max_days": 6,
+          "rate_per_day": 75,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "70€/day",
+          "min_days": 7,
+          "max_days": 13,
+          "rate_per_day": 70,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "65€/day",
+          "min_days": 14,
+          "max_days": null,
+          "rate_per_day": 65,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.mototravelgreece.com/img/Tours-Tabs/Road/4-6days/Olympia.jpg"
+      ],
+      "features": [
+        "GPS for navigation",
+        "Complete rider safety equipment"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Motorcycle license (minimum 2 years of category A)",
+        "International Driver's Permit class A for non-European license holders"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Liability",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in base price"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "mototravelgreece",
+      "scrape_timestamp": "2025-11-13T05:02:54.839Z",
+      "source_url": "https://www.mototravelgreece.com/",
+      "brand": "CFMOTO",
+      "model": "450MT",
+      "year": null,
+      "engine_capacity_cc": 450,
+      "category": "Adventure/Touring",
+      "description": "Adventure motorcycle",
+      "rental_rates": [
+        {
+          "rate_text": "80€/day",
+          "min_days": 1,
+          "max_days": 3,
+          "rate_per_day": 80,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "75€/day",
+          "min_days": 4,
+          "max_days": 6,
+          "rate_per_day": 75,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "70€/day",
+          "min_days": 7,
+          "max_days": 13,
+          "rate_per_day": 70,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "65€/day",
+          "min_days": 14,
+          "max_days": null,
+          "rate_per_day": 65,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.mototravelgreece.com/img/Tours-Tabs/Road/6-days/Nafpaktos.jpg"
+      ],
+      "features": [
+        "GPS for navigation",
+        "Complete rider safety equipment",
+        "Off-road use: +40€"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Motorcycle license (minimum 2 years of category A)",
+        "International Driver's Permit class A for non-European license holders"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Liability",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in base price"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "mototravelgreece",
+      "scrape_timestamp": "2025-11-13T05:02:54.839Z",
+      "source_url": "https://www.mototravelgreece.com/",
+      "brand": "Royal Enfield",
+      "model": "450 Guerrilla",
+      "year": null,
+      "engine_capacity_cc": 450,
+      "category": "Adventure/Touring",
+      "description": "Adventure motorcycle",
+      "rental_rates": [
+        {
+          "rate_text": "70€/day",
+          "min_days": 1,
+          "max_days": 3,
+          "rate_per_day": 70,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "65€/day",
+          "min_days": 4,
+          "max_days": 6,
+          "rate_per_day": 65,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "60€/day",
+          "min_days": 7,
+          "max_days": 13,
+          "rate_per_day": 60,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "55€/day",
+          "min_days": 14,
+          "max_days": null,
+          "rate_per_day": 55,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.mototravelgreece.com/img/Tours-Tabs/Road/1-3days/Nafplion.jpg"
+      ],
+      "features": [
+        "GPS for navigation",
+        "Complete rider safety equipment"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Motorcycle license (minimum 2 years of category A)",
+        "International Driver's Permit class A for non-European license holders"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Liability",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in base price"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "mototravelgreece",
+      "scrape_timestamp": "2025-11-13T05:02:54.839Z",
+      "source_url": "https://www.mototravelgreece.com/",
+      "brand": "BMW",
+      "model": "G310GS",
+      "year": null,
+      "engine_capacity_cc": 310,
+      "category": "Adventure/Touring",
+      "description": "Entry-level BMW adventure motorcycle",
+      "rental_rates": [
+        {
+          "rate_text": "60€/day",
+          "min_days": 1,
+          "max_days": 3,
+          "rate_per_day": 60,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "55€/day",
+          "min_days": 4,
+          "max_days": 6,
+          "rate_per_day": 55,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "50€/day",
+          "min_days": 7,
+          "max_days": 13,
+          "rate_per_day": 50,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "45€/day",
+          "min_days": 14,
+          "max_days": null,
+          "rate_per_day": 45,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.mototravelgreece.com/img/Tours-Tabs/Road/1-3days/Delphi.jpg"
+      ],
+      "features": [
+        "GPS for navigation",
+        "Complete rider safety equipment"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Motorcycle license (minimum 2 years of category A)",
+        "International Driver's Permit class A for non-European license holders"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Liability",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in base price"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "mototravelgreece",
+      "scrape_timestamp": "2025-11-13T05:02:54.839Z",
+      "source_url": "https://www.mototravelgreece.com/",
+      "brand": "Can-Am",
+      "model": "Spyder RT",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Roadster/Trike",
+      "description": "No motorcycle license needed",
+      "rental_rates": [
+        {
+          "rate_text": "300€/day",
+          "min_days": 1,
+          "max_days": 1,
+          "rate_per_day": 300,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "280€/day",
+          "min_days": 2,
+          "max_days": 4,
+          "rate_per_day": 280,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "250€/day",
+          "min_days": 5,
+          "max_days": null,
+          "rate_per_day": 250,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.mototravelgreece.com/img/Tours-Tabs/On-Off/On-Off-01.jpg"
+      ],
+      "features": [
+        "No motorcycle license needed",
+        "GPS for navigation",
+        "Complete rider safety equipment"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid driver's license"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Liability",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in base price"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "mototravelgreece",
+      "scrape_timestamp": "2025-11-13T05:02:54.839Z",
+      "source_url": "https://www.mototravelgreece.com/",
+      "brand": "Can-Am",
+      "model": "Ryker",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Roadster/Trike",
+      "description": "No motorcycle license needed",
+      "rental_rates": [
+        {
+          "rate_text": "200€/day",
+          "min_days": 1,
+          "max_days": 1,
+          "rate_per_day": 200,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "180€/day",
+          "min_days": 2,
+          "max_days": 4,
+          "rate_per_day": 180,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "150€/day",
+          "min_days": 5,
+          "max_days": null,
+          "rate_per_day": 150,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.mototravelgreece.com/img/Tours-Tabs/On-Off/On-Off-02.jpg"
+      ],
+      "features": [
+        "No motorcycle license needed",
+        "GPS for navigation",
+        "Complete rider safety equipment"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid driver's license"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Liability",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in base price"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "mototravelgreece",
+      "scrape_timestamp": "2025-11-13T05:02:54.839Z",
+      "source_url": "https://www.mototravelgreece.com/",
+      "brand": "Harley Davidson",
+      "model": "Sportster",
+      "year": null,
+      "engine_capacity_cc": 1200,
+      "category": "Cruiser",
+      "description": "Harley Davidson cruiser motorcycle",
+      "rental_rates": [
+        {
+          "rate_text": "120€/day",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 120,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.mototravelgreece.com/img/Tours-Tabs/On-Off/On-Off-03.jpg"
+      ],
+      "features": [
+        "Complete rider safety equipment"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Motorcycle license (minimum 2 years of category A)",
+        "International Driver's Permit class A for non-European license holders"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third Party Liability",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": "Included in base price"
+        }
+      ],
+      "availability_status": null
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T12:14:56.666Z",
+    "shop_identifier": "Tourent & MotoTourent",
+    "provider_name": "Tourent & MotoTourent",
+    "place_id": "ChIJr4_vCB9hLxMR37m-lYlPE-U",
+    "address": "Via Domenico Cassini, 20, 00197 Roma RM, Italy",
+    "city": "Rome",
+    "province": "Lazio",
+    "country": "Italy",
+    "latitude": 41.9252663,
+    "longitude": 12.4870209,
+    "phone": "328 197 3318",
+    "website": "https://mototourent.it/",
+    "google_maps_url": "https://maps.google.com/?cid=16506624511584418271",
+    "business_status": "OPERATIONAL",
+    "rating": 4.9,
+    "review_count": 166,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

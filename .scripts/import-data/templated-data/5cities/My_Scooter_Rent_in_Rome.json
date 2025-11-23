@@ -1,0 +1,154 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T12:46:41.194Z",
+    "shop_identifier": "My Scooter Rent in Rome",
+    "provider_name": "My Scooter Rent in Rome",
+    "place_id": "ChIJ14cYkwBhLxMRzE4mQrAGp0M",
+    "address": "Via Aureliana, 61, 00187 Roma RM, Italy",
+    "city": "Rome",
+    "province": "Lazio",
+    "country": "Italy",
+    "latitude": 41.9070562,
+    "longitude": 12.495268,
+    "phone": "06 4202 0818",
+    "website": "http://myscooterentinrome.it/en/home_en/",
+    "google_maps_url": "https://maps.google.com/?cid=4874872475745668812",
+    "business_status": "OPERATIONAL",
+    "rating": 4.9,
+    "review_count": 617,
+    "rental_conditions": {
+      "min_driver_age": 18,
+      "driver_license_required": true,
+      "min_passenger_age": 13,
+      "max_height_cm": 190,
+      "max_weight_kg": 100,
+      "no_children_under_7": true,
+      "no_pregnant_women": true,
+      "max_group_size": 30,
+      "max_people_per_vehicle": 2,
+      "safety_escort_for_large_groups": true
+    },
+    "rental_inclusions": [
+      "Third-party liability insurance",
+      "Professional tour escort",
+      "Italian coffee or gelato",
+      "Gas/fuel"
+    ],
+    "available_service_locations": [
+      "Via Aureliana 61, 00187 - Roma",
+      "Via della Stazione di S. Pietro, 13, 00165 - Roma"
+    ],
+    "offered_tours": [
+      {
+        "name": "Fiat Topolino E-Car Tour",
+        "duration_text": "2 hours 30 minutes to 3 hours",
+        "distance_km": null,
+        "price_text": "Price not explicitly stated",
+        "currency": "EUR"
+      },
+      {
+        "name": "Private Tour",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": "Custom pricing",
+        "currency": "EUR"
+      },
+      {
+        "name": "Castelli Romani Tour in Vintage Fiat 500",
+        "duration_text": "5 hours",
+        "distance_km": null,
+        "price_text": "from €320.00",
+        "currency": "EUR"
+      },
+      {
+        "name": "Roman Tour in Vintage Fiat 500",
+        "duration_text": "3 hours",
+        "distance_km": null,
+        "price_text": "from €280.00",
+        "currency": "EUR"
+      },
+      {
+        "name": "Castelli Romani Tour on Vespa",
+        "duration_text": "5 hours",
+        "distance_km": null,
+        "price_text": "from €140.00-180.00",
+        "currency": "EUR"
+      },
+      {
+        "name": "Rome by Night Tour",
+        "duration_text": null,
+        "distance_km": null,
+        "price_text": null,
+        "currency": "EUR"
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "myscooterentinrome",
+      "scrape_timestamp": "2025-11-13T12:46:42.257Z",
+      "source_url": "https://www.myscooterentinrome.it/en/home_eng-2/",
+      "brand": "Vespa",
+      "model": "LX",
+      "year": null,
+      "engine_capacity_cc": 50,
+      "category": "Scooter",
+      "description": "50cc scooter for exploring Rome",
+      "rental_rates": [],
+      "images": [
+        "https://www.myscooterentinrome.it/wp-content/uploads/2022/07/vespa_lx_50cc.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid driver's license"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third-party liability",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": 700,
+          "deductible_currency": "EUR",
+          "notes": "€700 refundable deposit on a credit card"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "myscooterentinrome",
+      "scrape_timestamp": "2025-11-13T12:46:42.257Z",
+      "source_url": "https://www.myscooterentinrome.it/en/home_eng-2/",
+      "brand": "Yamaha",
+      "model": "Tricity",
+      "year": null,
+      "engine_capacity_cc": 300,
+      "category": "Scooter",
+      "description": "300cc scooter for exploring Rome",
+      "rental_rates": [],
+      "images": [
+        "https://www.myscooterentinrome.it/wp-content/uploads/2022/07/Yamaha_Tricity_300cc-e1664876855171.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Valid driver's license"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Third-party liability",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": 700,
+          "deductible_currency": "EUR",
+          "notes": "€700 refundable deposit on a credit card"
+        }
+      ],
+      "availability_status": null
+    }
+  ]
+}

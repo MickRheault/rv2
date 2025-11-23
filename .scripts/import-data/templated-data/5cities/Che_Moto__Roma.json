@@ -1,0 +1,501 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T13:04:01.881Z",
+    "shop_identifier": "Che Moto! Roma",
+    "provider_name": "Che Moto! Roma",
+    "place_id": "ChIJxR74ho1gLxMRI119WFcPr9Q",
+    "address": "Circonvallazione Clodia, 78, 00195 Roma RM, Italy",
+    "city": "Rome",
+    "province": "Lazio",
+    "country": "Italy",
+    "latitude": 41.9203282,
+    "longitude": 12.4576873,
+    "phone": "06 324 3556",
+    "website": "http://www.chemoto.net/",
+    "google_maps_url": "https://maps.google.com/?cid=15325484924786269475",
+    "business_status": "OPERATIONAL",
+    "rating": 4.2,
+    "review_count": 395,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [
+      "Roma"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "chemoto-roma",
+      "scrape_timestamp": "2025-11-13T13:04:03.418Z",
+      "source_url": "https://www.chemoto.net/concessionaria-piaggio-roma/",
+      "brand": "Piaggio",
+      "model": "Liberty 125",
+      "year": 2025,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": "Lo scooter a ruota alta per definizione, dalle linee inconfondibili e moderne e dalla comoda pedana poggiapiedi piatta.",
+      "rental_rates": null,
+      "images": [
+        "https://www.chemoto.net/wp-content/uploads/2025/02/Piaggio_Liberty_125_Bianco-Luna_3-4-ant-dx-1024x1024.png"
+      ],
+      "features": [
+        "ruota alta",
+        "pedana poggiapiedi piatta",
+        "eleganza delle forme",
+        "leggerezza",
+        "facilità di guida"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "In stock"
+    },
+    {
+      "shop_identifier": "chemoto-roma",
+      "scrape_timestamp": "2025-11-13T13:04:03.418Z",
+      "source_url": "https://www.chemoto.net/concessionaria-piaggio-roma/",
+      "brand": "Piaggio",
+      "model": "Liberty 50",
+      "year": 2025,
+      "engine_capacity_cc": 50,
+      "category": "Scooter",
+      "description": "Scooter a ruota alta con design inconfondibile e moderno.",
+      "rental_rates": null,
+      "images": [
+        "https://www.chemoto.net/concessionaria-piaggio-roma/"
+      ],
+      "features": [
+        "ruota alta",
+        "pedana poggiapiedi piatta",
+        "eleganza delle forme"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "In stock"
+    },
+    {
+      "shop_identifier": "chemoto-roma",
+      "scrape_timestamp": "2025-11-13T13:04:03.418Z",
+      "source_url": "https://www.chemoto.net/concessionaria-piaggio-roma/",
+      "brand": "Piaggio",
+      "model": "Liberty 50 Sport",
+      "year": 2025,
+      "engine_capacity_cc": 50,
+      "category": "Scooter",
+      "description": "Versione sportiva del Liberty 50 con styling dinamico.",
+      "rental_rates": null,
+      "images": [
+        "https://www.chemoto.net/concessionaria-piaggio-roma/"
+      ],
+      "features": [
+        "ruota alta",
+        "sport styling",
+        "Euro 5"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "In stock"
+    },
+    {
+      "shop_identifier": "chemoto-roma",
+      "scrape_timestamp": "2025-11-13T13:04:03.418Z",
+      "source_url": "https://www.chemoto.net/concessionaria-piaggio-roma/",
+      "brand": "Piaggio",
+      "model": "New Liberty 150",
+      "year": 2025,
+      "engine_capacity_cc": 150,
+      "category": "Scooter",
+      "description": "Versione aggiornata del Liberty con cilindrata maggiore.",
+      "rental_rates": null,
+      "images": [
+        "https://www.chemoto.net/wp-content/uploads/2025/02/Piaggio_Liberty_125_Bianco-Luna_3-4-ant-dx-1024x1024.png"
+      ],
+      "features": [
+        "ruota alta",
+        "pedana poggiapiedi piatta",
+        "Euro 5 Plus"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "In stock"
+    },
+    {
+      "shop_identifier": "chemoto-roma",
+      "scrape_timestamp": "2025-11-13T13:04:03.418Z",
+      "source_url": "https://www.chemoto.net/concessionaria-piaggio-roma/",
+      "brand": "Piaggio",
+      "model": "Medley 125",
+      "year": 2025,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": "Scooter a ruota alta che unisce i vantaggi di uno scooter agile e leggero con quelli di un ruota alta di dimensioni e prestazioni superiori.",
+      "rental_rates": null,
+      "images": [
+        "https://www.chemoto.net/concessionaria-piaggio-roma/"
+      ],
+      "features": [
+        "ruota alta",
+        "ABS",
+        "agile e leggero"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "In stock"
+    },
+    {
+      "shop_identifier": "chemoto-roma",
+      "scrape_timestamp": "2025-11-13T13:04:03.418Z",
+      "source_url": "https://www.chemoto.net/concessionaria-piaggio-roma/",
+      "brand": "Piaggio",
+      "model": "Medley 150",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Scooter",
+      "description": "Versione con cilindrata maggiore della gamma Medley.",
+      "rental_rates": null,
+      "images": [
+        "https://www.chemoto.net/wp-content/uploads/2024/08/medley150-fiorenzi.png"
+      ],
+      "features": [
+        "ruota alta",
+        "ABS",
+        "Euro 5"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "In stock"
+    },
+    {
+      "shop_identifier": "chemoto-roma",
+      "scrape_timestamp": "2025-11-13T13:04:03.418Z",
+      "source_url": "https://www.chemoto.net/concessionaria-piaggio-roma/",
+      "brand": "Piaggio",
+      "model": "Medley 150 S",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Scooter",
+      "description": "Versione sportiva del Medley 150.",
+      "rental_rates": null,
+      "images": [
+        "https://www.chemoto.net/wp-content/uploads/2024/08/medley-nero-150s-fiorenzi.png"
+      ],
+      "features": [
+        "ruota alta",
+        "ABS",
+        "sport styling",
+        "Euro 5"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "In stock"
+    },
+    {
+      "shop_identifier": "chemoto-roma",
+      "scrape_timestamp": "2025-11-13T13:04:03.418Z",
+      "source_url": "https://www.chemoto.net/concessionaria-piaggio-roma/",
+      "brand": "Piaggio",
+      "model": "MP3 310",
+      "year": null,
+      "engine_capacity_cc": 310,
+      "category": "Scooter",
+      "description": "Iconico scooter a tre ruote per una mobilità urbana facile e sicura.",
+      "rental_rates": null,
+      "images": [
+        "https://www.chemoto.net/wp-content/uploads/2024/10/mp3-310-cover-1024x1024.png"
+      ],
+      "features": [
+        "tre ruote",
+        "sicurezza",
+        "mobilità urbana"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "In stock"
+    },
+    {
+      "shop_identifier": "chemoto-roma",
+      "scrape_timestamp": "2025-11-13T13:04:03.418Z",
+      "source_url": "https://www.chemoto.net/concessionaria-piaggio-roma/",
+      "brand": "Piaggio",
+      "model": "MP3 310 SPORT",
+      "year": null,
+      "engine_capacity_cc": 310,
+      "category": "Scooter",
+      "description": "Versione sportiva del MP3 310 con styling dinamico.",
+      "rental_rates": null,
+      "images": [
+        "https://www.chemoto.net/wp-content/uploads/2024/10/mp3-310-sport-cover-1024x1024.png"
+      ],
+      "features": [
+        "tre ruote",
+        "sport styling",
+        "sicurezza"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "In stock"
+    },
+    {
+      "shop_identifier": "chemoto-roma",
+      "scrape_timestamp": "2025-11-13T13:04:03.418Z",
+      "source_url": "https://www.chemoto.net/concessionaria-piaggio-roma/",
+      "brand": "Piaggio",
+      "model": "MP3 530 HPE EXCLUSIVE",
+      "year": null,
+      "engine_capacity_cc": 530,
+      "category": "Scooter",
+      "description": "Versione top di gamma del MP3 con caratteristiche esclusive.",
+      "rental_rates": null,
+      "images": [
+        "https://www.chemoto.net/concessionaria-piaggio-roma/"
+      ],
+      "features": [
+        "tre ruote",
+        "HPE",
+        "Exclusive trim",
+        "Euro 5 Plus"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "In stock"
+    },
+    {
+      "shop_identifier": "chemoto-roma",
+      "scrape_timestamp": "2025-11-13T13:04:03.418Z",
+      "source_url": "https://www.chemoto.net/concessionaria-piaggio-roma/",
+      "brand": "Piaggio",
+      "model": "Piaggio 1",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "E-Scooter",
+      "description": "Nuova generazione di E-Scooter per la mobilità urbana con qualità, tecnologia, affidabilità e sicurezza.",
+      "rental_rates": null,
+      "images": [
+        "https://www.chemoto.net/wp-content/uploads/2024/08/piaggio1-scontornato.png"
+      ],
+      "features": [
+        "elettrico",
+        "design premium",
+        "ciclistica raffinata",
+        "grande abitabilità"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "In stock"
+    },
+    {
+      "shop_identifier": "chemoto-roma",
+      "scrape_timestamp": "2025-11-13T13:04:03.418Z",
+      "source_url": "https://www.chemoto.net/concessionaria-piaggio-roma/",
+      "brand": "Piaggio",
+      "model": "Piaggio 1 Active",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "E-Scooter",
+      "description": "Versione Active del Piaggio 1 con caratteristiche potenziate.",
+      "rental_rates": null,
+      "images": [
+        "https://www.chemoto.net/concessionaria-piaggio-roma/"
+      ],
+      "features": [
+        "elettrico",
+        "Active features",
+        "design premium"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "In stock"
+    },
+    {
+      "shop_identifier": "chemoto-roma",
+      "scrape_timestamp": "2025-11-13T13:04:03.418Z",
+      "source_url": "https://www.chemoto.net/test-ride-piaggio-vespa-aprilia-moto-guzzi-roma/",
+      "brand": "Vespa",
+      "model": "GTS 310",
+      "year": null,
+      "engine_capacity_cc": 310,
+      "category": "Scooter",
+      "description": "Modello GTS della gamma Vespa con motore 310cc.",
+      "rental_rates": null,
+      "images": [
+        "https://www.chemoto.net/test-ride-piaggio-vespa-aprilia-moto-guzzi-roma/"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "In stock"
+    },
+    {
+      "shop_identifier": "chemoto-roma",
+      "scrape_timestamp": "2025-11-13T13:04:03.418Z",
+      "source_url": "https://www.chemoto.net/test-ride-piaggio-vespa-aprilia-moto-guzzi-roma/",
+      "brand": "Aprilia",
+      "model": "RS 457",
+      "year": null,
+      "engine_capacity_cc": 457,
+      "category": "Sport bike",
+      "description": "Modello sportivo della gamma Aprilia.",
+      "rental_rates": null,
+      "images": [
+        "https://www.chemoto.net/test-ride-piaggio-vespa-aprilia-moto-guzzi-roma/"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "In stock"
+    },
+    {
+      "shop_identifier": "chemoto-roma",
+      "scrape_timestamp": "2025-11-13T13:04:03.418Z",
+      "source_url": "https://www.chemoto.net/test-ride-piaggio-vespa-aprilia-moto-guzzi-roma/",
+      "brand": "Aprilia",
+      "model": "RS660 FACTORY",
+      "year": null,
+      "engine_capacity_cc": 660,
+      "category": "Sport bike",
+      "description": "Modello top di gamma sportivo della gamma Aprilia.",
+      "rental_rates": null,
+      "images": [
+        "https://www.chemoto.net/test-ride-piaggio-vespa-aprilia-moto-guzzi-roma/"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "In stock"
+    },
+    {
+      "shop_identifier": "chemoto-roma",
+      "scrape_timestamp": "2025-11-13T13:04:03.418Z",
+      "source_url": "https://www.chemoto.net/test-ride-piaggio-vespa-aprilia-moto-guzzi-roma/",
+      "brand": "Aprilia",
+      "model": "TUONO V4",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Naked bike",
+      "description": "Modello TUONO con motore V4 della gamma Aprilia.",
+      "rental_rates": null,
+      "images": [
+        "https://www.chemoto.net/test-ride-piaggio-vespa-aprilia-moto-guzzi-roma/"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "In stock"
+    },
+    {
+      "shop_identifier": "chemoto-roma",
+      "scrape_timestamp": "2025-11-13T13:04:03.418Z",
+      "source_url": "https://www.chemoto.net/test-ride-piaggio-vespa-aprilia-moto-guzzi-roma/",
+      "brand": "Aprilia",
+      "model": "TUAREG RALLY",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Adventure bike",
+      "description": "Modello da avventura della gamma Aprilia.",
+      "rental_rates": null,
+      "images": [
+        "https://www.chemoto.net/wp-content/uploads/2025/01/tuareg-660-rally-1024x819.png"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "In stock"
+    },
+    {
+      "shop_identifier": "chemoto-roma",
+      "scrape_timestamp": "2025-11-13T13:04:03.418Z",
+      "source_url": "https://www.chemoto.net/test-ride-piaggio-vespa-aprilia-moto-guzzi-roma/",
+      "brand": "Moto Guzzi",
+      "model": "V85 TT",
+      "year": null,
+      "engine_capacity_cc": 850,
+      "category": "Adventure bike",
+      "description": "Modello V85 TT della gamma Moto Guzzi.",
+      "rental_rates": null,
+      "images": [
+        "https://www.chemoto.net/test-ride-piaggio-vespa-aprilia-moto-guzzi-roma/"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "In stock"
+    },
+    {
+      "shop_identifier": "chemoto-roma",
+      "scrape_timestamp": "2025-11-13T13:04:03.418Z",
+      "source_url": "https://www.chemoto.net/test-ride-piaggio-vespa-aprilia-moto-guzzi-roma/",
+      "brand": "Moto Guzzi",
+      "model": "STELVIO",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Adventure bike",
+      "description": "Modello STELVIO della gamma Moto Guzzi.",
+      "rental_rates": null,
+      "images": [
+        "https://www.chemoto.net/test-ride-piaggio-vespa-aprilia-moto-guzzi-roma/"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "In stock"
+    },
+    {
+      "shop_identifier": "chemoto-roma",
+      "scrape_timestamp": "2025-11-13T13:04:03.418Z",
+      "source_url": "https://www.chemoto.net/test-ride-piaggio-vespa-aprilia-moto-guzzi-roma/",
+      "brand": "Moto Guzzi",
+      "model": "V100 Mandello",
+      "year": null,
+      "engine_capacity_cc": 1000,
+      "category": "Sport touring",
+      "description": "Modello V100 Mandello della gamma Moto Guzzi.",
+      "rental_rates": null,
+      "images": [
+        "https://www.chemoto.net/test-ride-piaggio-vespa-aprilia-moto-guzzi-roma/"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "In stock"
+    }
+  ]
+}

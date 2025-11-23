@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T12:45:21.237Z",
+    "shop_identifier": "Mega Rent Autonoleggio",
+    "provider_name": "Mega Rent Autonoleggio",
+    "place_id": "ChIJVaebOg9fLxMRm51KDY0QNLE",
+    "address": "Via del Forte Braschi, 90, 00167 Roma RM, Italy",
+    "city": "Rome",
+    "province": "Lazio",
+    "country": "Italy",
+    "latitude": 41.9137764,
+    "longitude": 12.4202037,
+    "phone": "375 621 9873",
+    "website": "https://www.megarentcar.it/",
+    "google_maps_url": "https://maps.google.com/?cid=12768849041501625755",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 14,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

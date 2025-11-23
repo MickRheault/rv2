@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T08:08:20.895Z",
+    "shop_identifier": "Dirt Bike Academy - Motorbike Training School",
+    "provider_name": "Dirt Bike Academy - Motorbike Training School",
+    "place_id": "ChIJsRTNTJ6rNTEREEiYC55A_yw",
+    "address": "88 P. Tứ Liên, Tứ Liên, Tây Hồ, Hà Nội, Vietnam",
+    "city": "Hanoi",
+    "province": "Hanoi",
+    "country": "Vietnam",
+    "latitude": 21.0674768,
+    "longitude": 105.837585,
+    "phone": "0986 102 664",
+    "website": "https://www.dirtbikeacademyvn.com/",
+    "google_maps_url": "https://maps.google.com/?cid=3242381304273586192",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 145,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

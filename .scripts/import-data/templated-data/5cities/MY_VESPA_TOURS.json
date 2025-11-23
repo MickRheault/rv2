@@ -1,0 +1,419 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T13:20:36.501Z",
+    "shop_identifier": "MY VESPA TOURS",
+    "provider_name": "MY VESPA TOURS",
+    "place_id": "ChIJY7u9K3dhLxMR50nu4xJjrRk",
+    "address": "Via Cavour, 80, 00184 Roma RM, Italy",
+    "city": "Rome",
+    "province": "Lazio",
+    "country": "Italy",
+    "latitude": 41.8979618,
+    "longitude": 12.4968354,
+    "phone": "06 481 5669",
+    "website": "http://www.onmovo.com/",
+    "google_maps_url": "https://maps.google.com/?cid=1850243954703747559",
+    "business_status": "OPERATIONAL",
+    "rating": 4.7,
+    "review_count": 15,
+    "rental_conditions": {
+      "advance_payment": "zero",
+      "minimum_rental_period": "1 month",
+      "drivable_kilometers": "1750",
+      "24_7_service": "true"
+    },
+    "rental_inclusions": [
+      "Helmet",
+      "Roadside assistance",
+      "Insurance",
+      "Unlimited kilometers",
+      "Price guaranteed",
+      "Free cancellation"
+    ],
+    "available_service_locations": [
+      "Rome-Termini Station-Via Cavour",
+      "Rome - Corso Vittorio Emanuele II",
+      "Roma-Concierge Evolution",
+      "Roma – Stazione Ostiense",
+      "Roma – Stazione Tiburtina",
+      "Roma – Aeroporto Ciampino",
+      "Roma – Aeroporto Leonardo Da Vinci – Fiumicino",
+      "Roma – Ostia Lido",
+      "Nettuno-Anzio"
+    ],
+    "offered_tours": [
+      {
+        "name": "Rome City Tour",
+        "duration_text": "Flexible",
+        "distance_km": null,
+        "price_text": "Included in rental",
+        "currency": "EUR"
+      },
+      {
+        "name": "Nettuno-Anzio Coast Tour",
+        "duration_text": "Flexible",
+        "distance_km": null,
+        "price_text": "Included in rental",
+        "currency": "EUR"
+      },
+      {
+        "name": "American Cemetery and Memorial Tour",
+        "duration_text": "Flexible",
+        "distance_km": 1.3,
+        "price_text": "Included in rental",
+        "currency": "EUR"
+      },
+      {
+        "name": "Medieval Village of Nettuno Tour",
+        "duration_text": "Flexible",
+        "distance_km": 0.3,
+        "price_text": "Included in rental",
+        "currency": "EUR"
+      },
+      {
+        "name": "Nero's Imperial Villa Tour",
+        "duration_text": "Flexible",
+        "distance_km": 4.3,
+        "price_text": "Included in rental",
+        "currency": "EUR"
+      },
+      {
+        "name": "Tor Caldara Nature Reserve Tour",
+        "duration_text": "Flexible",
+        "distance_km": 8.4,
+        "price_text": "Included in rental",
+        "currency": "EUR"
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "onmovo",
+      "scrape_timestamp": "2025-11-13T13:20:37.361Z",
+      "source_url": "https://www.onmovo.com/en/lungo-termine-dettaglio-en/9/vespa/primavera-50/",
+      "brand": "Vespa",
+      "model": "Primavera 50",
+      "year": null,
+      "engine_capacity_cc": 50,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "461 €/Month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 15.37,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://admin.onmovo.com/immagini/cache/veicoli_piccola/68c941a864a71_Senza%20titolo%20%28320%20x%20260%20px%29%20%281%29.png",
+        "https://admin.onmovo.com/immagini/cache/veicoli_grande/68c941a864a71_Senza%20titolo%20%28320%20x%20260%20px%29%20%281%29.png"
+      ],
+      "features": [
+        "2 seats",
+        "Automatic transmission",
+        "Petrol fuel"
+      ],
+      "specifications_raw": {
+        "fuel_type": "B",
+        "transmission": "A",
+        "seats": 2,
+        "displacement": "50 cm3",
+        "used": "No"
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": "AVAILABLE"
+    },
+    {
+      "shop_identifier": "onmovo",
+      "scrape_timestamp": "2025-11-13T13:20:37.361Z",
+      "source_url": "https://www.onmovo.com/en/lungo-termine-dettaglio-en/10/vespa/gts-300/",
+      "brand": "Vespa",
+      "model": "Gts 300",
+      "year": null,
+      "engine_capacity_cc": 300,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "712 €/Month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 23.73,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://admin.onmovo.com/immagini/cache/veicoli_piccola/68c9423806ccf_Vespa-GTS-300.jpg"
+      ],
+      "features": [
+        "2 seats",
+        "Automatic transmission",
+        "Petrol fuel"
+      ],
+      "specifications_raw": {
+        "fuel_type": "B",
+        "transmission": "A",
+        "seats": 2,
+        "displacement": "300 cm3",
+        "used": "No"
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": "AVAILABLE"
+    },
+    {
+      "shop_identifier": "onmovo",
+      "scrape_timestamp": "2025-11-13T13:20:37.361Z",
+      "source_url": "https://www.onmovo.com/en/lungo-termine-dettaglio-en/8/vespa/primavera-125/",
+      "brand": "Vespa",
+      "model": "Primavera 125",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "544 €/Month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 18.13,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://admin.onmovo.com/immagini/cache/veicoli_piccola/68c93ed08a322_vespa-primavera-50.jpg"
+      ],
+      "features": [
+        "2 seats"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": "AVAILABLE"
+    },
+    {
+      "shop_identifier": "onmovo",
+      "scrape_timestamp": "2025-11-13T13:20:37.361Z",
+      "source_url": "https://www.onmovo.com/en/lungo-termine-dettaglio-en/11/kymko/xtown-300/",
+      "brand": "Kymko",
+      "model": "xTown 300",
+      "year": null,
+      "engine_capacity_cc": 300,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "712 €/Month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 23.73,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://admin.onmovo.com/immagini/cache/veicoli_piccola/68c9437cc940f_Progetto%20senza%20titolo%20%2812%29.png",
+        "https://admin.onmovo.com/immagini/cache/veicoli_grande/68c9437cc940f_Progetto%20senza%20titolo%20%2812%29.png"
+      ],
+      "features": [
+        "2 seats",
+        "Automatic transmission",
+        "Petrol fuel"
+      ],
+      "specifications_raw": {
+        "fuel_type": "B",
+        "transmission": "A",
+        "seats": 2,
+        "displacement": "300 cm3",
+        "used": "No"
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": "AVAILABLE"
+    },
+    {
+      "shop_identifier": "onmovo",
+      "scrape_timestamp": "2025-11-13T13:20:37.361Z",
+      "source_url": "https://www.onmovo.com/en/lungo-termine-dettaglio-en/7/kymko/agility-125/",
+      "brand": "Kymko",
+      "model": "Agility 125",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "269 €/Month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 8.97,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://admin.onmovo.com/immagini/cache/veicoli_piccola/68c93cfb76dd4_Kymko-Agility-R16-125.jpg"
+      ],
+      "features": [
+        "2 seats"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": "AVAILABLE"
+    },
+    {
+      "shop_identifier": "onmovo",
+      "scrape_timestamp": "2025-11-13T13:20:37.361Z",
+      "source_url": "https://www.onmovo.com/en/lungo-termine-dettaglio-en/12/fiat/topolino-dolcevita/",
+      "brand": "Fiat",
+      "model": "Topolino Dolcevita",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Car",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "569 €/Month",
+          "min_days": 30,
+          "max_days": null,
+          "rate_per_day": 18.97,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://admin.onmovo.com/immagini/cache/veicoli_piccola/68c947407e8b1_topolino%20dolcevita.png"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": "AVAILABLE"
+    },
+    {
+      "shop_identifier": "onmovo",
+      "scrape_timestamp": "2025-11-13T13:20:37.361Z",
+      "source_url": "https://www.onmovo.com/en/",
+      "brand": null,
+      "model": "E-scooter 50",
+      "year": null,
+      "engine_capacity_cc": 50,
+      "category": "E-scooter",
+      "description": "Single Battery",
+      "rental_rates": [
+        {
+          "rate_text": "6 €/Hour",
+          "min_days": 0.04,
+          "max_days": 0.04,
+          "rate_per_day": 144,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "19 €/4 Hours",
+          "min_days": 0.17,
+          "max_days": 0.17,
+          "rate_per_day": 114,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "29 €/24 Hours",
+          "min_days": 1,
+          "max_days": 1,
+          "rate_per_day": 29,
+          "currency": "EUR"
+        },
+        {
+          "rate_text": "39 €/36 Hours",
+          "min_days": 1.5,
+          "max_days": 1.5,
+          "rate_per_day": 26,
+          "currency": "EUR"
+        }
+      ],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": "Rates and rentals by hour are available only by App in a Self Service mode",
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "EUR",
+          "deductible": null,
+          "deductible_currency": "EUR",
+          "notes": "Included in rental price"
+        }
+      ],
+      "availability_status": "AVAILABLE"
+    }
+  ]
+}

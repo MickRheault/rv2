@@ -1,0 +1,376 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T06:57:48.865Z",
+    "shop_identifier": "Cho Thuê Xe Máy Gia Hưng Motorbike",
+    "provider_name": "Cho Thuê Xe Máy Gia Hưng Motorbike",
+    "place_id": "ChIJwQRbg_a7NTER7P7L-DfVYg4",
+    "address": "Thôn, R26C+9GP, Lôi Cầu, Khoái Châu, Hưng Yên, Vietnam",
+    "city": "Hưng Yên",
+    "province": "Khoái Châu",
+    "country": "Vietnam",
+    "latitude": 20.8109714,
+    "longitude": 106.0213213,
+    "phone": null,
+    "website": "http://giahungmotorbikerental.com/",
+    "google_maps_url": "https://maps.google.com/?cid=1036625300622671596",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 1,
+    "rental_conditions": {
+      "id_required": true,
+      "international_driving_permit_required": true,
+      "deposit_required": true,
+      "age_minimum": 18,
+      "credit_card_required": null
+    },
+    "rental_inclusions": [
+      "fuel",
+      "standard helmet",
+      "raincoat",
+      "basic roadside assistance",
+      "bottled drinking water"
+    ],
+    "available_service_locations": [
+      "Hanoi",
+      "Mai Chau",
+      "Pu Luong",
+      "Lam Kinh",
+      "Tan Ky",
+      "Phong Nha",
+      "Dong Ha",
+      "Khe Sanh",
+      "A Luoi",
+      "Hue",
+      "Hoi An"
+    ],
+    "offered_tours": [
+      {
+        "name": "Ho Chi Minh Trail Motorbike Tour",
+        "duration_text": "10 Days / 9 Nights",
+        "distance_km": null,
+        "price_text": "$1,790 USD/person (group of 2)",
+        "currency": "USD"
+      },
+      {
+        "name": "Motorbike Adventure North Vietnam",
+        "duration_text": "11 Days",
+        "distance_km": null,
+        "price_text": "1440 USD/person",
+        "currency": "USD"
+      },
+      {
+        "name": "Motorbike Adventure North Central Vietnam",
+        "duration_text": "6 Days",
+        "distance_km": null,
+        "price_text": null,
+        "currency": "USD"
+      },
+      {
+        "name": "Motorbike Adventure North East Vietnam",
+        "duration_text": "5 Days",
+        "distance_km": null,
+        "price_text": "590 USD/person",
+        "currency": "USD"
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "giahungmotorbikerental",
+      "scrape_timestamp": "2025-11-13T06:57:50.448Z",
+      "source_url": "http://giahungmotorbikerental.com/manual/honda-transalp-750cc/",
+      "brand": "Honda",
+      "model": "Transalp",
+      "year": null,
+      "engine_capacity_cc": 750,
+      "category": "Manual",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$150",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 150,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "http://giahungmotorbikerental.com/Upload/News/honda-transalp-750cc.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Passport",
+        "International Driving Permit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "USD",
+          "deductible": null,
+          "deductible_currency": "USD",
+          "notes": "Basic travel insurance included"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "giahungmotorbikerental",
+      "scrape_timestamp": "2025-11-13T06:57:50.448Z",
+      "source_url": "http://giahungmotorbikerental.com/manual/honda-xr190l/",
+      "brand": "Honda",
+      "model": "XR190L",
+      "year": null,
+      "engine_capacity_cc": 190,
+      "category": "Manual",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$27",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 27,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "http://giahungmotorbikerental.com/Upload/News/honda-xr190l.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Passport",
+        "International Driving Permit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "USD",
+          "deductible": null,
+          "deductible_currency": "USD",
+          "notes": "Basic travel insurance included"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "giahungmotorbikerental",
+      "scrape_timestamp": "2025-11-13T06:57:50.448Z",
+      "source_url": "http://giahungmotorbikerental.com/manual/honda-nx500/",
+      "brand": "Honda",
+      "model": "NX500",
+      "year": null,
+      "engine_capacity_cc": 500,
+      "category": "Manual",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$60",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 60,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "http://giahungmotorbikerental.com/Upload/News/honda-nx500.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Passport",
+        "International Driving Permit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "USD",
+          "deductible": null,
+          "deductible_currency": "USD",
+          "notes": "Basic travel insurance included"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "giahungmotorbikerental",
+      "scrape_timestamp": "2025-11-13T06:57:50.448Z",
+      "source_url": "http://giahungmotorbikerental.com/automatic-motorbikes/new-yamaha-nvx-155cc/",
+      "brand": "Yamaha",
+      "model": "NVX",
+      "year": null,
+      "engine_capacity_cc": 155,
+      "category": "Automatic",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$17",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 17,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "http://giahungmotorbikerental.com/Upload/News/new-yamaha-nvx-155cc.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Passport",
+        "International Driving Permit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "USD",
+          "deductible": null,
+          "deductible_currency": "USD",
+          "notes": "Basic travel insurance included"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "giahungmotorbikerental",
+      "scrape_timestamp": "2025-11-13T06:57:50.448Z",
+      "source_url": "http://giahungmotorbikerental.com/motorbike-tour/ho-chi-minh-trail-motorbike-tour-10-days",
+      "brand": "Honda",
+      "model": "XR150L",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Off-road",
+      "description": "150cc off-road motorcycle recommended for Ho Chi Minh Trail Tour",
+      "rental_rates": [
+        {
+          "rate_text": "Included in tour package",
+          "min_days": 10,
+          "max_days": 10,
+          "rate_per_day": null,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Off-road capability",
+        "Suitable for Ho Chi Minh Trail"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Passport",
+        "International Driving Permit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "USD",
+          "deductible": null,
+          "deductible_currency": "USD",
+          "notes": "Basic travel insurance included in tour package"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "giahungmotorbikerental",
+      "scrape_timestamp": "2025-11-13T06:57:50.448Z",
+      "source_url": "http://giahungmotorbikerental.com/motorbike-tour/ho-chi-minh-trail-motorbike-tour-10-days",
+      "brand": "Yamaha",
+      "model": "WR155",
+      "year": null,
+      "engine_capacity_cc": 155,
+      "category": "Off-road",
+      "description": "155cc off-road motorcycle recommended for Ho Chi Minh Trail Tour",
+      "rental_rates": [
+        {
+          "rate_text": "Included in tour package",
+          "min_days": 10,
+          "max_days": 10,
+          "rate_per_day": null,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Off-road capability",
+        "Suitable for Ho Chi Minh Trail"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Passport",
+        "International Driving Permit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "USD",
+          "deductible": null,
+          "deductible_currency": "USD",
+          "notes": "Basic travel insurance included in tour package"
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "giahungmotorbikerental",
+      "scrape_timestamp": "2025-11-13T06:57:50.448Z",
+      "source_url": "http://giahungmotorbikerental.com/motorbike-tour/ho-chi-minh-trail-motorbike-tour-10-days",
+      "brand": "Kawasaki",
+      "model": "KLX150",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Off-road",
+      "description": "150cc off-road motorcycle recommended for Ho Chi Minh Trail Tour",
+      "rental_rates": [
+        {
+          "rate_text": "Included in tour package",
+          "min_days": 10,
+          "max_days": 10,
+          "rate_per_day": null,
+          "currency": "USD"
+        }
+      ],
+      "images": [],
+      "features": [
+        "Off-road capability",
+        "Suitable for Ho Chi Minh Trail"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "Passport",
+        "International Driving Permit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "USD",
+          "deductible": null,
+          "deductible_currency": "USD",
+          "notes": "Basic travel insurance included in tour package"
+        }
+      ],
+      "availability_status": null
+    }
+  ]
+}

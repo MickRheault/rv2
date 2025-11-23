@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T09:47:16.909Z",
+    "shop_identifier": "Style Motorbikes HCMC - Helmet and Bike Shop",
+    "provider_name": "Style Motorbikes HCMC - Helmet and Bike Shop",
+    "place_id": "ChIJ5SfWkxMvdTERZ3JqrKw0340",
+    "address": "292 Võ Văn Kiệt, Phường Cô Giang, Quận 1, Thành phố Hồ Chí Minh, Vietnam",
+    "city": "Ho Chi Minh City",
+    "province": "Ho Chi Minh City",
+    "country": "Vietnam",
+    "latitude": 10.7623301,
+    "longitude": 106.6964281,
+    "phone": "0984 322 231",
+    "website": "http://www.stylemotorbikes.com/",
+    "google_maps_url": "https://maps.google.com/?cid=10222947595385991783",
+    "business_status": "OPERATIONAL",
+    "rating": 4.8,
+    "review_count": 342,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

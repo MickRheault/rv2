@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T06:14:52.837Z",
+    "shop_identifier": "Ενοικίαση scooter Αθήνα - Rent a Scooter Athens - Trent Greece",
+    "provider_name": "Ενοικίαση scooter Αθήνα - Rent a Scooter Athens - Trent Greece",
+    "place_id": "ChIJCecn1mqZoRQRfld-JCiShMQ",
+    "address": "Leof. Mesogeion 131, Athina 115 26, Greece",
+    "city": "Athens",
+    "province": "Attica",
+    "country": "Greece",
+    "latitude": 37.9919976,
+    "longitude": 23.7732051,
+    "phone": "21 0691 0900",
+    "website": "https://trent.gr/",
+    "google_maps_url": "https://maps.google.com/?cid=14160603829468288894",
+    "business_status": "OPERATIONAL",
+    "rating": 4.9,
+    "review_count": 58,
+    "rental_conditions": null,
+    "rental_inclusions": null,
+    "available_service_locations": null,
+    "offered_tours": null
+  },
+  "motorcycle_offerings": []
+}

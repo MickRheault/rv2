@@ -1,0 +1,438 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-10-14T19:48:29.919Z",
+    "shop_identifier": "YesWeRide Motorcycle Co",
+    "provider_name": "YesWeRide Motorcycle Co",
+    "place_id": "ChIJ93ZXtV2jpBIR4jH2_Gq3l4U",
+    "address": "Carrer de l'Encarnació, 142, Gràcia, 08025 Barcelona, Spain",
+    "city": "Barcelona",
+    "province": "Barcelona",
+    "country": "Spain",
+    "latitude": 41.4090919,
+    "longitude": 2.1645971,
+    "phone": "696 23 73 19",
+    "website": "https://www.yesweride.es/",
+    "google_maps_url": "https://maps.google.com/?cid=9626364398666133986",
+    "business_status": "OPERATIONAL",
+    "rating": 4.8,
+    "review_count": 43,
+    "rental_conditions": {
+      "secure_payment": true,
+      "easy_booking_process": true,
+      "help_available": true
+    },
+    "rental_inclusions": [
+      "Seguro a todo riesgo"
+    ],
+    "available_service_locations": [
+      "Barcelona",
+      "surrounding areas"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "yesweride",
+      "scrape_timestamp": "2025-10-14T19:48:31.276Z",
+      "source_url": "https://www.yesweride.es/moto/alquiler-bmw-f800r/",
+      "brand": "BMW",
+      "model": "F800R",
+      "year": null,
+      "engine_capacity_cc": 800,
+      "category": "Sport",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://www.yesweride.es/wp-content/uploads/2024/03/ALQUILER-BMW-F800R.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Comprehensive Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "yesweride",
+      "scrape_timestamp": "2025-10-14T19:48:31.276Z",
+      "source_url": "https://www.yesweride.es/moto/alquiler-bmw-f800gs/",
+      "brand": "BMW",
+      "model": "F800GS",
+      "year": null,
+      "engine_capacity_cc": 800,
+      "category": "Sport",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://www.yesweride.es/wp-content/uploads/2024/03/ALQUILER-BMW-F800GS.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Comprehensive Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "yesweride",
+      "scrape_timestamp": "2025-10-14T19:48:31.276Z",
+      "source_url": "https://www.yesweride.es/moto/alquiler-bmw-r1200gs-en-barcelona/",
+      "brand": "BMW",
+      "model": "R1200GSA",
+      "year": null,
+      "engine_capacity_cc": 1200,
+      "category": "Sport",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://www.yesweride.es/wp-content/uploads/2024/03/ALQUILER-BMW-R1200GSA.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Comprehensive Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "yesweride",
+      "scrape_timestamp": "2025-10-14T19:48:31.276Z",
+      "source_url": "https://www.yesweride.es/moto/alquiler-yamaha-tenere-700/",
+      "brand": "Yamaha",
+      "model": "TENERE 700",
+      "year": null,
+      "engine_capacity_cc": 700,
+      "category": "Offroad",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://www.yesweride.es/wp-content/uploads/2024/03/ALQUILER-YAMAHA-TENERE.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Comprehensive Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "yesweride",
+      "scrape_timestamp": "2025-10-14T19:48:31.276Z",
+      "source_url": "https://www.yesweride.es/moto/alquiler-moto-morini-x-cape-650/",
+      "brand": "Moto Morini",
+      "model": "X-CAPE 650",
+      "year": null,
+      "engine_capacity_cc": 650,
+      "category": "Offroad",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://www.yesweride.es/wp-content/uploads/2024/03/ALQUILER-MOTO-MORINI-X-CAPE-650.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Comprehensive Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "yesweride",
+      "scrape_timestamp": "2025-10-14T19:48:31.276Z",
+      "source_url": "https://www.yesweride.es/moto/alquiler-husqvarna-fe250/",
+      "brand": "Husqvarna",
+      "model": "FE250",
+      "year": null,
+      "engine_capacity_cc": 250,
+      "category": "Offroad",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://www.yesweride.es/wp-content/uploads/2024/03/ALQUILER-HUSQBARNA-FE250.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Comprehensive Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "yesweride",
+      "scrape_timestamp": "2025-10-14T19:48:31.276Z",
+      "source_url": "https://www.yesweride.es/moto/alquiler-benelli-trk-502/",
+      "brand": "BENELLI",
+      "model": "TRK 502",
+      "year": null,
+      "engine_capacity_cc": 502,
+      "category": "Offroad",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://www.yesweride.es/wp-content/uploads/2024/03/ALQUILER-BENELLI-TRK-502.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Comprehensive Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "yesweride",
+      "scrape_timestamp": "2025-10-14T19:48:31.276Z",
+      "source_url": "https://www.yesweride.es/moto/alquiler-gas-gas-ec250/",
+      "brand": "GAS GAS",
+      "model": "EC250",
+      "year": null,
+      "engine_capacity_cc": 250,
+      "category": "Offroad",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://www.yesweride.es/wp-content/uploads/2024/03/ALQUILER-GAS-GAS-EC250.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Comprehensive Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "yesweride",
+      "scrape_timestamp": "2025-10-14T19:48:31.276Z",
+      "source_url": "https://www.yesweride.es/moto/alquiler-yamaha-dt125/",
+      "brand": "Yamaha",
+      "model": "DT125",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Urban",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://www.yesweride.es/wp-content/uploads/2024/03/YAMAHA-DT125.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Comprehensive Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "yesweride",
+      "scrape_timestamp": "2025-10-14T19:48:31.276Z",
+      "source_url": "https://www.yesweride.es/moto/alquiler-ducati-hypermotard/",
+      "brand": "Ducati",
+      "model": "HYPERMOTARD",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Urban",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://www.yesweride.es/wp-content/uploads/2024/03/ALQUILER-DUCATI-HYPERMOTARD.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Comprehensive Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "yesweride",
+      "scrape_timestamp": "2025-10-14T19:48:31.276Z",
+      "source_url": "https://www.yesweride.es/moto/alquiler-brixton-crossfire-125xs/",
+      "brand": "BRIXTON",
+      "model": "CROSSFIRE 125XS",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Urban",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://www.yesweride.es/wp-content/uploads/2024/03/ALQUILER-BRIXTON-CROSSFIRE-125XS.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Comprehensive Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "yesweride",
+      "scrape_timestamp": "2025-10-14T19:48:31.276Z",
+      "source_url": "https://www.yesweride.es/moto/alquiler-ducati-scrambler/",
+      "brand": "Ducati",
+      "model": "SCRAMBLER",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Scrambler",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://www.yesweride.es/wp-content/uploads/2024/03/ALQUILER-DUCATI-SCRAMBLER.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Comprehensive Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "yesweride",
+      "scrape_timestamp": "2025-10-14T19:48:31.276Z",
+      "source_url": "https://www.yesweride.es/moto/alquiler-benelli-leoncino/",
+      "brand": "BENELLI",
+      "model": "LEONCINO",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Scrambler",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "https://www.yesweride.es/wp-content/uploads/2024/03/ALQUILER-BENELLI-LEONCINO.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [
+        {
+          "type_name": "Comprehensive Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": null,
+          "deductible": null,
+          "deductible_currency": null,
+          "notes": null
+        }
+      ],
+      "availability_status": null
+    }
+  ]
+}

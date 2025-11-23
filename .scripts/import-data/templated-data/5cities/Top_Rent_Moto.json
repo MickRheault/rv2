@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T10:58:56.968Z",
+    "shop_identifier": "Top Rent Moto",
+    "provider_name": "Top Rent Moto",
+    "place_id": "ChIJYcxV_4yNJRMRn9--nvYmDcw",
+    "address": "Via Bellosguardo, 12, 00134 Colle dei Pini RM, Italy",
+    "city": "Rome",
+    "province": "Lazio",
+    "country": "Italy",
+    "latitude": 41.74215909999999,
+    "longitude": 12.5033352,
+    "phone": null,
+    "website": "https://toprentmoto.com/",
+    "google_maps_url": "https://maps.google.com/?cid=14703451199101656991",
+    "business_status": "OPERATIONAL",
+    "rating": null,
+    "review_count": null,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

@@ -1,0 +1,130 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T06:17:09.429Z",
+    "shop_identifier": "LEGENDARY RIDES",
+    "provider_name": "LEGENDARY RIDES",
+    "place_id": "ChIJEW83EriZoRQR5sxchetljOQ",
+    "address": "Dim. Gounari 90 D, Athina 151 24, Greece",
+    "city": "Athens",
+    "province": "Attica",
+    "country": "Greece",
+    "latitude": 38.0508435,
+    "longitude": 23.8093041,
+    "phone": "693 671 0185",
+    "website": "http://www.legendaryrides.eu/",
+    "google_maps_url": "https://maps.google.com/?cid=16468649999616232678",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 2,
+    "rental_conditions": {
+      "minimum_age": 30,
+      "license_requirement_years": 5,
+      "credit_card_required": true,
+      "daily_km_limit_option_a": 200,
+      "daily_km_limit_option_b": "unlimited",
+      "security_deposit_amount": 3000,
+      "security_deposit_currency": "EUR",
+      "optional_insurance_daily_rate": 35,
+      "optional_insurance_daily_rate_currency": "EUR",
+      "optional_insurance_deposit_amount": 2000,
+      "optional_insurance_deposit_currency": "EUR",
+      "allowed_areas": "Mainland Greece including Peloponnisos and Evia",
+      "road_restrictions": "Not allowed on gravel roads, beaches, racetracks and non-public roads",
+      "additional_driver_permitted": true,
+      "additional_driver_cost": 0,
+      "passenger_allowed": true,
+      "passenger_min_age": 18
+    },
+    "rental_inclusions": [
+      "Use of motorcycle within rental period",
+      "Third party liability insurance up to EUR1,220,000 for bodily injuries",
+      "Third party liability insurance up to EUR1,220,000 for material damages",
+      "Personal injury coverage up to EUR15,000",
+      "Full accident coverage from third party uninsured",
+      "Theft insurance",
+      "24h Road assistance on mainland Greece, Peloponnisos and Evia",
+      "Helmets and eye wear protection"
+    ],
+    "available_service_locations": [
+      "Mainland Greece",
+      "Peloponnisos",
+      "Evia"
+    ],
+    "offered_tours": [
+      {
+        "name": "CAPE TAINARON RIDE",
+        "duration_text": "6 Days in total, 4 Days riding",
+        "distance_km": 860,
+        "price_text": "2.050€/p.p",
+        "currency": "EUR"
+      },
+      {
+        "name": "THE ISLE OF MOREA TOUR",
+        "duration_text": "9 Days in total, 7 Days riding",
+        "distance_km": 1100,
+        "price_text": "3.150€/p.p",
+        "currency": "EUR"
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "legendaryrides.eu",
+      "scrape_timestamp": "2025-11-13T06:17:10.507Z",
+      "source_url": "https://www.legendaryrides.eu/guided-tours/cape-tainaron-ride/",
+      "brand": "Indian",
+      "model": "Chieftain",
+      "year": 2018,
+      "engine_capacity_cc": null,
+      "category": "Touring",
+      "description": "Premium Indian Motorcycle for touring in Greece, mentioned as 'perfect Indian motorcycles' in testimonials",
+      "rental_rates": [
+        {
+          "rate_text": "Included in tour packages",
+          "min_days": 4,
+          "max_days": null,
+          "rate_per_day": null,
+          "currency": "EUR"
+        }
+      ],
+      "images": [
+        "https://www.legendaryrides.eu/wp-content/uploads/2018/12/GKF_1128AAA-copy-2.jpg",
+        "https://www.legendaryrides.eu/wp-content/uploads/2017/10/indian-chieftain-bike.jpg"
+      ],
+      "features": [
+        "Touring motorcycle",
+        "Perfect for Greek roads",
+        "Comfortable for long rides",
+        "Well-equipped"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": "Refer to Terms and Conditions document for full details on rental conditions, insurance, and requirements",
+      "required_documents_raw": [
+        "Passport for non-EU citizens",
+        "Full motorcycle driving license for at least 5 years (European Class A or International Riding Permit)",
+        "Valid credit card (Visa, MasterCard, American Express)"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": 0,
+          "currency": "EUR",
+          "deductible": 3000,
+          "deductible_currency": "EUR",
+          "notes": "Covers third party liability up to EUR1,220,000 for bodily injuries and material damages, personal injuries up to EUR15,000, and full accident coverage from third party uninsured"
+        },
+        {
+          "type_name": "COVER INSURANCE",
+          "is_included": false,
+          "cost_per_day": 35,
+          "currency": "EUR",
+          "deductible": 2000,
+          "deductible_currency": "EUR",
+          "notes": "Reduces security deposit to EUR 2,000, covers theft, partial theft and fire with EUR2,000 deductible and up to EUR1,000 deductible for own damages"
+        }
+      ],
+      "availability_status": null
+    }
+  ]
+}

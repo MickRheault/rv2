@@ -1,0 +1,92 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-10-14T19:12:38.211Z",
+    "shop_identifier": "MoMOTO Rent",
+    "provider_name": "MoMOTO Rent",
+    "place_id": "ChIJm6qmz3qZpBIR6aDoRSrmoPg",
+    "address": "Rambla del Brasil, 53, Sants-Montjuïc, 08028 Barcelona, Spain",
+    "city": "Barcelona",
+    "province": "Barcelona",
+    "country": "Spain",
+    "latitude": 41.3787469,
+    "longitude": 2.1289695,
+    "phone": "611 77 51 99",
+    "website": "https://momotorent.com/",
+    "google_maps_url": "https://maps.google.com/?cid=17915572386915721449",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 13,
+    "rental_conditions": {
+      "sunday_return_surcharge": "40 €"
+    },
+    "rental_inclusions": [],
+    "available_service_locations": [
+      "Barcelona",
+      "Cataluña"
+    ],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "momotorent",
+      "scrape_timestamp": "2025-10-14T19:12:38.838Z",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "NX 500",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "adventure",
+      "description": "Una combinación perfecta de potencia y confort para cualquier aventura. Lista para conquistar cualquier terreno.",
+      "rental_rates": [],
+      "images": [],
+      "features": [
+        "21″ Front",
+        "18″ Rear",
+        "ABS OFF"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "momotorent",
+      "scrape_timestamp": "2025-10-14T19:12:38.838Z",
+      "source_url": null,
+      "brand": "Benelli",
+      "model": "TRK 502",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "touring",
+      "description": "Diseñada para largas distancias, ofrece fiabilidad y versatilidad en cada trayecto.",
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "momotorent",
+      "scrape_timestamp": "2025-10-14T19:12:38.838Z",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "Africa Twin",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "adventure",
+      "description": "Disfruta del rendimiento off-road y del máximo confort en rutas épicas.",
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    }
+  ]
+}

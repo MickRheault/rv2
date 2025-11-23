@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T08:41:10.590Z",
+    "shop_identifier": "Cho thuê xe máy Hồ Tây",
+    "provider_name": "Cho thuê xe máy Hồ Tây",
+    "place_id": "ChIJLx3LLrWrNTERdSU7VhpIg-Q",
+    "address": "Hanoi City, 52 Đ. Tô Ngọc Vân, Quảng An, Tây Hồ, Hà Nội 10000, Vietnam",
+    "city": "Hanoi",
+    "province": "Hanoi",
+    "country": "Vietnam",
+    "latitude": 21.068759,
+    "longitude": 105.8242134,
+    "phone": "0973 934 589",
+    "website": "https://rentabiketayho.com/",
+    "google_maps_url": "https://maps.google.com/?cid=16466083940549731701",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 154,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

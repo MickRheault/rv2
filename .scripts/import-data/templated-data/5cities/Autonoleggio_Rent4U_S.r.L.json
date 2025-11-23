@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T13:19:46.931Z",
+    "shop_identifier": "Autonoleggio Rent4U S.r.L",
+    "provider_name": "Autonoleggio Rent4U S.r.L",
+    "place_id": "ChIJl3ssu2lhLxMR7Wnm7XGpkVk",
+    "address": "Via Ceneda, 14, 00183 Roma RM, Italy",
+    "city": "Rome",
+    "province": "Lazio",
+    "country": "Italy",
+    "latitude": 41.8804248,
+    "longitude": 12.5122841,
+    "phone": "06 8632 9220",
+    "website": "https://www.rent4u.online/",
+    "google_maps_url": "https://maps.google.com/?cid=6454126047786330605",
+    "business_status": "OPERATIONAL",
+    "rating": 3.6,
+    "review_count": 33,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T07:44:54.029Z",
+    "shop_identifier": "Flamingo Hanoi Motorbike",
+    "provider_name": "Flamingo Hanoi Motorbike",
+    "place_id": "ChIJfe2Jo8CrNTER9aJMnW4p5yI",
+    "address": "66 P. Đào Duy Từ, Hàng Buồm, Hoàn Kiếm, Hà Nội 100000, Vietnam",
+    "city": "Hanoi",
+    "province": "Hanoi",
+    "country": "Vietnam",
+    "latitude": 21.0349369,
+    "longitude": 105.8530266,
+    "phone": "024 3926 4012",
+    "website": "http://www.flamingotravel.com.vn/",
+    "google_maps_url": "https://maps.google.com/?cid=2515024471971898101",
+    "business_status": "OPERATIONAL",
+    "rating": 4.1,
+    "review_count": 125,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

@@ -1,0 +1,447 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T07:02:04.224Z",
+    "shop_identifier": "Gia Hưng Motorbike Rental",
+    "provider_name": "Gia Hưng Motorbike Rental",
+    "place_id": "ChIJUQP2cJarNTER8dkIaBx4GOI",
+    "address": "41 Ng. Huyện, Hàng Trống, Hoàn Kiếm, Hà Nội 10000, Vietnam",
+    "city": "Hanoi",
+    "province": "Hanoi",
+    "country": "Vietnam",
+    "latitude": 21.0292244,
+    "longitude": 105.8483765,
+    "phone": "0936 345 123",
+    "website": "http://giahungmotorbikerental.com/",
+    "google_maps_url": "https://maps.google.com/?cid=16291903715412597233",
+    "business_status": "OPERATIONAL",
+    "rating": 4.7,
+    "review_count": 484,
+    "rental_conditions": {
+      "bike_types": "Honda XR150cc or Yamaha WR155cc",
+      "bike_condition": "rigorously maintained and inspected before every journey",
+      "safety_equipment": "high-quality helmets, basic rain gear, comprehensive first-aid kit",
+      "guide_ratio": "1 guide for groups up to 5 riders, 2 guides for groups of 6+ riders",
+      "backup_vehicle": "dedicated backup motorcycle (XR150cc/WR155cc)"
+    },
+    "rental_inclusions": [
+      "Premium Motorcycle Rental",
+      "Experienced English-Speaking Guide(s)",
+      "All Meals (B-L-D)",
+      "Accommodation",
+      "Entrance Fees",
+      "Water on the Way",
+      "Backup Motorcycle",
+      "All Operational Costs"
+    ],
+    "available_service_locations": [
+      "Hanoi"
+    ],
+    "offered_tours": [
+      {
+        "name": "4-Day Northwestern Frontier: Hanoi - Sapa Motorbike Expedition",
+        "duration_text": "4 days",
+        "distance_km": null,
+        "price_text": "From $575 to $770",
+        "currency": "USD"
+      },
+      {
+        "name": "13-Day Grand Northern Vietnam Motorbike Expedition: From Majestic Mountains to Iconic Bays",
+        "duration_text": "13 days",
+        "distance_km": null,
+        "price_text": "From $1,790 to $2,420",
+        "currency": "USD"
+      },
+      {
+        "name": "Ho Chi Minh Trail Motorbike Tour",
+        "duration_text": "10 days",
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      },
+      {
+        "name": "3-Day Coastal & Cultural Odyssey: Cat Ba, Thai Binh & Ninh Binh",
+        "duration_text": "3 days",
+        "distance_km": null,
+        "price_text": null,
+        "currency": null
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "giahungmotorbikerental",
+      "scrape_timestamp": "2025-11-13T07:02:05.893Z",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "Transalp",
+      "year": null,
+      "engine_capacity_cc": 750,
+      "category": "Touring",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$150",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 150,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "http://giahungmotorbikerental.com/Upload/News/honda-transalp-750cc.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "giahungmotorbikerental",
+      "scrape_timestamp": "2025-11-13T07:02:05.893Z",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "XR190L",
+      "year": null,
+      "engine_capacity_cc": 190,
+      "category": "Off-road",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$27",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 27,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "http://giahungmotorbikerental.com/Upload/News/honda-xr190l.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "giahungmotorbikerental",
+      "scrape_timestamp": "2025-11-13T07:02:05.893Z",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "NX500",
+      "year": null,
+      "engine_capacity_cc": 500,
+      "category": "Adventure",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$60",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 60,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "http://giahungmotorbikerental.com/Upload/News/honda-nx500.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "giahungmotorbikerental",
+      "scrape_timestamp": "2025-11-13T07:02:05.893Z",
+      "source_url": null,
+      "brand": "Yamaha",
+      "model": "NVX",
+      "year": null,
+      "engine_capacity_cc": 155,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [
+        {
+          "rate_text": "$17",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 17,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "http://giahungmotorbikerental.com/Upload/News/new-yamaha-nvx-155cc.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "giahungmotorbikerental",
+      "scrape_timestamp": "2025-11-13T07:02:05.893Z",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "XR150",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Off-road",
+      "description": "Powerful and reliable motorcycle for diverse terrains",
+      "rental_rates": [],
+      "images": [],
+      "features": [
+        "Off-road capability",
+        "Reliable for mountainous terrain"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "Available for tours"
+    },
+    {
+      "shop_identifier": "giahungmotorbikerental",
+      "scrape_timestamp": "2025-11-13T07:02:05.893Z",
+      "source_url": null,
+      "brand": "Yamaha",
+      "model": "WR155",
+      "year": null,
+      "engine_capacity_cc": 155,
+      "category": "Off-road",
+      "description": "Powerful and reliable motorcycle for diverse terrains",
+      "rental_rates": [],
+      "images": [],
+      "features": [
+        "Off-road capability",
+        "Reliable for mountainous terrain"
+      ],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "Available for tours"
+    },
+    {
+      "shop_identifier": "giahungmotorbikerental",
+      "scrape_timestamp": "2025-11-13T07:02:05.893Z",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "FT230",
+      "year": null,
+      "engine_capacity_cc": 230,
+      "category": "Manual",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "http://giahungmotorbikerental.com/Upload/News/honda-ft230cc-full-manual-for-sale.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "For sale"
+    },
+    {
+      "shop_identifier": "giahungmotorbikerental",
+      "scrape_timestamp": "2025-11-13T07:02:05.893Z",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "Wave Copy",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "http://giahungmotorbikerental.com/Upload/News/honda-wave-copy-for-sale.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "For sale"
+    },
+    {
+      "shop_identifier": "giahungmotorbikerental",
+      "scrape_timestamp": "2025-11-13T07:02:05.893Z",
+      "source_url": null,
+      "brand": "Detech",
+      "model": "Win",
+      "year": null,
+      "engine_capacity_cc": 120,
+      "category": "Semi-automatic",
+      "description": null,
+      "rental_rates": [],
+      "images": [
+        "http://giahungmotorbikerental.com/Upload/Albums/semi-automatic.jpg"
+      ],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "For sale"
+    },
+    {
+      "shop_identifier": "giahungmotorbikerental",
+      "scrape_timestamp": "2025-11-13T07:02:05.893Z",
+      "source_url": null,
+      "brand": "Yamaha",
+      "model": "Nouvo",
+      "year": null,
+      "engine_capacity_cc": 115,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "For sale"
+    },
+    {
+      "shop_identifier": "giahungmotorbikerental",
+      "scrape_timestamp": "2025-11-13T07:02:05.893Z",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "Wave RSX",
+      "year": null,
+      "engine_capacity_cc": 110,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "For sale"
+    },
+    {
+      "shop_identifier": "giahungmotorbikerental",
+      "scrape_timestamp": "2025-11-13T07:02:05.893Z",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "Future",
+      "year": 2016,
+      "engine_capacity_cc": 125,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "For sale"
+    },
+    {
+      "shop_identifier": "giahungmotorbikerental",
+      "scrape_timestamp": "2025-11-13T07:02:05.893Z",
+      "source_url": null,
+      "brand": "Yamaha",
+      "model": "Xtz",
+      "year": 2017,
+      "engine_capacity_cc": 125,
+      "category": "Off-road",
+      "description": null,
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "Sold out"
+    },
+    {
+      "shop_identifier": "giahungmotorbikerental",
+      "scrape_timestamp": "2025-11-13T07:02:05.893Z",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "Wave",
+      "year": 2018,
+      "engine_capacity_cc": 110,
+      "category": "Semi-automatic",
+      "description": null,
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "For sale"
+    },
+    {
+      "shop_identifier": "giahungmotorbikerental",
+      "scrape_timestamp": "2025-11-13T07:02:05.893Z",
+      "source_url": null,
+      "brand": "Honda",
+      "model": "XR",
+      "year": 2017,
+      "engine_capacity_cc": 150,
+      "category": "Off-road",
+      "description": null,
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "For sale"
+    },
+    {
+      "shop_identifier": "giahungmotorbikerental",
+      "scrape_timestamp": "2025-11-13T07:02:05.893Z",
+      "source_url": null,
+      "brand": "Yamaha",
+      "model": "Jupiter",
+      "year": 2012,
+      "engine_capacity_cc": 110,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "For sale"
+    },
+    {
+      "shop_identifier": "giahungmotorbikerental",
+      "scrape_timestamp": "2025-11-13T07:02:05.893Z",
+      "source_url": null,
+      "brand": "Kawasaki",
+      "model": "KLX",
+      "year": null,
+      "engine_capacity_cc": 250,
+      "category": "Off-road",
+      "description": null,
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": null,
+      "conditions_raw": null,
+      "required_documents_raw": [],
+      "insurance_details_raw": [],
+      "availability_status": "For sale"
+    }
+  ]
+}

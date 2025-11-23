@@ -1,0 +1,760 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T07:04:44.249Z",
+    "shop_identifier": "Rentabike Vietnam West Lake - Motorbike Rental + Tours",
+    "provider_name": "Rentabike Vietnam West Lake - Motorbike Rental + Tours",
+    "place_id": "ChIJV4qVFr6rNTERKJeLhcRPLPs",
+    "address": "29 Ngõ 35 - Đặng Thai Mai, Quảng An, Tây Hồ, Hà Nội 100000, Vietnam",
+    "city": "Hanoi",
+    "province": "Hanoi",
+    "country": "Vietnam",
+    "latitude": 21.0621399,
+    "longitude": 105.8255668,
+    "phone": "0904 392 423",
+    "website": "http://www.rentabikevn.com/",
+    "google_maps_url": "https://maps.google.com/?cid=18098928707967883048",
+    "business_status": "OPERATIONAL",
+    "rating": 4.7,
+    "review_count": 359,
+    "rental_conditions": {
+      "minimum_age": 18,
+      "international_driving_permit_required": true,
+      "deposit_required": true,
+      "deposit_amount": 20,
+      "currency": "USD",
+      "one_way_rental_fee": true,
+      "excess_mileage_fee": false
+    },
+    "rental_inclusions": [
+      "basic_insurance",
+      "helmet",
+      "maps",
+      "24/7_support",
+      "roadside_assistance"
+    ],
+    "available_service_locations": [
+      "Hanoi",
+      "Danang",
+      "Ho Chi Minh City"
+    ],
+    "offered_tours": [
+      {
+        "name": "3-Day Ha Giang Loop Tour",
+        "duration_text": "3 days, 5 nights",
+        "distance_km": 335,
+        "price_text": "from US $630",
+        "currency": "USD"
+      },
+      {
+        "name": "4-Day Ha Giang Loop Tour",
+        "duration_text": "4 days, 6 nights",
+        "distance_km": 370,
+        "price_text": "from US $840",
+        "currency": "USD"
+      }
+    ]
+  },
+  "motorcycle_offerings": [
+    {
+      "shop_identifier": "rentabikevn",
+      "scrape_timestamp": "2025-11-13T07:08:34.799Z",
+      "source_url": "https://rentabikevn.com/rental/bmw-1250-gs/",
+      "brand": "BMW",
+      "model": "GS 1250",
+      "year": null,
+      "engine_capacity_cc": 1255,
+      "category": "Touring",
+      "description": "Premium adventure touring motorcycle with boxer engine",
+      "rental_rates": [
+        {
+          "rate_text": "$290",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 290,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20696%20464'%3E%3C/svg%3E"
+      ],
+      "features": [
+        "boxer engine",
+        "ABS",
+        "6-speed transmission",
+        "air-liquid cooled",
+        "twin cylinder",
+        "DOHC"
+      ],
+      "specifications_raw": {
+        "Engine": {
+          "Engine Type": "air-liquid cooled, twin cylinder, DOHC, boxer engine",
+          "Displacement": "1255 cc",
+          "Bore X Stroke": "102.5 mm x 76 mm",
+          "Ignition": "FI",
+          "Fuel System": "fuel injection",
+          "Compression Ratio": "12.5:1"
+        },
+        "Transmission": {
+          "Starter": "electric",
+          "Gearbox": "6-speed"
+        },
+        "Wheels, Suspension and Brakes": {
+          "Front Suspension": "BMW Motorrad Telelever; stanchion diameter 37 mm",
+          "Rear Suspension": "single-sided swing arm with BMW Motorrad Paralever",
+          "Front Brakes": "dual disc brake, floating brake discs, diameter 305 mm, 4-piston radial calipers",
+          "Rear Brakes": "single disc brake, diameter 276 mm, double-piston floating caliper",
+          "Front Tyres": "120/70 R19",
+          "Rear Tyres": "170/60 R17"
+        },
+        "Dimensions and Weight": {
+          "Wheelbase": "1514 mm",
+          "Seat Height": "850 mm",
+          "Ground Clearance": "790 mm",
+          "Kerb Weight": "249 kg",
+          "Fuel Capacity": "20 litres",
+          "Dimensions": "2207 mm (L) x 952.5mm (W) x 1430 mm (H)"
+        }
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "valid driver's license",
+        "passport copy",
+        "international driving permit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "USD",
+          "deductible": 500,
+          "deductible_currency": "USD",
+          "notes": "Standard coverage included with rental"
+        },
+        {
+          "type_name": "Damage Waiver",
+          "is_included": false,
+          "cost_per_day": 20,
+          "currency": "USD",
+          "deductible": 0,
+          "deductible_currency": "USD",
+          "notes": "Reduces deductible to $0"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "rentabikevn",
+      "scrape_timestamp": "2025-11-13T07:08:34.799Z",
+      "source_url": "https://rentabikevn.com/rental/honda-xr-150/",
+      "brand": "Honda",
+      "model": "XR 150",
+      "year": null,
+      "engine_capacity_cc": 149,
+      "category": "Dual-Sport",
+      "description": "Reliable dual-sport motorcycle for both on and off-road adventures",
+      "rental_rates": [
+        {
+          "rate_text": "$150",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 150,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201536%20919'%3E%3C/svg%3E"
+      ],
+      "features": [
+        "air cooled",
+        "OHC",
+        "single cylinder",
+        "5-speed transmission",
+        "dual purpose"
+      ],
+      "specifications_raw": {
+        "Engine": {
+          "Engine Type": "air cooled, OHC, single cylinder",
+          "Displacement": "149 cc",
+          "Bore X Stroke": "57.3 mm x 57.8 mm",
+          "Ignition": "CDI",
+          "Fuel System": "20 mm piston valve carburettor",
+          "Compression Ratio": "9.5:1"
+        },
+        "Transmission": {
+          "Starter": "electric with kick starter backup",
+          "Gearbox": "5-speed"
+        },
+        "Wheels, Suspension and Brakes": {
+          "Front Suspension": "telescopic fork, 180 mm axle travel",
+          "Rear Suspension": "single shock swing arm, 150 mm axle travel",
+          "Front Brakes": "dual piston caliper, 240 mm disc",
+          "Rear Brakes": "mechanical drum",
+          "Front Tyres": "90/90 19",
+          "Rear Tyres": "110/90 17"
+        },
+        "Dimensions and Weight": {
+          "Wheelbase": "1362 mm",
+          "Seat Height": "825 mm",
+          "Ground Clearance": "243 mm",
+          "Kerb Weight": "129 kg",
+          "Fuel Capacity": "12 litres",
+          "Dimensions": "2091 mm (L) x 811 mm (W) x 1125 mm (H)"
+        }
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "valid driver's license",
+        "passport copy",
+        "international driving permit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "USD",
+          "deductible": 300,
+          "deductible_currency": "USD",
+          "notes": "Standard coverage included with rental"
+        },
+        {
+          "type_name": "Damage Waiver",
+          "is_included": false,
+          "cost_per_day": 20,
+          "currency": "USD",
+          "deductible": 0,
+          "deductible_currency": "USD",
+          "notes": "Reduces deductible to $0"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "rentabikevn",
+      "scrape_timestamp": "2025-11-13T07:08:34.799Z",
+      "source_url": "https://rentabikevn.com/rental/honda-cb-500x/",
+      "brand": "Honda",
+      "model": "CB 500X",
+      "year": null,
+      "engine_capacity_cc": 470,
+      "category": "Touring",
+      "description": "Versatile adventure touring motorcycle with modern features",
+      "rental_rates": [
+        {
+          "rate_text": "$190",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 190,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20864%20486'%3E%3C/svg%3E"
+      ],
+      "features": [
+        "liquid cooled",
+        "parallel-twin",
+        "ABS",
+        "6-speed transmission",
+        "adventure touring"
+      ],
+      "specifications_raw": {
+        "Engine": {
+          "Engine Type": "liquid cooled parallel-twin four stroke",
+          "Displacement": "470 cc",
+          "Bore X Stroke": "67 mm x 66.8 mm",
+          "Ignition": "PGMI – FI",
+          "Fuel System": "fuel injection",
+          "Compression Ratio": "10.7:1"
+        },
+        "Transmission": {
+          "Starter": "electric",
+          "Gearbox": "6-speed"
+        },
+        "Wheels, Suspension and Brakes": {
+          "Front Suspension": "41 mm SFF-BP USD Forks",
+          "Rear Suspension": "Prolink Mono with 5 stage pre load adjuster",
+          "Front Brakes": "dual 296 mm discs with 4 piston calipers; ABS",
+          "Rear Brakes": "240 mm disc; ABS",
+          "Front Tyres": "110/80R19M/C (59H)",
+          "Rear Tyres": "160/60R17M/C"
+        },
+        "Dimensions and Weight": {
+          "Wheelbase": "1445 mm",
+          "Seat Height": "830 mm",
+          "Ground Clearance": "180 mm",
+          "Kerb Weight": "199 kg",
+          "Fuel Capacity": "17.7 litres",
+          "Dimensions": "2,155 mm (L) x 830 mm (W) x 1,410 mm (H)"
+        }
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "valid driver's license",
+        "passport copy",
+        "international driving permit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "USD",
+          "deductible": 400,
+          "deductible_currency": "USD",
+          "notes": "Standard coverage included with rental"
+        },
+        {
+          "type_name": "Damage Waiver",
+          "is_included": false,
+          "cost_per_day": 20,
+          "currency": "USD",
+          "deductible": 0,
+          "deductible_currency": "USD",
+          "notes": "Reduces deductible to $0"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "rentabikevn",
+      "scrape_timestamp": "2025-11-13T07:08:34.799Z",
+      "source_url": "https://rentabikevn.com/rental/honda-crf-300/",
+      "brand": "Honda",
+      "model": "CRF 300",
+      "year": null,
+      "engine_capacity_cc": 286,
+      "category": "Dual-Sport",
+      "description": "Lightweight dual-sport motorcycle for adventure riding",
+      "rental_rates": [
+        {
+          "rate_text": "$190",
+          "min_days": 1,
+          "max_days": null,
+          "rate_per_day": 190,
+          "currency": "USD"
+        }
+      ],
+      "images": [
+        "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201536%20864'%3E%3C/svg%3E"
+      ],
+      "features": [
+        "liquid cooled",
+        "single cylinder",
+        "DOHC",
+        "5-speed transmission",
+        "off-road capable"
+      ],
+      "specifications_raw": {
+        "Engine": {
+          "Engine Type": "single cylinder, DOHC, liquid cooled",
+          "Displacement": "286 cc",
+          "Bore X Stroke": "76 mm x 63 mm",
+          "Ignition": "Full Transistor Digital",
+          "Fuel System": "PGM-FI electronic fuel injection",
+          "Compression Ratio": "10.7:1"
+        },
+        "Transmission": {
+          "Starter": "electric",
+          "Gearbox": "5-speed"
+        },
+        "Wheels, Suspension and Brakes": {
+          "Front Suspension": "43 mm telescopic upside down",
+          "Rear Suspension": "Prolink Mono with 5 stage pre load adjuster",
+          "Front Brakes": "256 mm disc, 2 piston caliper",
+          "Rear Brakes": "220 mm disc, single piston caliper",
+          "Front Tyres": "80/100 21",
+          "Rear Tyres": "120/80 18"
+        },
+        "Dimensions and Weight": {
+          "Wheelbase": "1455 mm",
+          "Seat Height": "880 mm",
+          "Ground Clearance": "285 mm",
+          "Kerb Weight": "142 kg",
+          "Fuel Capacity": "7.8 litres",
+          "Dimensions": "2230 mm (L) x 820 mm (W) x 1200 mm (H)"
+        }
+      },
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "valid driver's license",
+        "passport copy",
+        "international driving permit"
+      ],
+      "insurance_details_raw": [
+        {
+          "type_name": "Basic Insurance",
+          "is_included": true,
+          "cost_per_day": null,
+          "currency": "USD",
+          "deductible": 350,
+          "deductible_currency": "USD",
+          "notes": "Standard coverage included with rental"
+        },
+        {
+          "type_name": "Damage Waiver",
+          "is_included": false,
+          "cost_per_day": 20,
+          "currency": "USD",
+          "deductible": 0,
+          "deductible_currency": "USD",
+          "notes": "Reduces deductible to $0"
+        }
+      ],
+      "availability_status": "available"
+    },
+    {
+      "shop_identifier": "rentabikevn",
+      "scrape_timestamp": "2025-11-13T07:08:34.799Z",
+      "source_url": "https://rentabikevn.com/rental/honda-lead/",
+      "brand": "Honda",
+      "model": "Lead",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": "Automatic transmission scooter",
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "valid driver's license",
+        "passport copy"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rentabikevn",
+      "scrape_timestamp": "2025-11-13T07:08:34.799Z",
+      "source_url": "https://rentabikevn.com/rental/honda-vision/",
+      "brand": "Honda",
+      "model": "Vision",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": "Automatic transmission scooter",
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "valid driver's license",
+        "passport copy"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rentabikevn",
+      "scrape_timestamp": "2025-11-13T07:08:34.799Z",
+      "source_url": "https://rentabikevn.com/rental/honda-airblade/",
+      "brand": "Honda",
+      "model": "Airblade",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": "Automatic transmission scooter",
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "valid driver's license",
+        "passport copy"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rentabikevn",
+      "scrape_timestamp": "2025-11-13T07:08:34.799Z",
+      "source_url": "https://rentabikevn.com/rental/yamaha-mio/",
+      "brand": "Yamaha",
+      "model": "Mio",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": "Automatic transmission scooter",
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "valid driver's license",
+        "passport copy"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rentabikevn",
+      "scrape_timestamp": "2025-11-13T07:08:34.799Z",
+      "source_url": "https://rentabikevn.com/rental/yamaha-nouvo/",
+      "brand": "Yamaha",
+      "model": "Nouvo",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": "Automatic transmission scooter",
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "valid driver's license",
+        "passport copy"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rentabikevn",
+      "scrape_timestamp": "2025-11-13T07:08:34.799Z",
+      "source_url": "https://rentabikevn.com/rental/yamaha-nvx/",
+      "brand": "Yamaha",
+      "model": "NVX",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Scooter",
+      "description": null,
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": "Automatic transmission scooter",
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "valid driver's license",
+        "passport copy"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rentabikevn",
+      "scrape_timestamp": "2025-11-13T07:08:34.799Z",
+      "source_url": "https://rentabikevn.com/rental/honda-cub/",
+      "brand": "Honda",
+      "model": "Cub",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Semi-Automatic",
+      "description": null,
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": "Semi-automatic transmission motorcycle",
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "valid driver's license",
+        "passport copy"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rentabikevn",
+      "scrape_timestamp": "2025-11-13T07:08:34.799Z",
+      "source_url": "https://rentabikevn.com/rental/yamaha-pg-1/",
+      "brand": "Yamaha",
+      "model": "PG-1",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Semi-Automatic",
+      "description": null,
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": "Semi-automatic transmission motorcycle",
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "valid driver's license",
+        "passport copy"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rentabikevn",
+      "scrape_timestamp": "2025-11-13T07:08:34.799Z",
+      "source_url": "https://rentabikevn.com/rental/honda-wave-alpha/",
+      "brand": "Honda",
+      "model": "Wave Alpha",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Semi-Automatic",
+      "description": null,
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": "Semi-automatic transmission motorcycle",
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "valid driver's license",
+        "passport copy"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rentabikevn",
+      "scrape_timestamp": "2025-11-13T07:08:34.799Z",
+      "source_url": "https://rentabikevn.com/rental/honda-wave-blade/",
+      "brand": "Honda",
+      "model": "Wave Blade",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Semi-Automatic",
+      "description": null,
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": "Semi-automatic transmission motorcycle",
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "valid driver's license",
+        "passport copy"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rentabikevn",
+      "scrape_timestamp": "2025-11-13T07:08:34.799Z",
+      "source_url": "https://rentabikevn.com/rental/honda-future/",
+      "brand": "Honda",
+      "model": "Future",
+      "year": null,
+      "engine_capacity_cc": null,
+      "category": "Semi-Automatic",
+      "description": null,
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": "Semi-automatic transmission motorcycle",
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "valid driver's license",
+        "passport copy"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rentabikevn",
+      "scrape_timestamp": "2025-11-13T07:08:34.799Z",
+      "source_url": "https://rentabikevn.com/rental/honda-master-125/",
+      "brand": "Honda",
+      "model": "Master 125",
+      "year": null,
+      "engine_capacity_cc": 125,
+      "category": "Standard",
+      "description": null,
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": "Manual transmission motorcycle",
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "valid driver's license",
+        "passport copy"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rentabikevn",
+      "scrape_timestamp": "2025-11-13T07:08:34.799Z",
+      "source_url": "https://rentabikevn.com/rental/honda-winner-150/",
+      "brand": "Honda",
+      "model": "Winner 150",
+      "year": null,
+      "engine_capacity_cc": 150,
+      "category": "Sport",
+      "description": null,
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": "Manual transmission motorcycle",
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "valid driver's license",
+        "passport copy"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rentabikevn",
+      "scrape_timestamp": "2025-11-13T07:08:34.799Z",
+      "source_url": "https://rentabikevn.com/rental/honda-xr-190/",
+      "brand": "Honda",
+      "model": "XR 190",
+      "year": null,
+      "engine_capacity_cc": 190,
+      "category": "Dual-Sport",
+      "description": null,
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": "Manual transmission motorcycle",
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "valid driver's license",
+        "passport copy"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rentabikevn",
+      "scrape_timestamp": "2025-11-13T07:08:34.799Z",
+      "source_url": "https://rentabikevn.com/rental/yamaha-wr-155/",
+      "brand": "Yamaha",
+      "model": "WR 155",
+      "year": null,
+      "engine_capacity_cc": 155,
+      "category": "Dual-Sport",
+      "description": null,
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": "Manual transmission motorcycle",
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "valid driver's license",
+        "passport copy"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    },
+    {
+      "shop_identifier": "rentabikevn",
+      "scrape_timestamp": "2025-11-13T07:08:34.799Z",
+      "source_url": "https://rentabikevn.com/rental/royal-enfield-himalayan-400/",
+      "brand": "Royal Enfield",
+      "model": "Himalayan 400",
+      "year": null,
+      "engine_capacity_cc": 400,
+      "category": "Adventure",
+      "description": null,
+      "rental_rates": [],
+      "images": [],
+      "features": [],
+      "specifications_raw": "Manual transmission motorcycle",
+      "conditions_raw": null,
+      "required_documents_raw": [
+        "valid driver's license",
+        "passport copy"
+      ],
+      "insurance_details_raw": [],
+      "availability_status": null
+    }
+  ]
+}

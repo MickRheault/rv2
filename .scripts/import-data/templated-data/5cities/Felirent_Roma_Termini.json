@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T12:44:20.410Z",
+    "shop_identifier": "Felirent Roma Termini",
+    "provider_name": "Felirent Roma Termini",
+    "place_id": "ChIJX72sO6lhLxMRauzl7GGnURg",
+    "address": "ES Park Giolitti, Via Giovanni Giolitti, 267/7mo piano, 00185 Roma RM, Italy",
+    "city": "Rome",
+    "province": "Lazio",
+    "country": "Italy",
+    "latitude": 41.8969131,
+    "longitude": 12.5061685,
+    "phone": "376 205 2907",
+    "website": "https://www.felirent.it/",
+    "google_maps_url": "https://maps.google.com/?cid=1752365769051991146",
+    "business_status": "OPERATIONAL",
+    "rating": 2.3,
+    "review_count": 43,
+    "rental_conditions": {},
+    "rental_inclusions": [],
+    "available_service_locations": [],
+    "offered_tours": []
+  },
+  "motorcycle_offerings": []
+}

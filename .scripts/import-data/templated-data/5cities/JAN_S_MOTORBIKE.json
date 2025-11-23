@@ -1,0 +1,25 @@
+{
+  "provider_metadata": {
+    "scrape_timestamp": "2025-11-13T09:48:43.574Z",
+    "shop_identifier": "JAN’S MOTORBIKE",
+    "provider_name": "JAN’S MOTORBIKE",
+    "place_id": "ChIJh8_VwpkndTERP8GmoXG8eDU",
+    "address": "5 Đường Số 5, An Phú, Thủ Đức, Thành phố Hồ Chí Minh 700000, Vietnam",
+    "city": "Ho Chi Minh City",
+    "province": "Ho Chi Minh City",
+    "country": "Vietnam",
+    "latitude": 10.8078711,
+    "longitude": 106.7529111,
+    "phone": "0909 290 078",
+    "website": "https://janmotorbike.com/",
+    "google_maps_url": "https://maps.google.com/?cid=3853036677444845887",
+    "business_status": "OPERATIONAL",
+    "rating": 5,
+    "review_count": 138,
+    "rental_conditions": null,
+    "rental_inclusions": null,
+    "available_service_locations": null,
+    "offered_tours": null
+  },
+  "motorcycle_offerings": []
+}
