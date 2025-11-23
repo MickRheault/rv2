@@ -63,10 +63,11 @@ export default function HeroSearchForm() {
 
   const handleCountryChange = (countryCode: string) => {
     setSelectedCountry(countryCode)
-    // If a city is selected but doesn't belong to the new country, clear it
+    // Keep the selected city if it's still valid, otherwise clear it
     if (selectedCity) {
       const selectedCityData = cities.find(city => city.id === selectedCity)
       if (selectedCityData && selectedCityData.countryCode !== countryCode) {
+        // City doesn't match the new country, clear it
         setSelectedCity('')
       }
     }
@@ -185,11 +186,25 @@ export default function HeroSearchForm() {
               className="w-full px-3 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none"
             >
               <option value="">Select City</option>
-              {cities.map((city) => (
-                <option key={city.id} value={city.id}>
-                  {city.name}
-                </option>
-              ))}
+              {selectedCountry && cities.some(city => city.countryCode === selectedCountry) && (
+                <>
+                  {cities
+                    .filter(city => city.countryCode === selectedCountry)
+                    .map((city) => (
+                      <option key={city.id} value={city.id}>
+                        {city.name}
+                      </option>
+                    ))}
+                  <option disabled>────────────────</option>
+                </>
+              )}
+              {cities
+                .filter(city => !selectedCountry || city.countryCode !== selectedCountry)
+                .map((city) => (
+                  <option key={city.id} value={city.id}>
+                    {city.name}
+                  </option>
+                ))}
             </select>
           </div>
         </div>

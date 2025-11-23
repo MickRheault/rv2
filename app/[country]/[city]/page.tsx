@@ -8,6 +8,7 @@ import { shopService } from '@/services/shops'
 import { PageLoading, ErrorState } from '@/components/ui/LoadingStates'
 import { StructuredData, generateLocationShopListingSchema } from '@/lib/seo/structured-data'
 import CityShopsGrid from './CityShopsGrid'
+import LocationHeroBanner from '@/components/location/LocationHeroBanner'
 
 // Generate dynamic metadata based on city and country parameters
 export async function generateMetadata({ params }: CityPageProps): Promise<Metadata> {
@@ -96,8 +97,8 @@ export default async function CityPage({ params }: CityPageProps) {
       notFound()
     }
 
-    // Fetch shops for this specific city
-    const shopsResult = await shopService.getShops({
+    // Fetch shops for this specific city with motorcycle counts
+    const shopsResult = await shopService.getShopsWithCounts({
       cityId: cityData.id,
       sortBy: 'rating_desc',
       limit: 100 // Show all shops for now, as per PRD requirements
@@ -121,9 +122,12 @@ export default async function CityPage({ params }: CityPageProps) {
         <StructuredData schema={structuredData} />
         <main className="min-h-screen bg-gray-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-8">
-              Motorcycle Rental Shops in {cityDisplayName}, {countryDisplayName}
-            </h1>
+            <LocationHeroBanner
+              locationName={cityDisplayName}
+              countryName={countryDisplayName}
+              locationType="city"
+              shopCount={shops.length}
+            />
             
             <CityShopsGrid 
               shops={shops} 

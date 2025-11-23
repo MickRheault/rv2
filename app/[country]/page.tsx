@@ -8,6 +8,7 @@ import { shopService } from '@/services/shops'
 import { PageLoading, ErrorState } from '@/components/ui/LoadingStates'
 import { StructuredData, generateLocationShopListingSchema } from '@/lib/seo/structured-data'
 import CountryShopsGrid from './CountryShopsGrid'
+import LocationHeroBanner from '@/components/location/LocationHeroBanner'
 
 // Generate dynamic metadata based on country parameter
 export async function generateMetadata({ params }: CountryPageProps): Promise<Metadata> {
@@ -77,8 +78,8 @@ export default async function CountryPage({ params }: CountryPageProps) {
       notFound()
     }
 
-    // Fetch shops for this country
-    const shopsResult = await shopService.getShops({
+    // Fetch shops for this country with motorcycle counts
+    const shopsResult = await shopService.getShopsWithCounts({
       countryCode: countryData.code,
       sortBy: 'rating_desc',
       limit: 100 // Show all shops for now, as per PRD requirements
@@ -102,9 +103,11 @@ export default async function CountryPage({ params }: CountryPageProps) {
         <StructuredData schema={structuredData} />
         <main className="min-h-screen bg-gray-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-8">
-              Motorcycle Rental Shops in {countryDisplayName}
-            </h1>
+            <LocationHeroBanner
+              locationName={countryDisplayName}
+              locationType="country"
+              shopCount={shops.length}
+            />
             
             <CountryShopsGrid 
               shops={shops} 
