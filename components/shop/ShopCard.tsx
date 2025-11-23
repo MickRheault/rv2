@@ -119,6 +119,7 @@ export default function ShopCard({
 
   return (
     <Card 
+      padding="none"
       className={clsx(
         'overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer group',
         compact ? 'h-auto' : 'h-full',
@@ -208,6 +209,18 @@ export default function ShopCard({
         </CardHeader>
 
         <CardContent className={clsx('space-y-3', compact ? 'p-3 pt-0' : 'p-4 pt-0')}>
+          {/* Motorcycle count - prominent display */}
+          {shop.motorcycle_count !== undefined && shop.motorcycle_count > 0 && (
+            <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full shadow-md">
+                <span className="text-sm font-bold text-white">{shop.motorcycle_count}</span>
+              </div>
+              <span className="text-sm font-semibold text-gray-700">
+                {shop.motorcycle_count === 1 ? 'Model' : 'Models'} Available
+              </span>
+            </div>
+          )}
+
           {/* Bike types (categories) */}
           {(() => {
             const categoryNames = shop.category_names || []
