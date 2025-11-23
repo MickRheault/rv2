@@ -50,8 +50,8 @@
       "rental_rates": [
         {
           "rate_text": "string | null",
-          "min_days": "number",
-          "max_days": "number | null",
+          "min_days": "number (supports decimals: 0.5 for half-day, 0.042 for 1 hour)",
+          "max_days": "number | null (supports decimals: 0.5 for half-day, 0.042 for 1 hour)",
           "rate_per_day": "number | null",
           "currency": "string | null"
         }
