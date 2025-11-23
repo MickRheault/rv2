@@ -158,25 +158,26 @@ module.exports = {
         .limit(2000)
       
       if (!shopsError && shops) {
+        // Helper function to format location for URL
+        const formatLocationForUrl = (name) => {
+          return name
+            .toLowerCase()
+            .replace(/\s+/g, '-')
+            .replace(/[^a-z0-9-]/g, '')
+            .replace(/-+/g, '-')
+            .replace(/^-|-$/g, '')
+        }
+
         shops.forEach(shop => {
-          // Helper function to format location for URL
-          const formatLocationForUrl = (name) => {
-            return name
-              .toLowerCase()
-              .replace(/\s+/g, '-')
-              .replace(/[^a-z0-9-]/g, '')
-              .replace(/-+/g, '-')
-              .replace(/^-|-$/g, '')
+          // Skip shops without complete location data (country/city required for new URL format)
+          if (!shop.cities?.provinces?.countries?.name || !shop.cities?.name) {
+            console.warn(`⚠️  Skipping shop ${shop.slug} - missing location data for sitemap`)
+            return
           }
 
-          let shopUrl = `/shop/${shop.slug}` // Fallback to old format
-          
-          // Use new location-based URL if location data is available
-          if (shop.cities?.provinces?.countries?.name && shop.cities?.name) {
-            const country = formatLocationForUrl(shop.cities.provinces.countries.name)
-            const city = formatLocationForUrl(shop.cities.name)
-            shopUrl = `/shop/${country}/${city}/${shop.slug}`
-          }
+          const country = formatLocationForUrl(shop.cities.provinces.countries.name)
+          const city = formatLocationForUrl(shop.cities.name)
+          const shopUrl = `/shop/${country}/${city}/${shop.slug}`
 
           additionalPaths.push({
             loc: shopUrl,
