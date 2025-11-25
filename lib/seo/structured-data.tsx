@@ -97,23 +97,26 @@ export function generateMotorcycleSchema(motorcycle: {
     image: image ? `${SITE_CONFIG.url}${image}` : undefined,
     url: `${SITE_CONFIG.url}/motorcycle/${id}`,
     sku: id,
-    offers: {
-      '@type': 'Offer',
-      price: pricePerDay?.toString(),
-      priceCurrency: currency,
-      priceSpecification: {
-        '@type': 'PriceSpecification',
-        price: pricePerDay?.toString(),
+    // Only include offers if price is available
+    ...(pricePerDay ? {
+      offers: {
+        '@type': 'Offer',
+        price: pricePerDay.toString(),
         priceCurrency: currency,
-        unitCode: 'DAY',
+        priceSpecification: {
+          '@type': 'PriceSpecification',
+          price: pricePerDay.toString(),
+          priceCurrency: currency,
+          unitCode: 'DAY',
+        },
+        availability: availability ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+        seller: {
+          '@type': 'Organization',
+          name: SITE_CONFIG.name,
+        },
+        areaServed: location,
       },
-      availability: availability ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
-      seller: {
-        '@type': 'Organization',
-        name: SITE_CONFIG.name,
-      },
-      areaServed: location,
-    },
+    } : {}),
     additionalProperty: [
       year && {
         '@type': 'PropertyValue',
@@ -612,20 +615,26 @@ export function generateEnhancedMotorcycleSchema(motorcycle: {
   const baseVehicleSchema = generateVehicleSchema(motorcycle);
   const pricingSchemas = motorcycle.rentalRates ? generatePricingSchema(motorcycle.rentalRates) : [];
   
+  // Only include offers if there are actual rental rates with prices
+  const hasValidPricing = pricingSchemas.length > 0 && pricingSchemas.some(rate => rate.price);
+  
   return {
     ...baseVehicleSchema,
     '@type': ['Vehicle', 'Product'],
-    offers: {
-      '@type': 'Offer',
-      name: `${baseVehicleSchema.name} Rental`,
-      description: `Rent ${baseVehicleSchema.name} from trusted providers`,
-      availability: motorcycle.availability ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
-      priceSpecification: pricingSchemas,
-      seller: {
-        '@type': 'Organization',
-        name: SITE_CONFIG.name,
+    // Only include offers object if pricing is available
+    ...(hasValidPricing ? {
+      offers: {
+        '@type': 'Offer',
+        name: `${baseVehicleSchema.name} Rental`,
+        description: `Rent ${baseVehicleSchema.name} from trusted providers`,
+        availability: motorcycle.availability ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+        priceSpecification: pricingSchemas,
+        seller: {
+          '@type': 'Organization',
+          name: SITE_CONFIG.name,
+        },
       },
-    },
+    } : {}),
     // Include insurance as additional services if available
     ...(motorcycle.insuranceDetails && motorcycle.insuranceDetails.length > 0 ? {
       additionalService: generateInsuranceSchema(motorcycle.insuranceDetails),
