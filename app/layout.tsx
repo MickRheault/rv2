@@ -11,7 +11,11 @@ import { generateMetadata as generateSEOMetadata, PAGE_CONFIGS } from '@/lib/seo
 import { StructuredData, generateOrganizationSchema, generateWebsiteSchema } from '@/lib/seo/structured-data'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ 
+  subsets: ['latin'],
+  display: 'swap',
+  preload: true,
+})
 
 export const metadata: Metadata = generateSEOMetadata(PAGE_CONFIGS.home)
 
