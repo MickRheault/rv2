@@ -221,15 +221,24 @@ export function generateMotorcycleSEO(motorcycle: {
   brand?: string;
   location?: string;
   pricePerDay?: number;
+  currency?: string;
   year?: number;
   category?: string;
   image?: string;
 }): SEOConfig {
-  const { model, brand, location, pricePerDay, year, category, image } = motorcycle;
+  const { model, brand, location, pricePerDay, currency, year, category, image } = motorcycle;
   
   const bikeName = `${year || ''} ${brand || ''} ${model || ''}`.trim() || 'Motorcycle';
   const locationText = location ? ` in ${location}` : '';
-  const priceText = pricePerDay ? ` from $${pricePerDay}/day` : '';
+  
+  // Format price with correct currency
+  let priceText = '';
+  if (pricePerDay && currency) {
+    priceText = ` from ${currency}${pricePerDay}/day`;
+  } else if (pricePerDay) {
+    priceText = ` from $${pricePerDay}/day`;
+  }
+  
   const categoryText = category ? ` ${category}` : '';
 
   return {

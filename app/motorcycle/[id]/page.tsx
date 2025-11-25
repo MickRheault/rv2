@@ -21,6 +21,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       brand: motorcycle.brands?.name || undefined,
       location: motorcycle.rental_shops?.location_name || motorcycle.rental_shops?.cities?.name || undefined,
       pricePerDay: motorcycle.rental_rate_per_day || undefined,
+      currency: motorcycle.rental_rate_currency || undefined,
       year: motorcycle.year || undefined,
       category: motorcycle.categories?.name || undefined,
       image: motorcycle.motorcycle_images?.[0]?.images?.url || undefined,
