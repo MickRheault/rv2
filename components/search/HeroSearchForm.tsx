@@ -23,34 +23,24 @@ export default function HeroSearchForm() {
   const [selectedCountry, setSelectedCountry] = useState('')
   const [selectedCity, setSelectedCity] = useState('')
   const [loading, setLoading] = useState(true)
+  const [isSearching, setIsSearching] = useState(false)
   const countrySelectId = 'hero-country'
   const citySelectId = 'hero-city'
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [countriesData, locationsData] = await Promise.all([
-          locationService.getCountries(),
-          locationService.getLocationsWithShops()
-        ])
+        // Fetch from cached API endpoint (auto-regenerates every hour)
+        const response = await fetch('/api/locations')
         
-        setCountries(countriesData)
+        if (!response.ok) {
+          throw new Error('Failed to fetch locations data')
+        }
         
-        // Extract all cities from locations data with country mapping
-        const allCities = Object.values(locationsData)
-          .flatMap(countryData => 
-            Object.values(countryData.provinces || {})
-              .flatMap(province => province.cities || [])
-              .map(city => ({
-                id: city.id,
-                name: city.name,
-                fullName: city.name,
-                countryCode: countryData.country.code
-              }))
-          )
-          .sort((a, b) => a.name.localeCompare(b.name))
+        const data = await response.json()
         
-        setCities(allCities)
+        setCountries(data.countries || [])
+        setCities(data.cities || [])
       } catch (error) {
         console.error('Error loading search data:', error)
       } finally {
@@ -85,6 +75,8 @@ export default function HeroSearchForm() {
   }
 
   const handleSearch = () => {
+    setIsSearching(true)
+    
     // If both country and city are selected, go to the specific city page
     if (selectedCountry && selectedCity) {
       const selectedCountryData = countries.find(c => c.code === selectedCountry)
@@ -210,12 +202,35 @@ export default function HeroSearchForm() {
         </div>
 
         {/* Search Button - Full width on mobile, centered on desktop */}
-        <div className="pt-2">
+        <div className="pt-2 flex justify-center">
           <button
             onClick={handleSearch}
-            className="w-full sm:w-auto sm:min-w-[200px] px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold text-lg rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl focus:ring-4 focus:ring-blue-300 focus:outline-none"
+            disabled={isSearching}
+            className="w-full sm:w-auto sm:min-w-[200px] px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold text-lg rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl focus:ring-4 focus:ring-blue-300 focus:outline-none disabled:opacity-75 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            Search Motorcycles
+            {isSearching && (
+              <svg 
+                className="animate-spin h-5 w-5 text-white" 
+                xmlns="http://www.w3.org/2000/svg" 
+                fill="none" 
+                viewBox="0 0 24 24"
+              >
+                <circle 
+                  className="opacity-25" 
+                  cx="12" 
+                  cy="12" 
+                  r="10" 
+                  stroke="currentColor" 
+                  strokeWidth="4"
+                />
+                <path 
+                  className="opacity-75" 
+                  fill="currentColor" 
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+            )}
+            <span>{isSearching ? 'Loading...' : 'Search Motorcycles'}</span>
           </button>
         </div>
       </div>
