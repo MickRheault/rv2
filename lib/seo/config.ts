@@ -118,8 +118,8 @@ export function generateMetadata(config: SEOConfig): Metadata {
 // Predefined page configurations
 export const PAGE_CONFIGS = {
   home: {
-    title: 'Motorcycle Rentals Worldwide - Compare & Book',
-    description: 'Find and book motorcycle rentals from trusted providers worldwide. Compare prices, read reviews, and discover the perfect bike for your adventure. From city scooters to touring bikes.',
+    title: 'Motorcycle Rentals Worldwide - Choose the best rental for your adventure',
+    description: 'Find motorcycle rental from trusted businesses worldwide. Compare prices and discover the perfect bike for your adventure. From city scooters to touring bikes.',
     keywords: [
       'motorcycle rental',
       'bike rental worldwide',
