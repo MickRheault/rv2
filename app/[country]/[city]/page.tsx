@@ -37,7 +37,7 @@ export async function generateMetadata({ params }: CityPageProps): Promise<Metad
     const cityDisplayName = formatLocationName(city)
     
     return {
-      title: `Motorcycle Rental Shops in ${cityDisplayName}, ${countryDisplayName}`,
+      title: `Motorcycle Rentals in ${cityDisplayName}, ${countryDisplayName} - Choose the best bike from the best rental`,
       description: `Find and compare motorcycle rental shops in ${cityDisplayName}, ${countryDisplayName}. Browse bikes, compare prices, and book your perfect ride.`,
       keywords: `motorcycle rental, ${cityDisplayName}, ${countryDisplayName}, bike rental, scooter rental`,
     }

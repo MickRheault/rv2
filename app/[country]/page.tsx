@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: CountryPageProps): Promise<Me
     const countryDisplayName = formatLocationName(country)
     
     return {
-      title: `Motorcycle Rental Shops in ${countryDisplayName}`,
+      title: `Motorcycle Rentals in ${countryDisplayName} - Choose the best bike from the best rental`,
       description: `Browse and compare motorcycle rental shops in ${countryDisplayName}. Find the perfect bike rental for your adventure.`,
       keywords: `motorcycle rental, ${countryDisplayName}, bike rental, scooter rental`,
     }
@@ -78,12 +78,15 @@ export default async function CountryPage({ params }: CountryPageProps) {
       notFound()
     }
 
-    // Fetch shops for this country with motorcycle counts
-    const shopsResult = await shopService.getShopsWithCounts({
-      countryCode: countryData.code,
-      sortBy: 'rating_desc',
-      limit: 100 // Show all shops for now, as per PRD requirements
-    })
+    // Fetch shops for this country with motorcycle counts and cities
+    const [shopsResult, cities] = await Promise.all([
+      shopService.getShopsWithCounts({
+        countryCode: countryData.code,
+        sortBy: 'rating_desc',
+        limit: 100 // Show all shops for now, as per PRD requirements
+      }),
+      locationService.getCitiesByCountry(countryData.code)
+    ])
 
     const shops = shopsResult.shops || []
 
@@ -105,8 +108,10 @@ export default async function CountryPage({ params }: CountryPageProps) {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <LocationHeroBanner
               locationName={countryDisplayName}
+              countrySlug={country}
               locationType="country"
               shopCount={shops.length}
+              cities={cities}
             />
             
             <CountryShopsGrid 
