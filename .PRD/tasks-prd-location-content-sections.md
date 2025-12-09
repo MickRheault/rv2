@@ -7,17 +7,17 @@ Based on: `prd-location-content-sections.md`
 ## Relevant Files
 
 ### Database & Types
-- `supabase/migrations/20241209000000_add_content_sections_to_countries.sql` - Migration to add content_sections JSONB column to countries table
-- `lib/supabase/database.types.ts` - Updated with content_sections field for countries table (to be regenerated)
-- `types/index.ts` - ContentSection interface definition (to be created)
+- `supabase/migrations/20250917000000_add_content_sections_to_countries.sql` - Migration to add content_sections JSONB column to countries table
+- `lib/supabase/database.types.ts` - Updated with content_sections field (Json | null) for countries table
+- `types/index.ts` - ContentSection interface with id, title, content, order, createdAt, updatedAt fields
 
 ### Services
-- `services/countryContent.ts` - New service for content section CRUD operations
+- `services/countryContent.ts` - Service for content section CRUD operations (getContentSections, addContentSection, updateContentSection, deleteContentSection, reorderSections) with validation helpers
 
 ### API Routes
-- `app/api/admin/countries/[countryCode]/content/route.ts` - GET all sections, POST new section
-- `app/api/admin/countries/[countryCode]/content/[sectionId]/route.ts` - PUT (update), DELETE specific section
-- `app/api/admin/countries/[countryCode]/content/reorder/route.ts` - PATCH to reorder sections
+- `app/api/admin/countries/[countryCode]/content/route.ts` - GET all sections, POST new section with admin auth and validation
+- `app/api/admin/countries/[countryCode]/content/[sectionId]/route.ts` - PUT (update), DELETE specific section with admin auth and error handling
+- `app/api/admin/countries/[countryCode]/content/reorder/route.ts` - PATCH to reorder sections with admin auth and validation
 
 ### Admin Interface
 - `app/admin/countries/[countryCode]/content/page.tsx` - Main admin page for managing content sections
@@ -40,34 +40,34 @@ Based on: `prd-location-content-sections.md`
 
 ## Tasks
 
-- [ ] 1.0 Database Setup and Type Definitions
+- [x] 1.0 Database Setup and Type Definitions
   - [x] 1.1 Create database migration file to add `content_sections` JSONB column to countries table
-  - [ ] 1.2 Run migration using Supabase CLI or dashboard
-  - [ ] 1.3 Regenerate database types using `npx supabase gen types typescript`
-  - [ ] 1.4 Create `ContentSection` TypeScript interface in `types/index.ts`
-  - [ ] 1.5 Verify the countries table now includes content_sections field in database.types.ts
+  - [x] 1.2 Run migration using Supabase CLI or dashboard
+  - [x] 1.3 Regenerate database types using `npx supabase gen types typescript`
+  - [x] 1.4 Create `ContentSection` TypeScript interface in `types/index.ts`
+  - [x] 1.5 Verify the countries table now includes content_sections field in database.types.ts
 
-- [ ] 2.0 Service Layer and Business Logic
-  - [ ] 2.1 Create `services/countryContent.ts` file
-  - [ ] 2.2 Implement `getContentSections(countryCode: string)` - fetch sections from country record
-  - [ ] 2.3 Implement `addContentSection(countryCode, section)` - append new section to array
-  - [ ] 2.4 Implement `updateContentSection(countryCode, sectionId, updates)` - update specific section in array
-  - [ ] 2.5 Implement `deleteContentSection(countryCode, sectionId)` - remove section from array
-  - [ ] 2.6 Implement `reorderSections(countryCode, sectionIds)` - update order values based on array
-  - [ ] 2.7 Add simple validation helpers (title length, content length, required fields)
+- [x] 2.0 Service Layer and Business Logic
+  - [x] 2.1 Create `services/countryContent.ts` file
+  - [x] 2.2 Implement `getContentSections(countryCode: string)` - fetch sections from country record
+  - [x] 2.3 Implement `addContentSection(countryCode, section)` - append new section to array
+  - [x] 2.4 Implement `updateContentSection(countryCode, sectionId, updates)` - update specific section in array
+  - [x] 2.5 Implement `deleteContentSection(countryCode, sectionId)` - remove section from array
+  - [x] 2.6 Implement `reorderSections(countryCode, sectionIds)` - update order values based on array
+  - [x] 2.7 Add simple validation helpers (title length, content length, required fields)
 
-- [ ] 3.0 API Routes for Content Management
-  - [ ] 3.1 Create `app/api/admin/countries/[countryCode]/content/route.ts`
-  - [ ] 3.2 Implement GET handler - fetch all sections for a country
-  - [ ] 3.3 Implement POST handler - add new section (generate UUID, timestamps)
-  - [ ] 3.4 Add admin authentication check to both handlers
-  - [ ] 3.5 Create `app/api/admin/countries/[countryCode]/content/[sectionId]/route.ts`
-  - [ ] 3.6 Implement PUT handler - update specific section
-  - [ ] 3.7 Implement DELETE handler - delete specific section
-  - [ ] 3.8 Add admin authentication checks to both handlers
-  - [ ] 3.9 Create `app/api/admin/countries/[countryCode]/content/reorder/route.ts`
-  - [ ] 3.10 Implement PATCH handler - reorder sections based on provided array
-  - [ ] 3.11 Add error handling and validation to all API routes
+- [x] 3.0 API Routes for Content Management
+  - [x] 3.1 Create `app/api/admin/countries/[countryCode]/content/route.ts`
+  - [x] 3.2 Implement GET handler - fetch all sections for a country
+  - [x] 3.3 Implement POST handler - add new section (generate UUID, timestamps)
+  - [x] 3.4 Add admin authentication check to both handlers
+  - [x] 3.5 Create `app/api/admin/countries/[countryCode]/content/[sectionId]/route.ts`
+  - [x] 3.6 Implement PUT handler - update specific section
+  - [x] 3.7 Implement DELETE handler - delete specific section
+  - [x] 3.8 Add admin authentication checks to both handlers
+  - [x] 3.9 Create `app/api/admin/countries/[countryCode]/content/reorder/route.ts`
+  - [x] 3.10 Implement PATCH handler - reorder sections based on provided array
+  - [x] 3.11 Add error handling and validation to all API routes
 
 - [ ] 4.0 Admin Interface for Managing Content Sections
   - [ ] 4.1 Create `app/admin/countries/[countryCode]/content/page.tsx` admin page

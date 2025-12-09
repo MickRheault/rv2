@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.3 (519615d)"
+  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -183,18 +188,21 @@ export type Database = {
       countries: {
         Row: {
           code: string
+          content_sections: Json | null
           created_at: string
           name: string
           updated_at: string
         }
         Insert: {
           code: string
+          content_sections?: Json | null
           created_at?: string
           name: string
           updated_at?: string
         }
         Update: {
           code?: string
+          content_sections?: Json | null
           created_at?: string
           name?: string
           updated_at?: string
@@ -1197,28 +1205,13 @@ export type Database = {
         Args: { days_since_update: number }
         Returns: Database["public"]["Enums"]["freshness_status"]
       }
-      capture_daily_analytics_snapshot: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      clear_all_data: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      custom_access_token_hook: {
-        Args: { event: Json }
-        Returns: Json
-      }
-      expire_premium_listings: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      generate_slug: {
-        Args: { "": string }
-        Returns: string
-      }
+      capture_daily_analytics_snapshot: { Args: never; Returns: Json }
+      clear_all_data: { Args: never; Returns: undefined }
+      custom_access_token_hook: { Args: { event: Json }; Returns: Json }
+      expire_premium_listings: { Args: never; Returns: number }
+      generate_slug: { Args: { "": string }; Returns: string }
       get_brand_distribution: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           avg_engine_size: number
           avg_price: number
@@ -1227,7 +1220,7 @@ export type Database = {
         }[]
       }
       get_category_distribution: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           avg_engine_size: number
           avg_price: number
@@ -1236,7 +1229,7 @@ export type Database = {
         }[]
       }
       get_data_freshness_stats: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           fresh_entities: number
           fresh_percentage: number
@@ -1274,7 +1267,7 @@ export type Database = {
         }[]
       }
       get_flagged_content_stats: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           critical_pending: number
           motorcycle_flags: number
@@ -1287,7 +1280,7 @@ export type Database = {
         }[]
       }
       get_geographic_distribution: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           city: string
           country: string
@@ -1308,7 +1301,7 @@ export type Database = {
         }[]
       }
       get_premium_dashboard_stats: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           expiring_soon: number
           new_listings_this_month: number
@@ -1318,20 +1311,11 @@ export type Database = {
           total_expired_listings: number
         }[]
       }
-      insert_daily_snapshot: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      is_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      make_user_admin: {
-        Args: { user_email: string }
-        Returns: boolean
-      }
+      insert_daily_snapshot: { Args: never; Returns: undefined }
+      is_admin: { Args: never; Returns: boolean }
+      make_user_admin: { Args: { user_email: string }; Returns: boolean }
       refresh_data_freshness: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           fresh_count: number
           stale_count: number
@@ -1339,10 +1323,7 @@ export type Database = {
           very_stale_count: number
         }[]
       }
-      remove_user_admin: {
-        Args: { user_email: string }
-        Returns: boolean
-      }
+      remove_user_admin: { Args: { user_email: string }; Returns: boolean }
     }
     Enums: {
       app_permission:
@@ -1567,4 +1548,3 @@ export const Constants = {
     },
   },
 } as const
-
