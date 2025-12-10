@@ -8,16 +8,17 @@ import { StructuredData, generateRentalShopSchema, generateRentalServiceSchema, 
 import { parseShopLocation, validateShopLocation } from '@/lib/utils/urls'
 
 interface ShopPageProps {
-  params: {
+  params: Promise<{
     country: string
     city: string
     slug: string
-  }
+  }>
 }
 
 export async function generateMetadata({ params }: ShopPageProps): Promise<Metadata> {
   try {
-    const { country, city, slug } = params
+    const resolvedParams = await params
+    const { country, city, slug } = resolvedParams
     const { countryName, cityName } = parseShopLocation(country, city)
     
     const shop = await shopService.getShopByLocationAndSlug(countryName, cityName, slug)
@@ -53,7 +54,8 @@ export async function generateMetadata({ params }: ShopPageProps): Promise<Metad
 
 export default async function ShopPage({ params }: ShopPageProps) {
   try {
-    const { country, city, slug } = params
+    const resolvedParams = await params
+    const { country, city, slug } = resolvedParams
     const { countryName, cityName } = parseShopLocation(country, city)
     
     console.log('🔍 Shop page debug:', {

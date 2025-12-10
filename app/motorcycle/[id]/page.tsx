@@ -7,13 +7,14 @@ import { generateMetadata as generateSEOMetadata, generateMotorcycleSEO } from '
 import { StructuredData, generateEnhancedMotorcycleSchema } from '@/lib/seo/structured-data'
 
 interface PageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 // Generate enhanced metadata for SEO
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   try {
-    const motorcycle = await motorcycleService.getMotorcycleById(params.id)
+    const resolvedParams = await params
+    const motorcycle = await motorcycleService.getMotorcycleById(resolvedParams.id)
     
     const seoConfig = generateMotorcycleSEO({
       id: motorcycle.id,
@@ -29,7 +30,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     
     return generateSEOMetadata({
       ...seoConfig,
-      url: `/motorcycle/${params.id}`,
+      url: `/motorcycle/${resolvedParams.id}`,
     })
   } catch (error) {
     return {
@@ -41,7 +42,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function MotorcycleDetailPage({ params }: PageProps) {
   try {
-    const motorcycle = await motorcycleService.getMotorcycleById(params.id)
+    const resolvedParams = await params
+    const motorcycle = await motorcycleService.getMotorcycleById(resolvedParams.id)
     
     if (!motorcycle) {
       notFound()
