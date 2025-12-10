@@ -5,60 +5,66 @@ export const fetchCache = 'force-no-store'
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { countryContentService } from '@/services/countryContent'
+import { ContentSection } from '@/types'
 
 /**
- * Check if the current user is an admin
+ * Create authenticated Supabase client
  */
-async function isAdmin(request: NextRequest): Promise<boolean> {
+function createAuthenticatedSupabaseClient(token: string) {
+  const cookieStore = cookies()
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) { return cookieStore.get(name)?.value },
+        set(name: string, value: string, options: CookieOptions) {
+          try { cookieStore.set({ name, value, ...options }) } catch {}
+        },
+        remove(name: string, options: CookieOptions) {
+          try { cookieStore.set({ name, value: '', ...options }) } catch {}
+        },
+      },
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    }
+  )
+}
+
+/**
+ * Check if the current user is an admin and return the authenticated client
+ */
+async function getAuthenticatedClient(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return false
+      return null
     }
 
     const token = authHeader.replace('Bearer ', '')
-    
-    const cookieStore = cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) { return cookieStore.get(name)?.value },
-          set(name: string, value: string, options: CookieOptions) {
-            try { cookieStore.set({ name, value, ...options }) } catch {}
-          },
-          remove(name: string, options: CookieOptions) {
-            try { cookieStore.set({ name, value: '', ...options }) } catch {}
-          },
-        },
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      }
-    )
+    const supabase = createAuthenticatedSupabaseClient(token)
 
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     
     if (userError || !user) {
-      return false
+      return null
     }
 
     const { data: authorized, error } = await supabase.rpc('authorize', {
       requested_permission: 'content.moderate'
     })
 
-    if (error) {
-      return false
+    if (error || !authorized) {
+      return null
     }
 
-    return authorized === true
+    return supabase
   } catch (error) {
     console.error('Error checking admin status:', error)
-    return false
+    return null
   }
 }
 
@@ -71,9 +77,9 @@ export async function PUT(
   { params }: { params: { countryCode: string; sectionId: string } }
 ) {
   try {
-    // Check admin authorization
-    const authorized = await isAdmin(request)
-    if (!authorized) {
+    // Get authenticated Supabase client
+    const supabase = await getAuthenticatedClient(request)
+    if (!supabase) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -119,32 +125,62 @@ export async function PUT(
       )
     }
 
-    const updatedSection = await countryContentService.updateContentSection(
-      countryCode,
-      sectionId,
-      body
-    )
+    // Get existing sections
+    const { data: countryData, error: fetchError } = await supabase
+      .from('countries')
+      .select('content_sections')
+      .eq('code', countryCode)
+      .single()
+
+    if (fetchError) {
+      console.error('Error fetching country:', fetchError)
+      return NextResponse.json(
+        { error: 'Failed to fetch country data' },
+        { status: 500 }
+      )
+    }
+
+    const existingSections = (countryData?.content_sections as unknown as ContentSection[]) || []
+
+    // Find the section to update
+    const sectionIndex = existingSections.findIndex(s => s.id === sectionId)
+    if (sectionIndex === -1) {
+      return NextResponse.json(
+        { error: `Section with id ${sectionId} not found` },
+        { status: 404 }
+      )
+    }
+
+    // Update the section
+    const updatedSection: ContentSection = {
+      ...existingSections[sectionIndex],
+      ...body,
+      id: sectionId, // Ensure ID doesn't change
+      createdAt: existingSections[sectionIndex].createdAt, // Preserve creation date
+      updatedAt: new Date().toISOString(),
+    }
+
+    // Replace in array
+    const updatedSections = [...existingSections]
+    updatedSections[sectionIndex] = updatedSection
+
+    // Update database
+    const { error: updateError } = await supabase
+      .from('countries')
+      .update({ content_sections: updatedSections as any })
+      .eq('code', countryCode)
+
+    if (updateError) {
+      console.error('Error updating content section:', updateError)
+      return NextResponse.json(
+        { error: 'Failed to update content section' },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json(updatedSection)
   } catch (error) {
     console.error('Error updating content section:', error)
-    
-    // Check if it's a not found error
-    if (error instanceof Error && error.message.includes('not found')) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 404 }
-      )
-    }
-    
-    // Check if it's a validation error
-    if (error instanceof Error && error.message.includes('Validation failed')) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      )
-    }
-    
     return NextResponse.json(
       { error: 'Failed to update content section' },
       { status: 500 }
@@ -161,9 +197,9 @@ export async function DELETE(
   { params }: { params: { countryCode: string; sectionId: string } }
 ) {
   try {
-    // Check admin authorization
-    const authorized = await isAdmin(request)
-    if (!authorized) {
+    // Get authenticated Supabase client
+    const supabase = await getAuthenticatedClient(request)
+    if (!supabase) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -184,20 +220,51 @@ export async function DELETE(
       )
     }
 
-    await countryContentService.deleteContentSection(countryCode, sectionId)
+    // Get existing sections
+    const { data: countryData, error: fetchError } = await supabase
+      .from('countries')
+      .select('content_sections')
+      .eq('code', countryCode)
+      .single()
+
+    if (fetchError) {
+      console.error('Error fetching country:', fetchError)
+      return NextResponse.json(
+        { error: 'Failed to fetch country data' },
+        { status: 500 }
+      )
+    }
+
+    const existingSections = (countryData?.content_sections as unknown as ContentSection[]) || []
+
+    // Filter out the section to delete
+    const updatedSections = existingSections.filter(s => s.id !== sectionId)
+
+    // Check if section was found
+    if (updatedSections.length === existingSections.length) {
+      return NextResponse.json(
+        { error: `Section with id ${sectionId} not found` },
+        { status: 404 }
+      )
+    }
+
+    // Update database (set to null if no sections remain)
+    const { error: updateError } = await supabase
+      .from('countries')
+      .update({ content_sections: updatedSections.length > 0 ? updatedSections as any : null })
+      .eq('code', countryCode)
+
+    if (updateError) {
+      console.error('Error deleting content section:', updateError)
+      return NextResponse.json(
+        { error: 'Failed to delete content section' },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json({ success: true }, { status: 200 })
   } catch (error) {
     console.error('Error deleting content section:', error)
-    
-    // Check if it's a not found error
-    if (error instanceof Error && error.message.includes('not found')) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 404 }
-      )
-    }
-    
     return NextResponse.json(
       { error: 'Failed to delete content section' },
       { status: 500 }
