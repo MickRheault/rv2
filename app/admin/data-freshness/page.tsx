@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
-import { AdminRoute } from '@/components/admin/AdminRoute'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
@@ -392,8 +391,8 @@ function DataFreshnessDetailsContent() {
 
 export default function DataFreshnessDetailsPage() {
   return (
-    <AdminRoute requiredPermission="system.manage">
+    
       <DataFreshnessDetailsContent />
-    </AdminRoute>
+    
   )
 } 
