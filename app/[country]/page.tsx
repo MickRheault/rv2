@@ -16,8 +16,9 @@ export const revalidate = 300 // Revalidate every 5 minutes
 
 // Generate dynamic metadata based on country parameter
 export async function generateMetadata({ params }: CountryPageProps): Promise<Metadata> {
+  const resolvedParams = await params
   // Validate and format country parameter
-  const country = validateLocationParam(params.country)
+  const country = validateLocationParam(resolvedParams.country)
   
   if (!country) {
     return {
@@ -54,8 +55,9 @@ export async function generateMetadata({ params }: CountryPageProps): Promise<Me
 }
 
 export default async function CountryPage({ params }: CountryPageProps) {
+  const resolvedParams = await params
   // Extract and validate country parameter
-  const { country: rawCountry } = params
+  const { country: rawCountry } = resolvedParams
   
   // Check for reserved routes first
   if (isReservedRoute(rawCountry)) {

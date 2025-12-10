@@ -55,7 +55,7 @@ export function useURLParams(options: UseURLParamsOptions = {}) {
   
   // Keep track of the last URL update to prevent infinite loops
   const lastURLUpdateRef = useRef<string>('')
-  const debounceTimeoutRef = useRef<NodeJS.Timeout>()
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
   // Set client-side flag after hydration
   useEffect(() => {
