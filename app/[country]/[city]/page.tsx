@@ -12,9 +12,10 @@ import LocationHeroBanner from '@/components/location/LocationHeroBanner'
 
 // Generate dynamic metadata based on city and country parameters
 export async function generateMetadata({ params }: CityPageProps): Promise<Metadata> {
+  const resolvedParams = await params
   // Validate and format parameters
-  const country = validateLocationParam(params.country)
-  const city = validateLocationParam(params.city)
+  const country = validateLocationParam(resolvedParams.country)
+  const city = validateLocationParam(resolvedParams.city)
   
   if (!country || !city) {
     return {
@@ -51,8 +52,9 @@ export async function generateMetadata({ params }: CityPageProps): Promise<Metad
 }
 
 export default async function CityPage({ params }: CityPageProps) {
+  const resolvedParams = await params
   // Extract and validate parameters
-  const { country: rawCountry, city: rawCity } = params
+  const { country: rawCountry, city: rawCity } = resolvedParams
   
   // Check for reserved routes first
   if (isReservedRoute(rawCountry) || isReservedRoute(rawCity)) {

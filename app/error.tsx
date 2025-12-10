@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import Link from 'next/link'
 import { ErrorState } from '@/components/ui/LoadingStates'
 import Button from '@/components/ui/Button'
 
@@ -95,12 +96,12 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
             If this problem persists, please{' '}
-            <a 
+            <Link 
               href="/contact" 
               className="text-blue-600 hover:text-blue-800 underline"
             >
               contact our support team
-            </a>
+            </Link>
             .
           </p>
         </div>
