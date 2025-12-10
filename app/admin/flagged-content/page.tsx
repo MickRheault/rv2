@@ -1,5 +1,4 @@
 import { Metadata } from 'next';
-import { AdminRoute } from '@/components/admin/AdminRoute';
 import { FlaggedContentDashboard } from '@/components/admin/FlaggedContentDashboard';
 
 export const metadata: Metadata = {
@@ -9,8 +8,8 @@ export const metadata: Metadata = {
 
 export default function FlaggedContentPage() {
   return (
-    <AdminRoute requiredPermission="content.moderate">
+    
       <FlaggedContentDashboard />
-    </AdminRoute>
+    
   );
 } 

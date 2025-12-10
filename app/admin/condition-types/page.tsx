@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { AdminRoute } from '@/components/admin/AdminRoute';
 import { Card, Button, Input, Modal, Alert, Spinner, Checkbox, Textarea, Badge } from '@/components/ui';
 import { ArrowLeftIcon, PlusIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon, CogIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
@@ -275,8 +274,7 @@ export default function ConditionTypesPage() {
   );
 
   return (
-    <AdminRoute requiredPermission="content.moderate">
-      <div className="p-6">
+    <div className="p-6">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center">
@@ -579,6 +577,5 @@ export default function ConditionTypesPage() {
           </div>
         </Modal>
       </div>
-    </AdminRoute>
   );
 } 

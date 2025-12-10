@@ -1,6 +1,5 @@
 'use client'
 
-import { AdminRoute } from '@/components/admin/AdminRoute'
 import PremiumListingsDashboard from '@/components/admin/PremiumListingsDashboard'
 import PremiumUpgradeForm from '@/components/admin/PremiumUpgradeForm'
 import PremiumAnalyticsChart from '@/components/admin/PremiumAnalyticsChart'
@@ -230,8 +229,8 @@ function PremiumListingsContent() {
 
 export default function PremiumListingsPage() {
   return (
-    <AdminRoute requiredPermission="premium.manage">
+    
       <PremiumListingsContent />
-    </AdminRoute>
+    
   )
 } 

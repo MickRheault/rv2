@@ -3,7 +3,6 @@ export const revalidate = 0
 export const fetchCache = 'force-no-store'
 
 import { getAnalyticsData, AnalyticsData } from '@/services/analytics';
-import { AdminRoute } from '@/components/admin/AdminRoute';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui';
 import Badge from '@/components/ui/Badge';
@@ -36,8 +35,7 @@ const AnalyticsDashboardPage = async () => {
   } = analyticsData;
 
   return (
-    <AdminRoute>
-      <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8">
         <div className="flex items-center mb-6">
           <Link href="/admin" className="mr-4">
             <Button variant="outline" size="sm">
@@ -173,7 +171,6 @@ const AnalyticsDashboardPage = async () => {
         <HistoricalAnalyticsCharts />
 
       </div>
-    </AdminRoute>
   );
 };
 

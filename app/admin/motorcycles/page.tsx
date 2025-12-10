@@ -1,6 +1,5 @@
 'use client';
 
-import { AdminRoute } from '@/components/admin/AdminRoute';
 import { useState, useEffect, useCallback } from 'react';
 import { motorcycleService, MotorcycleWithDetails } from '@/services/motorcycles';
 import { shopService } from '@/services/shops';
@@ -808,9 +807,5 @@ function MotorcyclesAdminContent() {
 }
 
 export default function MotorcyclesAdminPage() {
-  return (
-    <AdminRoute requiredPermission="system.manage">
-      <MotorcyclesAdminContent />
-    </AdminRoute>
-  );
+  return <MotorcyclesAdminContent />;
 } 

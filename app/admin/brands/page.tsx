@@ -1,6 +1,5 @@
 'use client';
 
-import { AdminRoute } from '@/components/admin/AdminRoute';
 import { useState, useEffect, useCallback } from 'react';
 import { brandService, BrandWithStats } from '@/services/brands';
 import { Card, Button, Input, Modal, Alert, Spinner, Checkbox } from '@/components/ui';
@@ -543,9 +542,5 @@ function BrandsAdminContent() {
 }
 
 export default function BrandsAdminPage() {
-  return (
-    <AdminRoute requiredPermission="system.manage">
-      <BrandsAdminContent />
-    </AdminRoute>
-  );
+  return <BrandsAdminContent />;
 } 
