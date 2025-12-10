@@ -20,12 +20,18 @@ export function AdminRoute({
     requiredPermission || 'system.manage'
   );
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const router = useRouter();
 
   const isLoading = authLoading || (requiredPermission ? permissionLoading : false);
 
   useEffect(() => {
     if (isLoading) return;
+
+    // Mark initial load as complete
+    if (isInitialLoad) {
+      setIsInitialLoad(false);
+    }
 
     setHasCheckedAuth(true);
 
@@ -46,10 +52,10 @@ export function AdminRoute({
       router.push('/admin/unauthorized');
       return;
     }
-  }, [user, isAdmin, hasAccess, isLoading, requiredPermission, router, fallbackPath]);
+  }, [user, isAdmin, hasAccess, isLoading, requiredPermission, router, fallbackPath, isInitialLoad]);
 
-  // Show loading while checking authentication
-  if (isLoading || !hasCheckedAuth) {
+  // Only show loading screen on initial load, not on background re-verification
+  if (isInitialLoad && (isLoading || !hasCheckedAuth)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
