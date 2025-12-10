@@ -15,7 +15,8 @@ import {
   TagIcon,
   FolderIcon,
   CheckCircleIcon,
-  ClockIcon
+  ClockIcon,
+  GlobeAltIcon
 } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -186,6 +187,14 @@ function AdminDashboardContent() {
       href: '/admin/condition-types',
       permission: 'system.manage',
       color: 'border-indigo-200 hover:border-indigo-300'
+    },
+    {
+      name: 'Countries',
+      description: 'Manage content sections for country pages',
+      icon: GlobeAltIcon,
+      href: '/admin/countries',
+      permission: 'content.moderate',
+      color: 'border-teal-200 hover:border-teal-300'
     }
   ];
 

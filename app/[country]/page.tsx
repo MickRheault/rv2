@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { CountryPageProps } from '@/types'
+import { CountryPageProps, ContentSection } from '@/types'
 import { validateLocationParam, formatLocationName, isReservedRoute } from '@/lib/utils'
 import { locationService } from '@/services/locations'
 import { shopService } from '@/services/shops'
@@ -9,6 +9,10 @@ import { PageLoading, ErrorState } from '@/components/ui/LoadingStates'
 import { StructuredData, generateLocationShopListingSchema } from '@/lib/seo/structured-data'
 import CountryShopsGrid from './CountryShopsGrid'
 import LocationHeroBanner from '@/components/location/LocationHeroBanner'
+import ContentSectionsContainer from '@/components/content/ContentSectionsContainer'
+
+// Revalidate country pages periodically to pick up new content sections
+export const revalidate = 300 // Revalidate every 5 minutes
 
 // Generate dynamic metadata based on country parameter
 export async function generateMetadata({ params }: CountryPageProps): Promise<Metadata> {
@@ -90,6 +94,10 @@ export default async function CountryPage({ params }: CountryPageProps) {
 
     const shops = shopsResult.shops || []
 
+    // Extract content sections from country data
+    const contentSections = (countryData.content_sections as unknown as ContentSection[]) || []
+    console.log('Country:', countryData.code, 'Content sections:', contentSections.length)
+
     // Generate JSON-LD structured data for the shop listings
     const currentUrl = `https://globalmotorentals.com/${country}/`
     const structuredData = generateLocationShopListingSchema({
@@ -113,6 +121,9 @@ export default async function CountryPage({ params }: CountryPageProps) {
               shopCount={shops.length}
               cities={cities}
             />
+            
+            {/* Content Sections */}
+            <ContentSectionsContainer sections={contentSections} />
             
             <CountryShopsGrid 
               shops={shops} 

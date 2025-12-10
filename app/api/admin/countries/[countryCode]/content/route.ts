@@ -5,61 +5,66 @@ export const fetchCache = 'force-no-store'
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { countryContentService } from '@/services/countryContent'
 import { ContentSection } from '@/types'
 
 /**
- * Check if the current user is an admin
+ * Create authenticated Supabase client
  */
-async function isAdmin(request: NextRequest): Promise<boolean> {
+function createAuthenticatedSupabaseClient(token: string) {
+  const cookieStore = cookies()
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) { return cookieStore.get(name)?.value },
+        set(name: string, value: string, options: CookieOptions) {
+          try { cookieStore.set({ name, value, ...options }) } catch {}
+        },
+        remove(name: string, options: CookieOptions) {
+          try { cookieStore.set({ name, value: '', ...options }) } catch {}
+        },
+      },
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    }
+  )
+}
+
+/**
+ * Check if the current user is an admin and return the authenticated client
+ */
+async function getAuthenticatedClient(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return false
+      return null
     }
 
     const token = authHeader.replace('Bearer ', '')
-    
-    const cookieStore = cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) { return cookieStore.get(name)?.value },
-          set(name: string, value: string, options: CookieOptions) {
-            try { cookieStore.set({ name, value, ...options }) } catch {}
-          },
-          remove(name: string, options: CookieOptions) {
-            try { cookieStore.set({ name, value: '', ...options }) } catch {}
-          },
-        },
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      }
-    )
+    const supabase = createAuthenticatedSupabaseClient(token)
 
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     
     if (userError || !user) {
-      return false
+      return null
     }
 
     const { data: authorized, error } = await supabase.rpc('authorize', {
       requested_permission: 'content.moderate'
     })
 
-    if (error) {
-      return false
+    if (error || !authorized) {
+      return null
     }
 
-    return authorized === true
+    return supabase
   } catch (error) {
     console.error('Error checking admin status:', error)
-    return false
+    return null
   }
 }
 
@@ -72,9 +77,9 @@ export async function GET(
   { params }: { params: { countryCode: string } }
 ) {
   try {
-    // Check admin authorization
-    const authorized = await isAdmin(request)
-    if (!authorized) {
+    // Get authenticated Supabase client
+    const supabase = await getAuthenticatedClient(request)
+    if (!supabase) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -88,7 +93,22 @@ export async function GET(
       )
     }
 
-    const sections = await countryContentService.getContentSections(countryCode)
+    // Fetch content sections from database
+    const { data, error } = await supabase
+      .from('countries')
+      .select('content_sections')
+      .eq('code', countryCode)
+      .single()
+
+    if (error) {
+      console.error('Error fetching content sections:', error)
+      return NextResponse.json(
+        { error: 'Failed to fetch content sections' },
+        { status: 500 }
+      )
+    }
+
+    const sections = (data?.content_sections as unknown as ContentSection[]) || []
     return NextResponse.json(sections)
   } catch (error) {
     console.error('Error fetching content sections:', error)
@@ -108,9 +128,9 @@ export async function POST(
   { params }: { params: { countryCode: string } }
 ) {
   try {
-    // Check admin authorization
-    const authorized = await isAdmin(request)
-    if (!authorized) {
+    // Get authenticated Supabase client
+    const supabase = await getAuthenticatedClient(request)
+    if (!supabase) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -157,24 +177,53 @@ export async function POST(
       )
     }
 
-    const newSection = await countryContentService.addContentSection(countryCode, {
+    // Get existing sections
+    const { data: countryData, error: fetchError } = await supabase
+      .from('countries')
+      .select('content_sections')
+      .eq('code', countryCode)
+      .single()
+
+    if (fetchError) {
+      console.error('Error fetching country:', fetchError)
+      return NextResponse.json(
+        { error: 'Failed to fetch country data' },
+        { status: 500 }
+      )
+    }
+
+    const existingSections = (countryData?.content_sections as unknown as ContentSection[]) || []
+
+    // Create new section
+    const newSection: ContentSection = {
+      id: crypto.randomUUID(),
       title: body.title,
       content: body.content,
-      order: body.order || 1,
-    })
+      order: body.order || (existingSections.length + 1),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+
+    // Append to existing sections
+    const updatedSections = [...existingSections, newSection]
+
+    // Update database
+    const { error: updateError } = await supabase
+      .from('countries')
+      .update({ content_sections: updatedSections as any })
+      .eq('code', countryCode)
+
+    if (updateError) {
+      console.error('Error saving content section:', updateError)
+      return NextResponse.json(
+        { error: 'Failed to save content section' },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json(newSection, { status: 201 })
   } catch (error) {
     console.error('Error adding content section:', error)
-    
-    // Check if it's a validation error
-    if (error instanceof Error && error.message.includes('Validation failed')) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      )
-    }
-    
     return NextResponse.json(
       { error: 'Failed to add content section' },
       { status: 500 }
