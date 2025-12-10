@@ -21,7 +21,7 @@ async function isAdmin(request: NextRequest): Promise<boolean> {
     const token = authHeader.replace('Bearer ', '');
     
     // Create supabase client with the token
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

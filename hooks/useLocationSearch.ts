@@ -192,7 +192,7 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
       console.log('Final filters:', updatedFilters)
       return updatedFilters
     })
-  }, [results?.totalResults, results?.shops?.total])
+  }, [results])
 
   // Manual search function
   const search = useCallback(() => {
@@ -275,7 +275,7 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
       console.log('Executing search with new offset')
       executeSearch()
     }, 0)
-  }, [filters.limit, results?.totalResults, setFilters, executeSearch])
+  }, [filters.limit, filters.offset, results?.totalResults, setFilters, executeSearch])
 
   const nextPage = useCallback(() => {
     const currentPage = Math.floor((filters.offset || 0) / (filters.limit || 5)) + 1

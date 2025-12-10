@@ -21,7 +21,7 @@ async function isAdmin(request: NextRequest): Promise<boolean> {
     const token = authHeader.replace('Bearer ', '');
     
     // Create supabase client with the token
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -73,9 +73,10 @@ async function isAdmin(request: NextRequest): Promise<boolean> {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  segmentData: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await segmentData.params
     // Check admin authorization
     const authorized = await isAdmin(request);
     if (!authorized) {
@@ -104,9 +105,10 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  segmentData: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await segmentData.params
     // Check admin authorization
     const authorized = await isAdmin(request);
     if (!authorized) {
@@ -173,9 +175,10 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  segmentData: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await segmentData.params
     // Check admin authorization
     const authorized = await isAdmin(request);
     if (!authorized) {
@@ -191,7 +194,7 @@ export async function DELETE(
     }
 
     // Prevent self-deletion for safety
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

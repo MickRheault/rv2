@@ -643,7 +643,7 @@ export function generateEnhancedMotorcycleSchema(motorcycle: {
 }
 
 // Generic schema component for easy embedding
-export function StructuredData({ schema }: { schema: object }): JSX.Element {
+export function StructuredData({ schema }: { schema: object }): React.JSX.Element {
   return React.createElement('script', {
     type: 'application/ld+json',
     dangerouslySetInnerHTML: {

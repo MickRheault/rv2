@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { Button, Input, Card, Alert } from '@/components/ui';
 import Image from 'next/image';
@@ -227,9 +228,9 @@ export default function ResetPasswordPage() {
           <div className="mt-6">
             <div className="text-center text-sm text-gray-600">
               Remember your password?{' '}
-              <a href="/admin/login" className="font-medium text-blue-600 hover:text-blue-500">
+              <Link href="/admin/login" className="font-medium text-blue-600 hover:text-blue-500">
                 Sign In
-              </a>
+              </Link>
             </div>
           </div>
         </Card>

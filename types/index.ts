@@ -128,11 +128,11 @@ export interface CityPageParams {
 }
 
 export interface CountryPageProps {
-  params: CountryPageParams
+  params: Promise<CountryPageParams>
 }
 
 export interface CityPageProps {
-  params: CityPageParams
+  params: Promise<CityPageParams>
 }
 
 export interface ShopPageParams {
@@ -142,7 +142,7 @@ export interface ShopPageParams {
 }
 
 export interface ShopPageProps {
-  params: ShopPageParams
+  params: Promise<ShopPageParams>
 }
 
 // Content Section types for location pages

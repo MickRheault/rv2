@@ -10,8 +10,8 @@ import { ContentSection } from '@/types'
 /**
  * Create authenticated Supabase client
  */
-function createAuthenticatedSupabaseClient(token: string) {
-  const cookieStore = cookies()
+async function createAuthenticatedSupabaseClient(token: string) {
+  const cookieStore = await cookies()
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -45,7 +45,7 @@ async function getAuthenticatedClient(request: NextRequest) {
     }
 
     const token = authHeader.replace('Bearer ', '')
-    const supabase = createAuthenticatedSupabaseClient(token)
+    const supabase = await createAuthenticatedSupabaseClient(token)
 
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     
@@ -74,7 +74,7 @@ async function getAuthenticatedClient(request: NextRequest) {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { countryCode: string } }
+  segmentData: { params: Promise<{ countryCode: string }> }
 ) {
   try {
     // Get authenticated Supabase client
@@ -83,6 +83,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const params = await segmentData.params
     const { countryCode } = params
 
     // Validate country code
@@ -125,7 +126,7 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { countryCode: string } }
+  segmentData: { params: Promise<{ countryCode: string }> }
 ) {
   try {
     // Get authenticated Supabase client
@@ -134,6 +135,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const params = await segmentData.params
     const { countryCode } = params
 
     // Validate country code
