@@ -145,6 +145,16 @@ export interface ShopPageProps {
   params: ShopPageParams
 }
 
+// Content Section types for location pages
+export interface ContentSection {
+  id: string
+  title: string
+  content: string
+  order: number
+  createdAt: string
+  updatedAt: string
+}
+
 // Component props interfaces
 export interface BaseComponentProps {
   className?: string

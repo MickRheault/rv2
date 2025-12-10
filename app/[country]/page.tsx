@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { CountryPageProps } from '@/types'
+import { CountryPageProps, ContentSection } from '@/types'
 import { validateLocationParam, formatLocationName, isReservedRoute } from '@/lib/utils'
 import { locationService } from '@/services/locations'
 import { shopService } from '@/services/shops'
@@ -9,6 +9,10 @@ import { PageLoading, ErrorState } from '@/components/ui/LoadingStates'
 import { StructuredData, generateLocationShopListingSchema } from '@/lib/seo/structured-data'
 import CountryShopsGrid from './CountryShopsGrid'
 import LocationHeroBanner from '@/components/location/LocationHeroBanner'
+import ContentSectionsContainer from '@/components/content/ContentSectionsContainer'
+
+// Revalidate country pages periodically to pick up new content sections
+export const revalidate = 300 // Revalidate every 5 minutes
 
 // Generate dynamic metadata based on country parameter
 export async function generateMetadata({ params }: CountryPageProps): Promise<Metadata> {
@@ -36,7 +40,7 @@ export async function generateMetadata({ params }: CountryPageProps): Promise<Me
     const countryDisplayName = formatLocationName(country)
     
     return {
-      title: `Motorcycle Rental Shops in ${countryDisplayName}`,
+      title: `Motorcycle Rentals in ${countryDisplayName} - Choose the best bike from the best rental`,
       description: `Browse and compare motorcycle rental shops in ${countryDisplayName}. Find the perfect bike rental for your adventure.`,
       keywords: `motorcycle rental, ${countryDisplayName}, bike rental, scooter rental`,
     }
@@ -78,14 +82,21 @@ export default async function CountryPage({ params }: CountryPageProps) {
       notFound()
     }
 
-    // Fetch shops for this country with motorcycle counts
-    const shopsResult = await shopService.getShopsWithCounts({
-      countryCode: countryData.code,
-      sortBy: 'rating_desc',
-      limit: 100 // Show all shops for now, as per PRD requirements
-    })
+    // Fetch shops for this country with motorcycle counts and cities
+    const [shopsResult, cities] = await Promise.all([
+      shopService.getShopsWithCounts({
+        countryCode: countryData.code,
+        sortBy: 'rating_desc',
+        limit: 100 // Show all shops for now, as per PRD requirements
+      }),
+      locationService.getCitiesByCountry(countryData.code)
+    ])
 
     const shops = shopsResult.shops || []
+
+    // Extract content sections from country data
+    const contentSections = (countryData.content_sections as unknown as ContentSection[]) || []
+    console.log('Country:', countryData.code, 'Content sections:', contentSections.length)
 
     // Generate JSON-LD structured data for the shop listings
     const currentUrl = `https://globalmotorentals.com/${country}/`
@@ -105,9 +116,14 @@ export default async function CountryPage({ params }: CountryPageProps) {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <LocationHeroBanner
               locationName={countryDisplayName}
+              countrySlug={country}
               locationType="country"
               shopCount={shops.length}
+              cities={cities}
             />
+            
+            {/* Content Sections */}
+            <ContentSectionsContainer sections={contentSections} />
             
             <CountryShopsGrid 
               shops={shops} 

@@ -1,17 +1,29 @@
 'use client'
 
+import Link from 'next/link'
+
+interface City {
+  id: string
+  name: string
+  slug?: string
+}
+
 interface LocationHeroBannerProps {
   locationName: string
   countryName?: string
+  countrySlug?: string
   locationType: 'country' | 'city'
   shopCount: number
+  cities?: City[]
 }
 
 export default function LocationHeroBanner({ 
   locationName, 
   countryName,
+  countrySlug,
   locationType,
-  shopCount 
+  shopCount,
+  cities = []
 }: LocationHeroBannerProps) {
   const title = locationType === 'city'
     ? `Motorcycle Rentals in ${locationName}, ${countryName}`
@@ -43,6 +55,27 @@ export default function LocationHeroBanner({
         <p className="text-lg sm:text-xl text-white/90 max-w-2xl drop-shadow-md">
           {subtitle}
         </p>
+        
+        {/* City Links - Only show on country pages */}
+        {locationType === 'country' && cities.length > 0 && countrySlug && (
+          <div className="mt-6 max-w-4xl">
+            <p className="text-sm text-white/80 mb-3 font-medium">Popular Cities:</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {cities.slice(0, 10).map((city) => {
+                const citySlug = city.slug || city.name.toLowerCase().replace(/\s+/g, '-')
+                return (
+                  <Link
+                    key={city.id}
+                    href={`/${countrySlug}/${citySlug}`}
+                    className="px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-medium transition-all duration-200 hover:scale-105 border border-white/20 hover:border-white/40"
+                  >
+                    {city.name}
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
