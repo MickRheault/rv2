@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui';
 import { XMarkIcon, CogIcon } from '@heroicons/react/24/outline';
 import {
@@ -78,9 +79,9 @@ export default function CookieConsentBanner() {
                 We use cookies and similar technologies to improve your browsing experience, 
                   analyze site traffic, and provide personalized content. By clicking &quot;Accept All&quot;, 
                 you consent to our use of cookies.{' '}
-                <a href="/privacy" className="text-blue-600 hover:underline">
+                <Link href="/privacy" className="text-blue-600 hover:underline">
                   Learn more in our Privacy Policy
-                </a>.
+                </Link>.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
