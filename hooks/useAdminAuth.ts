@@ -95,7 +95,8 @@ export function useAdminAuth(): AdminAuthContext {
           return;
         }
 
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (event === 'SIGNED_IN') {
+          // Only show loading for actual sign-in, not token refresh
           try {
             setIsLoading(true);
             const adminUser = await getCurrentAdminUser();
@@ -105,6 +106,16 @@ export function useAdminAuth(): AdminAuthContext {
             setUser(null);
           } finally {
             setIsLoading(false);
+          }
+        } else if (event === 'TOKEN_REFRESHED') {
+          // For token refresh, update silently in the background without showing loading state
+          try {
+            const adminUser = await getCurrentAdminUser();
+            if (mounted) {
+              setUser(adminUser);
+            }
+          } catch (error) {
+            console.error('Error updating admin auth on token refresh:', error);
           }
         }
       }
