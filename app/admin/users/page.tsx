@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { AdminRoute } from '@/components/admin/AdminRoute';
 import { 
   Card, 
   CardHeader, 
@@ -46,9 +45,9 @@ interface UserStats {
 
 export default function UsersPage() {
   return (
-    <AdminRoute>
+    
       <UserManagement />
-    </AdminRoute>
+    
   );
 }
 

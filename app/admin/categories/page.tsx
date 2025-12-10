@@ -1,6 +1,5 @@
 'use client';
 
-import { AdminRoute } from '@/components/admin/AdminRoute';
 import { useState, useEffect, useCallback } from 'react';
 import { categoryService, CategoryWithStats, Category } from '@/services/categories';
 import { Card, Button, Input, Modal, Alert, Spinner, Checkbox, Textarea } from '@/components/ui';
@@ -1193,9 +1192,5 @@ function CategoriesAdminContent() {
 }
 
 export default function CategoriesAdminPage() {
-  return (
-    <AdminRoute requiredPermission="system.manage">
-      <CategoriesAdminContent />
-    </AdminRoute>
-  );
+  return <CategoriesAdminContent />;
 } 
