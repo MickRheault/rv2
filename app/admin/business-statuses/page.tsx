@@ -1,6 +1,5 @@
 'use client';
 
-import { AdminRoute } from '@/components/admin/AdminRoute';
 import { useState, useEffect, useCallback } from 'react';
 import { businessStatusService, BusinessStatusWithStats } from '@/services/business-statuses';
 import { Card, Button, Input, Modal, Alert, Spinner, Checkbox, Textarea } from '@/components/ui';
@@ -581,9 +580,5 @@ function BusinessStatusesAdminContent() {
 }
 
 export default function BusinessStatusesAdminPage() {
-  return (
-    <AdminRoute requiredPermission="system.manage">
-      <BusinessStatusesAdminContent />
-    </AdminRoute>
-  );
+  return <BusinessStatusesAdminContent />;
 } 

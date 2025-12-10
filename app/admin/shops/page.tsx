@@ -1,6 +1,5 @@
 'use client';
 
-import { AdminRoute } from '@/components/admin/AdminRoute';
 import { RentalShopConditionsModal } from '@/components/admin/RentalShopConditionsModal';
 import { RentalShopToursModal } from '@/components/admin/RentalShopToursModal';
 import { useState, useEffect, useCallback } from 'react';
@@ -1032,9 +1031,5 @@ function ShopsAdminContent() {
 }
 
 export default function ShopsAdminPage() {
-  return (
-    <AdminRoute requiredPermission="system.manage">
-      <ShopsAdminContent />
-    </AdminRoute>
-  );
+  return <ShopsAdminContent />;
 } 

@@ -1,6 +1,5 @@
 'use client'
 
-import { AdminRoute } from '@/components/admin/AdminRoute'
 import { useState, useEffect, useCallback } from 'react'
 import { Card, Button, Alert, Spinner, Modal } from '@/components/ui'
 import { ContentSection } from '@/types'
@@ -592,9 +591,9 @@ function ContentManagementContent() {
 
 export default function ContentManagementPage() {
   return (
-    <AdminRoute>
+    
       <ContentManagementContent />
-    </AdminRoute>
+    
   )
 }
 

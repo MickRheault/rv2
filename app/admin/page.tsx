@@ -1,6 +1,5 @@
 'use client';
 
-import { AdminRoute } from '@/components/admin/AdminRoute';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { Card, Button } from '@/components/ui';
 import { FlaggedContentService } from '@/services/flagged-content';
@@ -333,9 +332,5 @@ function AdminDashboardContent() {
 }
 
 export default function AdminDashboardPage() {
-  return (
-    <AdminRoute requiredPermission="system.manage">
-      <AdminDashboardContent />
-    </AdminRoute>
-  );
+  return <AdminDashboardContent />;
 } 

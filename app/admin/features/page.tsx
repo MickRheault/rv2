@@ -1,6 +1,5 @@
 'use client';
 
-import { AdminRoute } from '@/components/admin/AdminRoute';
 import { useState, useEffect, useCallback } from 'react';
 import { featureService, FeatureWithStats } from '@/services/features';
 import { Card, Button, Input, Modal, Alert, Spinner, Checkbox, Textarea } from '@/components/ui';
@@ -580,9 +579,5 @@ function FeaturesAdminContent() {
 }
 
 export default function FeaturesAdminPage() {
-  return (
-    <AdminRoute requiredPermission="system.manage">
-      <FeaturesAdminContent />
-    </AdminRoute>
-  );
+  return <FeaturesAdminContent />;
 } 

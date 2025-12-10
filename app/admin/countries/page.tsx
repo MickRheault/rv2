@@ -1,6 +1,5 @@
 'use client'
 
-import { AdminRoute } from '@/components/admin/AdminRoute'
 import { useState, useEffect, useCallback } from 'react'
 import { Card, Button, Spinner, Alert } from '@/components/ui'
 import { 
@@ -119,9 +118,9 @@ function CountriesAdminContent() {
 
 export default function CountriesAdminPage() {
   return (
-    <AdminRoute>
+    
       <CountriesAdminContent />
-    </AdminRoute>
+    
   )
 }
 
