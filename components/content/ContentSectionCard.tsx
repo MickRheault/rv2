@@ -63,7 +63,7 @@ export default function ContentSectionCard({ section }: ContentSectionCardProps)
                 },
                 // Make images responsive
                 img: ({ node, ...props }) => (
-                  // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     {...props}
                     alt={props.alt || ''}

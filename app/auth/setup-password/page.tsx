@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { Button, Input, Card, Alert } from '@/components/ui';
 import Image from 'next/image';
@@ -240,9 +241,9 @@ export default function SetupPasswordPage() {
           <div className="mt-6">
             <div className="text-center text-sm text-gray-600">
               Need help?{' '}
-              <a href="/contact" className="font-medium text-blue-600 hover:text-blue-500">
+              <Link href="/contact" className="font-medium text-blue-600 hover:text-blue-500">
                 Contact Support
-              </a>
+              </Link>
             </div>
           </div>
         </Card>

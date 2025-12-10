@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import Link from 'next/link'
 
 interface GlobalErrorProps {
   error: Error & { digest?: string }
@@ -84,12 +85,12 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
             <div className="mt-8">
               <p className="text-sm text-gray-500">
                 Need help?{' '}
-                <a 
+                <Link 
                   href="/contact" 
                   className="text-blue-600 hover:text-blue-800 underline"
                 >
                   Contact Support
-                </a>
+                </Link>
               </p>
             </div>
 
