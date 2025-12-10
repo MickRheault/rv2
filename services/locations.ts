@@ -139,6 +139,28 @@ export const locationService = {
     return data as CityWithLocation[]
   },
 
+  // Get cities by country
+  async getCitiesByCountry(countryCode: string) {
+    const { data, error } = await supabase
+      .from('cities')
+      .select(`
+        *,
+        provinces!inner (
+          *,
+          countries!inner (*)
+        )
+      `)
+      .eq('provinces.countries.code', countryCode)
+      .order('name')
+
+    if (error) {
+      console.error('Error fetching cities by country:', error)
+      throw error
+    }
+
+    return data as CityWithLocation[]
+  },
+
   // Get all cities
   async getCities() {
     const { data, error } = await supabase
