@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { forwardRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import rehypeSanitize from 'rehype-sanitize'
 import { ChevronDownIcon } from '@heroicons/react/24/outline'
@@ -8,16 +8,18 @@ import { ContentSection } from '@/types'
 
 interface ContentSectionCardProps {
   section: ContentSection
+  isExpanded: boolean
+  onToggle: () => void
 }
 
-export default function ContentSectionCard({ section }: ContentSectionCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false)
+const ContentSectionCard = forwardRef<HTMLDivElement, ContentSectionCardProps>(
+  function ContentSectionCard({ section, isExpanded, onToggle }, ref) {
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+    <div ref={ref} className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
       {/* Header - Always Visible */}
       <button
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={onToggle}
         className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors duration-200"
         aria-expanded={isExpanded}
         aria-controls={`section-content-${section.id}`}
@@ -80,5 +82,6 @@ export default function ContentSectionCard({ section }: ContentSectionCardProps)
       </div>
     </div>
   )
-}
+})
 
+export default ContentSectionCard
