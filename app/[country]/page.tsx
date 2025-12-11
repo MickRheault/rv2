@@ -9,7 +9,7 @@ import { PageLoading, ErrorState } from '@/components/ui/LoadingStates'
 import { StructuredData, generateLocationShopListingSchema } from '@/lib/seo/structured-data'
 import CountryShopsGrid from './CountryShopsGrid'
 import LocationHeroBanner from '@/components/location/LocationHeroBanner'
-import ContentSectionsContainer from '@/components/content/ContentSectionsContainer'
+import CountryContentWrapper from '@/components/content/CountryContentWrapper'
 
 // Revalidate country pages periodically to pick up new content sections
 export const revalidate = 300 // Revalidate every 5 minutes
@@ -124,13 +124,13 @@ export default async function CountryPage({ params }: CountryPageProps) {
               cities={cities}
             />
             
-            {/* Content Sections */}
-            <ContentSectionsContainer sections={contentSections} />
-            
-            <CountryShopsGrid 
-              shops={shops} 
-              countryDisplayName={countryDisplayName} 
-            />
+            {/* Content wrapper: Nav pills at top, then shops, then content sections */}
+            <CountryContentWrapper sections={contentSections}>
+              <CountryShopsGrid 
+                shops={shops} 
+                countryDisplayName={countryDisplayName} 
+              />
+            </CountryContentWrapper>
           </div>
         </main>
       </Suspense>
