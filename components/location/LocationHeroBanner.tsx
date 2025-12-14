@@ -1,6 +1,8 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 interface City {
   id: string
@@ -25,6 +27,13 @@ export default function LocationHeroBanner({
   shopCount,
   cities = []
 }: LocationHeroBannerProps) {
+  // Try to load hero-{country-slug}.jpg, fallback to hero-default.jpg
+  const [imageSrc, setImageSrc] = useState(
+    countrySlug ? `/images/hero-${countrySlug}.jpg` : '/images/hero-default.jpg'
+  )
+  const [useGradientFallback, setUseGradientFallback] = useState(false)
+  const [triedDefault, setTriedDefault] = useState(false)
+
   const title = locationType === 'city'
     ? `Motorcycle Rentals in ${locationName}, ${countryName}`
     : `Motorcycle Rentals in ${locationName}`
@@ -33,18 +42,48 @@ export default function LocationHeroBanner({
     ? `Discover ${shopCount} rental ${shopCount === 1 ? 'shop' : 'shops'} and start your adventure`
     : 'Explore motorcycle rental options for your next adventure'
 
+  const handleImageError = () => {
+    if (!triedDefault) {
+      // First error: try the default image
+      setTriedDefault(true)
+      setImageSrc('/images/hero-default.jpg')
+    } else {
+      // Default also failed: use gradient fallback
+      setUseGradientFallback(true)
+    }
+  }
+
   return (
     <div className="relative h-[400px] w-full overflow-hidden rounded-2xl mb-8">
-      {/* Background Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-purple-600 to-blue-800">
-        {/* Overlay pattern for texture */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-          }} />
+      {/* Background */}
+      <div className="absolute inset-0">
+        {/* Image (hidden if gradient fallback is active) */}
+        {!useGradientFallback && (
+          <Image
+            src={imageSrc}
+            alt={`Motorcycle rentals in ${locationName}`}
+            fill
+            className="object-cover"
+            priority
+            onError={handleImageError}
+          />
+        )}
+        
+        {/* Overlay: dark gradient over image, or full gradient if no image */}
+        <div className={`absolute inset-0 ${
+          useGradientFallback 
+            ? 'bg-gradient-to-br from-blue-600 via-purple-600 to-blue-800' 
+            : 'bg-gradient-to-b from-black/30 via-black/40 to-black/60'
+        }`}>
+          {/* Pattern texture for gradient fallback only */}
+          {useGradientFallback && (
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute inset-0" style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+              }} />
+            </div>
+          )}
         </div>
-        {/* Dark overlay for text readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/30 to-black/40" />
       </div>
 
       {/* Content */}
