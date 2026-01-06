@@ -13,6 +13,7 @@ type RentalShopServiceLocation = Database['public']['Tables']['rental_shop_servi
 type RentalShopCondition = Database['public']['Tables']['rental_shop_conditions']['Row']
 type ConditionType = Database['public']['Tables']['condition_types']['Row']
 type MotorcycleRental = Database['public']['Tables']['motorcycle_rentals']['Row']
+type RentalRateTier = Database['public']['Tables']['rental_rate_tiers']['Row']
 type Brand = Database['public']['Tables']['brands']['Row']
 type Category = Database['public']['Tables']['categories']['Row']
 
@@ -38,6 +39,7 @@ export interface ShopWithMotorcycles extends ShopWithDetails {
   motorcycle_rentals: (MotorcycleRental & {
     brands: Brand | null
     categories: Category | null
+    rental_rate_tiers: RentalRateTier[]
   })[]
 }
 
@@ -64,7 +66,7 @@ async function getActiveBusinessStatusIds(): Promise<number[]> {
     .from('business_statuses')
     .select('id')
     .in('status_code', ACTIVE_BUSINESS_STATUSES)
-  
+
   return activeBusinessStatuses ? activeBusinessStatuses.map(status => status.id) : []
 }
 
@@ -122,16 +124,16 @@ export const shopService = {
         .from('provinces')
         .select('id')
         .eq('country_code', countryCode)
-      
+
       if (provinces && provinces.length > 0) {
         const provinceIds = provinces.map(p => p.id)
-        
+
         // Get city IDs for these provinces
         const { data: cities } = await supabase
           .from('cities')
           .select('id')
           .in('province_id', provinceIds)
-        
+
         if (cities && cities.length > 0) {
           const cityIds = cities.map(c => c.id)
           shopQuery = shopQuery.in('city_id', cityIds)
@@ -327,7 +329,7 @@ export const shopService = {
       cityName,
       slug
     })
-    
+
     // Try a simpler query first to debug
     const { data: simpleData, error: simpleError } = await supabase
       .from('rental_shops')
@@ -360,12 +362,12 @@ export const shopService = {
       const actualCountry = simpleData.cities.provinces.countries.name.toLowerCase()
       const expectedCity = cityName.toLowerCase()
       const expectedCountry = countryName.toLowerCase()
-      
+
       console.log('🔍 Case-insensitive comparison:', {
         actualCity, expectedCity, cityMatch: actualCity === expectedCity,
         actualCountry, expectedCountry, countryMatch: actualCountry === expectedCountry
       })
-      
+
       if (actualCity !== expectedCity || actualCountry !== expectedCountry) {
         console.log('❌ Location mismatch detected')
         throw new Error(`Location mismatch: expected ${countryName}/${cityName}, got ${simpleData.cities.provinces.countries.name}/${simpleData.cities.name}`)
@@ -425,7 +427,7 @@ export const shopService = {
   // Get shops with motorcycle count for overview/stats
   async getShopsWithCounts(filters: ShopSearchFilters = {}) {
     const shopsResult = await this.getShops(filters)
-    
+
     // Add motorcycle count to each shop
     const shopsWithCounts = await Promise.all(
       shopsResult.shops.map(async (shop) => {
@@ -571,13 +573,13 @@ export const shopService = {
       supabase
         .from('rental_shops')
         .select('*', { count: 'exact', head: true }),
-      
+
       // Average rating
       supabase
         .from('rental_shops')
         .select('rating')
         .not('rating', 'is', null),
-      
+
       // Shop with highest rating
       supabase
         .from('rental_shops')
@@ -591,8 +593,8 @@ export const shopService = {
 
     // Calculate average rating
     const ratings = avgRating.data?.map(shop => shop.rating).filter((rating): rating is number => rating !== null) || []
-    const averageRating = ratings.length > 0 
-      ? ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length 
+    const averageRating = ratings.length > 0
+      ? ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length
       : 0
 
     return {
@@ -637,7 +639,7 @@ export const shopService = {
   },
 
   // ADMIN CRUD OPERATIONS
-  
+
   // Create new rental shop
   async createShop(shopData: Database['public']['Tables']['rental_shops']['Insert']) {
     const { data, error } = await supabase
@@ -920,7 +922,7 @@ export const shopService = {
     // First, get existing locations
     const existing = await this.getServiceLocations(shopId)
     const existingNames = existing.map(loc => loc.location_name)
-    
+
     // Filter out empty/duplicate location names
     const newLocations = locations
       .map(loc => loc.trim())
