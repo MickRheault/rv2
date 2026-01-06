@@ -1,11 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { 
-  StarIcon, 
-  MapPinIcon, 
-  PhoneIcon, 
-  GlobeAltIcon, 
+import {
+  StarIcon,
+  MapPinIcon,
+  PhoneIcon,
+  GlobeAltIcon,
   ArrowTopRightOnSquareIcon,
   CheckIcon,
   TruckIcon,
@@ -15,10 +15,19 @@ import {
 } from '@heroicons/react/24/outline'
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid'
 import { Card, CardHeader, CardTitle, CardContent, Badge, Button } from '@/components/ui'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell
+} from '@/components/ui/Table'
 import { ShopWithMotorcycles } from '@/services/shops'
 import MotorcycleCard from '@/components/motorcycle/MotorcycleCard'
 import GoogleMap from './GoogleMap'
 import { PremiumFeatureConfig } from '@/types/premium-listings'
+import { formatCurrency, formatEngineCapacity } from '@/lib/utils'
 
 interface ShopDetailsProps {
   shop: ShopWithMotorcycles
@@ -49,7 +58,7 @@ export default function ShopDetails({ shop, premium }: ShopDetailsProps) {
 
   const formatLocation = () => {
     if (!cities) return full_address
-    
+
     const parts = []
     if (cities.name) parts.push(cities.name)
     if (cities.provinces?.name && cities.provinces.name !== cities.name) {
@@ -58,7 +67,7 @@ export default function ShopDetails({ shop, premium }: ShopDetailsProps) {
     if (cities.provinces?.countries?.name) {
       parts.push(cities.provinces.countries.name)
     }
-    
+
     return parts.join(', ')
   }
 
@@ -72,7 +81,7 @@ export default function ShopDetails({ shop, premium }: ShopDetailsProps) {
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-3 flex-wrap">
               <h1 className="text-3xl font-bold text-gray-900">{provider_name}</h1>
-              
+
               {premium?.isPremium && (
                 <Badge variant={premium.premiumType} size="md" className="shadow-lg">
                   {premium.premiumType === 'gold' && '⭐ Premium'}
@@ -80,10 +89,10 @@ export default function ShopDetails({ shop, premium }: ShopDetailsProps) {
                   {premium.premiumType === 'featured' && '🌟 Featured'}
                 </Badge>
               )}
-              
+
               {/* Operational status removed per UI cleanup */}
             </div>
-            
+
             {premium?.isPremium && premium.daysRemaining && premium.daysRemaining <= 7 && (
               <div className="mb-3">
                 <Badge variant="warning" size="sm">
@@ -91,7 +100,7 @@ export default function ShopDetails({ shop, premium }: ShopDetailsProps) {
                 </Badge>
               </div>
             )}
-            
+
             <div className="flex items-center gap-2 text-gray-600 mb-4">
               <MapPinIcon className="w-5 h-5" />
               <span>{formatLocation()}</span>
@@ -103,9 +112,8 @@ export default function ShopDetails({ shop, premium }: ShopDetailsProps) {
                   {[...Array(5)].map((_, i) => (
                     <StarSolid
                       key={i}
-                      className={`w-5 h-5 ${
-                        i < Math.floor(rating) ? 'text-yellow-400' : 'text-gray-300'
-                      }`}
+                      className={`w-5 h-5 ${i < Math.floor(rating) ? 'text-yellow-400' : 'text-gray-300'
+                        }`}
                     />
                   ))}
                 </div>
@@ -133,11 +141,11 @@ export default function ShopDetails({ shop, premium }: ShopDetailsProps) {
                 </Button>
               </a>
             )}
-            
+
             {website && (
-              <a 
-                href={website} 
-                target="_blank" 
+              <a
+                href={website}
+                target="_blank"
                 rel="noopener noreferrer"
                 className="w-full"
               >
@@ -154,26 +162,92 @@ export default function ShopDetails({ shop, premium }: ShopDetailsProps) {
         </div>
         {/* Available Motorcycles moved under header */}
         {motorcycle_rentals.length > 0 && (
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BuildingStorefrontIcon className="w-5 h-5" />
+          <div className="mt-4">
+            <div className="flex items-center gap-2 mb-2">
+              <BuildingStorefrontIcon className="w-4 h-4 text-gray-400" />
+              <h2 className="text-base font-bold text-gray-900">
                 Motorcycles Available ({motorcycle_rentals.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              </h2>
+            </div>
+
+            <div className="space-y-4">
+              {/* Table View */}
+              <div className="mb-2 overflow-hidden">
+                <Table className="w-full text-[11px] border-collapse">
+                  <TableHeader className="bg-transparent">
+                    <TableRow className="border-b border-gray-100 hover:bg-transparent">
+                      <TableHead className="py-1 px-0 text-left font-bold uppercase tracking-tighter text-[9px] text-gray-400">Bike</TableHead>
+                      <TableHead className="py-1 px-0 text-center font-bold uppercase tracking-tighter text-[9px] text-gray-400 w-8">CC</TableHead>
+                      <TableHead className="py-1 px-0 text-right font-bold uppercase tracking-tighter text-[9px] text-gray-400 w-12">Price</TableHead>
+                      <TableHead className="py-1 px-0 text-right font-bold uppercase tracking-tighter text-[9px] text-gray-400 w-10">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="divide-y-0">
+                    {motorcycle_rentals.map((motorcycle) => {
+                      // Get best rate
+                      const getBestRate = () => {
+                        if (motorcycle.rental_rate_tiers && motorcycle.rental_rate_tiers.length > 0) {
+                          const dailyRate = motorcycle.rental_rate_tiers.find((tier) => tier.min_days === 1)
+                          if (dailyRate) {
+                            return { amount: dailyRate.rate_per_day, currency: dailyRate.currency }
+                          }
+                          const lowestRate = motorcycle.rental_rate_tiers.reduce((prev, current) =>
+                            prev.rate_per_day < current.rate_per_day ? prev : current
+                          )
+                          return { amount: lowestRate.rate_per_day, currency: lowestRate.currency }
+                        }
+                        return {
+                          amount: motorcycle.rental_rate_per_day,
+                          currency: motorcycle.rental_rate_currency
+                        }
+                      }
+
+                      const bestRate = getBestRate()
+                      const price = bestRate.amount
+                        ? formatCurrency(bestRate.amount, bestRate.currency || 'USD')
+                        : 'On request'
+
+                      return (
+                        <TableRow key={motorcycle.id} className="hover:bg-gray-50/30 border-b border-gray-50 last:border-0">
+                          <TableCell className="py-0.5 px-0 font-medium leading-tight">
+                            <span className="line-clamp-1">
+                              {motorcycle.brands?.name} {motorcycle.model}
+                            </span>
+                          </TableCell>
+                          <TableCell className="py-0.5 px-0 text-center text-gray-400 whitespace-nowrap">
+                            {motorcycle.engine_capacity_cc || '-'}
+                          </TableCell>
+                          <TableCell className="py-0.5 px-0 text-right font-bold text-gray-900 whitespace-nowrap">
+                            {price}
+                          </TableCell>
+                          <TableCell className="py-0.5 px-0 text-right">
+                            <Link
+                              href={`/motorcycle/${motorcycle.id}`}
+                              className="text-blue-600 font-bold"
+                            >
+                              View
+                            </Link>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Cards Grid (hidden on mobile, shown on md+) */}
+              <div className="hidden md:grid grid-cols-1 md:grid-cols-2 gap-6">
                 {motorcycle_rentals.map((motorcycle) => (
-                  <MotorcycleCard 
-                    key={motorcycle.id} 
+                  <MotorcycleCard
+                    key={motorcycle.id}
                     motorcycle={motorcycle as any}
                     showShopInfo={false}
                     compact={true}
                   />
                 ))}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
       </div>
 
@@ -325,14 +399,14 @@ export default function ShopDetails({ shop, premium }: ShopDetailsProps) {
                     </Badge>
                   )}
                 </div>
-                
+
                 {premium.boostScore && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Boost Score</span>
                     <span className="font-medium text-yellow-600">+{premium.boostScore}%</span>
                   </div>
                 )}
-                
+
                 {premium.daysRemaining && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Days Remaining</span>
@@ -341,7 +415,7 @@ export default function ShopDetails({ shop, premium }: ShopDetailsProps) {
                     </span>
                   </div>
                 )}
-                
+
                 {premium.endDate && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Expires</span>
@@ -381,11 +455,11 @@ export default function ShopDetails({ shop, premium }: ShopDetailsProps) {
                 <h4 className="font-medium text-gray-900 mb-2">Address</h4>
                 <p className="text-gray-600 text-sm">{full_address}</p>
               </div>
-              
+
               {phone && (
                 <div>
                   <h4 className="font-medium text-gray-900 mb-2">Phone</h4>
-                  <a 
+                  <a
                     href={`tel:${phone}`}
                     className="text-blue-600 hover:underline text-sm"
                   >
@@ -393,11 +467,11 @@ export default function ShopDetails({ shop, premium }: ShopDetailsProps) {
                   </a>
                 </div>
               )}
-              
+
               {website && (
                 <div>
                   <h4 className="font-medium text-gray-900 mb-2">Website</h4>
-                  <a 
+                  <a
                     href={website}
                     target="_blank"
                     rel="noopener noreferrer"
