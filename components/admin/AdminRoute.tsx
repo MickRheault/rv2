@@ -10,20 +10,31 @@ import type { AdminRouteProps, AppPermission } from '@/types/admin';
  * Admin route protection component
  * Protects routes and components that require admin access
  */
-export function AdminRoute({ 
-  children, 
-  requiredPermission, 
-  fallbackPath = '/admin/login' 
+export function AdminRoute({
+  children,
+  requiredPermission,
+  fallbackPath = '/admin/login'
 }: AdminRouteProps) {
-  const { user, isAdmin, isLoading: authLoading } = useAdminAuth();
-  const { hasAccess, isLoading: permissionLoading } = useAdminPermission(
-    requiredPermission || 'system.manage'
-  );
+  const { user, isAdmin, isLoading, hasPermission } = useAdminAuth();
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [hasTimedOut, setHasTimedOut] = useState(false);
   const router = useRouter();
 
-  const isLoading = authLoading || (requiredPermission ? permissionLoading : false);
+  const hasAccess = requiredPermission ? hasPermission(requiredPermission) : true;
+
+  // Safety timeout for verification
+  useEffect(() => {
+    if (!isInitialLoad) return;
+
+    const timer = setTimeout(() => {
+      if (isLoading) {
+        setHasTimedOut(true);
+      }
+    }, 10000); // 10 seconds timeout
+
+    return () => clearTimeout(timer);
+  }, [isLoading, isInitialLoad]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -54,13 +65,29 @@ export function AdminRoute({
     }
   }, [user, isAdmin, hasAccess, isLoading, requiredPermission, router, fallbackPath, isInitialLoad]);
 
+  // Show timeout error if verification takes too long
+  if (hasTimedOut && isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <ErrorState
+          type="error"
+          title="Verification Timeout"
+          message="Authentication took too long. This might be due to a slow network or server issues."
+          retryLabel="Try Again"
+          onRetry={() => window.location.reload()}
+        />
+      </div>
+    );
+  }
+
   // Only show loading screen on initial load, not on background re-verification
   if (isInitialLoad && (isLoading || !hasCheckedAuth)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Spinner size="lg" />
-          <p className="mt-4 text-gray-600">Verifying admin access...</p>
+          <p className="mt-4 text-gray-600 font-medium">Verifying admin access...</p>
+          <p className="mt-2 text-xs text-gray-400">Securing your session</p>
         </div>
       </div>
     );
@@ -116,10 +143,10 @@ export function AdminRoute({
  * Wrapper for admin-only components without route protection
  * Shows nothing if user is not admin, useful for conditional rendering
  */
-export function AdminOnly({ 
-  children, 
+export function AdminOnly({
+  children,
   requiredPermission,
-  fallback = null 
+  fallback = null
 }: {
   children: React.ReactNode;
   requiredPermission?: AppPermission;

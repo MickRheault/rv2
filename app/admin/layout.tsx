@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { AdminRoute } from '@/components/admin/AdminRoute';
+import { AdminAuthProvider } from '@/components/admin/AdminAuthProvider';
 
 /**
  * Admin Layout
@@ -17,21 +18,27 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  
+
   // Pages that should not require authentication
   const publicAdminPages = ['/admin/login', '/admin/unauthorized'];
   const isPublicPage = publicAdminPages.some(page => pathname === page);
-  
+
   // If it's a public page, don't wrap with AdminRoute
   if (isPublicPage) {
-    return <>{children}</>;
+    return (
+      <AdminAuthProvider>
+        {children}
+      </AdminAuthProvider>
+    );
   }
-  
+
   // All other admin pages require authentication
   return (
-    <AdminRoute requiredPermission="system.manage">
-      {children}
-    </AdminRoute>
+    <AdminAuthProvider>
+      <AdminRoute requiredPermission="system.manage">
+        {children}
+      </AdminRoute>
+    </AdminAuthProvider>
   );
 }
 
