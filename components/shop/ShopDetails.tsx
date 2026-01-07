@@ -16,14 +16,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid'
 import { Card, CardHeader, CardTitle, CardContent, Badge, Button } from '@/components/ui'
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell
-} from '@/components/ui/Table'
+import MotorcycleTable from '@/components/motorcycle/MotorcycleTable'
 import { ShopWithMotorcycles } from '@/services/shops'
 import MotorcycleCard from '@/components/motorcycle/MotorcycleCard'
 import GoogleMap from './GoogleMap'
@@ -162,89 +155,8 @@ export default function ShopDetails({ shop, premium }: ShopDetailsProps) {
             {/* Removed Share Shop per UI cleanup */}
           </div>
         </div>
-        {/* Available Motorcycles moved under header */}
-        {motorcycle_rentals.length > 0 && (
-          <div className="mt-4 md:mt-12">
-            <div className="flex items-center gap-2 mb-2 md:mb-6">
-              <BuildingStorefrontIcon className="w-4 h-4 md:w-5 md:h-5 text-gray-400" />
-              <h2 className="text-base md:text-2xl font-bold text-gray-900">
-                Motorcycles Available ({motorcycle_rentals.length})
-              </h2>
-            </div>
-
-            {/* Table View */}
-            <div className="mb-2 md:mb-8 overflow-hidden">
-              <Table className="w-full text-[11px] md:text-sm border-collapse">
-                <TableHeader className="bg-transparent md:bg-gray-50/50">
-                  <TableRow className="border-b border-gray-100 hover:bg-transparent">
-                    <TableHead className="py-1 md:py-3 px-0 md:px-3 text-left font-bold uppercase tracking-tighter md:tracking-wider text-[9px] md:text-xs text-gray-400 md:text-gray-500">Bike</TableHead>
-                    <TableHead className="hidden md:table-cell py-3 px-3 text-left font-bold uppercase tracking-wider text-xs text-gray-500">Type</TableHead>
-                    <TableHead className="py-1 md:py-3 px-0 md:px-3 text-center font-bold uppercase tracking-tighter md:tracking-wider text-[9px] md:text-xs text-gray-400 md:text-gray-500 w-8 md:w-20">CC</TableHead>
-                    <TableHead className="py-1 md:py-3 px-0 md:px-3 text-right font-bold uppercase tracking-tighter md:tracking-wider text-[9px] md:text-xs text-gray-400 md:text-gray-500 w-12 md:w-28">Price</TableHead>
-                    <TableHead className="py-1 md:py-3 px-0 md:px-3 text-right font-bold uppercase tracking-tighter md:tracking-wider text-[9px] md:text-xs text-gray-400 md:text-gray-500 w-10 md:w-24">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody className="divide-y-0 md:divide-y">
-                  {motorcycle_rentals.map((motorcycle) => {
-                    // Get best rate
-                    const getBestRate = () => {
-                      if (motorcycle.rental_rate_tiers && motorcycle.rental_rate_tiers.length > 0) {
-                        const dailyRate = motorcycle.rental_rate_tiers.find((tier) => tier.min_days === 1)
-                        if (dailyRate) {
-                          return { amount: dailyRate.rate_per_day, currency: dailyRate.currency }
-                        }
-                        const lowestRate = motorcycle.rental_rate_tiers.reduce((prev, current) =>
-                          prev.rate_per_day < current.rate_per_day ? prev : current
-                        )
-                        return { amount: lowestRate.rate_per_day, currency: lowestRate.currency }
-                      }
-                      return {
-                        amount: motorcycle.rental_rate_per_day,
-                        currency: motorcycle.rental_rate_currency
-                      }
-                    }
-
-                    const bestRate = getBestRate()
-                    const price = bestRate.amount
-                      ? formatCurrency(bestRate.amount, bestRate.currency || 'USD')
-                      : 'On request'
-
-                    return (
-                      <TableRow
-                        key={motorcycle.id}
-                        className="hover:bg-gray-50/50 md:hover:bg-gray-100/50 border-b border-gray-50 md:border-gray-100 last:border-0 cursor-pointer transition-colors"
-                        onClick={() => router.push(`/motorcycle/${motorcycle.id}`)}
-                      >
-                        <TableCell className="py-0.5 md:py-4 px-0 md:px-3 font-medium leading-tight">
-                          <span className="line-clamp-1">
-                            {motorcycle.brands?.name} {motorcycle.model}
-                          </span>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell py-4 px-3 text-gray-600">
-                          {motorcycle.categories?.name || 'Motorcycle'}
-                        </TableCell>
-                        <TableCell className="py-0.5 md:py-4 px-0 md:px-3 text-center text-gray-400 md:text-gray-600 whitespace-nowrap">
-                          {motorcycle.engine_capacity_cc || '-'}
-                        </TableCell>
-                        <TableCell className="py-0.5 md:py-4 px-0 md:px-3 text-right font-bold text-gray-900 whitespace-nowrap">
-                          {price}
-                        </TableCell>
-                        <TableCell className="py-0.5 md:py-4 px-0 md:px-3 text-right">
-                          <Link
-                            href={`/motorcycle/${motorcycle.id}`}
-                            className="text-blue-600 font-bold hover:underline"
-                          >
-                            View
-                          </Link>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        )}
+        {/* Available Motorcycles */}
+        <MotorcycleTable motorcycles={motorcycle_rentals} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

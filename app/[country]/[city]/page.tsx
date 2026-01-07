@@ -7,8 +7,11 @@ import { locationService } from '@/services/locations'
 import { shopService } from '@/services/shops'
 import { PageLoading, ErrorState } from '@/components/ui/LoadingStates'
 import { StructuredData, generateLocationShopListingSchema } from '@/lib/seo/structured-data'
+import { BuildingStorefrontIcon } from '@heroicons/react/24/outline'
 import CityShopsGrid from './CityShopsGrid'
 import LocationHeroBanner from '@/components/location/LocationHeroBanner'
+import { motorcycleService } from '@/services/motorcycles'
+import MotorcycleTable from '@/components/motorcycle/MotorcycleTable'
 
 // Generate dynamic metadata based on city and country parameters
 export async function generateMetadata({ params }: CityPageProps): Promise<Metadata> {
@@ -16,7 +19,7 @@ export async function generateMetadata({ params }: CityPageProps): Promise<Metad
   // Validate and format parameters
   const country = validateLocationParam(resolvedParams.country)
   const city = validateLocationParam(resolvedParams.city)
-  
+
   if (!country || !city) {
     return {
       title: 'City Not Found',
@@ -36,7 +39,7 @@ export async function generateMetadata({ params }: CityPageProps): Promise<Metad
 
     const countryDisplayName = formatLocationName(country)
     const cityDisplayName = formatLocationName(city)
-    
+
     return {
       title: `Motorcycle Rentals in ${cityDisplayName}, ${countryDisplayName} - Choose the best bike from the best rental`,
       description: `Find and compare motorcycle rental shops in ${cityDisplayName}, ${countryDisplayName}. Browse bikes, compare prices, and book your perfect ride.`,
@@ -55,16 +58,16 @@ export default async function CityPage({ params }: CityPageProps) {
   const resolvedParams = await params
   // Extract and validate parameters
   const { country: rawCountry, city: rawCity } = resolvedParams
-  
+
   // Check for reserved routes first
   if (isReservedRoute(rawCountry) || isReservedRoute(rawCity)) {
     notFound()
   }
-  
+
   // Validate and sanitize the parameters
   const country = validateLocationParam(rawCountry)
   const city = validateLocationParam(rawCity)
-  
+
   // Return 404 for invalid parameters
   if (!country || !city) {
     notFound()
@@ -76,7 +79,7 @@ export default async function CityPage({ params }: CityPageProps) {
     console.warn(`Invalid country/city combination: ${country}/${city} - ${comboValidation.error}`)
     notFound()
   }
-  
+
   // Format names for display
   const countryDisplayName = formatLocationName(country)
   const cityDisplayName = formatLocationName(city)
@@ -85,7 +88,7 @@ export default async function CityPage({ params }: CityPageProps) {
   try {
     // First, validate that the country exists
     const countryData = await locationService.getCountryByName(country)
-    
+
     // Return 404 if country doesn't exist in database
     if (!countryData) {
       notFound()
@@ -93,7 +96,7 @@ export default async function CityPage({ params }: CityPageProps) {
 
     // Get city data by name within the country
     const cityData = await locationService.getCityByName(city, countryData.code)
-    
+
     // Return 404 if city doesn't exist in this country
     if (!cityData) {
       notFound()
@@ -107,6 +110,13 @@ export default async function CityPage({ params }: CityPageProps) {
     })
 
     const shops = shopsResult.shops || []
+
+    // Fetch motorcycles for the city
+    const motorcyclesResult = await motorcycleService.getMotorcycles({
+      cityId: cityData.id,
+      limit: 100
+    })
+    const motorcycles = motorcyclesResult.motorcycles || []
 
     // Generate JSON-LD structured data for the shop listings
     const currentUrl = `https://globalmotorentals.com/${country}/${city}/`
@@ -130,19 +140,38 @@ export default async function CityPage({ params }: CityPageProps) {
               locationType="city"
               shopCount={shops.length}
             />
-            
-            <CityShopsGrid 
-              shops={shops} 
-              cityDisplayName={cityDisplayName}
-              countryDisplayName={countryDisplayName}
-            />
+
+            {/* City-wide Motorcycle List */}
+            {motorcycles.length > 0 && (
+              <section className="mt-8 mb-12">
+                <MotorcycleTable
+                  motorcycles={motorcycles}
+                  title={`All Motorcycles in ${cityDisplayName} (${motorcycles.length})`}
+                  showShopColumn={true}
+                />
+              </section>
+            )}
+
+            <section className="mt-12">
+              <div className="flex items-center gap-2 mb-6">
+                <BuildingStorefrontIcon className="w-5 h-5 text-gray-400" />
+                <h2 className="text-xl md:text-2xl font-bold text-gray-900">
+                  Rental Shops in {cityDisplayName} ({shops.length})
+                </h2>
+              </div>
+              <CityShopsGrid
+                shops={shops}
+                cityDisplayName={cityDisplayName}
+                countryDisplayName={countryDisplayName}
+              />
+            </section>
           </div>
         </main>
       </Suspense>
     )
   } catch (error) {
     console.error('Error fetching city data:', error)
-    
+
     // Handle different types of errors more gracefully
     if (error instanceof Error) {
       // Network or connection errors
@@ -161,7 +190,7 @@ export default async function CityPage({ params }: CityPageProps) {
           </main>
         )
       }
-      
+
       // Database or service errors
       if (error.message.includes('database') || error.message.includes('service')) {
         return (
@@ -179,7 +208,7 @@ export default async function CityPage({ params }: CityPageProps) {
         )
       }
     }
-    
+
     // For unknown errors or data not found, use 404
     notFound()
   }
