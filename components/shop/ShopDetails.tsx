@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   StarIcon,
   MapPinIcon,
@@ -15,14 +16,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid'
 import { Card, CardHeader, CardTitle, CardContent, Badge, Button } from '@/components/ui'
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell
-} from '@/components/ui/Table'
+import MotorcycleTable from '@/components/motorcycle/MotorcycleTable'
 import { ShopWithMotorcycles } from '@/services/shops'
 import MotorcycleCard from '@/components/motorcycle/MotorcycleCard'
 import GoogleMap from './GoogleMap'
@@ -35,6 +29,7 @@ interface ShopDetailsProps {
 }
 
 export default function ShopDetails({ shop, premium }: ShopDetailsProps) {
+  const router = useRouter()
   const {
     provider_name,
     business_description,
@@ -160,81 +155,8 @@ export default function ShopDetails({ shop, premium }: ShopDetailsProps) {
             {/* Removed Share Shop per UI cleanup */}
           </div>
         </div>
-        {/* Available Motorcycles moved under header */}
-        {motorcycle_rentals.length > 0 && (
-          <div className="mt-4">
-            <div className="flex items-center gap-2 mb-2">
-              <BuildingStorefrontIcon className="w-4 h-4 text-gray-400" />
-              <h2 className="text-base font-bold text-gray-900">
-                Motorcycles Available ({motorcycle_rentals.length})
-              </h2>
-            </div>
-
-            {/* Table View */}
-            <div className="mb-2 overflow-hidden">
-              <Table className="w-full text-[11px] border-collapse">
-                <TableHeader className="bg-transparent">
-                  <TableRow className="border-b border-gray-100 hover:bg-transparent">
-                    <TableHead className="py-1 px-0 text-left font-bold uppercase tracking-tighter text-[9px] text-gray-400">Bike</TableHead>
-                    <TableHead className="py-1 px-0 text-center font-bold uppercase tracking-tighter text-[9px] text-gray-400 w-8">CC</TableHead>
-                    <TableHead className="py-1 px-0 text-right font-bold uppercase tracking-tighter text-[9px] text-gray-400 w-12">Price</TableHead>
-                    <TableHead className="py-1 px-0 text-right font-bold uppercase tracking-tighter text-[9px] text-gray-400 w-10">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody className="divide-y-0">
-                  {motorcycle_rentals.map((motorcycle) => {
-                    // Get best rate
-                    const getBestRate = () => {
-                      if (motorcycle.rental_rate_tiers && motorcycle.rental_rate_tiers.length > 0) {
-                        const dailyRate = motorcycle.rental_rate_tiers.find((tier) => tier.min_days === 1)
-                        if (dailyRate) {
-                          return { amount: dailyRate.rate_per_day, currency: dailyRate.currency }
-                        }
-                        const lowestRate = motorcycle.rental_rate_tiers.reduce((prev, current) =>
-                          prev.rate_per_day < current.rate_per_day ? prev : current
-                        )
-                        return { amount: lowestRate.rate_per_day, currency: lowestRate.currency }
-                      }
-                      return {
-                        amount: motorcycle.rental_rate_per_day,
-                        currency: motorcycle.rental_rate_currency
-                      }
-                    }
-
-                    const bestRate = getBestRate()
-                    const price = bestRate.amount
-                      ? formatCurrency(bestRate.amount, bestRate.currency || 'USD')
-                      : 'On request'
-
-                    return (
-                      <TableRow key={motorcycle.id} className="hover:bg-gray-50/30 border-b border-gray-50 last:border-0">
-                        <TableCell className="py-0.5 px-0 font-medium leading-tight">
-                          <span className="line-clamp-1">
-                            {motorcycle.brands?.name} {motorcycle.model}
-                          </span>
-                        </TableCell>
-                        <TableCell className="py-0.5 px-0 text-center text-gray-400 whitespace-nowrap">
-                          {motorcycle.engine_capacity_cc || '-'}
-                        </TableCell>
-                        <TableCell className="py-0.5 px-0 text-right font-bold text-gray-900 whitespace-nowrap">
-                          {price}
-                        </TableCell>
-                        <TableCell className="py-0.5 px-0 text-right">
-                          <Link
-                            href={`/motorcycle/${motorcycle.id}`}
-                            className="text-blue-600 font-bold"
-                          >
-                            View
-                          </Link>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        )}
+        {/* Available Motorcycles */}
+        <MotorcycleTable motorcycles={motorcycle_rentals} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
