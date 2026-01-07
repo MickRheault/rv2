@@ -32,8 +32,6 @@ export default function MotorcycleTable({ motorcycles, title, showShopColumn = f
         direction: 'asc'
     })
 
-    if (!motorcycles || motorcycles.length === 0) return null
-
     // Helper to get best rate for sorting
     const getBestRateValue = (motorcycle: any) => {
         if (motorcycle.rental_rate_tiers && motorcycle.rental_rate_tiers.length > 0) {
@@ -46,6 +44,7 @@ export default function MotorcycleTable({ motorcycles, title, showShopColumn = f
 
     // Sort motorcycles based on sortConfig
     const sortedMotorcycles = useMemo(() => {
+        if (!motorcycles) return []
         return [...motorcycles].sort((a, b) => {
             let valA: any = ''
             let valB: any = ''
@@ -78,6 +77,8 @@ export default function MotorcycleTable({ motorcycles, title, showShopColumn = f
             return 0
         })
     }, [motorcycles, sortConfig])
+
+    if (!motorcycles || motorcycles.length === 0) return null
 
     const requestSort = (key: SortKey) => {
         let direction: SortDirection = 'asc'
