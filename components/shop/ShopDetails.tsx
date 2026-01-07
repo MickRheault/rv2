@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   StarIcon,
   MapPinIcon,
@@ -35,6 +36,7 @@ interface ShopDetailsProps {
 }
 
 export default function ShopDetails({ shop, premium }: ShopDetailsProps) {
+  const router = useRouter()
   const {
     provider_name,
     business_description,
@@ -162,26 +164,27 @@ export default function ShopDetails({ shop, premium }: ShopDetailsProps) {
         </div>
         {/* Available Motorcycles moved under header */}
         {motorcycle_rentals.length > 0 && (
-          <div className="mt-4">
-            <div className="flex items-center gap-2 mb-2">
-              <BuildingStorefrontIcon className="w-4 h-4 text-gray-400" />
-              <h2 className="text-base font-bold text-gray-900">
+          <div className="mt-4 md:mt-12">
+            <div className="flex items-center gap-2 mb-2 md:mb-6">
+              <BuildingStorefrontIcon className="w-4 h-4 md:w-5 md:h-5 text-gray-400" />
+              <h2 className="text-base md:text-2xl font-bold text-gray-900">
                 Motorcycles Available ({motorcycle_rentals.length})
               </h2>
             </div>
 
             {/* Table View */}
-            <div className="mb-2 overflow-hidden">
-              <Table className="w-full text-[11px] border-collapse">
-                <TableHeader className="bg-transparent">
+            <div className="mb-2 md:mb-8 overflow-hidden">
+              <Table className="w-full text-[11px] md:text-sm border-collapse">
+                <TableHeader className="bg-transparent md:bg-gray-50/50">
                   <TableRow className="border-b border-gray-100 hover:bg-transparent">
-                    <TableHead className="py-1 px-0 text-left font-bold uppercase tracking-tighter text-[9px] text-gray-400">Bike</TableHead>
-                    <TableHead className="py-1 px-0 text-center font-bold uppercase tracking-tighter text-[9px] text-gray-400 w-8">CC</TableHead>
-                    <TableHead className="py-1 px-0 text-right font-bold uppercase tracking-tighter text-[9px] text-gray-400 w-12">Price</TableHead>
-                    <TableHead className="py-1 px-0 text-right font-bold uppercase tracking-tighter text-[9px] text-gray-400 w-10">Action</TableHead>
+                    <TableHead className="py-1 md:py-3 px-0 md:px-3 text-left font-bold uppercase tracking-tighter md:tracking-wider text-[9px] md:text-xs text-gray-400 md:text-gray-500">Bike</TableHead>
+                    <TableHead className="hidden md:table-cell py-3 px-3 text-left font-bold uppercase tracking-wider text-xs text-gray-500">Type</TableHead>
+                    <TableHead className="py-1 md:py-3 px-0 md:px-3 text-center font-bold uppercase tracking-tighter md:tracking-wider text-[9px] md:text-xs text-gray-400 md:text-gray-500 w-8 md:w-20">CC</TableHead>
+                    <TableHead className="py-1 md:py-3 px-0 md:px-3 text-right font-bold uppercase tracking-tighter md:tracking-wider text-[9px] md:text-xs text-gray-400 md:text-gray-500 w-12 md:w-28">Price</TableHead>
+                    <TableHead className="py-1 md:py-3 px-0 md:px-3 text-right font-bold uppercase tracking-tighter md:tracking-wider text-[9px] md:text-xs text-gray-400 md:text-gray-500 w-10 md:w-24">Action</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody className="divide-y-0">
+                <TableBody className="divide-y-0 md:divide-y">
                   {motorcycle_rentals.map((motorcycle) => {
                     // Get best rate
                     const getBestRate = () => {
@@ -207,22 +210,29 @@ export default function ShopDetails({ shop, premium }: ShopDetailsProps) {
                       : 'On request'
 
                     return (
-                      <TableRow key={motorcycle.id} className="hover:bg-gray-50/30 border-b border-gray-50 last:border-0">
-                        <TableCell className="py-0.5 px-0 font-medium leading-tight">
+                      <TableRow
+                        key={motorcycle.id}
+                        className="hover:bg-gray-50/50 md:hover:bg-gray-100/50 border-b border-gray-50 md:border-gray-100 last:border-0 cursor-pointer transition-colors"
+                        onClick={() => router.push(`/motorcycle/${motorcycle.id}`)}
+                      >
+                        <TableCell className="py-0.5 md:py-4 px-0 md:px-3 font-medium leading-tight">
                           <span className="line-clamp-1">
                             {motorcycle.brands?.name} {motorcycle.model}
                           </span>
                         </TableCell>
-                        <TableCell className="py-0.5 px-0 text-center text-gray-400 whitespace-nowrap">
+                        <TableCell className="hidden md:table-cell py-4 px-3 text-gray-600">
+                          {motorcycle.categories?.name || 'Motorcycle'}
+                        </TableCell>
+                        <TableCell className="py-0.5 md:py-4 px-0 md:px-3 text-center text-gray-400 md:text-gray-600 whitespace-nowrap">
                           {motorcycle.engine_capacity_cc || '-'}
                         </TableCell>
-                        <TableCell className="py-0.5 px-0 text-right font-bold text-gray-900 whitespace-nowrap">
+                        <TableCell className="py-0.5 md:py-4 px-0 md:px-3 text-right font-bold text-gray-900 whitespace-nowrap">
                           {price}
                         </TableCell>
-                        <TableCell className="py-0.5 px-0 text-right">
+                        <TableCell className="py-0.5 md:py-4 px-0 md:px-3 text-right">
                           <Link
                             href={`/motorcycle/${motorcycle.id}`}
-                            className="text-blue-600 font-bold"
+                            className="text-blue-600 font-bold hover:underline"
                           >
                             View
                           </Link>

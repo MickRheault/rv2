@@ -16,9 +16,8 @@ interface TableBodyProps {
   className?: string;
 }
 
-interface TableRowProps {
+interface TableRowProps extends React.HTMLAttributes<HTMLTableRowElement> {
   children: React.ReactNode;
-  className?: string;
 }
 
 interface TableHeadProps {
@@ -57,9 +56,9 @@ export function TableBody({ children, className }: TableBodyProps) {
   );
 }
 
-export function TableRow({ children, className }: TableRowProps) {
+export function TableRow({ children, className, ...props }: TableRowProps) {
   return (
-    <tr className={cn("hover:bg-gray-50", className)}>
+    <tr className={cn("hover:bg-gray-50", className)} {...props}>
       {children}
     </tr>
   );
