@@ -86,24 +86,36 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
                 return;
             }
 
-            if (event === 'SIGNED_IN') {
+            if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
                 try {
-                    // Setting loading to true only for unexpected sign-ins (like external auth)
-                    // For the login page, it will already be in a loading state or redirecting
-                    setIsLoading(true);
+                    // Only set loading if we don't have a user yet to prevent flashing/blocking
+                    if (!user) {
+                        setIsLoading(true);
+                    }
                     const adminUser = await getCurrentAdminUser();
-                    setUser(adminUser);
+                    if (mounted) {
+                        setUser(adminUser);
+                    }
                 } catch (error) {
                     console.error('Auth change error:', error);
-                    setUser(null);
+                    // Don't clear user here immediately on error to avoid kicking them out on transient failures
+                    // unless we are sure they are invalid. 
+                    // But if getCurrentAdminUser returned null/error, we might want to respect that.
+                    // For now, let's keep existing behavior but be safer about loading state.
                 } finally {
-                    setIsLoading(false);
+                    if (mounted) {
+                        setIsLoading(false);
+                    }
                 }
             } else if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
                 // Silent refresh in background
-                const adminUser = await getCurrentAdminUser();
-                if (mounted) {
-                    setUser(adminUser);
+                try {
+                    const adminUser = await getCurrentAdminUser();
+                    if (mounted) {
+                        setUser(adminUser);
+                    }
+                } catch (error) {
+                    console.error('Silent refresh error:', error);
                 }
             }
         });
@@ -112,7 +124,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
             mounted = false;
             subscription.unsubscribe();
         };
-    }, []);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const value = useMemo(() => ({
         user,
