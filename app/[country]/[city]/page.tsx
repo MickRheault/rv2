@@ -114,7 +114,7 @@ export default async function CityPage({ params }: CityPageProps) {
     // Fetch motorcycles for the city
     const motorcyclesResult = await motorcycleService.getMotorcycles({
       cityId: cityData.id,
-      limit: 100
+      limit: 10000
     })
     const motorcycles = motorcyclesResult.motorcycles || []
 
