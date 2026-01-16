@@ -289,8 +289,10 @@ export default function MotorcycleTable({ motorcycles, title, showShopColumn = f
                                             {motorcycle.rental_shops?.provider_name || 'Shop'}
                                         </span>
                                     )}
-                                    {showShopColumn && <span>•</span>}
-                                    <span>{motorcycle.engine_capacity_cc}cc</span>
+                                    {showShopColumn && motorcycle.engine_capacity_cc && <span>•</span>}
+                                    {motorcycle.engine_capacity_cc && (
+                                        <span>{motorcycle.engine_capacity_cc}cc</span>
+                                    )}
                                 </div>
                                 <div className="text-blue-600 font-medium">View details &rarr;</div>
                             </div>
