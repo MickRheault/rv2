@@ -17,15 +17,17 @@ interface LocationHeroBannerProps {
   locationType: 'country' | 'city'
   shopCount: number
   cities?: City[]
+  isCustomTitle?: boolean
 }
 
-export default function LocationHeroBanner({ 
-  locationName, 
+export default function LocationHeroBanner({
+  locationName,
   countryName,
   countrySlug,
   locationType,
   shopCount,
-  cities = []
+  cities = [],
+  isCustomTitle = false
 }: LocationHeroBannerProps) {
   // Try to load hero-{country-slug}.jpg, fallback to hero-default.jpg
   const [imageSrc, setImageSrc] = useState(
@@ -34,9 +36,11 @@ export default function LocationHeroBanner({
   const [useGradientFallback, setUseGradientFallback] = useState(false)
   const [triedDefault, setTriedDefault] = useState(false)
 
-  const title = locationType === 'city'
-    ? `Motorcycle Rentals in ${locationName}, ${countryName}`
-    : `Motorcycle Rentals in ${locationName}`
+  const title = isCustomTitle
+    ? locationName
+    : locationType === 'city'
+      ? `Motorcycle Rentals in ${locationName}, ${countryName}`
+      : `Motorcycle Rentals in ${locationName}`
 
   const subtitle = shopCount > 0
     ? `Discover ${shopCount} rental ${shopCount === 1 ? 'shop' : 'shops'} and start your adventure`
@@ -68,13 +72,12 @@ export default function LocationHeroBanner({
             onError={handleImageError}
           />
         )}
-        
+
         {/* Overlay: dark gradient over image, or full gradient if no image */}
-        <div className={`absolute inset-0 ${
-          useGradientFallback 
-            ? 'bg-gradient-to-br from-blue-600 via-purple-600 to-blue-800' 
-            : 'bg-gradient-to-b from-black/30 via-black/40 to-black/60'
-        }`}>
+        <div className={`absolute inset-0 ${useGradientFallback
+          ? 'bg-gradient-to-br from-blue-600 via-purple-600 to-blue-800'
+          : 'bg-gradient-to-b from-black/30 via-black/40 to-black/60'
+          }`}>
           {/* Pattern texture for gradient fallback only */}
           {useGradientFallback && (
             <div className="absolute inset-0 opacity-10">
@@ -94,7 +97,7 @@ export default function LocationHeroBanner({
         <p className="text-lg sm:text-xl text-white/90 max-w-2xl drop-shadow-md">
           {subtitle}
         </p>
-        
+
         {/* City Links - Only show on country pages */}
         {locationType === 'country' && cities.length > 0 && countrySlug && (
           <div className="mt-6 max-w-4xl">
