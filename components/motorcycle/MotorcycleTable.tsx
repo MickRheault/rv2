@@ -121,7 +121,7 @@ export default function MotorcycleTable({ motorcycles, title, showShopColumn = f
                             </TableHead>
                             {showShopColumn && (
                                 <TableHead
-                                    className="py-1 md:py-3 px-1 md:px-3 text-left font-bold uppercase tracking-tighter md:tracking-wider text-[9px] md:text-xs text-gray-400 md:text-gray-500 cursor-pointer hover:text-gray-900 transition-colors"
+                                    className="hidden md:table-cell py-1 md:py-3 px-1 md:px-3 text-left font-bold uppercase tracking-tighter md:tracking-wider text-[9px] md:text-xs text-gray-400 md:text-gray-500 cursor-pointer hover:text-gray-900 transition-colors"
                                     onClick={() => requestSort('shop')}
                                 >
                                     <div className="flex items-center">Shop <SortIndicator columnKey="shop" /></div>
@@ -134,7 +134,7 @@ export default function MotorcycleTable({ motorcycles, title, showShopColumn = f
                                 <div className="flex items-center">Type <SortIndicator columnKey="type" /></div>
                             </TableHead>
                             <TableHead
-                                className="py-1 md:py-3 px-0 md:px-3 text-center font-bold uppercase tracking-tighter md:tracking-wider text-[9px] md:text-xs text-gray-400 md:text-gray-500 w-8 md:w-20 cursor-pointer hover:text-gray-900 transition-colors"
+                                className="hidden md:table-cell py-1 md:py-3 px-0 md:px-3 text-center font-bold uppercase tracking-tighter md:tracking-wider text-[9px] md:text-xs text-gray-400 md:text-gray-500 w-8 md:w-20 cursor-pointer hover:text-gray-900 transition-colors"
                                 onClick={() => requestSort('cc')}
                             >
                                 <div className="flex items-center justify-center">CC <SortIndicator columnKey="cc" /></div>
@@ -145,7 +145,7 @@ export default function MotorcycleTable({ motorcycles, title, showShopColumn = f
                             >
                                 <div className="flex items-center justify-end">Price <SortIndicator columnKey="price" /></div>
                             </TableHead>
-                            <TableHead className="py-1 md:py-3 px-0 md:px-3 text-right font-bold uppercase tracking-tighter md:tracking-wider text-[9px] md:text-xs text-gray-400 md:text-gray-500 w-10 md:w-24">Action</TableHead>
+                            <TableHead className="hidden md:table-cell py-1 md:py-3 px-0 md:px-3 text-right font-bold uppercase tracking-tighter md:tracking-wider text-[9px] md:text-xs text-gray-400 md:text-gray-500 w-10 md:w-24">Action</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody className="divide-y-0 md:divide-y">
@@ -179,16 +179,23 @@ export default function MotorcycleTable({ motorcycles, title, showShopColumn = f
                                     className="hover:bg-gray-50/50 md:hover:bg-gray-100/50 border-b border-gray-50 md:border-gray-100 last:border-0 cursor-pointer transition-colors"
                                     onClick={() => router.push(`/motorcycle/${motorcycle.id}`)}
                                 >
-                                    <TableCell className="py-0.5 md:py-4 px-0 md:px-3 font-medium leading-tight">
-                                        <span className="line-clamp-1">
-                                            {(() => {
-                                                const fullName = `${motorcycle.brands?.name || ''} ${motorcycle.model || ''}`.trim()
-                                                return fullName.length > 20 ? `${fullName.slice(0, 20)}...` : fullName
-                                            })()}
-                                        </span>
+                                    <TableCell className="py-2 md:py-4 px-2 md:px-3 font-medium leading-tight">
+                                        <div className="flex flex-col gap-0.5">
+                                            <span className="line-clamp-1 text-sm md:text-base">
+                                                {(() => {
+                                                    const fullName = `${motorcycle.brands?.name || ''} ${motorcycle.model || ''}`.trim()
+                                                    return fullName.length > 25 ? `${fullName.slice(0, 25)}...` : fullName
+                                                })()}
+                                            </span>
+                                            {showShopColumn && (
+                                                <span className="md:hidden text-xs text-gray-500 font-normal line-clamp-1">
+                                                    {motorcycle.rental_shops?.provider_name || 'Shop'}
+                                                </span>
+                                            )}
+                                        </div>
                                     </TableCell>
                                     {showShopColumn && (
-                                        <TableCell className="py-0.5 md:py-4 px-1 md:px-3 text-gray-600">
+                                        <TableCell className="hidden md:table-cell py-0.5 md:py-4 px-1 md:px-3 text-gray-600">
                                             <span className="line-clamp-1">
                                                 {motorcycle.rental_shops?.provider_name
                                                     ? motorcycle.rental_shops.provider_name.length > 20
@@ -201,13 +208,18 @@ export default function MotorcycleTable({ motorcycles, title, showShopColumn = f
                                     <TableCell className="hidden md:table-cell py-4 px-3 text-gray-600">
                                         {motorcycle.categories?.name || 'Motorcycle'}
                                     </TableCell>
-                                    <TableCell className="py-0.5 md:py-4 px-0 md:px-3 text-center text-gray-400 md:text-gray-600 whitespace-nowrap">
+                                    <TableCell className="hidden md:table-cell py-0.5 md:py-4 px-0 md:px-3 text-center text-gray-400 md:text-gray-600 whitespace-nowrap">
                                         {motorcycle.engine_capacity_cc || '-'}
                                     </TableCell>
-                                    <TableCell className="py-0.5 md:py-4 px-0 md:px-3 text-right font-bold text-gray-900 whitespace-nowrap">
-                                        {price}
+                                    <TableCell className="py-2 md:py-4 px-2 md:px-3 text-right font-bold text-gray-900 whitespace-nowrap">
+                                        <div className="flex flex-col items-end gap-0.5">
+                                            <span className="text-sm md:text-base">{price}</span>
+                                            <span className="md:hidden text-xs text-gray-400 font-normal">
+                                                {motorcycle.engine_capacity_cc ? `${motorcycle.engine_capacity_cc}cc` : '-'}
+                                            </span>
+                                        </div>
                                     </TableCell>
-                                    <TableCell className="py-0.5 md:py-4 px-0 md:px-3 text-right">
+                                    <TableCell className="hidden md:table-cell py-0.5 md:py-4 px-0 md:px-3 text-right">
                                         <Link
                                             href={`/motorcycle/${motorcycle.id}`}
                                             className="text-blue-600 font-bold hover:underline"

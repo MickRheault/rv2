@@ -2,14 +2,14 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { 
-  MapPinIcon, 
-  StarIcon, 
-  CalendarIcon, 
-  CogIcon, 
-  ShieldCheckIcon, 
-  PhoneIcon, 
-  GlobeAltIcon, 
+import {
+  MapPinIcon,
+  StarIcon,
+  CalendarIcon,
+  CogIcon,
+  ShieldCheckIcon,
+  PhoneIcon,
+  GlobeAltIcon,
   ArrowTopRightOnSquareIcon,
   DocumentTextIcon,
   CurrencyDollarIcon
@@ -19,12 +19,19 @@ import { Card, CardHeader, CardTitle, CardContent, Badge, Button } from '@/compo
 import { FlagButton } from '@/components/common/FlagButton'
 import { MotorcycleWithDetails } from '@/services/motorcycles'
 import { getShopUrl } from '@/lib/utils/urls'
+import SameModelWidget from '@/components/motorcycle/SameModelWidget'
 
 interface MotorcycleDetailsProps {
   motorcycle: MotorcycleWithDetails
+  sameModelCount?: number
+  countryName?: string
 }
 
-export default function MotorcycleDetails({ motorcycle }: MotorcycleDetailsProps) {
+export default function MotorcycleDetails({
+  motorcycle,
+  sameModelCount = 0,
+  countryName = ''
+}: MotorcycleDetailsProps) {
   const {
     model,
     year,
@@ -54,10 +61,10 @@ export default function MotorcycleDetails({ motorcycle }: MotorcycleDetailsProps
 
   const formatLocation = () => {
     if (!rental_shops?.cities) return rental_shops?.full_address || 'Location not specified'
-    
+
     const { cities } = rental_shops
     const parts = []
-    
+
     if (cities.name) parts.push(cities.name)
     if (cities.provinces?.name && cities.provinces.name !== cities.name) {
       parts.push(cities.provinces.name)
@@ -65,7 +72,7 @@ export default function MotorcycleDetails({ motorcycle }: MotorcycleDetailsProps
     if (cities.provinces?.countries?.name) {
       parts.push(cities.provinces.countries.name)
     }
-    
+
     return parts.join(', ')
   }
 
@@ -84,7 +91,7 @@ export default function MotorcycleDetails({ motorcycle }: MotorcycleDetailsProps
         return { amount: dailyRate.rate_per_day, currency: dailyRate.currency }
       }
       // If no daily rate, get the lowest rate
-      const lowestRate = rental_rate_tiers.reduce((prev, current) => 
+      const lowestRate = rental_rate_tiers.reduce((prev, current) =>
         prev.rate_per_day < current.rate_per_day ? prev : current
       )
       return { amount: lowestRate.rate_per_day, currency: lowestRate.currency }
@@ -147,7 +154,7 @@ export default function MotorcycleDetails({ motorcycle }: MotorcycleDetailsProps
             />
           </div>
         </div>
-        
+
         <div className="text-right">
           <div className="text-3xl font-bold text-blue-600">
             {formatCurrency(bestRate.amount, bestRate.currency)}
@@ -257,7 +264,7 @@ export default function MotorcycleDetails({ motorcycle }: MotorcycleDetailsProps
                             {formatDuration(rateTier.min_days, rateTier.max_days)}
                           </div>
                           <div className="text-sm text-gray-600">
-                            {rateTier.max_days 
+                            {rateTier.max_days
                               ? `${rateTier.min_days} to ${rateTier.max_days} days`
                               : `${rateTier.min_days}+ days`
                             }
@@ -272,7 +279,7 @@ export default function MotorcycleDetails({ motorcycle }: MotorcycleDetailsProps
                       </div>
                     ))}
                 </div>
-                
+
                 {/* Fallback message if only basic rate exists */}
                 {rental_rate_per_day && (
                   <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
@@ -467,9 +474,9 @@ export default function MotorcycleDetails({ motorcycle }: MotorcycleDetailsProps
                 {rental_shops?.website && (
                   <div className="flex items-center gap-2 text-sm">
                     <GlobeAltIcon className="w-4 h-4 text-gray-500" />
-                    <a 
-                      href={rental_shops.website} 
-                      target="_blank" 
+                    <a
+                      href={rental_shops.website}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:underline flex items-center gap-1"
                     >
@@ -493,6 +500,15 @@ export default function MotorcycleDetails({ motorcycle }: MotorcycleDetailsProps
             </CardContent>
           </Card>
 
+          {/* Same Model Widget */}
+          <SameModelWidget
+            currentMotorcycleId={motorcycle.id}
+            count={sameModelCount}
+            countryName={countryName}
+            brandName={brands?.name}
+            modelName={model}
+          />
+
           {/* Quick Actions */}
           <Card>
             <CardHeader>
@@ -510,8 +526,8 @@ export default function MotorcycleDetails({ motorcycle }: MotorcycleDetailsProps
               </Button>
             </CardContent>
           </Card>
-        </div>
-      </div>
-    </div>
+        </div >
+      </div >
+    </div >
   )
 } 
