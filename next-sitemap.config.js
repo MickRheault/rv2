@@ -38,7 +38,7 @@ module.exports = {
   },
   transform: async (config, path) => {
     // Custom priority and frequency based on route type
-    
+
     // Homepage - highest priority
     if (path === '/') {
       return {
@@ -48,7 +48,7 @@ module.exports = {
         lastmod: new Date().toISOString(),
       }
     }
-    
+
     // Motorcycle detail pages - high priority
     if (path.includes('/motorcycle/')) {
       return {
@@ -58,7 +58,17 @@ module.exports = {
         lastmod: new Date().toISOString(),
       }
     }
-    
+
+    // Motorcycle Hub
+    if (path === '/motorcycle') {
+      return {
+        loc: path,
+        changefreq: 'daily',
+        priority: 0.9,
+        lastmod: new Date().toISOString(),
+      }
+    }
+
     // Shop detail pages - high priority
     if (path.includes('/shop/')) {
       return {
@@ -68,7 +78,7 @@ module.exports = {
         lastmod: new Date().toISOString(),
       }
     }
-    
+
     // Search page - important for discovery
     if (path === '/search') {
       return {
@@ -78,7 +88,7 @@ module.exports = {
         lastmod: new Date().toISOString(),
       }
     }
-    
+
     // Main category/info pages
     if (['/about', '/contact', '/help', '/safety', '/how-it-works'].includes(path)) {
       return {
@@ -88,7 +98,7 @@ module.exports = {
         lastmod: new Date().toISOString(),
       }
     }
-    
+
     // Legal pages
     if (['/privacy', '/terms', '/cookies'].includes(path)) {
       return {
@@ -98,7 +108,7 @@ module.exports = {
         lastmod: new Date().toISOString(),
       }
     }
-    
+
     // Default for other pages
     return {
       loc: path,
@@ -112,16 +122,16 @@ module.exports = {
       // For sitemap generation, we need to use a different approach
       // since we're in a Node.js context, not Next.js
       const { createClient } = require('@supabase/supabase-js')
-      
+
       const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL,
         process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
       )
-      
+
       console.log('🗺️  Generating dynamic sitemap routes...')
-      
+
       const additionalPaths = []
-      
+
       // Helper function to format location for URL
       const formatLocationForUrl = (name) => {
         return name
@@ -131,13 +141,13 @@ module.exports = {
           .replace(/-+/g, '-')
           .replace(/^-|-$/g, '')
       }
-      
+
       // Fetch all motorcycles
       const { data: motorcycles, error: motorcyclesError } = await supabase
         .from('motorcycle_rentals')
         .select('id, updated_at')
         .limit(2000)
-      
+
       if (!motorcyclesError && motorcycles) {
         motorcycles.forEach(motorcycle => {
           additionalPaths.push({
@@ -148,7 +158,7 @@ module.exports = {
           })
         })
       }
-      
+
       // Fetch all locations with shops for country and city pages
       const { data: locations, error: locationsError } = await supabase
         .from('cities')
@@ -165,15 +175,15 @@ module.exports = {
           )
         `)
         .limit(5000)
-      
+
       // Add country pages
       if (!locationsError && locations) {
         const countriesMap = new Map()
-        
+
         locations.forEach(city => {
           const countryCode = city.provinces?.countries?.code
           const countryName = city.provinces?.countries?.name
-          
+
           if (countryCode && countryName && !countriesMap.has(countryCode)) {
             countriesMap.set(countryCode, {
               name: countryName,
@@ -181,7 +191,7 @@ module.exports = {
             })
           }
         })
-        
+
         // Add country pages to sitemap
         countriesMap.forEach((country) => {
           const countrySlug = formatLocationForUrl(country.name)
@@ -192,16 +202,16 @@ module.exports = {
             lastmod: country.updated_at || new Date().toISOString(),
           })
         })
-        
+
         // Add city pages to sitemap
         locations.forEach(city => {
           const countryName = city.provinces?.countries?.name
           const cityName = city.name
-          
+
           if (countryName && cityName) {
             const countrySlug = formatLocationForUrl(countryName)
             const citySlug = formatLocationForUrl(cityName)
-            
+
             additionalPaths.push({
               loc: `/${countrySlug}/${citySlug}`,
               changefreq: 'weekly',
@@ -211,7 +221,7 @@ module.exports = {
           }
         })
       }
-      
+
       // Fetch all shops with location data
       const { data: shops, error: shopsError } = await supabase
         .from('rental_shops')
@@ -229,7 +239,7 @@ module.exports = {
           )
         `)
         .limit(2000)
-      
+
       if (!shopsError && shops) {
         shops.forEach(shop => {
           // Skip shops without complete location data (country/city required for new URL format)
@@ -250,35 +260,96 @@ module.exports = {
           })
         })
       }
-      
+
       // Add some key search pages
       const searchPaths = [
         { loc: '/search', changefreq: 'daily', priority: 0.8 },
         { loc: '/browse', changefreq: 'daily', priority: 0.7 },
       ]
-      
+
       searchPaths.forEach(path => {
         additionalPaths.push({
           ...path,
           lastmod: new Date().toISOString(),
         })
       })
-      
+
       // Count different route types
       const countryCount = additionalPaths.filter(p => p.loc.split('/').length === 2 && p.loc !== '/search' && p.loc !== '/browse').length
       const cityCount = additionalPaths.filter(p => p.loc.split('/').length === 3 && !p.loc.includes('/motorcycle/') && !p.loc.includes('/shop/')).length
       const shopCount = shops?.length || 0
       const motorcycleCount = motorcycles?.length || 0
-      
+
       console.log(`✅ Generated ${additionalPaths.length} dynamic routes:`)
       console.log(`   🌍 ${countryCount} country pages`)
       console.log(`   🏙️  ${cityCount} city pages`)
       console.log(`   🏪 ${shopCount} shop pages`)
       console.log(`   📍 ${motorcycleCount} motorcycle pages`)
       console.log(`   🔍 ${searchPaths.length} search pages`)
-      
+
+
+      // Fetch all motorcycles for Model Pages grouping (Country + Model)
+      const { data: modelPageData, error: modelPageError } = await supabase
+        .from('motorcycle_rentals')
+        .select(`
+          model,
+          updated_at,
+          brands (
+            name
+          ),
+          rental_shops!inner (
+            cities!inner (
+              provinces!inner (
+                countries!inner (
+                  name
+                )
+              )
+            )
+          )
+        `)
+        .limit(5000)
+
+      if (!modelPageError && modelPageData) {
+        const processedPaths = new Set()
+
+        // Exact slug generator from utils/index.ts to ensure matching URLs
+        const generateSlug = (text) => {
+          return text
+            .toLowerCase()
+            .trim()
+            .replace(/[^\w\s-]/g, '')
+            .replace(/[\s_-]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+        }
+
+        modelPageData.forEach(bike => {
+          // specific type casting isn't needed in JS, but optional chaining is good
+          const countryName = bike.rental_shops?.cities?.provinces?.countries?.name
+          const brandName = bike.brands?.name || ''
+          const modelName = bike.model || ''
+
+          if (countryName && modelName) {
+            const fullName = `${brandName} ${modelName}`.trim()
+            const countrySlug = generateSlug(countryName)
+            const modelSlug = generateSlug(fullName)
+
+            const path = `/motorcycle/${countrySlug}/${modelSlug}`
+
+            if (!processedPaths.has(path)) {
+              processedPaths.add(path)
+              additionalPaths.push({
+                loc: path,
+                changefreq: 'weekly',
+                priority: 0.8,
+                lastmod: bike.updated_at || new Date().toISOString(),
+              })
+            }
+          }
+        })
+      }
+
       return additionalPaths
-      
+
     } catch (error) {
       console.error('❌ Error generating dynamic sitemap paths:', error)
       // Don't fail the build if we can't fetch dynamic paths

@@ -12,6 +12,7 @@ export default function Header() {
   const navigation = [
     { name: 'Search', href: '/search' },
     { name: 'Countries', href: '/browse' },
+    { name: 'Motorcycles', href: '/motorcycle' },
   ]
 
   const isActive = (href: string) => pathname === href
@@ -34,11 +35,10 @@ export default function Header() {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`text-sm font-medium transition-colors ${
-                  isActive(item.href)
+                className={`text-sm font-medium transition-colors ${isActive(item.href)
                     ? 'text-blue-600'
                     : 'text-gray-700 hover:text-blue-600'
-                }`}
+                  }`}
               >
                 {item.name}
               </Link>
@@ -88,11 +88,10 @@ export default function Header() {
                   key={item.name}
                   href={item.href}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className={`block px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    isActive(item.href)
+                  className={`block px-3 py-2 text-sm font-medium rounded-lg transition-colors ${isActive(item.href)
                       ? 'text-blue-600 bg-blue-50'
                       : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   {item.name}
                 </Link>
