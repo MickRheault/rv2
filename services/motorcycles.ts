@@ -627,6 +627,50 @@ export const motorcycleService = {
     }))
   },
 
+  // Get all active motorcycles for the hub page
+  async getAllMotorcyclesForHub() {
+    const activeStatusIds = await getActiveBusinessStatusIdsForMotorcycles()
+
+    let query = supabase
+      .from('motorcycle_rentals')
+      .select(`
+        id,
+        model,
+        brands!inner (
+          name
+        ),
+        rental_shops!inner (
+          id,
+          business_status_id,
+          cities!inner (
+            id,
+            name,
+            provinces!inner (
+              id,
+              name,
+              country_code,
+              countries!inner (
+                name,
+                code
+              )
+            )
+          )
+        )
+      `)
+
+    // Filter by active shop status
+    query = applyActiveShopStatusFilterSync(query, activeStatusIds)
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error('Error fetching all motorcycles for hub:', error)
+      throw error
+    }
+
+    return data
+  },
+
   // ADMIN CRUD OPERATIONS
 
   // Create new motorcycle
