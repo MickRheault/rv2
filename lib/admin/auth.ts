@@ -14,31 +14,35 @@ interface CustomJwtPayload {
 
 /**
  * Get current user's role from JWT token or database
+ * 
+ * With cookie-based SSR auth, we prioritize getUser() which validates 
+ * the session with Supabase Auth server and works reliably across 
+ * server/client boundaries.
  */
 export async function getCurrentUserRole(): Promise<AppRole | null> {
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session?.access_token) {
+    // Use getUser() which properly validates the session from cookies
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
       return null;
     }
 
-    // First try to get from JWT
+    // Try to get role from JWT first (if available in session)
     try {
-      const decoded = jwtDecode<CustomJwtPayload>(session.access_token);
-      if (decoded.user_role) {
-        return decoded.user_role;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        const decoded = jwtDecode<CustomJwtPayload>(session.access_token);
+        if (decoded.user_role) {
+          return decoded.user_role;
+        }
       }
     } catch (jwtError) {
-      console.warn('Could not decode JWT user_role, falling back to database:', jwtError);
+      // JWT decode failed, fall through to database lookup
+      console.debug('JWT decode failed, using database lookup');
     }
 
     // Fallback to database lookup
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return null;
-    }
-
     const { data, error } = await supabase
       .from('user_roles')
       .select('role')
@@ -80,10 +84,10 @@ export async function getUserPermissions(role: AppRole): Promise<AppPermission[]
         'analytics.view',
         'system.manage'
       ];
-      
+
       return adminPermissions;
     }
-    
+
     // For non-admin roles, return empty array
     return [];
   } catch (error) {
@@ -119,13 +123,13 @@ export async function hasPermission(permission: AppPermission): Promise<boolean>
 export async function getCurrentAdminUser(): Promise<AdminUser | null> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     if (!user) {
       return null;
     }
 
     const role = await getCurrentUserRole();
-    
+
     if (!role || role !== 'admin') {
       return null;
     }
@@ -166,9 +170,9 @@ export async function assignAdminRole(userId: string): Promise<{ success: boolea
 
     return { success: true };
   } catch (error) {
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
 }
@@ -190,9 +194,9 @@ export async function removeAdminRole(userId: string): Promise<{ success: boolea
 
     return { success: true };
   } catch (error) {
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
 }
@@ -219,14 +223,14 @@ export async function getAdminUsers(): Promise<AdminUser[]> {
 
     // Get user details from auth.users (requires proper RLS policies)
     const adminUsers: AdminUser[] = [];
-    
+
     for (const roleData of data || []) {
       try {
         const { data: userData, error: userError } = await supabase.auth.admin.getUserById(roleData.user_id);
-        
+
         if (!userError && userData.user) {
           const permissions = await getUserPermissions('admin');
-          
+
           adminUsers.push({
             id: userData.user.id,
             email: userData.user.email,
@@ -267,16 +271,16 @@ export function isAdminFromToken(token: string): boolean {
 export async function adminSignOut(): Promise<{ success: boolean; error?: string }> {
   try {
     const { error } = await supabase.auth.signOut();
-    
+
     if (error) {
       return { success: false, error: error.message };
     }
 
     return { success: true };
   } catch (error) {
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
 } 

@@ -8,6 +8,14 @@ import type { AdminUser, AdminAuthContext, AppPermission } from '@/types/admin';
 
 const AdminAuthContext = createContext<AdminAuthContext | undefined>(undefined);
 
+/**
+ * AdminAuthProvider - Manages admin authentication state
+ * 
+ * With the new SSR-aware Supabase client setup:
+ * - Middleware refreshes sessions on every request (before components render)
+ * - Cookie-based sessions are properly synced between server and client
+ * - This provider simply needs to read the current auth state
+ */
 export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<AdminUser | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -51,17 +59,11 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         async function initialize() {
             try {
                 setIsLoading(true);
-                const { data: { session } } = await supabase.auth.getSession();
 
-                if (!session) {
-                    if (mounted) {
-                        setUser(null);
-                        setIsLoading(false);
-                    }
-                    return;
-                }
-
+                // With cookie-based auth, getUser() will have the session from cookies
+                // The middleware already refreshed the session before this runs
                 const adminUser = await getCurrentAdminUser();
+
                 if (mounted) {
                     setUser(adminUser);
                     setIsLoading(false);
@@ -77,6 +79,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
         initialize();
 
+        // Listen for auth state changes (login, logout, token refresh)
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (!mounted) return;
 
@@ -86,36 +89,18 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
                 return;
             }
 
-            if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
                 try {
-                    // Only set loading if we don't have a user yet to prevent flashing/blocking
-                    if (!user) {
-                        setIsLoading(true);
-                    }
                     const adminUser = await getCurrentAdminUser();
                     if (mounted) {
                         setUser(adminUser);
                     }
                 } catch (error) {
-                    console.error('Auth change error:', error);
-                    // Don't clear user here immediately on error to avoid kicking them out on transient failures
-                    // unless we are sure they are invalid. 
-                    // But if getCurrentAdminUser returned null/error, we might want to respect that.
-                    // For now, let's keep existing behavior but be safer about loading state.
+                    console.error('Auth state change error:', error);
                 } finally {
                     if (mounted) {
                         setIsLoading(false);
                     }
-                }
-            } else if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-                // Silent refresh in background
-                try {
-                    const adminUser = await getCurrentAdminUser();
-                    if (mounted) {
-                        setUser(adminUser);
-                    }
-                } catch (error) {
-                    console.error('Silent refresh error:', error);
                 }
             }
         });
@@ -124,7 +109,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
             mounted = false;
             subscription.unsubscribe();
         };
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, []);
 
     const value = useMemo(() => ({
         user,

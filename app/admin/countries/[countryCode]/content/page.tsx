@@ -3,9 +3,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Card, Button, Alert, Spinner, Modal } from '@/components/ui'
 import { ContentSection } from '@/types'
-import { 
-  PlusIcon, 
-  PencilIcon, 
+import {
+  PlusIcon,
+  PencilIcon,
   TrashIcon,
   ArrowUpIcon,
   ArrowDownIcon,
@@ -26,12 +26,12 @@ function ContentManagementContent() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  
+
   // Modal states
   const [showEditor, setShowEditor] = useState(false)
   const [editorMode, setEditorMode] = useState<'create' | 'edit'>('create')
   const [editingSection, setEditingSection] = useState<ContentSection | null>(null)
-  
+
   // Delete confirmation
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deletingSection, setDeletingSection] = useState<ContentSection | null>(null)
@@ -57,7 +57,7 @@ function ContentManagementContent() {
     try {
       setLoading(true)
       setError(null)
-      
+
       const headers = await getAuthHeaders()
       if (!headers.Authorization || headers.Authorization === 'Bearer undefined' || headers.Authorization === 'Bearer null') {
         setError('Not authenticated')
@@ -191,9 +191,9 @@ function ContentManagementContent() {
 
     const newSections = [...sections]
     const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
-    
-    // Swap elements
-    ;[newSections[currentIndex], newSections[targetIndex]] = [newSections[targetIndex], newSections[currentIndex]]
+
+      // Swap elements
+      ;[newSections[currentIndex], newSections[targetIndex]] = [newSections[targetIndex], newSections[currentIndex]]
 
     // Update order values
     const reorderedIds = newSections.map(s => s.id)
@@ -276,7 +276,7 @@ function ContentManagementContent() {
       // Validate each section
       for (let i = 0; i < parsed.length; i++) {
         const section = parsed[i]
-        
+
         if (!section.id || typeof section.id !== 'string') {
           throw new Error(`Section ${i + 1}: Missing or invalid 'id' field`)
         }
@@ -306,8 +306,10 @@ function ContentManagementContent() {
       }
 
       // Save directly to database using Supabase client
+      // Note: Type error due to generated types not matching actual column definition
       const { error: updateError } = await supabase
         .from('countries')
+        // @ts-expect-error - content_sections column exists but generated types are out of sync
         .update({ content_sections: parsed.length > 0 ? parsed : null })
         .eq('code', countryCode)
 
@@ -591,9 +593,9 @@ function ContentManagementContent() {
 
 export default function ContentManagementPage() {
   return (
-    
-      <ContentManagementContent />
-    
+
+    <ContentManagementContent />
+
   )
 }
 

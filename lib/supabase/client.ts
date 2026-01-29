@@ -1,5 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
-import { Database } from './database.types'
+import { createBrowserClient } from '@supabase/ssr'
+import type { Database } from './database.types'
 
 // Supabase project configuration
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -11,22 +11,17 @@ if (!supabaseUrl || !supabaseAnonKey) {
   )
 }
 
-// Create the Supabase client with TypeScript support
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true
-  },
-  db: {
-    schema: 'public'
-  },
-  global: {
-    headers: {
-      'X-Client-Info': 'global-moto-rentals-web'
-    }
-  }
-})
+/**
+ * Creates a Supabase client for use in Client Components.
+ * This client uses cookies for session management via @supabase/ssr.
+ */
+export function createClient() {
+  return createBrowserClient<Database>(supabaseUrl!, supabaseAnonKey!)
+}
+
+// Create singleton instance for backward compatibility
+// This ensures existing code that imports `supabase` continues to work
+export const supabase = createClient()
 
 // Helper function to get the current user
 export const getCurrentUser = async () => {
@@ -48,39 +43,5 @@ export const signOut = async () => {
   return true
 }
 
-// Helper function to clear stale authentication sessions
-export const clearStaleSession = async () => {
-  try {
-    // First try to get the current session
-    const { data: session } = await supabase.auth.getSession()
-    
-    if (session.session) {
-      // If there's a session, try to validate the user
-      const { error: userError } = await supabase.auth.getUser()
-      
-      if (userError) {
-        // If user validation fails, clear the session
-        console.warn('Clearing stale session due to:', userError.message)
-        await supabase.auth.signOut()
-        
-        // Also clear any stored tokens from browser storage
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('sb-' + supabaseUrl.split('//')[1].split('.')[0] + '-auth-token')
-          sessionStorage.removeItem('sb-' + supabaseUrl.split('//')[1].split('.')[0] + '-auth-token')
-        }
-        
-        return true // Session was cleared
-      }
-    }
-    
-    return false // No stale session found
-  } catch (error) {
-    console.warn('Error checking session:', error)
-    // If any error occurs, try to sign out
-    await supabase.auth.signOut()
-    return true
-  }
-}
-
 // Export the client as default
-export default supabase 
+export default supabase
