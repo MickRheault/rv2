@@ -626,6 +626,50 @@ export const motorcycleService = {
     }))
   },
 
+  // Get all active motorcycles for the hub page
+  async getAllMotorcyclesForHub() {
+    const activeStatusIds = await getActiveBusinessStatusIdsForMotorcycles()
+
+    let query = supabase
+      .from('motorcycle_rentals')
+      .select(`
+        id,
+        model,
+        brands!inner (
+          name
+        ),
+        rental_shops!inner (
+          id,
+          business_status_id,
+          cities!inner (
+            id,
+            name,
+            provinces!inner (
+              id,
+              name,
+              country_code,
+              countries!inner (
+                name,
+                code
+              )
+            )
+          )
+        )
+      `)
+
+    // Filter by active shop status
+    query = applyActiveShopStatusFilterSync(query, activeStatusIds)
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error('Error fetching all motorcycles for hub:', error)
+      throw error
+    }
+
+    return data
+  },
+
   // ADMIN CRUD OPERATIONS
 
   // Create new motorcycle
@@ -796,7 +840,11 @@ export const motorcycleService = {
     }
 
     // Apply pagination
-    const { data, error, count } = await query.range(offset, offset + limit - 1)
+    if (limit) {
+      query = query.range(offset, offset + limit - 1)
+    }
+
+    const { data, error, count } = await query
 
     if (error) {
       console.error('Error fetching motorcycles for admin:', error)
@@ -807,6 +855,65 @@ export const motorcycleService = {
       motorcycles: (data || []) as MotorcycleWithDetails[],
       total: count || 0
     }
+  },
+
+  // Get motorcycles of the same model in the same country
+  async getSameModelMotorcyclesInCountry(
+    countryCode: string,
+    brandId: string,
+    modelName: string,
+    excludeId?: string
+  ) {
+    let query = supabase
+      .from('motorcycle_rentals')
+      .select(`
+        *,
+        rental_shops!inner (
+          *,
+          cities!inner (
+            *,
+            provinces!inner (
+              *,
+              countries!inner (*)
+            )
+          ),
+          business_statuses (*)
+        ),
+        brands (*),
+        categories (*),
+        motorcycle_features (
+          feature_id,
+          motorcycle_id,
+          features (*)
+        ),
+        motorcycle_images (
+          *,
+          images (*)
+        ),
+        rental_rate_tiers (
+          *
+        )
+      `)
+      .eq('rental_shops.cities.provinces.country_code', countryCode)
+      .eq('brand_id', brandId)
+      .ilike('model', modelName) // Use exact model name match (case-insensitive)
+
+    if (excludeId) {
+      query = query.neq('id', excludeId)
+    }
+
+    // Filter by active shop status
+    const activeStatusIds = await getActiveBusinessStatusIdsForMotorcycles()
+    query = applyActiveShopStatusFilterSync(query, activeStatusIds)
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error('Error fetching same model motorcycles:', error)
+      throw error
+    }
+
+    return data as MotorcycleWithDetails[]
   },
 
   // Get structured filter options with counts based on current filters
