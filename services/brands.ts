@@ -1,5 +1,8 @@
 import { supabase } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/database.types';
+import { SupabaseClient } from '@supabase/supabase-js';
+
+const typedSupabase = supabase as unknown as SupabaseClient<Database>;
 
 export type Brand = Database['public']['Tables']['brands']['Row'];
 export type BrandInsert = Database['public']['Tables']['brands']['Insert'];
@@ -119,9 +122,9 @@ export const brandService = {
 
   // Create new brand
   async createBrand(brandData: BrandInsert): Promise<Brand> {
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('brands')
-      .insert(brandData as any)
+      .insert(brandData)
       .select('*')
       .single();
 
@@ -135,7 +138,7 @@ export const brandService = {
 
   // Update brand
   async updateBrand(id: string, brandData: BrandUpdate): Promise<Brand> {
-    const { data, error } = await (supabase.from('brands') as any)
+    const { data, error } = await typedSupabase.from('brands')
       .update({
         ...brandData,
         updated_at: new Date().toISOString()

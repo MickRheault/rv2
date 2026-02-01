@@ -1,6 +1,9 @@
 import { supabase } from '@/lib/supabase/client'
 import { Database } from '@/lib/supabase/database.types'
+import { SupabaseClient } from '@supabase/supabase-js'
 import { ACTIVE_BUSINESS_STATUSES } from './shops'
+
+const typedSupabase = supabase as unknown as SupabaseClient<Database>
 
 type MotorcycleRental = Database['public']['Tables']['motorcycle_rentals']['Row']
 type RentalShop = Database['public']['Tables']['rental_shops']['Row']
@@ -84,12 +87,12 @@ export interface FilterOptions {
 
 // Helper function to get active business status IDs for motorcycles
 async function getActiveBusinessStatusIdsForMotorcycles(): Promise<number[]> {
-  const { data: activeBusinessStatuses } = await supabase
+  const { data: activeBusinessStatuses } = await typedSupabase
     .from('business_statuses')
     .select('id')
     .in('status_code', ACTIVE_BUSINESS_STATUSES)
 
-  return activeBusinessStatuses ? (activeBusinessStatuses as any[]).map((status: any) => status.id) : []
+  return activeBusinessStatuses ? activeBusinessStatuses.map(status => status.id) : []
 }
 
 // Helper function to apply active shop status filter to motorcycle queries
@@ -121,7 +124,8 @@ export const motorcycleService = {
       offset = 0
     } = filters
 
-    let query = (supabase.from('motorcycle_rentals') as any)
+    let query = typedSupabase
+      .from('motorcycle_rentals')
       .select(`
         *,
         rental_shops!inner (
@@ -259,7 +263,7 @@ export const motorcycleService = {
 
   // Get single motorcycle by ID
   async getMotorcycleById(id: string) {
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('motorcycle_rentals')
       .select(`
         *,
@@ -302,12 +306,12 @@ export const motorcycleService = {
     }
 
     // Check if motorcycle's shop is active
-    const { data: activeBusinessStatuses } = await supabase
+    const { data: activeBusinessStatuses } = await typedSupabase
       .from('business_statuses')
       .select('id')
       .in('status_code', ACTIVE_BUSINESS_STATUSES)
 
-    const activeStatusIds = activeBusinessStatuses ? (activeBusinessStatuses as any[]).map((status: any) => status.id) : []
+    const activeStatusIds = activeBusinessStatuses ? activeBusinessStatuses.map(status => status.id) : []
     if (activeStatusIds.length === 0 || !(data as any)?.rental_shops?.business_status_id || !activeStatusIds.includes((data as any).rental_shops.business_status_id)) {
       throw new Error('Motorcycle not found or not available')
     }
@@ -317,7 +321,7 @@ export const motorcycleService = {
 
   // Get all brands for filters
   async getBrands() {
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('brands')
       .select('*')
       .order('name')
@@ -332,7 +336,7 @@ export const motorcycleService = {
 
   // Get all categories for filters
   async getCategories() {
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('categories')
       .select('*')
       .order('name')
@@ -347,7 +351,7 @@ export const motorcycleService = {
 
   // Get price range for filters
   async getPriceRange() {
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('motorcycle_rentals')
       .select('rental_rate_per_day')
       .not('rental_rate_per_day', 'is', null)
@@ -366,7 +370,7 @@ export const motorcycleService = {
 
   // Get all features for filters
   async getFeatures() {
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('features')
       .select('*')
       .order('name')
@@ -381,7 +385,7 @@ export const motorcycleService = {
 
   // Get engine capacity range for filters
   async getEngineCapacityRange() {
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('motorcycle_rentals')
       .select('engine_capacity_cc')
       .not('engine_capacity_cc', 'is', null)
@@ -400,7 +404,7 @@ export const motorcycleService = {
 
   // Get motorcycles by shop ID
   async getMotorcyclesByShop(shopId: string, limit?: number) {
-    let query = supabase
+    let query = typedSupabase
       .from('motorcycle_rentals')
       .select(`
         *,
@@ -433,7 +437,7 @@ export const motorcycleService = {
 
   // Search motorcycles by text query
   async searchMotorcycles(searchQuery: string, limit: number = 20) {
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('motorcycle_rentals')
       .select(`
         *,
@@ -466,7 +470,7 @@ export const motorcycleService = {
 
   // Get featured/popular motorcycles
   async getFeaturedMotorcycles(limit: number = 10) {
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('motorcycle_rentals')
       .select(`
         *,
@@ -503,18 +507,18 @@ export const motorcycleService = {
   async getMotorcycleStats() {
     const [totalMotorcycles, avgPrice, topBrand] = await Promise.all([
       // Total motorcycle count
-      supabase
+      typedSupabase
         .from('motorcycle_rentals')
         .select('*', { count: 'exact', head: true }),
 
       // Average price
-      supabase
+      typedSupabase
         .from('motorcycle_rentals')
         .select('rental_rate_per_day')
         .not('rental_rate_per_day', 'is', null),
 
       // Most popular brand
-      supabase
+      typedSupabase
         .from('motorcycle_rentals')
         .select(`
           brand_id,
@@ -557,7 +561,7 @@ export const motorcycleService = {
 
     if (filters?.cityId || filters?.provinceId || filters?.countryCode) {
       // Query with location joins
-      query = supabase
+      query = typedSupabase
         .from('motorcycle_rentals')
         .select(`
           model,
@@ -583,7 +587,7 @@ export const motorcycleService = {
       }
     } else {
       // Simple query without location joins
-      query = supabase
+      query = typedSupabase
         .from('motorcycle_rentals')
         .select(`
           model,
@@ -630,7 +634,7 @@ export const motorcycleService = {
   async getAllMotorcyclesForHub() {
     const activeStatusIds = await getActiveBusinessStatusIdsForMotorcycles()
 
-    let query = supabase
+    let query = typedSupabase
       .from('motorcycle_rentals')
       .select(`
         id,
@@ -674,9 +678,9 @@ export const motorcycleService = {
 
   // Create new motorcycle
   async createMotorcycle(motorcycleData: Database['public']['Tables']['motorcycle_rentals']['Insert']) {
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('motorcycle_rentals')
-      .insert(motorcycleData as any)
+      .insert(motorcycleData)
       .select(`
         *,
         rental_shops (
@@ -704,7 +708,8 @@ export const motorcycleService = {
 
   // Update existing motorcycle
   async updateMotorcycle(id: string, updates: Database['public']['Tables']['motorcycle_rentals']['Update']) {
-    const { data, error } = await (supabase.from('motorcycle_rentals') as any)
+    const { data, error } = await typedSupabase
+      .from('motorcycle_rentals')
       .update(updates)
       .eq('id', id)
       .select(`
@@ -734,7 +739,8 @@ export const motorcycleService = {
 
   // Delete motorcycle
   async deleteMotorcycle(id: string) {
-    const { error } = await (supabase.from('motorcycle_rentals') as any)
+    const { error } = await typedSupabase
+      .from('motorcycle_rentals')
       .delete()
       .eq('id', id)
 
@@ -748,7 +754,8 @@ export const motorcycleService = {
 
   // Bulk delete motorcycles
   async deleteMotorcycles(ids: string[]) {
-    const { error } = await (supabase.from('motorcycle_rentals') as any)
+    const { error } = await typedSupabase
+      .from('motorcycle_rentals')
       .delete()
       .in('id', ids)
 
@@ -782,7 +789,8 @@ export const motorcycleService = {
       offset = 0
     } = filters
 
-    let query = (supabase.from('motorcycle_rentals') as any)
+    let query = typedSupabase
+      .from('motorcycle_rentals')
       .select(`
         *,
         rental_shops!inner (
@@ -864,7 +872,7 @@ export const motorcycleService = {
     modelName: string,
     excludeId?: string
   ) {
-    let query = supabase
+    let query = typedSupabase
       .from('motorcycle_rentals')
       .select(`
         *,
@@ -919,7 +927,7 @@ export const motorcycleService = {
   // Get structured filter options with counts based on current filters
   async getFilterOptions(currentFilters?: Pick<SearchFilters, 'cityId' | 'provinceId' | 'countryCode' | 'brandId' | 'categoryId' | 'model'>): Promise<FilterOptions> {
     // Build base query for counting
-    let baseQuery = supabase
+    let baseQuery = typedSupabase
       .from('motorcycle_rentals')
       .select(`
         *,
@@ -1072,7 +1080,7 @@ export const motorcycleService = {
 
   // Get popular models across all locations
   async getPopularModels(limit: number = 20) {
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('motorcycle_rentals')
       .select(`
         model,
