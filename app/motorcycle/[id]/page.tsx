@@ -14,8 +14,8 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   try {
     const resolvedParams = await params
-    const motorcycle = await motorcycleService.getMotorcycleById(resolvedParams.id)
-    
+    const motorcycle = await motorcycleService.getMotorcycleById(resolvedParams.id) as any
+
     const seoConfig = generateMotorcycleSEO({
       id: motorcycle.id,
       model: motorcycle.model || undefined,
@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       category: motorcycle.categories?.name || undefined,
       image: motorcycle.motorcycle_images?.[0]?.images?.url || undefined,
     })
-    
+
     return generateSEOMetadata({
       ...seoConfig,
       url: `/motorcycle/${resolvedParams.id}`,
@@ -43,8 +43,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function MotorcycleDetailPage({ params }: PageProps) {
   try {
     const resolvedParams = await params
-    const motorcycle = await motorcycleService.getMotorcycleById(resolvedParams.id)
-    
+    const motorcycle = await motorcycleService.getMotorcycleById(resolvedParams.id) as any
+
     if (!motorcycle) {
       notFound()
     }
@@ -60,11 +60,11 @@ export default async function MotorcycleDetailPage({ params }: PageProps) {
       category: motorcycle.categories?.name || undefined,
       description: `${motorcycle.brands?.name || ''} ${motorcycle.model || ''} motorcycle rental`.trim(),
       image: motorcycle.motorcycle_images?.[0]?.images?.url || undefined,
-      features: motorcycle.motorcycle_features?.map(f => f.features?.name).filter(Boolean),
+      features: motorcycle.motorcycle_features?.map((f: any) => f.features?.name).filter(Boolean),
       engineSize: motorcycle.engine_capacity_cc || undefined,
       availability: true,
       // Enhanced data from rental rate tiers
-      rentalRates: motorcycle.rental_rate_tiers?.map(tier => ({
+      rentalRates: motorcycle.rental_rate_tiers?.map((tier: any) => ({
         rateText: `${tier.min_days}-${tier.max_days || '+'} day rate`,
         minDays: tier.min_days,
         maxDays: tier.max_days || undefined,
@@ -78,9 +78,9 @@ export default async function MotorcycleDetailPage({ params }: PageProps) {
         currency: motorcycle.rental_rate_currency || undefined,
       }] : []),
       // Parse specifications from JSON if available
-      specifications: motorcycle.specifications_details ? 
-        (typeof motorcycle.specifications_details === 'object' ? 
-          motorcycle.specifications_details : 
+      specifications: motorcycle.specifications_details ?
+        (typeof motorcycle.specifications_details === 'object' ?
+          motorcycle.specifications_details :
           undefined
         ) : undefined,
     })
@@ -90,17 +90,17 @@ export default async function MotorcycleDetailPage({ params }: PageProps) {
         <StructuredData schema={structuredData} />
         <div className="min-h-screen bg-gray-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-8">
-            <MotorcycleDetails motorcycle={motorcycle} />
-          </div>
+            <div className="mb-8">
+              <MotorcycleDetails motorcycle={motorcycle} />
+            </div>
 
-          {/* Related Motorcycles */}
-          <RelatedMotorcycles 
-            currentMotorcycleId={motorcycle.id}
-            shopId={motorcycle.shop_id}
-            categoryId={motorcycle.category_id}
-            brandId={motorcycle.brand_id}
-          />
+            {/* Related Motorcycles */}
+            <RelatedMotorcycles
+              currentMotorcycleId={motorcycle.id}
+              shopId={motorcycle.shop_id}
+              categoryId={motorcycle.category_id}
+              brandId={motorcycle.brand_id}
+            />
           </div>
         </div>
       </>
@@ -118,11 +118,11 @@ interface RelatedMotorcyclesProps {
   brandId: string
 }
 
-async function RelatedMotorcycles({ 
-  currentMotorcycleId, 
-  shopId, 
-  categoryId, 
-  brandId 
+async function RelatedMotorcycles({
+  currentMotorcycleId,
+  shopId,
+  categoryId,
+  brandId
 }: RelatedMotorcyclesProps) {
   try {
     // Get motorcycles from the same shop first

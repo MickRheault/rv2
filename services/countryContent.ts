@@ -42,11 +42,11 @@ export const countryContentService = {
     }
 
     // Return empty array if no sections or null
-    if (!data?.content_sections) {
+    if (!(data as any)?.content_sections) {
       return []
     }
 
-    return data.content_sections as unknown as ContentSection[]
+    return (data as any).content_sections as unknown as ContentSection[]
   },
 
   // Add a new content section
@@ -75,8 +75,7 @@ export const countryContentService = {
     const updatedSections = [...existingSections, newSection]
 
     // Update database
-    const { error } = await supabase
-      .from('countries')
+    const { error } = await (supabase.from('countries') as any)
       .update({ content_sections: updatedSections as unknown as any })
       .eq('code', countryCode)
 
@@ -121,8 +120,7 @@ export const countryContentService = {
     updatedSections[sectionIndex] = updatedSection
 
     // Update database
-    const { error } = await supabase
-      .from('countries')
+    const { error } = await (supabase.from('countries') as any)
       .update({ content_sections: updatedSections as unknown as any })
       .eq('code', countryCode)
 
@@ -148,8 +146,7 @@ export const countryContentService = {
     }
 
     // Update database
-    const { error } = await supabase
-      .from('countries')
+    const { error } = await (supabase.from('countries') as any)
       .update({ content_sections: (updatedSections.length > 0 ? updatedSections : null) as unknown as any })
       .eq('code', countryCode)
 
@@ -192,8 +189,7 @@ export const countryContentService = {
     })
 
     // Update database
-    const { error } = await supabase
-      .from('countries')
+    const { error } = await (supabase.from('countries') as any)
       .update({ content_sections: reorderedSections as unknown as any })
       .eq('code', countryCode)
 

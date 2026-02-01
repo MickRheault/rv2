@@ -62,8 +62,7 @@ export const tourSuggestions: TourSuggestion[] = [
 export const rentalShopTourService = {
   // Get all tours for a specific shop
   async getToursForShop(shopId: string): Promise<RentalShopTour[]> {
-    const { data, error } = await supabase
-      .from('rental_shop_tours')
+    const { data, error } = await (supabase.from('rental_shop_tours') as any)
       .select('*')
       .eq('shop_id', shopId)
       .order('created_at', { ascending: true })
@@ -95,7 +94,7 @@ export const rentalShopTourService = {
 
     const { data, error } = await supabase
       .from('rental_shop_tours')
-      .insert([tour])
+      .insert([tour] as any)
       .select()
       .single()
 
@@ -119,8 +118,7 @@ export const rentalShopTourService = {
       throw new Error('Distance must be a positive number')
     }
 
-    const { data, error } = await supabase
-      .from('rental_shop_tours')
+    const { data, error } = await (supabase.from('rental_shop_tours') as any)
       .update(updates)
       .eq('id', tourId)
       .select()
@@ -136,8 +134,7 @@ export const rentalShopTourService = {
 
   // Remove a tour
   async removeTour(tourId: string): Promise<void> {
-    const { error } = await supabase
-      .from('rental_shop_tours')
+    const { error } = await (supabase.from('rental_shop_tours') as any)
       .delete()
       .eq('id', tourId)
 
@@ -150,8 +147,7 @@ export const rentalShopTourService = {
   // Bulk update all tours for a shop (replace existing)
   async updateAllToursForShop(shopId: string, tours: Omit<RentalShopTourInsert, 'shop_id'>[]): Promise<RentalShopTour[]> {
     // Start a transaction by deleting existing tours and inserting new ones
-    const { error: deleteError } = await supabase
-      .from('rental_shop_tours')
+    const { error: deleteError } = await (supabase.from('rental_shop_tours') as any)
       .delete()
       .eq('shop_id', shopId)
 
@@ -183,7 +179,7 @@ export const rentalShopTourService = {
 
     const { data, error } = await supabase
       .from('rental_shop_tours')
-      .insert(toursWithShopId)
+      .insert(toursWithShopId as any)
       .select()
 
     if (error) {
@@ -231,15 +227,15 @@ export const rentalShopTourService = {
   // Format tour for display
   formatTourDisplay(tour: RentalShopTour): string {
     const parts = [tour.name]
-    
+
     if (tour.duration_text) {
       parts.push(`Duration: ${tour.duration_text}`)
     }
-    
+
     if (tour.distance_km) {
       parts.push(`Distance: ${tour.distance_km} km`)
     }
-    
+
     if (tour.price_text) {
       parts.push(`Price: ${tour.price_text}`)
     }

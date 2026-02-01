@@ -78,9 +78,9 @@ export const featureService = {
     }
 
     // Process data to include motorcycle counts
-    const featuresWithStats: FeatureWithStats[] = (data || []).map(feature => ({
+    const featuresWithStats: FeatureWithStats[] = ((data as any[]) || []).map((feature: any) => ({
       ...feature,
-      motorcycle_count: (feature as any).motorcycle_features?.[0]?.count || 0
+      motorcycle_count: feature.motorcycle_features?.[0]?.count || 0
     }));
 
     // Sort by motorcycle count if requested
@@ -121,7 +121,7 @@ export const featureService = {
   async createFeature(featureData: FeatureInsert): Promise<Feature> {
     const { data, error } = await supabase
       .from('features')
-      .insert(featureData)
+      .insert(featureData as any)
       .select('*')
       .single();
 
@@ -135,8 +135,7 @@ export const featureService = {
 
   // Update feature
   async updateFeature(id: string, featureData: FeatureUpdate): Promise<Feature> {
-    const { data, error } = await supabase
-      .from('features')
+    const { data, error } = await (supabase.from('features') as any)
       .update({
         ...featureData,
         updated_at: new Date().toISOString()
@@ -196,7 +195,7 @@ export const featureService = {
     }
 
     if (motorcycleFeatures && motorcycleFeatures.length > 0) {
-      const usedFeatureIds = [...new Set(motorcycleFeatures.map(mf => mf.feature_id))];
+      const usedFeatureIds = [...new Set(motorcycleFeatures.map((mf: any) => mf.feature_id))];
       throw new Error(`Cannot delete features: the following features are being used by motorcycles: ${usedFeatureIds.join(', ')}`);
     }
 
