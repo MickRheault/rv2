@@ -1,6 +1,9 @@
 import { supabase } from '@/lib/supabase/client'
 import { Database } from '@/lib/supabase/database.types'
+import { SupabaseClient } from '@supabase/supabase-js'
 import { PremiumFeatureConfig } from '@/types/premium-listings'
+
+const typedSupabase = supabase as unknown as SupabaseClient<Database>
 
 type RentalShop = Database['public']['Tables']['rental_shops']['Row']
 type City = Database['public']['Tables']['cities']['Row']
@@ -62,7 +65,7 @@ export const ACTIVE_BUSINESS_STATUSES = ['OPERATIONAL', 'operational', 'active',
 
 // Helper function to get active business status IDs
 async function getActiveBusinessStatusIds(): Promise<number[]> {
-  const { data: activeBusinessStatuses } = await supabase
+  const { data: activeBusinessStatuses } = await typedSupabase
     .from('business_statuses')
     .select('id')
     .in('status_code', ACTIVE_BUSINESS_STATUSES)
@@ -96,7 +99,8 @@ export const shopService = {
       offset = 0
     } = filters
 
-    let shopQuery = (supabase.from('rental_shops') as any)
+    let shopQuery = typedSupabase
+      .from('rental_shops')
       .select(`
         *,
         cities (
@@ -119,7 +123,7 @@ export const shopService = {
       shopQuery = shopQuery.eq('cities.province_id', provinceId)
     } else if (countryCode) {
       // For country filtering, we need to get city IDs through provinces for reliable filtering
-      const { data: provinces } = await supabase
+      const { data: provinces } = await typedSupabase
         .from('provinces')
         .select('id')
         .eq('country_code', countryCode)
@@ -128,7 +132,7 @@ export const shopService = {
         const provinceIds = (provinces as any[]).map((p: any) => p.id)
 
         // Get city IDs for these provinces
-        const { data: cities } = await supabase
+        const { data: cities } = await typedSupabase
           .from('cities')
           .select('id')
           .in('province_id', provinceIds)
@@ -204,7 +208,7 @@ export const shopService = {
     try {
       const shopIds = filteredData.map(s => s.id)
       if (shopIds.length > 0) {
-        const { data: rentalsWithCats } = await supabase
+        const { data: rentalsWithCats } = await typedSupabase
           .from('motorcycle_rentals')
           .select('shop_id, categories ( name )')
           .in('shop_id', shopIds)
@@ -235,7 +239,7 @@ export const shopService = {
 
   // Get single shop by ID with full details
   async getShopById(id: string) {
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('rental_shops')
       .select(`
         *,
@@ -278,7 +282,7 @@ export const shopService = {
 
   // Get shop by slug
   async getShopBySlug(slug: string) {
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('rental_shops')
       .select(`
         *,
@@ -330,7 +334,7 @@ export const shopService = {
     })
 
     // Try a simpler query first to debug
-    const { data: simpleData, error: simpleError } = await supabase
+    const { data: simpleData, error: simpleError } = await typedSupabase
       .from('rental_shops')
       .select(`
         *,
@@ -349,9 +353,9 @@ export const shopService = {
 
     console.log('🔍 Simple query result:', {
       found: !!simpleData,
-      shopName: (simpleData as any)?.provider_name,
-      actualCity: (simpleData as any)?.cities?.name,
-      actualCountry: (simpleData as any)?.cities?.provinces?.countries?.name,
+      shopName: simpleData?.provider_name,
+      actualCity: simpleData?.cities?.name,
+      actualCountry: simpleData?.cities?.provinces?.countries?.name,
       searchingFor: { cityName, countryName }
     })
 
@@ -374,7 +378,7 @@ export const shopService = {
     }
 
     // If we get here, location matches, so fetch full data
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('rental_shops')
       .select(`
         *,
@@ -430,7 +434,7 @@ export const shopService = {
     // Add motorcycle count to each shop
     const shopsWithCounts = await Promise.all(
       shopsResult.shops.map(async (shop) => {
-        const { count } = await supabase
+        const { count } = await typedSupabase
           .from('motorcycle_rentals')
           .select('*', { count: 'exact', head: true })
           .eq('shop_id', shop.id)
@@ -450,7 +454,7 @@ export const shopService = {
 
   // Search shops by location text (city, province, country names)
   async searchShopsByLocation(locationQuery: string, limit: number = 10) {
-    let query = supabase
+    let query = typedSupabase
       .from('rental_shops')
       .select(`
         *,
@@ -482,7 +486,7 @@ export const shopService = {
 
   // Get top-rated shops
   async getTopRatedShops(limit: number = 10) {
-    let query = supabase
+    let query = typedSupabase
       .from('rental_shops')
       .select(`
         *,
@@ -516,7 +520,7 @@ export const shopService = {
 
   // Get shops with tours
   async getShopsWithTours(limit?: number) {
-    let query = supabase
+    let query = typedSupabase
       .from('rental_shops')
       .select(`
         *,
@@ -552,7 +556,7 @@ export const shopService = {
 
   // Get business statuses for filters
   async getBusinessStatuses() {
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('business_statuses')
       .select('*')
       .order('status_code')
@@ -569,18 +573,18 @@ export const shopService = {
   async getShopStats() {
     const [totalShops, avgRating, topRated] = await Promise.all([
       // Total shop count
-      supabase
+      typedSupabase
         .from('rental_shops')
         .select('*', { count: 'exact', head: true }),
 
       // Average rating
-      supabase
+      typedSupabase
         .from('rental_shops')
         .select('rating')
         .not('rating', 'is', null),
 
       // Shop with highest rating
-      supabase
+      typedSupabase
         .from('rental_shops')
         .select('provider_name, rating, review_count')
         .not('rating', 'is', null)
@@ -591,7 +595,7 @@ export const shopService = {
     ])
 
     // Calculate average rating
-    const ratings = (avgRating.data as any[])?.map((shop: any) => shop.rating).filter((rating): rating is number => rating !== null) || []
+    const ratings = avgRating.data?.map(shop => shop.rating).filter((rating): rating is number => rating !== null) || []
     const averageRating = ratings.length > 0
       ? ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length
       : 0
@@ -606,7 +610,7 @@ export const shopService = {
 
   // Get all shops for dropdown selection (simple name/id pairs)
   async getAllShopsForDropdown() {
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('rental_shops')
       .select(`
         id,
@@ -641,9 +645,9 @@ export const shopService = {
 
   // Create new rental shop
   async createShop(shopData: Database['public']['Tables']['rental_shops']['Insert']) {
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('rental_shops')
-      .insert(shopData as any)
+      .insert(shopData)
       .select(`
         *,
         cities (
@@ -670,8 +674,8 @@ export const shopService = {
 
   // Update existing rental shop
   async updateShop(id: string, updates: Database['public']['Tables']['rental_shops']['Update']) {
-    const { data, error } = await (supabase
-      .from('rental_shops') as any)
+    const { data, error } = await typedSupabase
+      .from('rental_shops')
       .update(updates)
       .eq('id', id)
       .select(`
@@ -700,7 +704,7 @@ export const shopService = {
 
   // Delete rental shop
   async deleteShop(id: string) {
-    const { error } = await supabase
+    const { error } = await typedSupabase
       .from('rental_shops')
       .delete()
       .eq('id', id)
@@ -715,7 +719,7 @@ export const shopService = {
 
   // Bulk delete rental shops
   async deleteShops(ids: string[]) {
-    const { error } = await supabase
+    const { error } = await typedSupabase
       .from('rental_shops')
       .delete()
       .in('id', ids)
@@ -752,7 +756,7 @@ export const shopService = {
       offset = 0
     } = filters
 
-    let query = supabase
+    let query = typedSupabase
       .from('rental_shops')
       .select(`
         *,
@@ -818,7 +822,7 @@ export const shopService = {
 
   // Get all cities for dropdown selection
   async getAllCitiesForDropdown() {
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('cities')
       .select(`
         id,
@@ -850,7 +854,7 @@ export const shopService = {
 
   // Get service locations for a shop
   async getServiceLocations(shopId: string): Promise<RentalShopServiceLocation[]> {
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('rental_shop_service_locations')
       .select('*')
       .eq('shop_id', shopId)
@@ -866,7 +870,7 @@ export const shopService = {
 
   // Create service location
   async createServiceLocation(shopId: string, locationName: string): Promise<RentalShopServiceLocation> {
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('rental_shop_service_locations')
       .insert({
         shop_id: shopId,
@@ -885,8 +889,8 @@ export const shopService = {
 
   // Update service location
   async updateServiceLocation(id: string, locationName: string): Promise<RentalShopServiceLocation> {
-    const { data, error } = await (supabase
-      .from('rental_shop_service_locations') as any)
+    const { data, error } = await typedSupabase
+      .from('rental_shop_service_locations')
       .update({
         location_name: locationName.trim(),
         updated_at: new Date().toISOString()
@@ -905,7 +909,7 @@ export const shopService = {
 
   // Delete service location
   async deleteServiceLocation(id: string): Promise<void> {
-    const { error } = await supabase
+    const { error } = await typedSupabase
       .from('rental_shop_service_locations')
       .delete()
       .eq('id', id)
