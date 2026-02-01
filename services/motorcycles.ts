@@ -88,8 +88,8 @@ async function getActiveBusinessStatusIdsForMotorcycles(): Promise<number[]> {
     .from('business_statuses')
     .select('id')
     .in('status_code', ACTIVE_BUSINESS_STATUSES)
-  
-  return activeBusinessStatuses ? activeBusinessStatuses.map(status => status.id) : []
+
+  return activeBusinessStatuses ? (activeBusinessStatuses as any[]).map((status: any) => status.id) : []
 }
 
 // Helper function to apply active shop status filter to motorcycle queries
@@ -121,8 +121,7 @@ export const motorcycleService = {
       offset = 0
     } = filters
 
-    let query = supabase
-      .from('motorcycle_rentals')
+    let query = (supabase.from('motorcycle_rentals') as any)
       .select(`
         *,
         rental_shops!inner (
@@ -216,28 +215,28 @@ export const motorcycleService = {
     if (features && features.length > 0) {
       // For feature filtering, we need to get all results first, then filter, then paginate
       // This is because Supabase doesn't easily support complex EXISTS queries
-      
+
       // Remove pagination temporarily to get all results for filtering
       const allResultsQuery = query.range(0, 999) // Get up to 1000 results for filtering
       const { data: allData, error: allError, count: totalCount } = await allResultsQuery
-      
+
       if (allError) {
         console.error('Error fetching motorcycles for feature filtering:', allError)
         throw allError
       }
-      
+
       // Apply feature filtering
-      const filteredData = (allData || []).filter(motorcycle => {
+      const filteredData = (allData || []).filter((motorcycle: any) => {
         const motorcycleFeatures = (motorcycle as any).motorcycle_features || []
         const motorcycleFeatureIds = motorcycleFeatures.map((mf: any) => mf.feature_id)
-        
+
         // Check if motorcycle has ALL required features
         return features.every(featureId => motorcycleFeatureIds.includes(featureId))
       })
-      
+
       // Apply pagination to filtered results
       const paginatedData = filteredData.slice(offset, offset + limit)
-      
+
       return {
         motorcycles: paginatedData as MotorcycleWithDetails[],
         total: filteredData.length // Total count of filtered results
@@ -245,12 +244,12 @@ export const motorcycleService = {
     } else {
       // No feature filtering - use normal pagination
       const { data, error, count } = await query.range(offset, offset + limit - 1)
-      
+
       if (error) {
         console.error('Error fetching motorcycles:', error)
         throw error
       }
-      
+
       return {
         motorcycles: (data || []) as MotorcycleWithDetails[],
         total: count || 0 // Use the database count
@@ -307,9 +306,9 @@ export const motorcycleService = {
       .from('business_statuses')
       .select('id')
       .in('status_code', ACTIVE_BUSINESS_STATUSES)
-    
-    const activeStatusIds = activeBusinessStatuses ? activeBusinessStatuses.map(status => status.id) : []
-    if (activeStatusIds.length === 0 || !data?.rental_shops?.business_status_id || !activeStatusIds.includes(data.rental_shops.business_status_id)) {
+
+    const activeStatusIds = activeBusinessStatuses ? (activeBusinessStatuses as any[]).map((status: any) => status.id) : []
+    if (activeStatusIds.length === 0 || !(data as any)?.rental_shops?.business_status_id || !activeStatusIds.includes((data as any).rental_shops.business_status_id)) {
       throw new Error('Motorcycle not found or not available')
     }
 
@@ -358,7 +357,7 @@ export const motorcycleService = {
       return { min: 0, max: 1000 }
     }
 
-    const prices = data.map(item => item.rental_rate_per_day).filter(Boolean) as number[]
+    const prices = data.map((item: any) => item.rental_rate_per_day).filter(Boolean) as number[]
     return {
       min: Math.min(...prices),
       max: Math.max(...prices)
@@ -392,7 +391,7 @@ export const motorcycleService = {
       return { min: 0, max: 1000 }
     }
 
-    const capacities = data.map(item => item.engine_capacity_cc).filter(Boolean) as number[]
+    const capacities = data.map((item: any) => item.engine_capacity_cc).filter(Boolean) as number[]
     return {
       min: Math.min(...capacities),
       max: Math.max(...capacities)
@@ -507,13 +506,13 @@ export const motorcycleService = {
       supabase
         .from('motorcycle_rentals')
         .select('*', { count: 'exact', head: true }),
-      
+
       // Average price
       supabase
         .from('motorcycle_rentals')
         .select('rental_rate_per_day')
         .not('rental_rate_per_day', 'is', null),
-      
+
       // Most popular brand
       supabase
         .from('motorcycle_rentals')
@@ -525,9 +524,9 @@ export const motorcycleService = {
     ])
 
     // Calculate average price
-    const prices = avgPrice.data?.map(bike => bike.rental_rate_per_day).filter((price): price is number => price !== null) || []
-    const averagePrice = prices.length > 0 
-      ? prices.reduce((sum, price) => sum + price, 0) / prices.length 
+    const prices = avgPrice.data?.map((bike: any) => bike.rental_rate_per_day).filter((price: any): price is number => price !== null) || []
+    const averagePrice = prices.length > 0
+      ? prices.reduce((sum, price) => sum + price, 0) / prices.length
       : 0
 
     // Calculate brand popularity
@@ -538,7 +537,7 @@ export const motorcycleService = {
     })
 
     const mostPopularBrand = Object.entries(brandCounts)
-      .sort(([,a], [,b]) => b - a)[0]
+      .sort(([, a], [, b]) => b - a)[0]
 
     return {
       totalMotorcycles: totalMotorcycles.count || 0,
@@ -555,7 +554,7 @@ export const motorcycleService = {
   async getModels(filters?: Pick<SearchFilters, 'cityId' | 'provinceId' | 'countryCode' | 'brandId' | 'categoryId'>) {
     // Build query based on whether location filters are needed
     let query
-    
+
     if (filters?.cityId || filters?.provinceId || filters?.countryCode) {
       // Query with location joins
       query = supabase
@@ -609,11 +608,11 @@ export const motorcycleService = {
 
     // Group by model and count occurrences
     const modelCounts: Record<string, { brandName: string; count: number }> = {}
-    
+
     data?.forEach(item => {
       const { model, brands } = item as any
       const key = `${model}-${brands.name}`
-      
+
       if (!modelCounts[key]) {
         modelCounts[key] = { brandName: brands.name, count: 0 }
       }
@@ -628,12 +627,12 @@ export const motorcycleService = {
   },
 
   // ADMIN CRUD OPERATIONS
-  
+
   // Create new motorcycle
   async createMotorcycle(motorcycleData: Database['public']['Tables']['motorcycle_rentals']['Insert']) {
     const { data, error } = await supabase
       .from('motorcycle_rentals')
-      .insert(motorcycleData)
+      .insert(motorcycleData as any)
       .select(`
         *,
         rental_shops (
@@ -661,8 +660,7 @@ export const motorcycleService = {
 
   // Update existing motorcycle
   async updateMotorcycle(id: string, updates: Database['public']['Tables']['motorcycle_rentals']['Update']) {
-    const { data, error } = await supabase
-      .from('motorcycle_rentals')
+    const { data, error } = await (supabase.from('motorcycle_rentals') as any)
       .update(updates)
       .eq('id', id)
       .select(`
@@ -692,8 +690,7 @@ export const motorcycleService = {
 
   // Delete motorcycle
   async deleteMotorcycle(id: string) {
-    const { error } = await supabase
-      .from('motorcycle_rentals')
+    const { error } = await (supabase.from('motorcycle_rentals') as any)
       .delete()
       .eq('id', id)
 
@@ -707,8 +704,7 @@ export const motorcycleService = {
 
   // Bulk delete motorcycles
   async deleteMotorcycles(ids: string[]) {
-    const { error } = await supabase
-      .from('motorcycle_rentals')
+    const { error } = await (supabase.from('motorcycle_rentals') as any)
       .delete()
       .in('id', ids)
 
@@ -742,8 +738,7 @@ export const motorcycleService = {
       offset = 0
     } = filters
 
-    let query = supabase
-      .from('motorcycle_rentals')
+    let query = (supabase.from('motorcycle_rentals') as any)
       .select(`
         *,
         rental_shops!inner (
@@ -869,11 +864,11 @@ export const motorcycleService = {
     const brandCounts: Record<string, { name: string; count: number }> = {}
     const categoryCounts: Record<string, { name: string; description: string | null; count: number }> = {}
     const modelCounts: Record<string, { brandName: string; count: number }> = {}
-    
+
     motorcycles?.forEach(motorcycle => {
       const brand = (motorcycle as any).brands
       const category = (motorcycle as any).categories
-      const model = motorcycle.model
+      const model = (motorcycle as any).model
 
       // Count brands (exclude current brand filter)
       if (!currentFilters?.brandId || currentFilters.brandId !== brand.id) {
@@ -886,10 +881,10 @@ export const motorcycleService = {
       // Count categories (exclude current category filter)
       if (!currentFilters?.categoryId || currentFilters.categoryId !== category.id) {
         if (!categoryCounts[category.id]) {
-          categoryCounts[category.id] = { 
-            name: category.name, 
+          categoryCounts[category.id] = {
+            name: category.name,
             description: category.description,
-            count: 0 
+            count: 0
           }
         }
         categoryCounts[category.id].count++
@@ -914,7 +909,7 @@ export const motorcycleService = {
 
     // Count features based on motorcycle_features relationships
     const featureCounts: Record<string, { name: string; description: string | null; count: number }> = {}
-    
+
     motorcycles?.forEach(motorcycle => {
       const motorcycleFeatures = (motorcycle as any).motorcycle_features || []
       motorcycleFeatures.forEach((mf: any) => {
@@ -933,7 +928,7 @@ export const motorcycleService = {
     })
 
     // Merge with all available features to show features with 0 count
-    const featureOptions = features.map(feature => ({
+    const featureOptions = (features as any[]).map(feature => ({
       id: feature.id,
       name: feature.name,
       description: feature.description,
@@ -944,16 +939,16 @@ export const motorcycleService = {
       brands: Object.entries(brandCounts)
         .map(([id, data]) => ({ id, name: data.name, count: data.count }))
         .sort((a, b) => b.count - a.count),
-      
+
       categories: Object.entries(categoryCounts)
-        .map(([id, data]) => ({ 
-          id, 
-          name: data.name, 
-          description: data.description, 
-          count: data.count 
+        .map(([id, data]) => ({
+          id,
+          name: data.name,
+          description: data.description,
+          count: data.count
         }))
         .sort((a, b) => b.count - a.count),
-      
+
       models: Object.entries(modelCounts)
         .map(([key, data]) => ({
           model: key.split('|')[0],
@@ -961,7 +956,7 @@ export const motorcycleService = {
           count: data.count
         }))
         .sort((a, b) => b.count - a.count),
-      
+
       priceRange,
       engineCapacityRange,
       features: featureOptions
@@ -984,12 +979,12 @@ export const motorcycleService = {
 
     // Count model occurrences
     const modelCounts: Record<string, { brandName: string; count: number }> = {}
-    
+
     data?.forEach(item => {
-      const model = item.model
+      const model = (item as any).model
       const brandName = (item as any).brands.name
       const key = `${model}|${brandName}`
-      
+
       if (!modelCounts[key]) {
         modelCounts[key] = { brandName, count: 0 }
       }
