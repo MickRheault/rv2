@@ -18,7 +18,7 @@ interface CustomJwtPayload {
 export async function getCurrentUserRole(): Promise<AppRole | null> {
   try {
     const { data: { session } } = await supabase.auth.getSession();
-    
+
     if (!session?.access_token) {
       return null;
     }
@@ -51,7 +51,7 @@ export async function getCurrentUserRole(): Promise<AppRole | null> {
       return 'user';
     }
 
-    return data?.role || 'user';
+    return (data as any)?.role || 'user';
   } catch (error) {
     console.error('Error getting user role:', error);
     return null;
@@ -80,10 +80,10 @@ export async function getUserPermissions(role: AppRole): Promise<AppPermission[]
         'analytics.view',
         'system.manage'
       ];
-      
+
       return adminPermissions;
     }
-    
+
     // For non-admin roles, return empty array
     return [];
   } catch (error) {
@@ -99,7 +99,7 @@ export async function hasPermission(permission: AppPermission): Promise<boolean>
   try {
     const { data, error } = await supabase.rpc('authorize', {
       requested_permission: permission
-    });
+    } as any);
 
     if (error) {
       console.error('Error checking permission:', error);
@@ -119,13 +119,13 @@ export async function hasPermission(permission: AppPermission): Promise<boolean>
 export async function getCurrentAdminUser(): Promise<AdminUser | null> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     if (!user) {
       return null;
     }
 
     const role = await getCurrentUserRole();
-    
+
     if (!role || role !== 'admin') {
       return null;
     }
@@ -156,7 +156,7 @@ export async function assignAdminRole(userId: string): Promise<{ success: boolea
       .upsert({
         user_id: userId,
         role: 'admin'
-      }, {
+      } as any, {
         onConflict: 'user_id,role'
       });
 
@@ -166,9 +166,9 @@ export async function assignAdminRole(userId: string): Promise<{ success: boolea
 
     return { success: true };
   } catch (error) {
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
 }
@@ -190,9 +190,9 @@ export async function removeAdminRole(userId: string): Promise<{ success: boolea
 
     return { success: true };
   } catch (error) {
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
 }
@@ -219,14 +219,14 @@ export async function getAdminUsers(): Promise<AdminUser[]> {
 
     // Get user details from auth.users (requires proper RLS policies)
     const adminUsers: AdminUser[] = [];
-    
-    for (const roleData of data || []) {
+
+    for (const roleData of (data || []) as any[]) {
       try {
         const { data: userData, error: userError } = await supabase.auth.admin.getUserById(roleData.user_id);
-        
+
         if (!userError && userData.user) {
           const permissions = await getUserPermissions('admin');
-          
+
           adminUsers.push({
             id: userData.user.id,
             email: userData.user.email,
@@ -267,16 +267,16 @@ export function isAdminFromToken(token: string): boolean {
 export async function adminSignOut(): Promise<{ success: boolean; error?: string }> {
   try {
     const { error } = await supabase.auth.signOut();
-    
+
     if (error) {
       return { success: false, error: error.message };
     }
 
     return { success: true };
   } catch (error) {
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
 } 

@@ -67,7 +67,7 @@ async function getActiveBusinessStatusIds(): Promise<number[]> {
     .select('id')
     .in('status_code', ACTIVE_BUSINESS_STATUSES)
 
-  return activeBusinessStatuses ? activeBusinessStatuses.map(status => status.id) : []
+  return activeBusinessStatuses ? (activeBusinessStatuses as any[]).map((status: any) => status.id) : []
 }
 
 // Helper function to apply active status filter to a query
@@ -96,8 +96,7 @@ export const shopService = {
       offset = 0
     } = filters
 
-    let shopQuery = supabase
-      .from('rental_shops')
+    let shopQuery = (supabase.from('rental_shops') as any)
       .select(`
         *,
         cities (
@@ -126,7 +125,7 @@ export const shopService = {
         .eq('country_code', countryCode)
 
       if (provinces && provinces.length > 0) {
-        const provinceIds = provinces.map(p => p.id)
+        const provinceIds = (provinces as any[]).map((p: any) => p.id)
 
         // Get city IDs for these provinces
         const { data: cities } = await supabase
@@ -135,7 +134,7 @@ export const shopService = {
           .in('province_id', provinceIds)
 
         if (cities && cities.length > 0) {
-          const cityIds = cities.map(c => c.id)
+          const cityIds = (cities as any[]).map((c: any) => c.id)
           shopQuery = shopQuery.in('city_id', cityIds)
         } else {
           // No cities found for this country, return empty result
@@ -195,7 +194,7 @@ export const shopService = {
     // Filter by tours/service locations if specified (post-query filtering)
     let filteredData = (data || []) as ShopWithDetails[]
     if (hasTours) {
-      filteredData = filteredData.filter(shop => shop.rental_shop_tours.length > 0)
+      filteredData = filteredData.filter(shop => (shop.rental_shop_tours || []).length > 0)
     }
     if (hasServiceLocations) {
       filteredData = filteredData.filter(shop => shop.rental_shop_service_locations.length > 0)
@@ -270,7 +269,7 @@ export const shopService = {
 
     // Apply active status filter - check if shop is active before returning
     const activeStatusIds = await getActiveBusinessStatusIds()
-    if (activeStatusIds.length === 0 || !data?.business_status_id || !activeStatusIds.includes(data.business_status_id)) {
+    if (activeStatusIds.length === 0 || !(data as any)?.business_status_id || !activeStatusIds.includes((data as any).business_status_id)) {
       throw new Error('Shop not found or not available')
     }
 
@@ -315,7 +314,7 @@ export const shopService = {
 
     // Apply active status filter - check if shop is active before returning
     const activeStatusIds = await getActiveBusinessStatusIds()
-    if (activeStatusIds.length === 0 || !data?.business_status_id || !activeStatusIds.includes(data.business_status_id)) {
+    if (activeStatusIds.length === 0 || !(data as any)?.business_status_id || !activeStatusIds.includes((data as any).business_status_id)) {
       throw new Error('Shop not found or not available')
     }
 
@@ -350,16 +349,16 @@ export const shopService = {
 
     console.log('🔍 Simple query result:', {
       found: !!simpleData,
-      shopName: simpleData?.provider_name,
-      actualCity: simpleData?.cities?.name,
-      actualCountry: simpleData?.cities?.provinces?.countries?.name,
+      shopName: (simpleData as any)?.provider_name,
+      actualCity: (simpleData as any)?.cities?.name,
+      actualCountry: (simpleData as any)?.cities?.provinces?.countries?.name,
       searchingFor: { cityName, countryName }
     })
 
     // Check if location matches (case-insensitive)
-    if (simpleData && simpleData.cities?.name && simpleData.cities?.provinces?.countries?.name) {
-      const actualCity = simpleData.cities.name.toLowerCase()
-      const actualCountry = simpleData.cities.provinces.countries.name.toLowerCase()
+    if (simpleData && (simpleData as any).cities?.name && (simpleData as any).cities?.provinces?.countries?.name) {
+      const actualCity = (simpleData as any).cities.name.toLowerCase()
+      const actualCountry = (simpleData as any).cities.provinces.countries.name.toLowerCase()
       const expectedCity = cityName.toLowerCase()
       const expectedCountry = countryName.toLowerCase()
 
@@ -370,7 +369,7 @@ export const shopService = {
 
       if (actualCity !== expectedCity || actualCountry !== expectedCountry) {
         console.log('❌ Location mismatch detected')
-        throw new Error(`Location mismatch: expected ${countryName}/${cityName}, got ${simpleData.cities.provinces.countries.name}/${simpleData.cities.name}`)
+        throw new Error(`Location mismatch: expected ${countryName}/${cityName}, got ${(simpleData as any).cities.provinces.countries.name}/${(simpleData as any).cities.name}`)
       }
     }
 
@@ -411,13 +410,13 @@ export const shopService = {
 
     console.log('🔍 Query result:', {
       found: !!data,
-      shopName: data?.provider_name,
-      actualLocation: data?.cities ? `${data.cities.name}, ${data.cities.provinces?.countries?.name}` : 'No location data'
+      shopName: (data as any)?.provider_name,
+      actualLocation: (data as any)?.cities ? `${(data as any).cities.name}, ${(data as any).cities.provinces?.countries?.name}` : 'No location data'
     })
 
     // Apply active status filter - check if shop is active before returning
     const activeStatusIds = await getActiveBusinessStatusIds()
-    if (activeStatusIds.length === 0 || !data?.business_status_id || !activeStatusIds.includes(data.business_status_id)) {
+    if (activeStatusIds.length === 0 || !(data as any)?.business_status_id || !activeStatusIds.includes((data as any).business_status_id)) {
       throw new Error('Shop not found or not available')
     }
 
@@ -592,7 +591,7 @@ export const shopService = {
     ])
 
     // Calculate average rating
-    const ratings = avgRating.data?.map(shop => shop.rating).filter((rating): rating is number => rating !== null) || []
+    const ratings = (avgRating.data as any[])?.map((shop: any) => shop.rating).filter((rating): rating is number => rating !== null) || []
     const averageRating = ratings.length > 0
       ? ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length
       : 0
@@ -630,7 +629,7 @@ export const shopService = {
       throw error
     }
 
-    return (data || []).map(shop => ({
+    return (data || []).map((shop: any) => ({
       id: shop.id,
       provider_name: shop.provider_name,
       location_name: shop.cities ? `${shop.cities.name}, ${shop.cities.provinces?.name || ''}, ${shop.cities.provinces?.countries?.name || ''}` : null,
@@ -644,7 +643,7 @@ export const shopService = {
   async createShop(shopData: Database['public']['Tables']['rental_shops']['Insert']) {
     const { data, error } = await supabase
       .from('rental_shops')
-      .insert(shopData)
+      .insert(shopData as any)
       .select(`
         *,
         cities (
@@ -671,8 +670,8 @@ export const shopService = {
 
   // Update existing rental shop
   async updateShop(id: string, updates: Database['public']['Tables']['rental_shops']['Update']) {
-    const { data, error } = await supabase
-      .from('rental_shops')
+    const { data, error } = await (supabase
+      .from('rental_shops') as any)
       .update(updates)
       .eq('id', id)
       .select(`
@@ -838,7 +837,7 @@ export const shopService = {
       throw error
     }
 
-    return (data || []).map(city => ({
+    return ((data as any[]) || []).map((city: any) => ({
       id: city.id,
       name: city.name,
       fullName: `${city.name}, ${city.provinces?.name || ''}, ${city.provinces?.countries?.name || ''}`
@@ -872,7 +871,7 @@ export const shopService = {
       .insert({
         shop_id: shopId,
         location_name: locationName.trim()
-      })
+      } as any)
       .select()
       .single()
 
@@ -886,8 +885,8 @@ export const shopService = {
 
   // Update service location
   async updateServiceLocation(id: string, locationName: string): Promise<RentalShopServiceLocation> {
-    const { data, error } = await supabase
-      .from('rental_shop_service_locations')
+    const { data, error } = await (supabase
+      .from('rental_shop_service_locations') as any)
       .update({
         location_name: locationName.trim(),
         updated_at: new Date().toISOString()

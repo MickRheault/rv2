@@ -15,8 +15,7 @@ export interface RentalShopConditionWithDetails extends RentalShopCondition {
 
 // Get all conditions for a specific rental shop
 export async function getRentalShopConditions(shopId: string): Promise<RentalShopConditionWithDetails[]> {
-  const { data, error } = await supabase
-    .from('rental_shop_conditions')
+  const { data, error } = await (supabase.from('rental_shop_conditions') as any)
     .select(`
       *,
       condition_types!inner(
@@ -39,8 +38,7 @@ export async function getRentalShopConditions(shopId: string): Promise<RentalSho
 // Add a condition to a rental shop
 export async function addRentalShopCondition(condition: RentalShopConditionInsert): Promise<RentalShopConditionWithDetails> {
   // First check if this condition type is already assigned to this shop
-  const { data: existing } = await supabase
-    .from('rental_shop_conditions')
+  const { data: existing } = await (supabase.from('rental_shop_conditions') as any)
     .select('shop_id, condition_type_id')
     .eq('shop_id', condition.shop_id)
     .eq('condition_type_id', condition.condition_type_id)
@@ -52,7 +50,7 @@ export async function addRentalShopCondition(condition: RentalShopConditionInser
 
   const { data, error } = await supabase
     .from('rental_shop_conditions')
-    .insert(condition)
+    .insert(condition as any)
     .select(`
       *,
       condition_types!inner(
@@ -76,8 +74,7 @@ export async function updateRentalShopCondition(
   conditionId: string,
   updates: { condition_value?: string; notes?: string | null }
 ): Promise<RentalShopConditionWithDetails> {
-  const { data, error } = await supabase
-    .from('rental_shop_conditions')
+  const { data, error } = await (supabase.from('rental_shop_conditions') as any)
     .update({
       ...updates,
       updated_at: new Date().toISOString()
@@ -103,8 +100,7 @@ export async function updateRentalShopCondition(
 
 // Remove a condition from a rental shop
 export async function removeRentalShopCondition(conditionId: string): Promise<void> {
-  const { error } = await supabase
-    .from('rental_shop_conditions')
+  const { error } = await (supabase.from('rental_shop_conditions') as any)
     .delete()
     .eq('id', conditionId);
 
@@ -129,8 +125,7 @@ export async function getAvailableConditionTypesForShop(shopId: string): Promise
     }
 
     // Get already assigned condition types for this shop
-    const { data: assignedConditions, error: assignedError } = await supabase
-      .from('rental_shop_conditions')
+    const { data: assignedConditions, error: assignedError } = await (supabase.from('rental_shop_conditions') as any)
       .select('condition_type_id')
       .eq('shop_id', shopId);
 
@@ -140,11 +135,11 @@ export async function getAvailableConditionTypesForShop(shopId: string): Promise
     }
 
     // Create a set of assigned condition type IDs for fast lookup
-    const assignedIds = new Set(assignedConditions?.map(c => c.condition_type_id) || []);
+    const assignedIds = new Set((assignedConditions as any[] || []).map((c: any) => c.condition_type_id) || []);
 
     // Filter out already assigned condition types
-    const availableConditionTypes = (allConditionTypes || []).filter(
-      conditionType => !assignedIds.has(conditionType.id)
+    const availableConditionTypes = ((allConditionTypes as any[]) || []).filter(
+      (conditionType: any) => !assignedIds.has(conditionType.id)
     );
 
     return availableConditionTypes;
@@ -160,8 +155,7 @@ export async function updateRentalShopConditions(
   conditions: { condition_type_id: string; condition_value: string; notes?: string | null }[]
 ): Promise<RentalShopConditionWithDetails[]> {
   // First, remove all existing conditions for this shop
-  await supabase
-    .from('rental_shop_conditions')
+  await (supabase.from('rental_shop_conditions') as any)
     .delete()
     .eq('shop_id', shopId);
 
@@ -176,7 +170,7 @@ export async function updateRentalShopConditions(
 
     const { data, error } = await supabase
       .from('rental_shop_conditions')
-      .insert(conditionsToInsert)
+      .insert(conditionsToInsert as any)
       .select(`
         *,
         condition_types!inner(

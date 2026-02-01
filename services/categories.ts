@@ -78,9 +78,9 @@ export const categoryService = {
     }
 
     // Process data to include motorcycle counts
-    const categoriesWithStats: CategoryWithStats[] = (data || []).map(category => ({
+    const categoriesWithStats: CategoryWithStats[] = ((data as any[]) || []).map((category: any) => ({
       ...category,
-      motorcycle_count: (category as any).motorcycle_rentals?.[0]?.count || 0
+      motorcycle_count: category.motorcycle_rentals?.[0]?.count || 0
     }));
 
     // Sort by motorcycle count if requested
@@ -121,7 +121,7 @@ export const categoryService = {
   async createCategory(categoryData: CategoryInsert): Promise<Category> {
     const { data, error } = await supabase
       .from('categories')
-      .insert(categoryData)
+      .insert(categoryData as any)
       .select('*')
       .single();
 
@@ -135,8 +135,7 @@ export const categoryService = {
 
   // Update category
   async updateCategory(id: string, categoryData: CategoryUpdate): Promise<Category> {
-    const { data, error } = await supabase
-      .from('categories')
+    const { data, error } = await (supabase.from('categories') as any)
       .update({
         ...categoryData,
         updated_at: new Date().toISOString()
@@ -197,7 +196,7 @@ export const categoryService = {
     }
 
     if (motorcycles && motorcycles.length > 0) {
-      const usedCategoryIds = [...new Set(motorcycles.map(m => m.category_id).filter(Boolean))];
+      const usedCategoryIds = [...new Set(motorcycles.map((m: any) => m.category_id).filter(Boolean))];
       throw new Error(`Cannot delete categories: the following categories are being used by motorcycles: ${usedCategoryIds.join(', ')}`);
     }
 
@@ -290,8 +289,7 @@ export const categoryService = {
       updateData.category_id = toCategoryId;
     }
 
-    const { data, error } = await supabase
-      .from('motorcycle_rentals')
+    const { data, error } = await (supabase.from('motorcycle_rentals') as any)
       .update(updateData)
       .eq('category_id', fromCategoryId)
       .select('id');
@@ -316,8 +314,7 @@ export const categoryService = {
       updateData.category_id = toCategoryId;
     }
 
-    const { data, error } = await supabase
-      .from('motorcycle_rentals')
+    const { data, error } = await (supabase.from('motorcycle_rentals') as any)
       .update(updateData)
       .in('category_id', fromCategoryIds)
       .select('id');
@@ -334,7 +331,7 @@ export const categoryService = {
   async deleteCategoryWithReassignment(categoryId: string, reassignToCategoryId: string | null): Promise<void> {
     // First reassign the motorcycles
     const affectedCount = await this.reassignMotorcycles(categoryId, reassignToCategoryId);
-    
+
     // Then delete the category
     const { error } = await supabase
       .from('categories')
@@ -353,7 +350,7 @@ export const categoryService = {
   async bulkDeleteCategoriesWithReassignment(categoryIds: string[], reassignToCategoryId: string | null): Promise<void> {
     // First reassign all motorcycles from these categories
     const affectedCount = await this.bulkReassignMotorcycles(categoryIds, reassignToCategoryId);
-    
+
     // Then delete the categories
     const { error } = await supabase
       .from('categories')
@@ -373,10 +370,10 @@ export const categoryService = {
   // ========================================
 
   // Find similar category names for normalization suggestions
-  async findSimilarCategories(): Promise<Array<{category: Category, suggestions: Category[]}>> {
+  async findSimilarCategories(): Promise<Array<{ category: Category, suggestions: Category[] }>> {
     // Get all categories
     const categories = await this.getCategories();
-    const suggestions: Array<{category: Category, suggestions: Category[]}> = [];
+    const suggestions: Array<{ category: Category, suggestions: Category[] }> = [];
 
     for (const category of categories) {
       const similar: Category[] = [];
@@ -384,9 +381,9 @@ export const categoryService = {
 
       for (const other of categories) {
         if (other.id === category.id) continue;
-        
+
         const otherName = other.name.toLowerCase().trim();
-        
+
         // Check for similar names (various patterns)
         if (
           // Plural/singular variations
@@ -418,11 +415,11 @@ export const categoryService = {
   // Get impact analysis for category operations
   async getCategoryImpactAnalysis(categoryIds: string[]): Promise<{
     totalMotorcycles: number;
-    categoriesWithCounts: Array<{category: Category, motorcycleCount: number}>;
+    categoriesWithCounts: Array<{ category: Category, motorcycleCount: number }>;
     sampleMotorcycles: any[];
   }> {
     let totalMotorcycles = 0;
-    const categoriesWithCounts: Array<{category: Category, motorcycleCount: number}> = [];
+    const categoriesWithCounts: Array<{ category: Category, motorcycleCount: number }> = [];
     let allSampleMotorcycles: any[] = [];
 
     for (const categoryId of categoryIds) {

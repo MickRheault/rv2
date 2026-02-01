@@ -78,9 +78,9 @@ export const brandService = {
     }
 
     // Process data to include motorcycle counts
-    const brandsWithStats: BrandWithStats[] = (data || []).map(brand => ({
+    const brandsWithStats: BrandWithStats[] = ((data as any[]) || []).map((brand: any) => ({
       ...brand,
-      motorcycle_count: (brand as any).motorcycle_rentals?.[0]?.count || 0
+      motorcycle_count: brand.motorcycle_rentals?.[0]?.count || 0
     }));
 
     // Sort by motorcycle count if requested
@@ -121,7 +121,7 @@ export const brandService = {
   async createBrand(brandData: BrandInsert): Promise<Brand> {
     const { data, error } = await supabase
       .from('brands')
-      .insert(brandData)
+      .insert(brandData as any)
       .select('*')
       .single();
 
@@ -135,8 +135,7 @@ export const brandService = {
 
   // Update brand
   async updateBrand(id: string, brandData: BrandUpdate): Promise<Brand> {
-    const { data, error } = await supabase
-      .from('brands')
+    const { data, error } = await (supabase.from('brands') as any)
       .update({
         ...brandData,
         updated_at: new Date().toISOString()
@@ -196,7 +195,7 @@ export const brandService = {
     }
 
     if (motorcycles && motorcycles.length > 0) {
-      const usedBrandIds = [...new Set(motorcycles.map(m => m.brand_id))];
+      const usedBrandIds = [...new Set(motorcycles.map((m: any) => m.brand_id))];
       throw new Error(`Cannot delete brands: the following brands are being used by motorcycles: ${usedBrandIds.join(', ')}`);
     }
 

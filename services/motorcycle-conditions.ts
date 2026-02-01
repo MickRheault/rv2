@@ -52,7 +52,7 @@ export async function addMotorcycleCondition(condition: MotorcycleConditionInser
 
   const { data, error } = await supabase
     .from('motorcycle_conditions')
-    .insert(condition)
+    .insert(condition as any)
     .select(`
       *,
       condition_types!inner(
@@ -77,8 +77,7 @@ export async function updateMotorcycleCondition(
   conditionTypeId: string,
   updates: { notes?: string | null }
 ): Promise<MotorcycleConditionWithDetails> {
-  const { data, error } = await supabase
-    .from('motorcycle_conditions')
+  const { data, error } = await (supabase.from('motorcycle_conditions') as any)
     .update(updates)
     .eq('motorcycle_id', motorcycleId)
     .eq('condition_type_id', conditionTypeId)
@@ -102,8 +101,7 @@ export async function updateMotorcycleCondition(
 
 // Remove a condition from a motorcycle
 export async function removeMotorcycleCondition(motorcycleId: string, conditionTypeId: string): Promise<void> {
-  const { error } = await supabase
-    .from('motorcycle_conditions')
+  const { error } = await (supabase.from('motorcycle_conditions') as any)
     .delete()
     .eq('motorcycle_id', motorcycleId)
     .eq('condition_type_id', conditionTypeId);
@@ -140,11 +138,11 @@ export async function getAvailableConditionTypes(motorcycleId: string): Promise<
     }
 
     // Create a set of assigned condition type IDs for fast lookup
-    const assignedIds = new Set(assignedConditions?.map(c => c.condition_type_id) || []);
+    const assignedIds = new Set((assignedConditions as any[] || []).map((c: any) => c.condition_type_id) || []);
 
     // Filter out already assigned condition types
-    const availableConditionTypes = (allConditionTypes || []).filter(
-      conditionType => !assignedIds.has(conditionType.id)
+    const availableConditionTypes = ((allConditionTypes as any[]) || []).filter(
+      (conditionType: any) => !assignedIds.has(conditionType.id)
     );
 
     return availableConditionTypes;
@@ -160,8 +158,7 @@ export async function updateMotorcycleConditions(
   conditions: { condition_type_id: string; notes?: string | null }[]
 ): Promise<MotorcycleConditionWithDetails[]> {
   // First, remove all existing conditions for this motorcycle
-  await supabase
-    .from('motorcycle_conditions')
+  await (supabase.from('motorcycle_conditions') as any)
     .delete()
     .eq('motorcycle_id', motorcycleId);
 
@@ -173,8 +170,7 @@ export async function updateMotorcycleConditions(
       notes: condition.notes || null
     }));
 
-    const { data, error } = await supabase
-      .from('motorcycle_conditions')
+    const { data, error } = await (supabase.from('motorcycle_conditions') as any)
       .insert(conditionsToInsert)
       .select(`
         *,

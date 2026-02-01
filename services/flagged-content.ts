@@ -1,10 +1,10 @@
 import { supabase } from '@/lib/supabase/client';
 import { Json } from '@/lib/supabase/database.types';
-import { 
-  FlaggedContent, 
-  FlaggedContentWithChanges, 
-  FlaggedContentStats, 
-  CreateFlaggedContentData, 
+import {
+  FlaggedContent,
+  FlaggedContentWithChanges,
+  FlaggedContentStats,
+  CreateFlaggedContentData,
   UpdateFlaggedContentData,
   ContentType,
   FlagStatus
@@ -15,7 +15,7 @@ export class FlaggedContentService {
   // Create a new flagged content entry
   static async createFlaggedContent(data: CreateFlaggedContentData, originalData: Json): Promise<FlaggedContent> {
     let userId: string | null = null;
-    
+
     try {
       // Try to get the current user, but handle errors gracefully
       const { data: session } = await supabase.auth.getSession();
@@ -34,7 +34,7 @@ export class FlaggedContentService {
       console.warn('Authentication error, proceeding as anonymous:', error);
       await supabase.auth.signOut();
     }
-    
+
     const flaggedContentData = {
       ...data,
       original_data: originalData,
@@ -44,7 +44,7 @@ export class FlaggedContentService {
 
     const { data: result, error } = await supabase
       .from('flagged_content')
-      .insert([flaggedContentData])
+      .insert([flaggedContentData] as any)
       .select('*')
       .single();
 
@@ -63,8 +63,7 @@ export class FlaggedContentService {
     limit = 50,
     offset = 0
   ): Promise<FlaggedContentWithChanges[]> {
-    let query = supabase
-      .from('flagged_content')
+    let query = (supabase.from('flagged_content') as any)
       .select(`
         *,
         changes:flagged_content_changes(*)
@@ -113,15 +112,14 @@ export class FlaggedContentService {
   // Update flagged content (admin only)
   static async updateFlaggedContent(id: string, updates: UpdateFlaggedContentData): Promise<FlaggedContent> {
     const { data: user } = await supabase.auth.getUser();
-    
+
     const updateData = {
       ...updates,
       reviewed_by_admin_id: user.user?.id,
       reviewed_at: new Date().toISOString(),
     };
 
-    const { data, error } = await supabase
-      .from('flagged_content')
+    const { data, error } = await (supabase.from('flagged_content') as any)
       .update(updateData)
       .eq('id', id)
       .select('*')
@@ -138,7 +136,7 @@ export class FlaggedContentService {
   // Apply flagged content changes (admin only)
   static async applyFlaggedContentChanges(id: string): Promise<boolean> {
     const { data: user } = await supabase.auth.getUser();
-    
+
     if (!user.user?.id) {
       throw new Error('User not authenticated');
     }
@@ -147,7 +145,7 @@ export class FlaggedContentService {
       .rpc('apply_flagged_content_changes', {
         flagged_content_id: id,
         admin_id: user.user.id
-      });
+      } as any);
 
     if (error) {
       console.error('Error applying flagged content changes:', error);
@@ -207,7 +205,7 @@ export class FlaggedContentService {
   // Bulk update flagged content status
   static async bulkUpdateStatus(ids: string[], status: FlagStatus, adminNotes?: string): Promise<void> {
     const { data: user } = await supabase.auth.getUser();
-    
+
     const updateData = {
       status,
       admin_notes: adminNotes,
@@ -215,8 +213,7 @@ export class FlaggedContentService {
       reviewed_at: new Date().toISOString(),
     };
 
-    const { error } = await supabase
-      .from('flagged_content')
+    const { error } = await (supabase.from('flagged_content') as any)
       .update(updateData)
       .in('id', ids);
 
@@ -228,8 +225,7 @@ export class FlaggedContentService {
 
   // Delete flagged content (admin only)
   static async deleteFlaggedContent(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('flagged_content')
+    const { error } = await (supabase.from('flagged_content') as any)
       .delete()
       .eq('id', id);
 
@@ -307,16 +303,16 @@ export class FlaggedContentUtils {
   // Compare two objects and return differences
   static compareObjects(original: Json, proposed: Json): Record<string, any> {
     const differences: Record<string, any> = {};
-    
+
     // Ensure both are objects
-    if (typeof original !== 'object' || original === null || 
-        typeof proposed !== 'object' || proposed === null) {
+    if (typeof original !== 'object' || original === null ||
+      typeof proposed !== 'object' || proposed === null) {
       return differences;
     }
-    
+
     const originalObj = original as Record<string, any>;
     const proposedObj = proposed as Record<string, any>;
-    
+
     // Check for changed or new fields
     for (const key in proposedObj) {
       if (originalObj[key] !== proposedObj[key]) {
@@ -327,7 +323,7 @@ export class FlaggedContentUtils {
         };
       }
     }
-    
+
     // Check for removed fields
     for (const key in originalObj) {
       if (!(key in proposedObj)) {
@@ -338,7 +334,7 @@ export class FlaggedContentUtils {
         };
       }
     }
-    
+
     return differences;
   }
 
@@ -362,7 +358,7 @@ export class FlaggedContentUtils {
       'availability_status': 'Availability',
       'brand_name': 'Brand',
       'category_name': 'Category',
-      
+
       // Rental shop fields
       'provider_name': 'Provider Name',
       'full_address': 'Address',
@@ -391,7 +387,7 @@ export class FlaggedContentUtils {
       'rental_rate_per_day',
       'rental_rate_currency',
       'availability_status',
-      
+
       // Rental shop critical fields
       'provider_name',
       'phone',

@@ -29,7 +29,7 @@ export async function getConditionTypes(
   filters: ConditionTypeFilters = {}
 ): Promise<ConditionTypesResponse> {
   const offset = (page - 1) * limit;
-  
+
   let query = supabase
     .from('condition_types')
     .select(`
@@ -56,7 +56,7 @@ export async function getConditionTypes(
   }
 
   // Transform the data to include usage counts
-  const conditionTypesWithUsage: ConditionTypeWithUsage[] = (data || []).map(item => ({
+  const conditionTypesWithUsage: ConditionTypeWithUsage[] = ((data as any[]) || []).map((item: any) => ({
     ...item,
     motorcycle_usage_count: Array.isArray(item.motorcycle_conditions) ? item.motorcycle_conditions.length : 0,
     shop_usage_count: Array.isArray(item.rental_shop_conditions) ? item.rental_shop_conditions.length : 0,
@@ -96,7 +96,7 @@ export async function getConditionTypeById(id: string): Promise<ConditionType | 
 export async function createConditionType(conditionType: ConditionTypeInsert): Promise<ConditionType> {
   const { data, error } = await supabase
     .from('condition_types')
-    .insert(conditionType)
+    .insert(conditionType as any)
     .select()
     .single();
 
@@ -110,8 +110,7 @@ export async function createConditionType(conditionType: ConditionTypeInsert): P
 
 // Update condition type
 export async function updateConditionType(id: string, updates: ConditionTypeUpdate): Promise<ConditionType> {
-  const { data, error } = await supabase
-    .from('condition_types')
+  const { data, error } = await (supabase.from('condition_types') as any)
     .update({
       ...updates,
       updated_at: new Date().toISOString()
@@ -138,7 +137,7 @@ export async function deleteConditionType(id: string): Promise<void> {
       rental_shop_conditions(count)
     `)
     .eq('id', id)
-    .single();
+    .single() as any;
 
   if (usageCheck.error) {
     console.error('Error checking condition type usage:', usageCheck.error);
@@ -152,8 +151,7 @@ export async function deleteConditionType(id: string): Promise<void> {
     throw new Error(`Cannot delete condition type: it is being used by ${motorcycleUsage} motorcycles and ${shopUsage} rental shops`);
   }
 
-  const { error } = await supabase
-    .from('condition_types')
+  const { error } = await (supabase.from('condition_types') as any)
     .delete()
     .eq('id', id);
 

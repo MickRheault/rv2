@@ -3,7 +3,7 @@
 
 import { supabase } from '@/lib/supabase/client'
 import { Database } from '@/lib/supabase/database.types'
-import { 
+import {
   PremiumListing,
   PremiumListingWithDetails,
   PremiumListingSearchParams,
@@ -33,7 +33,7 @@ type DbPremiumAnalyticsInsert = Database['public']['Tables']['premium_analytics'
 
 // Main Premium Listings Service Class
 class PremiumListingsService {
-  
+
   // Get all premium listings with filters and pagination
   static async getPremiumListings(
     params: PremiumListingSearchParams = {}
@@ -54,23 +54,23 @@ class PremiumListingsService {
     if (filters.content_type && filters.content_type !== 'all') {
       query = query.eq('content_type', filters.content_type)
     }
-    
+
     if (filters.tier && filters.tier !== 'all') {
       query = query.eq('premium_tier', filters.tier)
     }
-    
+
     if (filters.status && filters.status !== 'all') {
       query = query.eq('status', filters.status)
     }
-    
+
     if (filters.start_date) {
       query = query.gte('start_date', filters.start_date)
     }
-    
+
     if (filters.end_date) {
       query = query.lte('end_date', filters.end_date)
     }
-    
+
     if (filters.expiring_soon) {
       const sevenDaysFromNow = new Date()
       sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7)
@@ -78,7 +78,7 @@ class PremiumListingsService {
         .eq('status', 'active')
         .lte('end_date', sevenDaysFromNow.toISOString().split('T')[0])
     }
-    
+
     if (filters.search) {
       query = query.or(`admin_notes.ilike.%${filters.search}%,entity_id.ilike.%${filters.search}%`)
     }
@@ -153,7 +153,7 @@ class PremiumListingsService {
   ): Promise<PremiumListing> {
     const now = new Date()
     const endDate = new Date(now.getTime() + (data.duration_days * 24 * 60 * 60 * 1000))
-    
+
     const insertData: DbPremiumListingInsert = {
       content_type: data.content_type,
       entity_id: data.entity_id,
@@ -171,7 +171,7 @@ class PremiumListingsService {
 
     const { data: result, error } = await supabase
       .from('premium_listings')
-      .insert(insertData)
+      .insert(insertData as any)
       .select()
       .single()
 
@@ -193,9 +193,8 @@ class PremiumListingsService {
       ...data,
       updated_by: adminId || null
     }
-    
-    const { data: result, error } = await supabase
-      .from('premium_listings')
+
+    const { data: result, error } = await (supabase.from('premium_listings') as any)
       .update(updateData)
       .eq('id', id)
       .select()
@@ -211,8 +210,7 @@ class PremiumListingsService {
 
   // Delete premium listing
   static async deletePremiumListing(id: string, adminId?: string): Promise<void> {
-    const { error } = await supabase
-      .from('premium_listings')
+    const { error } = await (supabase.from('premium_listings') as any)
       .delete()
       .eq('id', id)
 
@@ -236,7 +234,7 @@ class PremiumListingsService {
     if (content_type) {
       query = query.eq('content_type', content_type)
     }
-    
+
     if (tier) {
       query = query.eq('premium_tier', tier)
     }
@@ -249,7 +247,8 @@ class PremiumListingsService {
     }
 
     // Transform to ActivePremiumListing with calculated fields
-    return (data || []).map(listing => ({
+    // Transform to ActivePremiumListing with calculated fields
+    return ((data as any[]) || []).map((listing: any) => ({
       ...listing,
       boost_score: getPremiumBoostScore(listing.premium_tier),
       days_remaining: calculateDaysRemaining(listing.end_date)
@@ -319,9 +318,9 @@ class PremiumListingsService {
     return {
       total_active_listings: listings.filter((l: any) => l.status === 'active' && new Date(l.end_date) > today).length,
       total_expired_listings: listings.filter((l: any) => l.status === 'expired' || new Date(l.end_date) <= today).length,
-      expiring_soon: listings.filter((l: any) => 
-        l.status === 'active' && 
-        new Date(l.end_date) > today && 
+      expiring_soon: listings.filter((l: any) =>
+        l.status === 'active' &&
+        new Date(l.end_date) > today &&
         new Date(l.end_date) <= sevenDaysFromNow
       ).length,
       revenue_this_month: listings
@@ -347,9 +346,8 @@ class PremiumListingsService {
     status: PremiumStatus,
     adminId?: string
   ): Promise<void> {
-    const { error } = await supabase
-      .from('premium_listings')
-      .update({ 
+    const { error } = await (supabase.from('premium_listings') as any)
+      .update({
         status,
         updated_by: adminId || null
       })
@@ -364,7 +362,7 @@ class PremiumListingsService {
 
 // Premium Pricing Plans Service
 class PremiumPricingService {
-  
+
   // Get all active pricing plans
   static async getPricingPlans(): Promise<PremiumPricingPlansResponse> {
     const { data, error, count } = await supabase
@@ -431,7 +429,7 @@ class PremiumPricingService {
 
 // Premium Analytics Service
 class PremiumAnalyticsService {
-  
+
   // Track metric for premium listing
   static async trackMetric(
     premium_listing_id: string,
@@ -440,7 +438,7 @@ class PremiumAnalyticsService {
     additional_data?: any
   ): Promise<void> {
     const today = new Date().toISOString().split('T')[0]
-    
+
     const insertData: DbPremiumAnalyticsInsert = {
       premium_listing_id,
       metric_type,
@@ -449,8 +447,7 @@ class PremiumAnalyticsService {
       metadata: additional_data || null
     }
 
-    const { error } = await supabase
-      .from('premium_analytics')
+    const { error } = await (supabase.from('premium_analytics') as any)
       .upsert(insertData, {
         onConflict: 'premium_listing_id,metric_type,recorded_date'
       })
@@ -472,7 +469,7 @@ class PremiumAnalyticsService {
         p_listing_id: premium_listing_id,
         p_start_date: start_date || undefined,
         p_end_date: end_date || undefined
-      })
+      } as any)
 
       if (error) {
         console.error('Error fetching analytics summary:', error)
@@ -514,7 +511,7 @@ class PremiumAnalyticsService {
   ): Promise<PremiumAnalytics[]> {
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - days)
-    
+
     const { data, error } = await supabase
       .from('premium_analytics')
       .select('*')
@@ -535,7 +532,7 @@ class PremiumAnalyticsService {
     metrics: { premium_listing_id: string; metric_type: PremiumMetricType; value?: number }[]
   ): Promise<void> {
     const today = new Date().toISOString().split('T')[0]
-    
+
     const insertData: DbPremiumAnalyticsInsert[] = metrics.map(metric => ({
       premium_listing_id: metric.premium_listing_id,
       metric_type: metric.metric_type,
@@ -543,8 +540,7 @@ class PremiumAnalyticsService {
       recorded_date: today
     }))
 
-    const { error } = await supabase
-      .from('premium_analytics')
+    const { error } = await (supabase.from('premium_analytics') as any)
       .upsert(insertData, {
         onConflict: 'premium_listing_id,metric_type,recorded_date'
       })
@@ -558,7 +554,7 @@ class PremiumAnalyticsService {
 
 // Premium Utilities Service
 class PremiumUtilsService {
-  
+
   // Check if entity has active premium listing
   static async hasActivePremiumListing(
     content_type: PremiumContentType,
@@ -574,7 +570,7 @@ class PremiumUtilsService {
     entity_id: string
   ): Promise<{ isPremium: boolean; tier?: PremiumTier; daysRemaining?: number }> {
     const listing = await PremiumListingsService.getPremiumListingByEntity(content_type, entity_id)
-    
+
     if (!listing || !isPremiumActive(listing)) {
       return { isPremium: false }
     }
@@ -595,25 +591,25 @@ class PremiumUtilsService {
     console.log('Called with content_type:', content_type)
     console.log('Called with entity_ids:', entity_ids)
     console.log('entity_ids length:', entity_ids.length)
-    
+
     // Debug: Check current date
     const currentDate = new Date().toISOString().split('T')[0]
     console.log('Current date for comparison:', currentDate)
-    
+
     // Debug: Show the exact query being built
     console.log('Building query with filters:')
     console.log('  - content_type =', content_type)
     console.log('  - entity_id IN', entity_ids)
     console.log('  - status = active')
     console.log('  - end_date >', currentDate)
-    
+
     // Debug: Test database connection and table access
     console.log('Testing database connection...')
     const { count, error: countError } = await supabase
       .from('premium_listings')
       .select('*', { count: 'exact', head: true })
     console.log('Total premium_listings count:', count, 'Error:', countError)
-    
+
     // Debug: Test specific record exists
     console.log('Testing specific record access...')
     const { data: testData, error: testError } = await supabase
@@ -622,9 +618,8 @@ class PremiumUtilsService {
       .eq('entity_id', entity_ids[0])
       .limit(1)
     console.log('Direct entity lookup result:', testData, 'Error:', testError)
-    
-    const { data, error } = await supabase
-      .from('premium_listings')
+
+    const { data, error } = await (supabase.from('premium_listings') as any)
       .select('entity_id, premium_tier')
       .eq('content_type', content_type)
       .in('entity_id', entity_ids)
@@ -642,7 +637,7 @@ class PremiumUtilsService {
     }
 
     const premiumMap = new Map<string, { tier: PremiumTier; boostScore: number }>()
-    data?.forEach(item => {
+    data?.forEach((item: any) => {
       console.log(`Adding to map: ${item.entity_id} -> {tier: ${item.premium_tier}, boostScore: ${getPremiumBoostScore(item.premium_tier)}}`)
       premiumMap.set(item.entity_id, {
         tier: item.premium_tier,
@@ -674,7 +669,7 @@ class PremiumUtilsService {
         const tierOrder = { featured: 3, platinum: 2, gold: 1 }
         const aScore = tierOrder[aPremium.tier] || 0
         const bScore = tierOrder[bPremium.tier] || 0
-        
+
         if (aScore !== bScore) return bScore - aScore
         if (aPremium.boostScore !== bPremium.boostScore) {
           return bPremium.boostScore - aPremium.boostScore
@@ -683,7 +678,7 @@ class PremiumUtilsService {
 
       // Use provided sort function for same premium level
       if (sortFn) return sortFn(a, b)
-      
+
       return 0
     })
   }
@@ -699,7 +694,7 @@ export {
 }
 
 // Export default service
-export default PremiumListingsService 
- 
+export default PremiumListingsService
+
 
 

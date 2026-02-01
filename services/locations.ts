@@ -198,7 +198,7 @@ export const locationService = {
         `)
         .ilike('name', `%${query}%`)
         .limit(limit),
-        
+
       // Search provinces
       supabase
         .from('provinces')
@@ -208,7 +208,7 @@ export const locationService = {
         `)
         .ilike('name', `%${query}%`)
         .limit(limit),
-        
+
       // Search countries
       supabase
         .from('countries')
@@ -243,7 +243,7 @@ export const locationService = {
     }
 
     const cityIds = Array.from(
-      new Set((shopCityRows || []).map((row: any) => row.city_id).filter(Boolean))
+      new Set((shopCityRows || [] as any[]).map((row: any) => row.city_id).filter(Boolean))
     ) as string[]
 
     if (cityIds.length === 0) {
@@ -278,28 +278,28 @@ export const locationService = {
       }>
     }> = {}
 
-    cities?.forEach(city => {
-      if (!city.provinces?.countries) return
+      ; (cities || [] as any[]).forEach((city: any) => {
+        if (!city.provinces?.countries) return
 
-      const countryCode = city.provinces.countries.code
-      const provinceId = city.provinces.id
+        const countryCode = city.provinces.countries.code
+        const provinceId = city.provinces.id
 
-      if (!locationsByCountry[countryCode]) {
-        locationsByCountry[countryCode] = {
-          country: city.provinces.countries,
-          provinces: {}
+        if (!locationsByCountry[countryCode]) {
+          locationsByCountry[countryCode] = {
+            country: city.provinces.countries,
+            provinces: {}
+          }
         }
-      }
 
-      if (!locationsByCountry[countryCode].provinces[provinceId]) {
-        locationsByCountry[countryCode].provinces[provinceId] = {
-          province: city.provinces,
-          cities: []
+        if (!locationsByCountry[countryCode].provinces[provinceId]) {
+          locationsByCountry[countryCode].provinces[provinceId] = {
+            province: city.provinces,
+            cities: []
+          }
         }
-      }
 
-      locationsByCountry[countryCode].provinces[provinceId].cities.push(city as CityWithLocation)
-    })
+        locationsByCountry[countryCode].provinces[provinceId].cities.push(city as CityWithLocation)
+      })
 
     return locationsByCountry
   },
@@ -325,10 +325,10 @@ export const locationService = {
     }
 
     // Count shops per city and sort by popularity
-    const citiesWithCounts = data?.map(city => ({
+    const citiesWithCounts = (data as any[] || [])?.map((city: any) => ({
       ...city as CityWithLocation,
       shopCount: city.rental_shops?.length || 0
-    })).sort((a, b) => b.shopCount - a.shopCount).slice(0, limit) || []
+    })).sort((a: any, b: any) => b.shopCount - a.shopCount).slice(0, limit) || []
 
     return citiesWithCounts
   },
@@ -340,17 +340,17 @@ export const locationService = {
       supabase
         .from('countries')
         .select('*', { count: 'exact', head: true }),
-      
+
       // Total provinces  
       supabase
         .from('provinces')
         .select('*', { count: 'exact', head: true }),
-        
+
       // Total cities
       supabase
         .from('cities')
         .select('*', { count: 'exact', head: true }),
-        
+
       // Cities with rental shops
       supabase
         .from('cities')
@@ -372,7 +372,7 @@ export const locationService = {
   async getCountryByName(countryName: string) {
     // Convert country name slug to search term (e.g., "new-zealand" -> "new zealand")
     const searchName = countryName.replace(/-/g, ' ')
-    
+
     const { data, error } = await supabase
       .from('countries')
       .select('*')
@@ -395,7 +395,7 @@ export const locationService = {
   async getCityByName(cityName: string, countryCode: string) {
     // Convert city name slug to search term (e.g., "new-york" -> "new york")
     const searchName = cityName.replace(/-/g, ' ')
-    
+
     const { data, error } = await supabase
       .from('cities')
       .select(`

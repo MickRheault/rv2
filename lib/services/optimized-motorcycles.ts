@@ -127,14 +127,14 @@ export const optimizedMotorcycleService = {
             .not('brands', 'is', null)
             .then(({ data }) => {
               const brandCounts = new Map()
-              data?.forEach(item => {
-                if (item.brands) {
-                  const count = brandCounts.get(item.brands.id) || 0
-                  brandCounts.set(item.brands.id, count + 1)
-                }
-              })
+                ; (data as any)?.forEach((item: any) => {
+                  if (item.brands) {
+                    const count = brandCounts.get(item.brands.id) || 0
+                    brandCounts.set(item.brands.id, count + 1)
+                  }
+                })
               return Array.from(brandCounts.entries()).map(([id, count]) => {
-                const brand = data?.find(item => item.brands?.id === id)?.brands
+                const brand = (data as any)?.find((item: any) => item.brands?.id === id)?.brands
                 return brand ? { ...brand, count } : null
               }).filter(Boolean)
             }),
@@ -146,14 +146,14 @@ export const optimizedMotorcycleService = {
             .not('categories', 'is', null)
             .then(({ data }) => {
               const categoryCounts = new Map()
-              data?.forEach(item => {
-                if (item.categories) {
-                  const count = categoryCounts.get(item.categories.id) || 0
-                  categoryCounts.set(item.categories.id, count + 1)
-                }
-              })
+                ; (data as any)?.forEach((item: any) => {
+                  if (item.categories) {
+                    const count = categoryCounts.get(item.categories.id) || 0
+                    categoryCounts.set(item.categories.id, count + 1)
+                  }
+                })
               return Array.from(categoryCounts.entries()).map(([id, count]) => {
-                const category = data?.find(item => item.categories?.id === id)?.categories
+                const category = (data as any)?.find((item: any) => item.categories?.id === id)?.categories
                 return category ? { ...category, count } : null
               }).filter(Boolean)
             }),
@@ -164,14 +164,14 @@ export const optimizedMotorcycleService = {
             .select('feature_id, features(id, name, description)')
             .then(({ data }) => {
               const featureCounts = new Map()
-              data?.forEach(item => {
-                if (item.features) {
-                  const count = featureCounts.get(item.features.id) || 0
-                  featureCounts.set(item.features.id, count + 1)
-                }
-              })
+                ; (data as any)?.forEach((item: any) => {
+                  if (item.features) {
+                    const count = featureCounts.get(item.features.id) || 0
+                    featureCounts.set(item.features.id, count + 1)
+                  }
+                })
               return Array.from(featureCounts.entries()).map(([id, count]) => {
-                const feature = data?.find(item => item.features?.id === id)?.features
+                const feature = (data as any)?.find((item: any) => item.features?.id === id)?.features
                 return feature ? { ...feature, count } : null
               }).filter(Boolean)
             }),
@@ -184,7 +184,7 @@ export const optimizedMotorcycleService = {
             .order('rental_rate_per_day')
             .then(({ data }) => {
               if (!data || data.length === 0) return { min: 0, max: 0 }
-              const prices = data.map(item => item.rental_rate_per_day).filter((price): price is number => price !== null)
+              const prices = (data as any).map((item: any) => item.rental_rate_per_day).filter((price: any): price is number => price !== null)
               return {
                 min: prices.length > 0 ? Math.min(...prices) : 0,
                 max: prices.length > 0 ? Math.max(...prices) : 0
@@ -199,7 +199,7 @@ export const optimizedMotorcycleService = {
             .order('engine_capacity_cc')
             .then(({ data }) => {
               if (!data || data.length === 0) return { min: 0, max: 0 }
-              const capacities = data.map(item => item.engine_capacity_cc).filter((capacity): capacity is number => capacity !== null)
+              const capacities = (data as any).map((item: any) => item.engine_capacity_cc).filter((capacity: any): capacity is number => capacity !== null)
               return {
                 min: capacities.length > 0 ? Math.min(...capacities) : 0,
                 max: capacities.length > 0 ? Math.max(...capacities) : 0
