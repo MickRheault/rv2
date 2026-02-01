@@ -1,5 +1,8 @@
 import { supabase } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/database.types';
+import { SupabaseClient } from '@supabase/supabase-js';
+
+const typedSupabase = supabase as unknown as SupabaseClient<Database>;
 
 export type Category = Database['public']['Tables']['categories']['Row'];
 export type CategoryInsert = Database['public']['Tables']['categories']['Insert'];
@@ -119,9 +122,9 @@ export const categoryService = {
 
   // Create new category
   async createCategory(categoryData: CategoryInsert): Promise<Category> {
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('categories')
-      .insert(categoryData as any)
+      .insert(categoryData)
       .select('*')
       .single();
 
@@ -135,7 +138,7 @@ export const categoryService = {
 
   // Update category
   async updateCategory(id: string, categoryData: CategoryUpdate): Promise<Category> {
-    const { data, error } = await (supabase.from('categories') as any)
+    const { data, error } = await typedSupabase.from('categories')
       .update({
         ...categoryData,
         updated_at: new Date().toISOString()
@@ -239,7 +242,7 @@ export const categoryService = {
 
   // Get motorcycles affected by a category (for impact analysis)
   async getMotorcyclesByCategory(categoryId: string, limit: number = 50): Promise<any[]> {
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('motorcycle_rentals')
       .select(`
         id,
@@ -264,7 +267,7 @@ export const categoryService = {
 
   // Get count of motorcycles for a category
   async getMotorcycleCountByCategory(categoryId: string): Promise<number> {
-    const { count, error } = await supabase
+    const { count, error } = await typedSupabase
       .from('motorcycle_rentals')
       .select('*', { count: 'exact', head: true })
       .eq('category_id', categoryId);

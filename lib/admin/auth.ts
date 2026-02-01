@@ -1,5 +1,7 @@
 import { jwtDecode } from 'jwt-decode';
 import { supabase } from '@/lib/supabase/client';
+import { Database } from '@/lib/supabase/database.types';
+import { SupabaseClient } from '@supabase/supabase-js';
 import type { AppRole, AppPermission, AdminUser, UserRole, RolePermission } from '@/types/admin';
 
 interface CustomJwtPayload {
@@ -17,7 +19,8 @@ interface CustomJwtPayload {
  */
 export async function getCurrentUserRole(): Promise<AppRole | null> {
   try {
-    const { data: { session } } = await supabase.auth.getSession();
+    const typedSupabase = supabase as unknown as SupabaseClient<Database>;
+    const { data: { session } } = await typedSupabase.auth.getSession();
 
     if (!session?.access_token) {
       return null;
@@ -34,12 +37,12 @@ export async function getCurrentUserRole(): Promise<AppRole | null> {
     }
 
     // Fallback to database lookup
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await typedSupabase.auth.getUser();
     if (!user) {
       return null;
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
@@ -51,7 +54,7 @@ export async function getCurrentUserRole(): Promise<AppRole | null> {
       return 'user';
     }
 
-    return (data as any)?.role || 'user';
+    return data?.role || 'user';
   } catch (error) {
     console.error('Error getting user role:', error);
     return null;
@@ -97,9 +100,10 @@ export async function getUserPermissions(role: AppRole): Promise<AppPermission[]
  */
 export async function hasPermission(permission: AppPermission): Promise<boolean> {
   try {
-    const { data, error } = await supabase.rpc('authorize', {
+    const typedSupabase = supabase as unknown as SupabaseClient<Database>;
+    const { data, error } = await typedSupabase.rpc('authorize', {
       requested_permission: permission
-    } as any);
+    });
 
     if (error) {
       console.error('Error checking permission:', error);
@@ -151,12 +155,13 @@ export async function getCurrentAdminUser(): Promise<AdminUser | null> {
  */
 export async function assignAdminRole(userId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const { error } = await supabase
+    const typedSupabase = supabase as unknown as SupabaseClient<Database>;
+    const { error } = await typedSupabase
       .from('user_roles')
       .upsert({
         user_id: userId,
         role: 'admin'
-      } as any, {
+      }, {
         onConflict: 'user_id,role'
       });
 
@@ -178,7 +183,8 @@ export async function assignAdminRole(userId: string): Promise<{ success: boolea
  */
 export async function removeAdminRole(userId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const { error } = await supabase
+    const typedSupabase = supabase as unknown as SupabaseClient<Database>;
+    const { error } = await typedSupabase
       .from('user_roles')
       .delete()
       .eq('user_id', userId)
@@ -202,7 +208,8 @@ export async function removeAdminRole(userId: string): Promise<{ success: boolea
  */
 export async function getAdminUsers(): Promise<AdminUser[]> {
   try {
-    const { data, error } = await supabase
+    const typedSupabase = supabase as unknown as SupabaseClient<Database>;
+    const { data, error } = await typedSupabase
       .from('user_roles')
       .select(`
         user_id,
@@ -220,7 +227,7 @@ export async function getAdminUsers(): Promise<AdminUser[]> {
     // Get user details from auth.users (requires proper RLS policies)
     const adminUsers: AdminUser[] = [];
 
-    for (const roleData of (data || []) as any[]) {
+    for (const roleData of (data || [])) {
       try {
         const { data: userData, error: userError } = await supabase.auth.admin.getUserById(roleData.user_id);
 
