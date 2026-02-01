@@ -1,5 +1,8 @@
 import { supabase } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/database.types';
+import { SupabaseClient } from '@supabase/supabase-js';
+
+const typedSupabase = supabase as unknown as SupabaseClient<Database>;
 
 export type BusinessStatus = Database['public']['Tables']['business_statuses']['Row'];
 export type BusinessStatusInsert = Database['public']['Tables']['business_statuses']['Insert'];
@@ -119,9 +122,9 @@ export const businessStatusService = {
 
   // Create new business status
   async createBusinessStatus(statusData: BusinessStatusInsert): Promise<BusinessStatus> {
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('business_statuses')
-      .insert(statusData as any)
+      .insert(statusData)
       .select('*')
       .single();
 
@@ -135,7 +138,7 @@ export const businessStatusService = {
 
   // Update business status
   async updateBusinessStatus(id: number, statusData: BusinessStatusUpdate): Promise<BusinessStatus> {
-    const { data, error } = await (supabase.from('business_statuses') as any)
+    const { data, error } = await typedSupabase.from('business_statuses')
       .update({
         ...statusData,
         updated_at: new Date().toISOString()

@@ -1,5 +1,8 @@
 import { supabase } from '@/lib/supabase/client'
 import { Database } from '@/lib/supabase/database.types'
+import { SupabaseClient } from '@supabase/supabase-js'
+
+const typedSupabase = supabase as unknown as SupabaseClient<Database>
 import { motorcycleService, SearchFilters as MotorcycleFilters } from './motorcycles'
 import { shopService, ShopSearchFilters, ShopWithDetails } from './shops'
 import { locationService } from './locations'
@@ -48,7 +51,7 @@ export const searchService = {
     }
 
     // Otherwise, look up by name (case-insensitive)
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('brands')
       .select('id')
       .ilike('name', brandNameOrId)
@@ -70,7 +73,7 @@ export const searchService = {
     }
 
     // Otherwise, look up by name (case-insensitive)
-    const { data, error } = await supabase
+    const { data, error } = await typedSupabase
       .from('categories')
       .select('id')
       .ilike('name', categoryNameOrId)
@@ -266,7 +269,7 @@ export const searchService = {
     const results: LocationSearchResult[] = []
 
     // Search cities with shop/motorcycle counts
-    const { data: cities } = await supabase
+    const { data: cities } = await typedSupabase
       .from('cities')
       .select(`
         *,
@@ -279,16 +282,16 @@ export const searchService = {
       .limit(limit)
 
     // Get counts for each city
-    for (const city of (cities as any[]) || []) {
+    for (const city of cities || []) {
       if (city.provinces?.countries) {
         // Get shop count for this city
-        const { count: shopCount } = await supabase
+        const { count: shopCount } = await typedSupabase
           .from('rental_shops')
           .select('*', { count: 'exact', head: true })
           .eq('city_id', city.id)
 
         // Get motorcycle count for this city - need to join through rental_shops
-        const { count: motorcycleCount } = await supabase
+        const { count: motorcycleCount } = await typedSupabase
           .from('motorcycle_rentals')
           .select('*, rental_shops!inner(*)', { count: 'exact', head: true })
           .eq('rental_shops.city_id', city.id)
@@ -308,7 +311,7 @@ export const searchService = {
     }
 
     // Search provinces with aggregated counts
-    const { data: provinces } = await supabase
+    const { data: provinces } = await typedSupabase
       .from('provinces')
       .select(`
         *,
@@ -318,15 +321,17 @@ export const searchService = {
       .limit(Math.max(1, limit - results.length))
 
     // Get counts for each province
-    for (const province of (provinces as any[]) || []) {
+    for (const province of provinces || []) {
       if (province.countries) {
         // Get shop count for this province
-        const { count: shopCount } = await (supabase.from('rental_shops') as any)
+        const { count: shopCount } = await typedSupabase
+          .from('rental_shops')
           .select('*, cities!inner(*)', { count: 'exact', head: true })
           .eq('cities.province_id', province.id)
 
         // Get motorcycle count for this province
-        const { count: motorcycleCount } = await (supabase.from('motorcycle_rentals') as any)
+        const { count: motorcycleCount } = await typedSupabase
+          .from('motorcycle_rentals')
           .select('*, rental_shops!inner(*, cities!inner(*))', { count: 'exact', head: true })
           .eq('rental_shops.cities.province_id', province.id)
 
@@ -345,21 +350,23 @@ export const searchService = {
 
     // Search countries with aggregated counts
     if (results.length < limit) {
-      const { data: countries } = await supabase
+      const { data: countries } = await typedSupabase
         .from('countries')
         .select('*')
         .or(`name.ilike.%${searchQuery}%,code.ilike.%${searchQuery}%`)
         .limit(limit - results.length)
 
       // Get counts for each country
-      for (const country of (countries as any[]) || []) {
+      for (const country of countries || []) {
         // Get shop count for this country
-        const { count: shopCount } = await (supabase.from('rental_shops') as any)
+        const { count: shopCount } = await typedSupabase
+          .from('rental_shops')
           .select('*, cities!inner(*, provinces!inner(*))', { count: 'exact', head: true })
           .eq('cities.provinces.country_code', country.code)
 
         // Get motorcycle count for this country
-        const { count: motorcycleCount } = await (supabase.from('motorcycle_rentals') as any)
+        const { count: motorcycleCount } = await typedSupabase
+          .from('motorcycle_rentals')
           .select('*, rental_shops!inner(*, cities!inner(*, provinces!inner(*)))', { count: 'exact', head: true })
           .eq('rental_shops.cities.provinces.country_code', country.code)
 
@@ -411,7 +418,7 @@ export const searchService = {
   async getLocationHierarchy(locationId: string, locationType: 'country' | 'province' | 'city') {
     switch (locationType) {
       case 'city':
-        const city = await supabase
+        const city = await typedSupabase
           .from('cities')
           .select(`
             *,
@@ -430,7 +437,7 @@ export const searchService = {
         } : null
 
       case 'province':
-        const province = await supabase
+        const province = await typedSupabase
           .from('provinces')
           .select(`
             *,
@@ -445,7 +452,7 @@ export const searchService = {
         } : null
 
       case 'country':
-        const country = await supabase
+        const country = await typedSupabase
           .from('countries')
           .select('*')
           .eq('code', locationId)
