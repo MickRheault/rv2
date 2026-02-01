@@ -80,7 +80,7 @@ export function getFreshnessIconEmoji(status: FreshnessStatus): string {
 
 // Main Data Freshness Service Class
 export class DataFreshnessService {
-  
+
   // Get comprehensive data freshness statistics
   static async getDataFreshnessStats(): Promise<DataFreshnessStats> {
     try {
@@ -130,13 +130,13 @@ export class DataFreshnessService {
 
     try {
       const offset = (page - 1) * per_page
-      
+
       const { data, error } = await supabase.rpc('get_entities_by_freshness', {
         p_content_type: content_type === 'all' ? undefined : content_type as FreshnessContentType,
         p_freshness_status: freshness_status === 'all' ? undefined : freshness_status as FreshnessStatus,
         p_limit: per_page,
         p_offset: offset
-      })
+      } as any)
 
       if (error) {
         console.error('Error fetching entities by freshness:', error)
@@ -147,14 +147,14 @@ export class DataFreshnessService {
       let countQuery = supabase
         .from('data_freshness')
         .select('*', { count: 'exact', head: true })
-      
+
       if (content_type !== 'all') {
         countQuery = countQuery.eq('content_type', content_type as FreshnessContentType)
       }
       if (freshness_status !== 'all') {
         countQuery = countQuery.eq('freshness_status', freshness_status as FreshnessStatus)
       }
-      
+
       const { count: totalCount, error: countError } = await countQuery
 
       if (countError) {
@@ -238,8 +238,7 @@ export class DataFreshnessService {
     data_source: string = 'manual'
   ): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('data_freshness')
+      const { error } = await (supabase.from('data_freshness') as any)
         .upsert({
           content_type,
           entity_id,
@@ -297,7 +296,7 @@ export class DataFreshnessService {
         p_freshness_status: undefined, // Get all, we'll filter on client side
         p_limit: limit * 2, // Get more to account for filtering
         p_offset: 0
-      })
+      } as any)
 
       if (error) {
         console.error('Error fetching entities needing attention:', error)
@@ -305,8 +304,8 @@ export class DataFreshnessService {
       }
 
       // Filter for stale and very_stale only, then take the requested limit
-      const needingAttention = (data || [])
-        .filter((entity: EntityFreshness) => 
+      const needingAttention = ((data as any[]) || [])
+        .filter((entity: EntityFreshness) =>
           entity.freshness_status === 'stale' || entity.freshness_status === 'very_stale'
         )
         .slice(0, limit)

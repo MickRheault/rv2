@@ -78,9 +78,9 @@ export const businessStatusService = {
     }
 
     // Process data to include shop counts
-    const businessStatusesWithStats: BusinessStatusWithStats[] = (data || []).map(status => ({
+    const businessStatusesWithStats: BusinessStatusWithStats[] = ((data as any[]) || []).map((status: any) => ({
       ...status,
-      shop_count: (status as any).rental_shops?.[0]?.count || 0
+      shop_count: status.rental_shops?.[0]?.count || 0
     }));
 
     // Sort by shop count if requested
@@ -121,7 +121,7 @@ export const businessStatusService = {
   async createBusinessStatus(statusData: BusinessStatusInsert): Promise<BusinessStatus> {
     const { data, error } = await supabase
       .from('business_statuses')
-      .insert(statusData)
+      .insert(statusData as any)
       .select('*')
       .single();
 
@@ -135,8 +135,7 @@ export const businessStatusService = {
 
   // Update business status
   async updateBusinessStatus(id: number, statusData: BusinessStatusUpdate): Promise<BusinessStatus> {
-    const { data, error } = await supabase
-      .from('business_statuses')
+    const { data, error } = await (supabase.from('business_statuses') as any)
       .update({
         ...statusData,
         updated_at: new Date().toISOString()
@@ -197,7 +196,7 @@ export const businessStatusService = {
     }
 
     if (shops && shops.length > 0) {
-      const usedStatusIds = [...new Set(shops.map(s => s.business_status_id).filter(Boolean))];
+      const usedStatusIds = [...new Set(shops.map((s: any) => s.business_status_id).filter(Boolean))];
       throw new Error(`Cannot delete business statuses: the following statuses are being used by rental shops: ${usedStatusIds.join(', ')}`);
     }
 

@@ -39,7 +39,7 @@ export async function addRentalRateTier(rateTier: RentalRateTierInsert): Promise
   }
 
   // Validate no overlapping ranges
-  const hasOverlap = existingTiers?.some(tier => {
+  const hasOverlap = existingTiers?.some((tier: any) => {
     const newMin = rateTier.min_days;
     const newMax = rateTier.max_days || 999999; // Treat null as infinity
     const existingMin = tier.min_days;
@@ -55,7 +55,7 @@ export async function addRentalRateTier(rateTier: RentalRateTierInsert): Promise
 
   const { data, error } = await supabase
     .from('rental_rate_tiers')
-    .insert(rateTier)
+    .insert(rateTier as any)
     .select()
     .single();
 
@@ -84,7 +84,7 @@ export async function updateRentalRateTier(id: string, updates: RentalRateTierUp
     const { data: existingTiers, error: checkError } = await supabase
       .from('rental_rate_tiers')
       .select('*')
-      .eq('motorcycle_id', currentTier.motorcycle_id)
+      .eq('motorcycle_id', (currentTier as any).motorcycle_id)
       .neq('id', id); // Exclude the current tier
 
     if (checkError) {
@@ -93,12 +93,12 @@ export async function updateRentalRateTier(id: string, updates: RentalRateTierUp
 
     // Build the updated tier data
     const updatedTier = {
-      ...currentTier,
+      ...(currentTier as any),
       ...updates
     };
 
     // Validate no overlapping ranges
-    const hasOverlap = existingTiers?.some(tier => {
+    const hasOverlap = existingTiers?.some((tier: any) => {
       const newMin = updatedTier.min_days;
       const newMax = updatedTier.max_days || 999999;
       const existingMin = tier.min_days;
@@ -112,8 +112,7 @@ export async function updateRentalRateTier(id: string, updates: RentalRateTierUp
     }
   }
 
-  const { data, error } = await supabase
-    .from('rental_rate_tiers')
+  const { data, error } = await (supabase.from('rental_rate_tiers') as any)
     .update(updates)
     .eq('id', id)
     .select()
@@ -129,8 +128,7 @@ export async function updateRentalRateTier(id: string, updates: RentalRateTierUp
 
 // Remove rate tier
 export async function removeRentalRateTier(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('rental_rate_tiers')
+  const { error } = await (supabase.from('rental_rate_tiers') as any)
     .delete()
     .eq('id', id);
 
@@ -142,12 +140,11 @@ export async function removeRentalRateTier(id: string): Promise<void> {
 
 // Update multiple rate tiers for a motorcycle (bulk operation)
 export async function updateMotorcycleRateTiers(
-  motorcycleId: string, 
+  motorcycleId: string,
   rateTiers: RentalRateTierInsert[]
 ): Promise<RentalRateTier[]> {
   // First, remove all existing rate tiers for this motorcycle
-  const { error: deleteError } = await supabase
-    .from('rental_rate_tiers')
+  const { error: deleteError } = await (supabase.from('rental_rate_tiers') as any)
     .delete()
     .eq('motorcycle_id', motorcycleId);
 
@@ -167,7 +164,7 @@ export async function updateMotorcycleRateTiers(
     const current = sortedTiers[i];
     const next = sortedTiers[i + 1];
     const currentMax = current.max_days || 999999;
-    
+
     if (currentMax >= next.min_days) {
       throw new Error(`Rate tier overlap detected between ${current.min_days}-${current.max_days || '∞'} days and ${next.min_days}-${next.max_days || '∞'} days`);
     }
@@ -176,7 +173,7 @@ export async function updateMotorcycleRateTiers(
   // Insert new rate tiers
   const { data, error } = await supabase
     .from('rental_rate_tiers')
-    .insert(rateTiers)
+    .insert(rateTiers as any)
     .select();
 
   if (error) {
@@ -190,7 +187,7 @@ export async function updateMotorcycleRateTiers(
 // Get rate tier suggestions based on common patterns
 export function getRateTierSuggestions(baseDailyRate: number, currency: string): RentalRateTierInsert[] {
   const motorcycleId = ''; // Will be set by caller
-  
+
   return [
     {
       motorcycle_id: motorcycleId,

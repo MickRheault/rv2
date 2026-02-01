@@ -59,7 +59,7 @@ export const searchService = {
       return undefined
     }
 
-    return data.id
+    return (data as any).id
   },
 
   // Helper function to resolve category name to UUID
@@ -81,7 +81,7 @@ export const searchService = {
       return undefined
     }
 
-    return data.id
+    return (data as any).id
   },
 
   // Main location-based search function
@@ -169,7 +169,7 @@ export const searchService = {
         limit: contentType === 'shops' ? limit : 1000, // Get all for counts when showing 'all'
         offset: contentType === 'shops' ? offset : 0
       })
-      
+
       // Get premium information for shops
       const shopIds = rawShopResults.shops.map(shop => shop.id)
       const premiumMap = await PremiumUtilsService.getPremiumEntities('rental_shop', shopIds)
@@ -223,7 +223,7 @@ export const searchService = {
 
 
     // Get location suggestions if locationQuery was provided
-    const locationSuggestions = locationQuery 
+    const locationSuggestions = locationQuery
       ? await this.searchLocations(locationQuery, 5)
       : []
 
@@ -258,7 +258,7 @@ export const searchService = {
     // Extract the main location name and sanitize it
     const mainLocationName = this.extractLocationName(query.trim())
     const searchQuery = this.sanitizeSearchQuery(mainLocationName)
-    
+
     if (!searchQuery || searchQuery.length < 2) {
       return []
     }
@@ -279,7 +279,7 @@ export const searchService = {
       .limit(limit)
 
     // Get counts for each city
-    for (const city of cities || []) {
+    for (const city of (cities as any[]) || []) {
       if (city.provinces?.countries) {
         // Get shop count for this city
         const { count: shopCount } = await supabase
@@ -318,17 +318,15 @@ export const searchService = {
       .limit(Math.max(1, limit - results.length))
 
     // Get counts for each province
-    for (const province of provinces || []) {
+    for (const province of (provinces as any[]) || []) {
       if (province.countries) {
         // Get shop count for this province
-        const { count: shopCount } = await supabase
-          .from('rental_shops')
+        const { count: shopCount } = await (supabase.from('rental_shops') as any)
           .select('*, cities!inner(*)', { count: 'exact', head: true })
           .eq('cities.province_id', province.id)
 
         // Get motorcycle count for this province
-        const { count: motorcycleCount } = await supabase
-          .from('motorcycle_rentals')
+        const { count: motorcycleCount } = await (supabase.from('motorcycle_rentals') as any)
           .select('*, rental_shops!inner(*, cities!inner(*))', { count: 'exact', head: true })
           .eq('rental_shops.cities.province_id', province.id)
 
@@ -354,16 +352,14 @@ export const searchService = {
         .limit(limit - results.length)
 
       // Get counts for each country
-      for (const country of countries || []) {
+      for (const country of (countries as any[]) || []) {
         // Get shop count for this country
-        const { count: shopCount } = await supabase
-          .from('rental_shops')
+        const { count: shopCount } = await (supabase.from('rental_shops') as any)
           .select('*, cities!inner(*, provinces!inner(*))', { count: 'exact', head: true })
           .eq('cities.provinces.country_code', country.code)
 
         // Get motorcycle count for this country
-        const { count: motorcycleCount } = await supabase
-          .from('motorcycle_rentals')
+        const { count: motorcycleCount } = await (supabase.from('motorcycle_rentals') as any)
           .select('*, rental_shops!inner(*, cities!inner(*, provinces!inner(*)))', { count: 'exact', head: true })
           .eq('rental_shops.cities.provinces.country_code', country.code)
 
@@ -397,7 +393,7 @@ export const searchService = {
   // Get popular search locations
   async getPopularSearchLocations(limit: number = 10) {
     const locations = await locationService.getPopularLocations(limit)
-    
+
     return locations.map(location => ({
       type: 'city' as const,
       id: location.id,
@@ -426,11 +422,11 @@ export const searchService = {
           `)
           .eq('id', locationId)
           .single()
-        
-        return city.data ? {
-          city: city.data,
-          province: city.data.provinces,
-          country: city.data.provinces?.countries
+
+        return (city as any).data ? {
+          city: (city as any).data,
+          province: (city as any).data.provinces,
+          country: (city as any).data.provinces?.countries
         } : null
 
       case 'province':
@@ -442,10 +438,10 @@ export const searchService = {
           `)
           .eq('id', locationId)
           .single()
-        
-        return province.data ? {
-          province: province.data,
-          country: province.data.countries
+
+        return (province as any).data ? {
+          province: (province as any).data,
+          country: (province as any).data.countries
         } : null
 
       case 'country':
@@ -454,9 +450,9 @@ export const searchService = {
           .select('*')
           .eq('code', locationId)
           .single()
-        
-        return country.data ? {
-          country: country.data
+
+        return (country as any).data ? {
+          country: (country as any).data
         } : null
 
       default:
@@ -476,7 +472,7 @@ export const searchService = {
 
     // If general search query is provided, search across multiple fields
     if (searchQuery) {
-             const [motorcycleResults, shopResults, locationResults] = await Promise.all([
+      const [motorcycleResults, shopResults, locationResults] = await Promise.all([
         motorcycleService.searchMotorcycles(searchQuery, otherFilters.limit),
         shopService.getShopsWithCounts({
           query: searchQuery,
