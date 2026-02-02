@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import './markdown.css';
@@ -13,7 +13,7 @@ interface Message {
     toolCalls?: { name: string; args: string; result: string }[];
 }
 
-export default function ChatTestPage() {
+function ChatContent() {
     const searchParams = useSearchParams();
     const secret = searchParams.get('secret');
 
@@ -312,3 +312,22 @@ const styles: { [key: string]: React.CSSProperties } = {
         fontSize: '16px',
     },
 };
+
+export default function ChatTestPage() {
+    return (
+        <Suspense fallback={
+            <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                height: '100vh',
+                background: '#0a0a0a',
+                color: '#666'
+            }}>
+                Loading...
+            </div>
+        }>
+            <ChatContent />
+        </Suspense>
+    );
+}
