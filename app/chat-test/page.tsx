@@ -17,6 +17,11 @@ export default function ChatTestPage() {
     const searchParams = useSearchParams();
     const secret = searchParams.get('secret');
 
+    // Hooks must be called unconditionally (before any returns)
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [input, setInput] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
     // Block access if secret is wrong
     if (secret !== SECRET) {
         return (
@@ -32,10 +37,6 @@ export default function ChatTestPage() {
             </div>
         );
     }
-
-    const [messages, setMessages] = useState<Message[]>([]);
-    const [input, setInput] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
 
     const sendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
