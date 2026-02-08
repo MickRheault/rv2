@@ -104,6 +104,30 @@ function applyActiveShopStatusFilterSync(query: any, activeStatusIds: number[]):
   return query.eq('rental_shops.id', 'impossible-id-that-will-never-match')
 }
 
+// Helper to get admin client
+let supabaseAdminSingleton: SupabaseClient<Database> | null = null;
+
+function getSupabaseAdmin(): SupabaseClient<Database> {
+  if (supabaseAdminSingleton) return supabaseAdminSingleton;
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.warn('SUPABASE_SERVICE_ROLE_KEY is missing. Admin operations may fail.')
+    return typedSupabase;
+  }
+
+  supabaseAdminSingleton = new SupabaseClient<Database>(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  });
+
+  return supabaseAdminSingleton;
+}
+
 export const motorcycleService = {
   // Get paginated motorcycles with filters
   async getMotorcycles(filters: SearchFilters = {}) {
@@ -678,7 +702,7 @@ export const motorcycleService = {
 
   // Create new motorcycle
   async createMotorcycle(motorcycleData: Database['public']['Tables']['motorcycle_rentals']['Insert']) {
-    const { data, error } = await typedSupabase
+    const { data, error } = await getSupabaseAdmin()
       .from('motorcycle_rentals')
       .insert(motorcycleData)
       .select(`
@@ -708,7 +732,7 @@ export const motorcycleService = {
 
   // Update existing motorcycle
   async updateMotorcycle(id: string, updates: Database['public']['Tables']['motorcycle_rentals']['Update']) {
-    const { data, error } = await typedSupabase
+    const { data, error } = await getSupabaseAdmin()
       .from('motorcycle_rentals')
       .update(updates)
       .eq('id', id)
@@ -739,7 +763,7 @@ export const motorcycleService = {
 
   // Delete motorcycle
   async deleteMotorcycle(id: string) {
-    const { error } = await typedSupabase
+    const { error } = await getSupabaseAdmin()
       .from('motorcycle_rentals')
       .delete()
       .eq('id', id)
@@ -754,7 +778,7 @@ export const motorcycleService = {
 
   // Bulk delete motorcycles
   async deleteMotorcycles(ids: string[]) {
-    const { error } = await typedSupabase
+    const { error } = await getSupabaseAdmin()
       .from('motorcycle_rentals')
       .delete()
       .in('id', ids)
