@@ -3,11 +3,14 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { Database } from '@/lib/supabase/database.types';
 import type { AppPermission } from '@/types/admin';
+import { validateApiKey, type ApiKeyType } from './api-key-auth';
 
 export interface AuthResult {
     authorized: boolean;
     userId?: string;
     error?: string;
+    /** Set when authenticated via API key instead of Supabase token */
+    apiKeyType?: ApiKeyType;
 }
 
 /**
@@ -49,8 +52,12 @@ export async function createAuthenticatedClient(token: string) {
 }
 
 /**
- * Verify authentication and optionally check for a specific permission
- * Returns the authenticated Supabase client if successful
+ * Verify authentication and optionally check for a specific permission.
+ * Supports both API keys (from env vars) and Supabase session tokens.
+ * 
+ * API Key behavior:
+ * - ADMIN_API_KEY: Full access (all permissions granted)
+ * - PUBLIC_API_KEY: Read-only (no permission = allowed, any permission = denied)
  */
 export async function requireAuth(
     request: NextRequest,
@@ -60,6 +67,7 @@ export async function requireAuth(
     userId?: string;
     supabase?: Awaited<ReturnType<typeof createAuthenticatedClient>>;
     error?: string;
+    apiKeyType?: ApiKeyType;
 }> {
     try {
         const token = extractBearerToken(request);
@@ -67,6 +75,22 @@ export async function requireAuth(
             return { authorized: false, error: 'No authorization token provided' };
         }
 
+        // Check if it's an API key first
+        const apiKeyType = validateApiKey(token);
+        if (apiKeyType) {
+            // Admin API key has all permissions
+            if (apiKeyType === 'admin') {
+                return { authorized: true, apiKeyType: 'admin' };
+            }
+            // Public API key: read-only access (no permission required = read operations)
+            if (!permission) {
+                return { authorized: true, apiKeyType: 'public' };
+            }
+            // Public key trying to access protected resource
+            return { authorized: false, error: 'Read-only API key cannot perform this action', apiKeyType: 'public' };
+        }
+
+        // Fall back to Supabase session token validation
         const supabase = await createAuthenticatedClient(token);
 
         // Verify the user
