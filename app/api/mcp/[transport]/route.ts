@@ -400,13 +400,8 @@ const verifyToken = async (
     const key = keyFromUrl || bearerToken;
 
     if (!key) {
-        // No key = public/read-only access
-        return {
-            token: 'public',
-            scopes: ['read'],
-            clientId: 'anonymous',
-            extra: { accessLevel: 'public' },
-        };
+        // No key - deny access
+        return undefined;
     }
 
     // Check if it's the admin key
@@ -429,18 +424,13 @@ const verifyToken = async (
         };
     }
 
-    // Invalid key - still allow access but as public
-    return {
-        token: 'invalid',
-        scopes: ['read'],
-        clientId: 'unknown',
-        extra: { accessLevel: 'public' },
-    };
+    // Invalid key - deny access
+    return undefined;
 };
 
 // Wrap with auth
 const authHandler = withMcpAuth(handler, verifyToken, {
-    required: false, // Allow anonymous (read-only) access
+    required: true, // Require authentication (no anonymous access)
 });
 
 export { authHandler as GET, authHandler as POST, authHandler as DELETE };
