@@ -102,8 +102,12 @@ export async function POST(request: NextRequest) {
         const shop = await shopService.createShop(body);
 
         return successResponse(shop, undefined, 201);
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error creating shop:', error);
+        // Return Supabase/DB error details if available
+        if (error.code || error.details) {
+            return errors.badRequest(error.message || error.details || 'Database error');
+        }
         if (error instanceof Error) {
             return errors.badRequest(error.message);
         }
