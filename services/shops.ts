@@ -5,6 +5,31 @@ import { PremiumFeatureConfig } from '@/types/premium-listings'
 
 const typedSupabase = supabase as unknown as SupabaseClient<Database>
 
+// Lazily initialized admin client to avoid requiring keys at build time
+let supabaseAdminSingleton: SupabaseClient<Database> | null = null;
+
+function getSupabaseAdmin(): SupabaseClient<Database> {
+  if (supabaseAdminSingleton) return supabaseAdminSingleton;
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.warn('SUPABASE_SERVICE_ROLE_KEY is missing. Admin operations may fail.')
+    // Fallback to anon client if key is missing (will fail RLS if privileges required)
+    return typedSupabase;
+  }
+
+  supabaseAdminSingleton = new SupabaseClient<Database>(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  });
+
+  return supabaseAdminSingleton;
+}
+
 type RentalShop = Database['public']['Tables']['rental_shops']['Row']
 type City = Database['public']['Tables']['cities']['Row']
 type Province = Database['public']['Tables']['provinces']['Row']
@@ -645,7 +670,17 @@ export const shopService = {
 
   // Create new rental shop
   async createShop(shopData: Database['public']['Tables']['rental_shops']['Insert']) {
-    const { data, error } = await typedSupabase
+    // Generate slug if not provided
+    if (!shopData.slug && shopData.provider_name) {
+      shopData.slug = shopData.provider_name
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim();
+    }
+
+    const { data, error } = await getSupabaseAdmin()
       .from('rental_shops')
       .insert(shopData)
       .select(`
@@ -674,7 +709,7 @@ export const shopService = {
 
   // Update existing rental shop
   async updateShop(id: string, updates: Database['public']['Tables']['rental_shops']['Update']) {
-    const { data, error } = await typedSupabase
+    const { data, error } = await getSupabaseAdmin()
       .from('rental_shops')
       .update(updates)
       .eq('id', id)
@@ -704,7 +739,7 @@ export const shopService = {
 
   // Delete rental shop
   async deleteShop(id: string) {
-    const { error } = await typedSupabase
+    const { error } = await getSupabaseAdmin()
       .from('rental_shops')
       .delete()
       .eq('id', id)
@@ -719,7 +754,7 @@ export const shopService = {
 
   // Bulk delete rental shops
   async deleteShops(ids: string[]) {
-    const { error } = await typedSupabase
+    const { error } = await getSupabaseAdmin()
       .from('rental_shops')
       .delete()
       .in('id', ids)
