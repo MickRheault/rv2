@@ -110,6 +110,7 @@ const handler = createMcpHandler(
                     query: z.string().optional().describe('Search query'),
                     limit: z.number().optional().default(20).describe('Number of results'),
                     offset: z.number().optional().default(0).describe('Pagination offset'),
+                    availabilityStatus: z.string().optional().describe('Availability status (e.g., "AVAILABLE")'),
                 },
             },
             async (params, extra) => {
@@ -243,6 +244,12 @@ const handler = createMcpHandler(
                     category_id: z.string().optional().describe('Category ID'),
                     engine_capacity: z.number().optional().describe('Engine capacity in CC'),
                     daily_rate: z.number().optional().describe('Daily rental rate'),
+                    year: z.number().optional().describe('Model year'),
+                    rental_rate_currency: z.string().optional().describe('Currency code (e.g., "USD", "THB")'),
+                    availability_status: z.string().optional().describe('Availability status'),
+                    source_url: z.string().optional().describe('Source URL'),
+                    conditions_details: z.string().optional().describe('Conditions details as JSON string'),
+                    specifications_details: z.string().optional().describe('Specifications details as JSON string'),
                 },
             },
             async (params, extra) => {
@@ -250,11 +257,25 @@ const handler = createMcpHandler(
                     return { content: [{ type: 'text', text: 'Error: Admin access required' }], isError: true };
                 }
 
-                const { daily_rate, engine_capacity, ...rest } = params as any;
+                const { daily_rate, engine_capacity, conditions_details, specifications_details, ...rest } = params as any;
                 const body: Record<string, any> = { ...rest };
 
                 if (daily_rate !== undefined) body.rental_rate_per_day = daily_rate;
                 if (engine_capacity !== undefined) body.engine_capacity_cc = engine_capacity;
+                if (conditions_details) {
+                    try {
+                        body.conditions_details = JSON.parse(conditions_details);
+                    } catch (e) {
+                        return { content: [{ type: 'text', text: 'Error: conditions_details must be valid JSON string' }], isError: true };
+                    }
+                }
+                if (specifications_details) {
+                    try {
+                        body.specifications_details = JSON.parse(specifications_details);
+                    } catch (e) {
+                        return { content: [{ type: 'text', text: 'Error: specifications_details must be valid JSON string' }], isError: true };
+                    }
+                }
 
                 const result = await apiPost('/motorcycles', MCP_KEY_ADMIN, body);
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
@@ -269,8 +290,17 @@ const handler = createMcpHandler(
                 inputSchema: {
                     id: z.string().describe('Motorcycle ID'),
                     model: z.string().optional().describe('Motorcycle model name'),
+                    shop_id: z.string().optional().describe('Shop ID'),
+                    brand_id: z.string().optional().describe('Brand ID'),
+                    category_id: z.string().optional().describe('Category ID'),
                     engine_capacity: z.number().optional().describe('Engine capacity in CC'),
                     daily_rate: z.number().optional().describe('Daily rental rate'),
+                    year: z.number().optional().describe('Model year'),
+                    rental_rate_currency: z.string().optional().describe('Currency code (e.g., "USD", "THB")'),
+                    availability_status: z.string().optional().describe('Availability status'),
+                    source_url: z.string().optional().describe('Source URL'),
+                    conditions_details: z.string().optional().describe('Conditions details as JSON string'),
+                    specifications_details: z.string().optional().describe('Specifications details as JSON string'),
                 },
             },
             async ({ id, ...data }, extra) => {
@@ -278,11 +308,25 @@ const handler = createMcpHandler(
                     return { content: [{ type: 'text', text: 'Error: Admin access required' }], isError: true };
                 }
 
-                const { daily_rate, engine_capacity, ...rest } = data as any;
+                const { daily_rate, engine_capacity, conditions_details, specifications_details, ...rest } = data as any;
                 const body: Record<string, any> = { ...rest };
 
                 if (daily_rate !== undefined) body.rental_rate_per_day = daily_rate;
                 if (engine_capacity !== undefined) body.engine_capacity_cc = engine_capacity;
+                if (conditions_details) {
+                    try {
+                        body.conditions_details = JSON.parse(conditions_details);
+                    } catch (e) {
+                        return { content: [{ type: 'text', text: 'Error: conditions_details must be valid JSON string' }], isError: true };
+                    }
+                }
+                if (specifications_details) {
+                    try {
+                        body.specifications_details = JSON.parse(specifications_details);
+                    } catch (e) {
+                        return { content: [{ type: 'text', text: 'Error: specifications_details must be valid JSON string' }], isError: true };
+                    }
+                }
 
                 const result = await apiPut(`/motorcycles/${id}`, MCP_KEY_ADMIN, body);
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
@@ -317,6 +361,17 @@ const handler = createMcpHandler(
                     city_id: z.string().describe('City ID'),
                     address: z.string().optional().describe('Street address'),
                     phone: z.string().optional().describe('Phone number'),
+                    website: z.string().optional().describe('Website URL'),
+                    google_maps_url: z.string().optional().describe('Google Maps URL'),
+                    business_description: z.string().optional().describe('Business description'),
+                    business_status_id: z.number().optional().describe('Business Status ID'),
+                    location_name: z.string().optional().describe('Location Name'),
+                    place_id: z.string().optional().describe('Google Place ID'),
+                    latitude: z.number().optional().describe('Latitude'),
+                    longitude: z.number().optional().describe('Longitude'),
+                    rating: z.number().optional().describe('Rating (1-5)'),
+                    review_count: z.number().optional().describe('Review count'),
+                    slug: z.string().optional().describe('Slug (URL friendly name)'),
                 },
             },
             async (params, extra) => {
@@ -325,11 +380,11 @@ const handler = createMcpHandler(
                 }
 
                 // Map address to full_address for API compatibility
-                const { address, email, ...rest } = params as any;
+                const { address, ...rest } = params as any;
                 const body = {
                     ...rest,
-                    full_address: address
                 };
+                if (address) body.full_address = address;
 
                 const result = await apiPost('/shops', MCP_KEY_ADMIN, body);
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
@@ -344,8 +399,20 @@ const handler = createMcpHandler(
                 inputSchema: {
                     id: z.string().describe('Shop ID'),
                     provider_name: z.string().optional().describe('Shop/provider name'),
+                    city_id: z.string().optional().describe('City ID'),
                     address: z.string().optional().describe('Street address'),
                     phone: z.string().optional().describe('Phone number'),
+                    website: z.string().optional().describe('Website URL'),
+                    google_maps_url: z.string().optional().describe('Google Maps URL'),
+                    business_description: z.string().optional().describe('Business description'),
+                    business_status_id: z.number().optional().describe('Business Status ID'),
+                    location_name: z.string().optional().describe('Location Name'),
+                    place_id: z.string().optional().describe('Google Place ID'),
+                    latitude: z.number().optional().describe('Latitude'),
+                    longitude: z.number().optional().describe('Longitude'),
+                    rating: z.number().optional().describe('Rating (1-5)'),
+                    review_count: z.number().optional().describe('Review count'),
+                    slug: z.string().optional().describe('Slug (URL friendly name)'),
                 },
             },
             async ({ id, ...data }, extra) => {
@@ -354,7 +421,7 @@ const handler = createMcpHandler(
                 }
 
                 // Map address to full_address for API compatibility
-                const { address, email, ...rest } = data as any;
+                const { address, ...rest } = data as any;
                 const body: Record<string, any> = { ...rest };
                 if (address !== undefined) body.full_address = address;
 
