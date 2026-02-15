@@ -49,7 +49,6 @@ async function apiGet(endpoint: string, apiKey: string, params?: Record<string, 
 async function apiPost(endpoint: string, apiKey: string, body: unknown) {
     const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        'Host': 'localhost:3000'
     };
     if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
 
