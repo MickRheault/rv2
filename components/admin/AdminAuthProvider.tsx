@@ -47,6 +47,8 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         let mounted = true;
+        // Track whether initialize() has completed to prevent race with onAuthStateChange
+        let initialized = false;
 
         async function initialize() {
             try {
@@ -72,13 +74,28 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
                     setUser(null);
                     setIsLoading(false);
                 }
+            } finally {
+                initialized = true;
             }
         }
 
         initialize();
 
+        // IMPORTANT: onAuthStateChange only handles SUBSEQUENT events.
+        // INITIAL_SESSION and SIGNED_IN during initialization are handled by initialize() above.
+        // This eliminates the dual-path race condition that caused "Verifying admin access..." hangs.
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (!mounted) return;
+
+            // Skip INITIAL_SESSION entirely — initialize() handles the first load
+            if (event === 'INITIAL_SESSION') {
+                return;
+            }
+
+            // Skip SIGNED_IN if initialize() hasn't finished yet — it's handling the first auth check
+            if (event === 'SIGNED_IN' && !initialized) {
+                return;
+            }
 
             if (event === 'SIGNED_OUT' || !session) {
                 setUser(null);
@@ -86,29 +103,26 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
                 return;
             }
 
-            if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+            if (event === 'SIGNED_IN') {
+                // This only runs for genuine sign-ins AFTER initialization (e.g., re-login)
                 try {
-                    // Only set loading if we don't have a user yet to prevent flashing/blocking
-                    if (!user) {
-                        setIsLoading(true);
-                    }
+                    setIsLoading(true);
                     const adminUser = await getCurrentAdminUser();
                     if (mounted) {
                         setUser(adminUser);
                     }
                 } catch (error) {
                     console.error('Auth change error:', error);
-                    // Don't clear user here immediately on error to avoid kicking them out on transient failures
-                    // unless we are sure they are invalid. 
-                    // But if getCurrentAdminUser returned null/error, we might want to respect that.
-                    // For now, let's keep existing behavior but be safer about loading state.
+                    if (mounted) {
+                        setUser(null);
+                    }
                 } finally {
                     if (mounted) {
                         setIsLoading(false);
                     }
                 }
             } else if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-                // Silent refresh in background
+                // Silent refresh in background — no loading state change
                 try {
                     const adminUser = await getCurrentAdminUser();
                     if (mounted) {
