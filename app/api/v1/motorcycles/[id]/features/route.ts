@@ -6,7 +6,20 @@ import { NextRequest } from 'next/server';
 import { successResponse, errors } from '@/lib/api/response';
 import { requireAuth } from '@/lib/api/middleware';
 import { rateLimit } from '@/lib/api/rate-limit';
-import { supabase } from '@/lib/supabase/client';
+import { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/supabase/database.types';
+
+// Lazily initialized admin client to bypass RLS for admin operations
+let adminClient: SupabaseClient<Database> | null = null;
+function getAdminClient(): SupabaseClient<Database> {
+    if (adminClient) return adminClient;
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    adminClient = new SupabaseClient<Database>(url, key, {
+        auth: { autoRefreshToken: false, persistSession: false },
+    });
+    return adminClient;
+}
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -30,7 +43,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     try {
         const { id } = await params;
 
-        const { data, error } = await supabase
+        const { data, error } = await getAdminClient()
             .from('motorcycle_features')
             .select(`
                 feature_id,
@@ -76,9 +89,15 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         }
 
         // Delete existing features
-        await (supabase.from('motorcycle_features') as any)
+        const { error: deleteError } = await getAdminClient()
+            .from('motorcycle_features')
             .delete()
             .eq('motorcycle_id', id);
+
+        if (deleteError) {
+            console.error('Error deleting motorcycle features:', deleteError);
+            throw new Error(deleteError.message);
+        }
 
         // Insert new features
         if (body.feature_ids.length > 0) {
@@ -87,7 +106,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
                 feature_id: featureId,
             }));
 
-            const { data, error } = await supabase
+            const { data, error } = await getAdminClient()
                 .from('motorcycle_features')
                 .insert(rows as any)
                 .select(`
