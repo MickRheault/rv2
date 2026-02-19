@@ -227,6 +227,36 @@ const handler = createMcpHandler(
         );
 
         // ============================================
+        // REFERENCE DATA TOOLS (read-only)
+        // ============================================
+
+        server.registerTool(
+            'list_condition_types',
+            {
+                title: 'List Condition Types',
+                description: 'List all condition types (used for shop and motorcycle conditions)',
+                inputSchema: {},
+            },
+            async (_params, _extra) => {
+                const result = await apiGet('/condition-types', MCP_KEY_READ_ONLY);
+                return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+            }
+        );
+
+        server.registerTool(
+            'list_features',
+            {
+                title: 'List Features',
+                description: 'List all motorcycle features (used for motorcycle feature assignments)',
+                inputSchema: {},
+            },
+            async (_params, _extra) => {
+                const result = await apiGet('/features', MCP_KEY_READ_ONLY);
+                return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+            }
+        );
+
+        // ============================================
         // ADMIN-ONLY TOOLS
         // Note: These check authInfo at runtime
         // ============================================
@@ -247,8 +277,10 @@ const handler = createMcpHandler(
                     rental_rate_currency: z.string().optional().describe('Currency code (e.g., "USD", "THB")'),
                     availability_status: z.string().optional().describe('Availability status'),
                     source_url: z.string().optional().describe('Source URL'),
-                    conditions_details: z.string().optional().describe('Conditions details as JSON string'),
+                    conditions_details: z.string().optional().describe('Legacy conditions details as JSON string'),
                     specifications_details: z.string().optional().describe('Specifications details as JSON string'),
+                    conditions: z.string().optional().describe('Structured conditions as JSON string: [{"condition_type_id": "...", "notes": "..."}]'),
+                    feature_ids: z.array(z.string()).optional().describe('Array of feature IDs to assign'),
                 },
             },
             async (params, extra) => {
@@ -256,7 +288,7 @@ const handler = createMcpHandler(
                     return { content: [{ type: 'text', text: 'Error: Admin access required' }], isError: true };
                 }
 
-                const { daily_rate, engine_capacity, conditions_details, specifications_details, ...rest } = params as any;
+                const { daily_rate, engine_capacity, conditions_details, specifications_details, conditions, feature_ids, ...rest } = params as any;
                 const body: Record<string, any> = { ...rest };
 
                 if (daily_rate !== undefined) body.rental_rate_per_day = daily_rate;
@@ -277,6 +309,27 @@ const handler = createMcpHandler(
                 }
 
                 const result = await apiPost('/motorcycles', MCP_KEY_ADMIN, body);
+                const motorcycleId = result?.data?.id;
+
+                // Set structured conditions if provided
+                if (conditions && motorcycleId) {
+                    try {
+                        const parsed = JSON.parse(conditions);
+                        await apiPut(`/motorcycles/${motorcycleId}/conditions`, MCP_KEY_ADMIN, { conditions: parsed });
+                    } catch (e: any) {
+                        return { content: [{ type: 'text', text: `Motorcycle created but conditions failed: ${e.message}` }], isError: true };
+                    }
+                }
+
+                // Set features if provided
+                if (feature_ids && feature_ids.length > 0 && motorcycleId) {
+                    try {
+                        await apiPut(`/motorcycles/${motorcycleId}/features`, MCP_KEY_ADMIN, { feature_ids });
+                    } catch (e: any) {
+                        return { content: [{ type: 'text', text: `Motorcycle created but features failed: ${e.message}` }], isError: true };
+                    }
+                }
+
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
             }
         );
@@ -298,8 +351,10 @@ const handler = createMcpHandler(
                     rental_rate_currency: z.string().optional().describe('Currency code (e.g., "USD", "THB")'),
                     availability_status: z.string().optional().describe('Availability status'),
                     source_url: z.string().optional().describe('Source URL'),
-                    conditions_details: z.string().optional().describe('Conditions details as JSON string'),
+                    conditions_details: z.string().optional().describe('Legacy conditions details as JSON string'),
                     specifications_details: z.string().optional().describe('Specifications details as JSON string'),
+                    conditions: z.string().optional().describe('Structured conditions as JSON string: [{"condition_type_id": "...", "notes": "..."}]'),
+                    feature_ids: z.array(z.string()).optional().describe('Array of feature IDs to assign'),
                 },
             },
             async ({ id, ...data }, extra) => {
@@ -307,7 +362,7 @@ const handler = createMcpHandler(
                     return { content: [{ type: 'text', text: 'Error: Admin access required' }], isError: true };
                 }
 
-                const { daily_rate, engine_capacity, conditions_details, specifications_details, ...rest } = data as any;
+                const { daily_rate, engine_capacity, conditions_details, specifications_details, conditions, feature_ids, ...rest } = data as any;
                 const body: Record<string, any> = { ...rest };
 
                 if (daily_rate !== undefined) body.rental_rate_per_day = daily_rate;
@@ -328,6 +383,26 @@ const handler = createMcpHandler(
                 }
 
                 const result = await apiPut(`/motorcycles/${id}`, MCP_KEY_ADMIN, body);
+
+                // Set structured conditions if provided
+                if (conditions) {
+                    try {
+                        const parsed = JSON.parse(conditions);
+                        await apiPut(`/motorcycles/${id}/conditions`, MCP_KEY_ADMIN, { conditions: parsed });
+                    } catch (e: any) {
+                        return { content: [{ type: 'text', text: `Motorcycle updated but conditions failed: ${e.message}` }], isError: true };
+                    }
+                }
+
+                // Set features if provided
+                if (feature_ids && feature_ids.length > 0) {
+                    try {
+                        await apiPut(`/motorcycles/${id}/features`, MCP_KEY_ADMIN, { feature_ids });
+                    } catch (e: any) {
+                        return { content: [{ type: 'text', text: `Motorcycle updated but features failed: ${e.message}` }], isError: true };
+                    }
+                }
+
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
             }
         );
@@ -371,6 +446,8 @@ const handler = createMcpHandler(
                     rating: z.number().optional().describe('Rating (1-5)'),
                     review_count: z.number().optional().describe('Review count'),
                     slug: z.string().optional().describe('Slug (URL friendly name)'),
+                    inclusions: z.array(z.string()).optional().describe('Array of inclusion texts (e.g., ["Helmet", "Rain poncho"])'),
+                    conditions: z.string().optional().describe('Conditions as JSON string: [{"condition_type_id": "...", "condition_value": "...", "notes": "..."}]'),
                 },
             },
             async (params, extra) => {
@@ -379,13 +456,34 @@ const handler = createMcpHandler(
                 }
 
                 // Map address to full_address for API compatibility
-                const { address, ...rest } = params as any;
-                const body = {
+                const { address, inclusions, conditions, ...rest } = params as any;
+                const body: Record<string, any> = {
                     ...rest,
                 };
                 if (address) body.full_address = address;
 
                 const result = await apiPost('/shops', MCP_KEY_ADMIN, body);
+                const shopId = result?.data?.id;
+
+                // Set inclusions if provided
+                if (inclusions && inclusions.length > 0 && shopId) {
+                    try {
+                        await apiPut(`/shops/${shopId}/inclusions`, MCP_KEY_ADMIN, { inclusions });
+                    } catch (e: any) {
+                        return { content: [{ type: 'text', text: `Shop created but inclusions failed: ${e.message}` }], isError: true };
+                    }
+                }
+
+                // Set conditions if provided
+                if (conditions && shopId) {
+                    try {
+                        const parsed = JSON.parse(conditions);
+                        await apiPut(`/shops/${shopId}/conditions`, MCP_KEY_ADMIN, { conditions: parsed });
+                    } catch (e: any) {
+                        return { content: [{ type: 'text', text: `Shop created but conditions failed: ${e.message}` }], isError: true };
+                    }
+                }
+
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
             }
         );
@@ -412,6 +510,8 @@ const handler = createMcpHandler(
                     rating: z.number().optional().describe('Rating (1-5)'),
                     review_count: z.number().optional().describe('Review count'),
                     slug: z.string().optional().describe('Slug (URL friendly name)'),
+                    inclusions: z.array(z.string()).optional().describe('Array of inclusion texts — replaces all existing (e.g., ["Helmet", "Rain poncho"])'),
+                    conditions: z.string().optional().describe('Conditions as JSON string — replaces all existing: [{"condition_type_id": "...", "condition_value": "...", "notes": "..."}]'),
                 },
             },
             async ({ id, ...data }, extra) => {
@@ -420,11 +520,31 @@ const handler = createMcpHandler(
                 }
 
                 // Map address to full_address for API compatibility
-                const { address, ...rest } = data as any;
+                const { address, inclusions, conditions, ...rest } = data as any;
                 const body: Record<string, any> = { ...rest };
                 if (address !== undefined) body.full_address = address;
 
                 const result = await apiPut(`/shops/${id}`, MCP_KEY_ADMIN, body);
+
+                // Replace inclusions if provided
+                if (inclusions) {
+                    try {
+                        await apiPut(`/shops/${id}/inclusions`, MCP_KEY_ADMIN, { inclusions });
+                    } catch (e: any) {
+                        return { content: [{ type: 'text', text: `Shop updated but inclusions failed: ${e.message}` }], isError: true };
+                    }
+                }
+
+                // Replace conditions if provided
+                if (conditions) {
+                    try {
+                        const parsed = JSON.parse(conditions);
+                        await apiPut(`/shops/${id}/conditions`, MCP_KEY_ADMIN, { conditions: parsed });
+                    } catch (e: any) {
+                        return { content: [{ type: 'text', text: `Shop updated but conditions failed: ${e.message}` }], isError: true };
+                    }
+                }
+
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
             }
         );
@@ -443,6 +563,95 @@ const handler = createMcpHandler(
                     return { content: [{ type: 'text', text: 'Error: Admin access required' }], isError: true };
                 }
                 const result = await apiDelete(`/shops/${id}`, MCP_KEY_ADMIN);
+                return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+            }
+        );
+        // ============================================
+        // STANDALONE SUB-ENTITY TOOLS (admin)
+        // ============================================
+
+        server.registerTool(
+            'set_shop_inclusions',
+            {
+                title: 'Set Shop Inclusions',
+                description: 'Bulk-set "What\'s Included" for a shop (replaces all existing inclusions)',
+                inputSchema: {
+                    shop_id: z.string().describe('Shop ID'),
+                    inclusions: z.array(z.string()).describe('Array of inclusion texts (e.g., ["Helmet", "Rain poncho", "Lock"])'),
+                },
+            },
+            async ({ shop_id, inclusions }, extra) => {
+                if (getAccessLevel(extra.authInfo) !== 'admin') {
+                    return { content: [{ type: 'text', text: 'Error: Admin access required' }], isError: true };
+                }
+                const result = await apiPut(`/shops/${shop_id}/inclusions`, MCP_KEY_ADMIN, { inclusions });
+                return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+            }
+        );
+
+        server.registerTool(
+            'set_shop_conditions',
+            {
+                title: 'Set Shop Conditions',
+                description: 'Bulk-set rental conditions for a shop (replaces all existing conditions)',
+                inputSchema: {
+                    shop_id: z.string().describe('Shop ID'),
+                    conditions: z.string().describe('JSON string array: [{"condition_type_id": "...", "condition_value": "...", "notes": "optional"}]'),
+                },
+            },
+            async ({ shop_id, conditions }, extra) => {
+                if (getAccessLevel(extra.authInfo) !== 'admin') {
+                    return { content: [{ type: 'text', text: 'Error: Admin access required' }], isError: true };
+                }
+                try {
+                    const parsed = JSON.parse(conditions);
+                    const result = await apiPut(`/shops/${shop_id}/conditions`, MCP_KEY_ADMIN, { conditions: parsed });
+                    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+                } catch (e: any) {
+                    return { content: [{ type: 'text', text: `Error: ${e.message}` }], isError: true };
+                }
+            }
+        );
+
+        server.registerTool(
+            'set_motorcycle_conditions',
+            {
+                title: 'Set Motorcycle Conditions',
+                description: 'Bulk-set rental conditions for a motorcycle (replaces all existing conditions)',
+                inputSchema: {
+                    motorcycle_id: z.string().describe('Motorcycle ID'),
+                    conditions: z.string().describe('JSON string array: [{"condition_type_id": "...", "notes": "optional"}]'),
+                },
+            },
+            async ({ motorcycle_id, conditions }, extra) => {
+                if (getAccessLevel(extra.authInfo) !== 'admin') {
+                    return { content: [{ type: 'text', text: 'Error: Admin access required' }], isError: true };
+                }
+                try {
+                    const parsed = JSON.parse(conditions);
+                    const result = await apiPut(`/motorcycles/${motorcycle_id}/conditions`, MCP_KEY_ADMIN, { conditions: parsed });
+                    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+                } catch (e: any) {
+                    return { content: [{ type: 'text', text: `Error: ${e.message}` }], isError: true };
+                }
+            }
+        );
+
+        server.registerTool(
+            'set_motorcycle_features',
+            {
+                title: 'Set Motorcycle Features',
+                description: 'Bulk-set features for a motorcycle (replaces all existing feature assignments)',
+                inputSchema: {
+                    motorcycle_id: z.string().describe('Motorcycle ID'),
+                    feature_ids: z.array(z.string()).describe('Array of feature IDs to assign'),
+                },
+            },
+            async ({ motorcycle_id, feature_ids }, extra) => {
+                if (getAccessLevel(extra.authInfo) !== 'admin') {
+                    return { content: [{ type: 'text', text: 'Error: Admin access required' }], isError: true };
+                }
+                const result = await apiPut(`/motorcycles/${motorcycle_id}/features`, MCP_KEY_ADMIN, { feature_ids });
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
             }
         );
