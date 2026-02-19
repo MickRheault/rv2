@@ -23,7 +23,13 @@ interface GroupedData {
 }
 
 export default async function MotorcycleHubPage() {
-    const motorcycles = await motorcycleService.getAllMotorcyclesForHub()
+    let motorcycles: any[] = []
+    try {
+        motorcycles = await motorcycleService.getAllMotorcyclesForHub() || []
+    } catch {
+        // Gracefully handle missing database (e.g. local builds without Supabase)
+        motorcycles = []
+    }
 
     // Group data
     const groupedData: GroupedData = {}
