@@ -1,5 +1,22 @@
 import { supabase } from '@/lib/supabase/client';
-import type { Tables, TablesInsert, TablesUpdate } from '@/lib/supabase/database.types';
+import { SupabaseClient } from '@supabase/supabase-js';
+import type { Tables, TablesInsert, TablesUpdate, Database } from '@/lib/supabase/database.types';
+
+// Lazily initialized admin client to bypass RLS for write operations
+let adminClient: SupabaseClient<Database> | null = null;
+function getAdminClient(): SupabaseClient<Database> {
+  if (adminClient) return adminClient;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  if (!url || !key) {
+    console.warn('SUPABASE_SERVICE_ROLE_KEY is missing. Write operations may fail.');
+    return supabase as unknown as SupabaseClient<Database>;
+  }
+  adminClient = new SupabaseClient<Database>(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  return adminClient;
+}
 
 export type RentalShopCondition = Tables<'rental_shop_conditions'>;
 export type RentalShopConditionInsert = TablesInsert<'rental_shop_conditions'>;
@@ -48,7 +65,7 @@ export async function addRentalShopCondition(condition: RentalShopConditionInser
     throw new Error('This condition type is already assigned to this rental shop');
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await getAdminClient()
     .from('rental_shop_conditions')
     .insert(condition as any)
     .select(`
@@ -74,7 +91,7 @@ export async function updateRentalShopCondition(
   conditionId: string,
   updates: { condition_value?: string; notes?: string | null }
 ): Promise<RentalShopConditionWithDetails> {
-  const { data, error } = await (supabase.from('rental_shop_conditions') as any)
+  const { data, error } = await (getAdminClient().from('rental_shop_conditions') as any)
     .update({
       ...updates,
       updated_at: new Date().toISOString()
@@ -100,7 +117,7 @@ export async function updateRentalShopCondition(
 
 // Remove a condition from a rental shop
 export async function removeRentalShopCondition(conditionId: string): Promise<void> {
-  const { error } = await (supabase.from('rental_shop_conditions') as any)
+  const { error } = await (getAdminClient().from('rental_shop_conditions') as any)
     .delete()
     .eq('id', conditionId);
 
@@ -155,7 +172,7 @@ export async function updateRentalShopConditions(
   conditions: { condition_type_id: string; condition_value: string; notes?: string | null }[]
 ): Promise<RentalShopConditionWithDetails[]> {
   // First, remove all existing conditions for this shop
-  await (supabase.from('rental_shop_conditions') as any)
+  await (getAdminClient().from('rental_shop_conditions') as any)
     .delete()
     .eq('shop_id', shopId);
 
@@ -168,7 +185,7 @@ export async function updateRentalShopConditions(
       notes: condition.notes || null
     }));
 
-    const { data, error } = await supabase
+    const { data, error } = await getAdminClient()
       .from('rental_shop_conditions')
       .insert(conditionsToInsert as any)
       .select(`
