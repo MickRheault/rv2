@@ -6,7 +6,20 @@ import { NextRequest } from 'next/server';
 import { successResponse, errors } from '@/lib/api/response';
 import { requireAuth } from '@/lib/api/middleware';
 import { rateLimit } from '@/lib/api/rate-limit';
-import { supabase } from '@/lib/supabase/client';
+import { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/supabase/database.types';
+
+// Lazily initialized admin client to bypass RLS for admin operations
+let adminClient: SupabaseClient<Database> | null = null;
+function getAdminClient(): SupabaseClient<Database> {
+    if (adminClient) return adminClient;
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    adminClient = new SupabaseClient<Database>(url, key, {
+        auth: { autoRefreshToken: false, persistSession: false },
+    });
+    return adminClient;
+}
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -30,7 +43,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     try {
         const { id } = await params;
 
-        const { data, error } = await supabase
+        const { data, error } = await getAdminClient()
             .from('rental_shop_inclusions')
             .select('*')
             .eq('shop_id', id)
@@ -70,9 +83,15 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         }
 
         // Delete existing inclusions
-        await (supabase.from('rental_shop_inclusions') as any)
+        const { error: deleteError } = await getAdminClient()
+            .from('rental_shop_inclusions')
             .delete()
             .eq('shop_id', id);
+
+        if (deleteError) {
+            console.error('Error deleting shop inclusions:', deleteError);
+            throw new Error(deleteError.message);
+        }
 
         // Insert new inclusions
         if (body.inclusions.length > 0) {
@@ -81,12 +100,15 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
                 inclusion_text: text,
             }));
 
-            const { data, error } = await supabase
+            const { data, error } = await getAdminClient()
                 .from('rental_shop_inclusions')
                 .insert(rows as any)
                 .select();
 
-            if (error) throw new Error(error.message);
+            if (error) {
+                console.error('Error inserting shop inclusions:', error);
+                throw new Error(error.message);
+            }
 
             return successResponse(data);
         }
