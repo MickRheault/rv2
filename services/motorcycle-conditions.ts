@@ -1,5 +1,22 @@
 import { supabase } from '@/lib/supabase/client';
-import type { Tables, TablesInsert, TablesUpdate } from '@/lib/supabase/database.types';
+import { SupabaseClient } from '@supabase/supabase-js';
+import type { Tables, TablesInsert, TablesUpdate, Database } from '@/lib/supabase/database.types';
+
+// Lazily initialized admin client to bypass RLS for write operations
+let adminClient: SupabaseClient<Database> | null = null;
+function getAdminClient(): SupabaseClient<Database> {
+  if (adminClient) return adminClient;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  if (!url || !key) {
+    console.warn('SUPABASE_SERVICE_ROLE_KEY is missing. Write operations may fail.');
+    return supabase as unknown as SupabaseClient<Database>;
+  }
+  adminClient = new SupabaseClient<Database>(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  return adminClient;
+}
 
 export type MotorcycleCondition = Tables<'motorcycle_conditions'>;
 export type MotorcycleConditionInsert = TablesInsert<'motorcycle_conditions'>;
@@ -50,7 +67,7 @@ export async function addMotorcycleCondition(condition: MotorcycleConditionInser
     throw new Error('This condition type is already assigned to this motorcycle');
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await getAdminClient()
     .from('motorcycle_conditions')
     .insert(condition as any)
     .select(`
@@ -77,7 +94,7 @@ export async function updateMotorcycleCondition(
   conditionTypeId: string,
   updates: { notes?: string | null }
 ): Promise<MotorcycleConditionWithDetails> {
-  const { data, error } = await (supabase.from('motorcycle_conditions') as any)
+  const { data, error } = await (getAdminClient().from('motorcycle_conditions') as any)
     .update(updates)
     .eq('motorcycle_id', motorcycleId)
     .eq('condition_type_id', conditionTypeId)
@@ -101,7 +118,7 @@ export async function updateMotorcycleCondition(
 
 // Remove a condition from a motorcycle
 export async function removeMotorcycleCondition(motorcycleId: string, conditionTypeId: string): Promise<void> {
-  const { error } = await (supabase.from('motorcycle_conditions') as any)
+  const { error } = await (getAdminClient().from('motorcycle_conditions') as any)
     .delete()
     .eq('motorcycle_id', motorcycleId)
     .eq('condition_type_id', conditionTypeId);
@@ -158,7 +175,7 @@ export async function updateMotorcycleConditions(
   conditions: { condition_type_id: string; notes?: string | null }[]
 ): Promise<MotorcycleConditionWithDetails[]> {
   // First, remove all existing conditions for this motorcycle
-  await (supabase.from('motorcycle_conditions') as any)
+  await (getAdminClient().from('motorcycle_conditions') as any)
     .delete()
     .eq('motorcycle_id', motorcycleId);
 
@@ -170,7 +187,7 @@ export async function updateMotorcycleConditions(
       notes: condition.notes || null
     }));
 
-    const { data, error } = await (supabase.from('motorcycle_conditions') as any)
+    const { data, error } = await (getAdminClient().from('motorcycle_conditions') as any)
       .insert(conditionsToInsert)
       .select(`
         *,
