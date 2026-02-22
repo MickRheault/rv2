@@ -4,7 +4,7 @@ import { ShopSyncService } from '@/services/shop-sync';
 import { ShopManifest } from '@/types/shop-manifest';
 
 export async function POST(req: NextRequest) {
-  const supabase = createClient();
+  const supabase = await createClient();
   
   // 1. Auth Check
   const { data: { user } } = await supabase.auth.getUser();

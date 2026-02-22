@@ -1,9 +1,9 @@
-import { createClient } from '@/lib/supabase/server';
+import { SupabaseClient } from '@supabase/supabase-js';
 import { ShopManifest, SyncResult } from '@/types/shop-manifest';
 import { resolveCityId, resolveBrandId, resolveCategoryId } from '@/lib/mcp/tools';
 
 export class ShopSyncService {
-  private supabase: ReturnType<typeof createClient>;
+  private supabase: any;
   private dryRun: boolean;
 
   constructor(supabaseClient: any, dryRun = false) {
@@ -82,7 +82,7 @@ export class ShopSyncService {
         .select('id, model, rental_rate_per_day')
         .eq('shop_id', shopId);
       
-      const existingMap = new Map(existingInventory?.map(m => [m.model.toLowerCase(), m]));
+      const existingMap = new Map<string, any>(existingInventory?.map((m: any) => [m.model.toLowerCase(), m]) || []);
 
       for (const item of inventory.items) {
         try {

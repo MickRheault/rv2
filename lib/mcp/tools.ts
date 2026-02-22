@@ -144,7 +144,7 @@ export const openAITools: ChatCompletionTool[] = [
 // Name Resolution Helpers
 // ============================================
 
-async function resolveCityId(cityName: string): Promise<string | null> {
+export async function resolveCityId(cityName: string): Promise<string | null> {
     const results = await locationService.searchLocations(cityName, 5);
     if (results.cities && results.cities.length > 0) {
         // Find best match (case-insensitive)
@@ -156,7 +156,7 @@ async function resolveCityId(cityName: string): Promise<string | null> {
     return null;
 }
 
-async function resolveCategoryId(categoryName: string): Promise<string | null> {
+export async function resolveCategoryId(categoryName: string): Promise<string | null> {
     const categories = await categoryService.getCategories();
     const match = categories.find(
         (c: { name: string }) => c.name.toLowerCase() === categoryName.toLowerCase()
@@ -164,7 +164,7 @@ async function resolveCategoryId(categoryName: string): Promise<string | null> {
     return match ? (match as { id: string }).id : null;
 }
 
-async function resolveBrandId(brandName: string): Promise<string | null> {
+export async function resolveBrandId(brandName: string): Promise<string | null> {
     const brands = await brandService.getBrands();
     const match = brands.find(
         (b: { name: string }) => b.name.toLowerCase() === brandName.toLowerCase()
