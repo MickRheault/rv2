@@ -5,11 +5,11 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import Button from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
+import Textarea from '@/components/ui/Textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import Alert from '@/components/ui/Alert';
 import { Loader2 } from 'lucide-react';
 import { ShopManifest } from '@/types/shop-manifest';
 
@@ -18,6 +18,8 @@ const schema = z.object({
   manifest: z.string().optional(), // JSON string
 });
 
+type FormValues = z.infer<typeof schema>;
+
 export default function ImportShopPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -25,11 +27,11 @@ export default function ImportShopPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [manifestData, setManifestData] = useState<ShopManifest | null>(null);
 
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm({
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
   });
 
-  const onExtract = async (data: { url: string }) => {
+  const onExtract = async (data: FormValues) => {
     setIsLoading(true);
     setError(null);
     setSuccess(null);
@@ -59,7 +61,7 @@ export default function ImportShopPage() {
     }
   };
 
-  const onSync = async (data: { manifest?: string }) => {
+  const onSync = async (data: FormValues) => {
     if (!data.manifest) return;
     setIsLoading(true);
     setError(null);
@@ -112,17 +114,21 @@ export default function ImportShopPage() {
           </form>
 
           {error && (
-            <Alert variant="destructive" className="mt-4">
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
+            <Alert 
+              variant="error" 
+              title="Error" 
+              description={error} 
+              className="mt-4"
+            />
           )}
 
           {success && (
-            <Alert className="mt-4 bg-green-50 border-green-200 text-green-800">
-              <AlertTitle>Success</AlertTitle>
-              <AlertDescription>{success}</AlertDescription>
-            </Alert>
+            <Alert 
+              variant="success" 
+              title="Success" 
+              description={success} 
+              className="mt-4 bg-green-50 border-green-200 text-green-800"
+            />
           )}
 
           {manifestData && (
