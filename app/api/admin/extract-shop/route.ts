@@ -3,12 +3,12 @@ import OpenAI from 'openai';
 import { createClient } from '@/lib/supabase/server'; // Ensure correct import for server-side auth check
 import { ShopManifest } from '@/types/shop-manifest';
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export async function POST(req: NextRequest) {
+  // Initialize OpenAI client lazily to avoid build-time errors if env var is missing
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+
   // 1. Auth Check (Server-Side)
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
