@@ -1,7 +1,7 @@
 import { ShopSyncService } from '@/services/shop-sync';
 import { ShopManifest } from '@/types/shop-manifest';
 
-// Mock Tools
+// Mocking Tools
 jest.mock('@/lib/mcp/tools', () => ({
   resolveCityId: jest.fn().mockResolvedValue('city-uuid-123'),
   resolveBrandId: jest.fn().mockResolvedValue('brand-uuid-123'),
