@@ -281,6 +281,7 @@ const handler = createMcpHandler(
                     specifications_details: z.string().optional().describe('Specifications details as JSON string'),
                     conditions: z.string().optional().describe('Structured conditions as JSON string: [{"condition_type_id": "...", "notes": "..."}]'),
                     feature_ids: z.array(z.string()).optional().describe('Array of feature IDs to assign'),
+                    rental_rate_tiers: z.string().optional().describe('Pricing tiers as JSON string array: [{"min_days": 1, "max_days": 6, "rate_per_day": 100, "currency": "USD"}]'),
                 },
             },
             async (params, extra) => {
@@ -288,7 +289,7 @@ const handler = createMcpHandler(
                     return { content: [{ type: 'text', text: 'Error: Admin access required' }], isError: true };
                 }
 
-                const { daily_rate, engine_capacity, conditions_details, specifications_details, conditions, feature_ids, ...rest } = params as any;
+                const { daily_rate, engine_capacity, conditions_details, specifications_details, conditions, feature_ids, rental_rate_tiers, ...rest } = params as any;
                 const body: Record<string, any> = { ...rest };
 
                 if (daily_rate !== undefined) body.rental_rate_per_day = daily_rate;
@@ -305,6 +306,13 @@ const handler = createMcpHandler(
                         body.specifications_details = JSON.parse(specifications_details);
                     } catch (e) {
                         return { content: [{ type: 'text', text: 'Error: specifications_details must be valid JSON string' }], isError: true };
+                    }
+                }
+                if (rental_rate_tiers) {
+                    try {
+                        body.rental_rate_tiers = JSON.parse(rental_rate_tiers);
+                    } catch (e) {
+                        return { content: [{ type: 'text', text: 'Error: rental_rate_tiers must be valid JSON string array' }], isError: true };
                     }
                 }
 
@@ -355,6 +363,7 @@ const handler = createMcpHandler(
                     specifications_details: z.string().optional().describe('Specifications details as JSON string'),
                     conditions: z.string().optional().describe('Structured conditions as JSON string: [{"condition_type_id": "...", "notes": "..."}]'),
                     feature_ids: z.array(z.string()).optional().describe('Array of feature IDs to assign'),
+                    rental_rate_tiers: z.string().optional().describe('Pricing tiers as JSON string array: [{"min_days": 1, "max_days": 6, "rate_per_day": 100, "currency": "USD"}]'),
                 },
             },
             async ({ id, ...data }, extra) => {
@@ -362,7 +371,7 @@ const handler = createMcpHandler(
                     return { content: [{ type: 'text', text: 'Error: Admin access required' }], isError: true };
                 }
 
-                const { daily_rate, engine_capacity, conditions_details, specifications_details, conditions, feature_ids, ...rest } = data as any;
+                const { daily_rate, engine_capacity, conditions_details, specifications_details, conditions, feature_ids, rental_rate_tiers, ...rest } = data as any;
                 const body: Record<string, any> = { ...rest };
 
                 if (daily_rate !== undefined) body.rental_rate_per_day = daily_rate;
@@ -379,6 +388,13 @@ const handler = createMcpHandler(
                         body.specifications_details = JSON.parse(specifications_details);
                     } catch (e) {
                         return { content: [{ type: 'text', text: 'Error: specifications_details must be valid JSON string' }], isError: true };
+                    }
+                }
+                if (rental_rate_tiers) {
+                    try {
+                        body.rental_rate_tiers = JSON.parse(rental_rate_tiers);
+                    } catch (e) {
+                        return { content: [{ type: 'text', text: 'Error: rental_rate_tiers must be valid JSON string array' }], isError: true };
                     }
                 }
 
