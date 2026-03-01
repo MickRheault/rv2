@@ -1,5 +1,22 @@
 import { supabase } from '@/lib/supabase/client';
-import type { Tables, TablesInsert, TablesUpdate } from '@/lib/supabase/database.types';
+import { SupabaseClient } from '@supabase/supabase-js';
+import type { Tables, TablesInsert, TablesUpdate, Database } from '@/lib/supabase/database.types';
+
+// Lazily initialized admin client to bypass RLS for write operations
+let adminClient: SupabaseClient<Database> | null = null;
+function getAdminClient(): SupabaseClient<Database> {
+  if (adminClient) return adminClient;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  if (!url || !key) {
+    console.warn('SUPABASE_SERVICE_ROLE_KEY is missing. Write operations may fail.');
+    return supabase as unknown as SupabaseClient<Database>;
+  }
+  adminClient = new SupabaseClient<Database>(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  return adminClient;
+}
 
 export type RentalRateTier = Tables<'rental_rate_tiers'>;
 export type RentalRateTierInsert = TablesInsert<'rental_rate_tiers'>;
@@ -53,7 +70,7 @@ export async function addRentalRateTier(rateTier: RentalRateTierInsert): Promise
     throw new Error('Rate tier overlaps with existing tier. Please adjust the day ranges.');
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await getAdminClient()
     .from('rental_rate_tiers')
     .insert(rateTier as any)
     .select()
@@ -112,7 +129,7 @@ export async function updateRentalRateTier(id: string, updates: RentalRateTierUp
     }
   }
 
-  const { data, error } = await (supabase.from('rental_rate_tiers') as any)
+  const { data, error } = await (getAdminClient().from('rental_rate_tiers') as any)
     .update(updates)
     .eq('id', id)
     .select()
@@ -128,7 +145,7 @@ export async function updateRentalRateTier(id: string, updates: RentalRateTierUp
 
 // Remove rate tier
 export async function removeRentalRateTier(id: string): Promise<void> {
-  const { error } = await (supabase.from('rental_rate_tiers') as any)
+  const { error } = await (getAdminClient().from('rental_rate_tiers') as any)
     .delete()
     .eq('id', id);
 
@@ -144,7 +161,7 @@ export async function updateMotorcycleRateTiers(
   rateTiers: RentalRateTierInsert[]
 ): Promise<RentalRateTier[]> {
   // First, remove all existing rate tiers for this motorcycle
-  const { error: deleteError } = await (supabase.from('rental_rate_tiers') as any)
+  const { error: deleteError } = await (getAdminClient().from('rental_rate_tiers') as any)
     .delete()
     .eq('motorcycle_id', motorcycleId);
 
@@ -171,7 +188,7 @@ export async function updateMotorcycleRateTiers(
   }
 
   // Insert new rate tiers
-  const { data, error } = await supabase
+  const { data, error } = await getAdminClient()
     .from('rental_rate_tiers')
     .insert(rateTiers as any)
     .select();
@@ -181,7 +198,7 @@ export async function updateMotorcycleRateTiers(
     throw new Error(error.message);
   }
 
-  return data || [];
+  return (data as RentalRateTier[]) || [];
 }
 
 // Get rate tier suggestions based on common patterns
