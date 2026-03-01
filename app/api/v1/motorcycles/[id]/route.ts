@@ -7,6 +7,7 @@ import { successResponse, errors } from '@/lib/api/response';
 import { requireAuth } from '@/lib/api/middleware';
 import { rateLimit, getRateLimitHeaders } from '@/lib/api/rate-limit';
 import { motorcycleService } from '@/services/motorcycles';
+import { updateMotorcycleRateTiers } from '@/services/rental-rate-tiers';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -82,7 +83,22 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         }
 
         const body = await request.json();
-        const motorcycle = await motorcycleService.updateMotorcycle(id, body);
+        const { rental_rate_tiers, ...motorcycleData } = body;
+        const motorcycle = await motorcycleService.updateMotorcycle(id, motorcycleData);
+
+        // Update rate tiers if provided
+        if (rental_rate_tiers && Array.isArray(rental_rate_tiers)) {
+            try {
+                const tiersToInsert = rental_rate_tiers.map(tier => ({
+                    ...tier,
+                    motorcycle_id: motorcycle.id
+                }));
+                await updateMotorcycleRateTiers(motorcycle.id, tiersToInsert);
+            } catch (tierError) {
+                console.error('Error updating rate tiers:', tierError);
+                // We still return the updated motorcycle
+            }
+        }
 
         return successResponse(motorcycle);
     } catch (error) {
