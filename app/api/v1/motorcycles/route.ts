@@ -12,6 +12,7 @@ import {
 import { requireAuth } from '@/lib/api/middleware';
 import { rateLimit, getRateLimitHeaders } from '@/lib/api/rate-limit';
 import { motorcycleService } from '@/services/motorcycles';
+import { updateMotorcycleRateTiers } from '@/services/rental-rate-tiers';
 
 /**
  * GET /api/v1/motorcycles
@@ -102,16 +103,31 @@ export async function POST(request: NextRequest) {
 
     try {
         const body = await request.json();
+        const { rental_rate_tiers, ...motorcycleData } = body;
 
         // Validate required fields
-        if (!body.model) {
+        if (!motorcycleData.model) {
             return errors.badRequest('Model is required');
         }
-        if (!body.shop_id) {
+        if (!motorcycleData.shop_id) {
             return errors.badRequest('Shop ID is required');
         }
 
-        const motorcycle = await motorcycleService.createMotorcycle(body);
+        const motorcycle = await motorcycleService.createMotorcycle(motorcycleData);
+
+        // Update rate tiers if provided
+        if (rental_rate_tiers && Array.isArray(rental_rate_tiers)) {
+            try {
+                const tiersToInsert = rental_rate_tiers.map(tier => ({
+                    ...tier,
+                    motorcycle_id: motorcycle.id
+                }));
+                await updateMotorcycleRateTiers(motorcycle.id, tiersToInsert);
+            } catch (tierError) {
+                console.error('Error creating rate tiers:', tierError);
+                // We still return the created motorcycle, but could append a warning
+            }
+        }
 
         return successResponse(motorcycle, undefined, 201);
     } catch (error) {
