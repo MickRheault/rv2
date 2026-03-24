@@ -188,61 +188,6 @@ export default function MotorcycleDetails({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Details */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Specifications */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CogIcon className="w-5 h-5" />
-                Specifications
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="font-medium">Brand</span>
-                    <span>{brands?.name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="font-medium">Model</span>
-                    <span>{model}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="font-medium">Year</span>
-                    <span>{year}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="font-medium">Category</span>
-                    <span>{categories?.name}</span>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="font-medium">Engine</span>
-                    <span>{engine_capacity_cc}cc</span>
-                  </div>
-                  {specifications.transmission && (
-                    <div className="flex justify-between">
-                      <span className="font-medium">Transmission</span>
-                      <span>{specifications.transmission}</span>
-                    </div>
-                  )}
-                  {specifications.fuel_type && (
-                    <div className="flex justify-between">
-                      <span className="font-medium">Fuel Type</span>
-                      <span>{specifications.fuel_type}</span>
-                    </div>
-                  )}
-                  {specifications.max_speed && (
-                    <div className="flex justify-between">
-                      <span className="font-medium">Max Speed</span>
-                      <span>{specifications.max_speed}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Rental Rates */}
           {rental_rate_tiers && rental_rate_tiers.length > 0 && (
