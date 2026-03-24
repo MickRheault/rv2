@@ -30,6 +30,41 @@ function getApiKey(authInfo?: AuthInfo): string {
     return getAccessLevel(authInfo) === 'admin' ? MCP_KEY_ADMIN : MCP_KEY_READ_ONLY;
 }
 
+
+async function handleApiError(response: Response, defaultMessage: string) {
+    let errorMsg = defaultMessage;
+    try {
+        const errorData = await response.json();
+        if (errorData?.error?.message) {
+            errorMsg = errorData.error.message;
+            if (errorData.error.details && Object.keys(errorData.error.details).length > 0) {
+                errorMsg += '\nDetails: ' + JSON.stringify(errorData.error.details, null, 2);
+            }
+        } else if (errorData?.message) {
+            errorMsg = errorData.message;
+        } else {
+            errorMsg += ' - ' + JSON.stringify(errorData);
+        }
+    } catch (_) {
+        const text = await response.text();
+        if (text) errorMsg += ` - ${text}`;
+    }
+    throw new Error(errorMsg);
+}
+
+function withToolErrorHandling<T>(fn: (params: any, extra: any) => Promise<T>) {
+    return async (params: any, extra: any): Promise<T | { content: any[], isError: boolean }> => {
+        try {
+            return await fn(params, extra);
+        } catch (error: any) {
+            return {
+                content: [{ type: 'text', text: `API Error: ${error.message}` }],
+                isError: true,
+            };
+        }
+    };
+}
+
 // API client for internal calls
 async function apiGet(endpoint: string, apiKey: string, params?: Record<string, string>) {
     const url = new URL(`${API_BASE_URL}${endpoint}`);
@@ -42,7 +77,7 @@ async function apiGet(endpoint: string, apiKey: string, params?: Record<string, 
     if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
 
     const response = await fetch(url.toString(), { method: 'GET', headers });
-    if (!response.ok) throw new Error(`API error: ${response.status}`);
+    if (!response.ok) await handleApiError(response, `API error: ${response.status}`);
     return response.json();
 }
 
@@ -58,10 +93,7 @@ async function apiPost(endpoint: string, apiKey: string, body: unknown) {
         body: JSON.stringify(body),
         cache: 'no-store'
     });
-    if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`API error: ${response.status} (${response.statusText}) - ${text}`);
-    }
+    if (!response.ok) await handleApiError(response, `API error: ${response.status} (${response.statusText})`);
     return response.json();
 }
 
@@ -74,7 +106,7 @@ async function apiPut(endpoint: string, apiKey: string, body: unknown) {
         headers,
         body: JSON.stringify(body),
     });
-    if (!response.ok) throw new Error(`API error: ${response.status}`);
+    if (!response.ok) await handleApiError(response, `API error: ${response.status}`);
     return response.json();
 }
 
@@ -83,7 +115,7 @@ async function apiDelete(endpoint: string, apiKey: string) {
     if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
 
     const response = await fetch(`${API_BASE_URL}${endpoint}`, { method: 'DELETE', headers });
-    if (!response.ok) throw new Error(`API error: ${response.status}`);
+    if (!response.ok) await handleApiError(response, `API error: ${response.status}`);
     return response.json();
 }
 
@@ -112,7 +144,7 @@ const handler = createMcpHandler(
                     availabilityStatus: z.string().optional().describe('Availability status (e.g., "AVAILABLE")'),
                 },
             },
-            async (params, extra) => {
+            withToolErrorHandling(async (params, extra) => {
                 const apiKey = getApiKey(extra.authInfo);
                 const queryParams: Record<string, string> = {};
                 for (const [k, v] of Object.entries(params)) {
@@ -120,7 +152,7 @@ const handler = createMcpHandler(
                 }
                 const result = await apiGet('/motorcycles', apiKey, queryParams);
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
-            }
+            })
         );
 
         server.registerTool(
@@ -132,11 +164,11 @@ const handler = createMcpHandler(
                     id: z.string().describe('Motorcycle ID'),
                 },
             },
-            async ({ id }, extra) => {
+            withToolErrorHandling(async ({ id }, extra) => {
                 const apiKey = getApiKey(extra.authInfo);
                 const result = await apiGet(`/motorcycles/${id}`, apiKey);
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
-            }
+            })
         );
 
         server.registerTool(
@@ -153,7 +185,7 @@ const handler = createMcpHandler(
                     offset: z.number().optional().default(0).describe('Pagination offset'),
                 },
             },
-            async (params, extra) => {
+            withToolErrorHandling(async (params, extra) => {
                 const apiKey = getApiKey(extra.authInfo);
                 const queryParams: Record<string, string> = {};
                 for (const [k, v] of Object.entries(params)) {
@@ -161,7 +193,7 @@ const handler = createMcpHandler(
                 }
                 const result = await apiGet('/shops', apiKey, queryParams);
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
-            }
+            })
         );
 
         server.registerTool(
@@ -173,11 +205,11 @@ const handler = createMcpHandler(
                     id: z.string().describe('Shop ID'),
                 },
             },
-            async ({ id }, extra) => {
+            withToolErrorHandling(async ({ id }, extra) => {
                 const apiKey = getApiKey(extra.authInfo);
                 const result = await apiGet(`/shops/${id}`, apiKey);
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
-            }
+            })
         );
 
         server.registerTool(
@@ -187,11 +219,11 @@ const handler = createMcpHandler(
                 description: 'List all motorcycle brands',
                 inputSchema: {},
             },
-            async (_params, extra) => {
+            withToolErrorHandling(async (_params, extra) => {
                 const apiKey = getApiKey(extra.authInfo);
                 const result = await apiGet('/brands', apiKey);
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
-            }
+            })
         );
 
         server.registerTool(
@@ -201,11 +233,11 @@ const handler = createMcpHandler(
                 description: 'List all motorcycle categories',
                 inputSchema: {},
             },
-            async (_params, extra) => {
+            withToolErrorHandling(async (_params, extra) => {
                 const apiKey = getApiKey(extra.authInfo);
                 const result = await apiGet('/categories', apiKey);
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
-            }
+            })
         );
 
         server.registerTool(
@@ -217,13 +249,13 @@ const handler = createMcpHandler(
                     countryCode: z.string().optional().describe('Filter by country code'),
                 },
             },
-            async (params, extra) => {
+            withToolErrorHandling(async (params, extra) => {
                 const apiKey = getApiKey(extra.authInfo);
                 const queryParams: Record<string, string> = {};
                 if (params.countryCode) queryParams.countryCode = params.countryCode;
                 const result = await apiGet('/locations', apiKey, queryParams);
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
-            }
+            })
         );
 
         // ============================================
@@ -237,10 +269,10 @@ const handler = createMcpHandler(
                 description: 'List all condition types (used for shop and motorcycle conditions)',
                 inputSchema: {},
             },
-            async (_params, _extra) => {
+            withToolErrorHandling(async (_params, _extra) => {
                 const result = await apiGet('/condition-types', MCP_KEY_READ_ONLY);
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
-            }
+            })
         );
 
         server.registerTool(
@@ -250,10 +282,10 @@ const handler = createMcpHandler(
                 description: 'List all motorcycle features (used for motorcycle feature assignments)',
                 inputSchema: {},
             },
-            async (_params, _extra) => {
+            withToolErrorHandling(async (_params, _extra) => {
                 const result = await apiGet('/features', MCP_KEY_READ_ONLY);
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
-            }
+            })
         );
 
         // ============================================
@@ -284,7 +316,7 @@ const handler = createMcpHandler(
                     rental_rate_tiers: z.string().optional().describe('Pricing tiers as JSON string array: [{"min_days": 1, "max_days": 6, "rate_per_day": 100, "currency": "USD"}]'),
                 },
             },
-            async (params, extra) => {
+            withToolErrorHandling(async (params, extra) => {
                 if (getAccessLevel(extra.authInfo) !== 'admin') {
                     return { content: [{ type: 'text', text: 'Error: Admin access required' }], isError: true };
                 }
@@ -339,7 +371,7 @@ const handler = createMcpHandler(
                 }
 
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
-            }
+            })
         );
 
         server.registerTool(
@@ -366,7 +398,7 @@ const handler = createMcpHandler(
                     rental_rate_tiers: z.string().optional().describe('Pricing tiers as JSON string array: [{"min_days": 1, "max_days": 6, "rate_per_day": 100, "currency": "USD"}]'),
                 },
             },
-            async ({ id, ...data }, extra) => {
+            withToolErrorHandling(async ({ id, ...data }, extra) => {
                 if (getAccessLevel(extra.authInfo) !== 'admin') {
                     return { content: [{ type: 'text', text: 'Error: Admin access required' }], isError: true };
                 }
@@ -420,7 +452,7 @@ const handler = createMcpHandler(
                 }
 
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
-            }
+            })
         );
 
         server.registerTool(
@@ -432,13 +464,13 @@ const handler = createMcpHandler(
                     id: z.string().describe('Motorcycle ID'),
                 },
             },
-            async ({ id }, extra) => {
+            withToolErrorHandling(async ({ id }, extra) => {
                 if (getAccessLevel(extra.authInfo) !== 'admin') {
                     return { content: [{ type: 'text', text: 'Error: Admin access required' }], isError: true };
                 }
                 const result = await apiDelete(`/motorcycles/${id}`, MCP_KEY_ADMIN);
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
-            }
+            })
         );
 
         server.registerTool(
@@ -466,7 +498,7 @@ const handler = createMcpHandler(
                     conditions: z.string().optional().describe('Conditions as JSON string: [{"condition_type_id": "...", "condition_value": "...", "notes": "..."}]'),
                 },
             },
-            async (params, extra) => {
+            withToolErrorHandling(async (params, extra) => {
                 if (getAccessLevel(extra.authInfo) !== 'admin') {
                     return { content: [{ type: 'text', text: 'Error: Admin access required' }], isError: true };
                 }
@@ -501,7 +533,7 @@ const handler = createMcpHandler(
                 }
 
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
-            }
+            })
         );
 
         server.registerTool(
@@ -530,7 +562,7 @@ const handler = createMcpHandler(
                     conditions: z.string().optional().describe('Conditions as JSON string — replaces all existing: [{"condition_type_id": "...", "condition_value": "...", "notes": "..."}]'),
                 },
             },
-            async ({ id, ...data }, extra) => {
+            withToolErrorHandling(async ({ id, ...data }, extra) => {
                 if (getAccessLevel(extra.authInfo) !== 'admin') {
                     return { content: [{ type: 'text', text: 'Error: Admin access required' }], isError: true };
                 }
@@ -562,7 +594,7 @@ const handler = createMcpHandler(
                 }
 
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
-            }
+            })
         );
 
         server.registerTool(
@@ -574,13 +606,13 @@ const handler = createMcpHandler(
                     id: z.string().describe('Shop ID'),
                 },
             },
-            async ({ id }, extra) => {
+            withToolErrorHandling(async ({ id }, extra) => {
                 if (getAccessLevel(extra.authInfo) !== 'admin') {
                     return { content: [{ type: 'text', text: 'Error: Admin access required' }], isError: true };
                 }
                 const result = await apiDelete(`/shops/${id}`, MCP_KEY_ADMIN);
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
-            }
+            })
         );
         // ============================================
         // STANDALONE SUB-ENTITY TOOLS (admin)
@@ -596,13 +628,13 @@ const handler = createMcpHandler(
                     inclusions: z.array(z.string()).describe('Array of inclusion texts (e.g., ["Helmet", "Rain poncho", "Lock"])'),
                 },
             },
-            async ({ shop_id, inclusions }, extra) => {
+            withToolErrorHandling(async ({ shop_id, inclusions }, extra) => {
                 if (getAccessLevel(extra.authInfo) !== 'admin') {
                     return { content: [{ type: 'text', text: 'Error: Admin access required' }], isError: true };
                 }
                 const result = await apiPut(`/shops/${shop_id}/inclusions`, MCP_KEY_ADMIN, { inclusions });
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
-            }
+            })
         );
 
         server.registerTool(
@@ -615,7 +647,7 @@ const handler = createMcpHandler(
                     conditions: z.string().describe('JSON string array: [{"condition_type_id": "...", "condition_value": "...", "notes": "optional"}]'),
                 },
             },
-            async ({ shop_id, conditions }, extra) => {
+            withToolErrorHandling(async ({ shop_id, conditions }, extra) => {
                 if (getAccessLevel(extra.authInfo) !== 'admin') {
                     return { content: [{ type: 'text', text: 'Error: Admin access required' }], isError: true };
                 }
@@ -626,7 +658,7 @@ const handler = createMcpHandler(
                 } catch (e: any) {
                     return { content: [{ type: 'text', text: `Error: ${e.message}` }], isError: true };
                 }
-            }
+            })
         );
 
         server.registerTool(
@@ -639,7 +671,7 @@ const handler = createMcpHandler(
                     conditions: z.string().describe('JSON string array: [{"condition_type_id": "...", "notes": "optional"}]'),
                 },
             },
-            async ({ motorcycle_id, conditions }, extra) => {
+            withToolErrorHandling(async ({ motorcycle_id, conditions }, extra) => {
                 if (getAccessLevel(extra.authInfo) !== 'admin') {
                     return { content: [{ type: 'text', text: 'Error: Admin access required' }], isError: true };
                 }
@@ -650,7 +682,7 @@ const handler = createMcpHandler(
                 } catch (e: any) {
                     return { content: [{ type: 'text', text: `Error: ${e.message}` }], isError: true };
                 }
-            }
+            })
         );
 
         server.registerTool(
@@ -663,7 +695,7 @@ const handler = createMcpHandler(
                     rate_tiers: z.string().describe('JSON string array: [{"min_days": 1, "max_days": 6, "rate_per_day": 100, "currency": "USD"}]'),
                 },
             },
-            async ({ motorcycle_id, rate_tiers }, extra) => {
+            withToolErrorHandling(async ({ motorcycle_id, rate_tiers }, extra) => {
                 if (getAccessLevel(extra.authInfo) !== 'admin') {
                     return { content: [{ type: 'text', text: 'Error: Admin access required' }], isError: true };
                 }
@@ -674,7 +706,7 @@ const handler = createMcpHandler(
                 } catch (e: any) {
                     return { content: [{ type: 'text', text: `Error: ${e.message}` }], isError: true };
                 }
-            }
+            })
         );
 
         server.registerTool(
@@ -687,13 +719,13 @@ const handler = createMcpHandler(
                     feature_ids: z.array(z.string()).describe('Array of feature IDs to assign'),
                 },
             },
-            async ({ motorcycle_id, feature_ids }, extra) => {
+            withToolErrorHandling(async ({ motorcycle_id, feature_ids }, extra) => {
                 if (getAccessLevel(extra.authInfo) !== 'admin') {
                     return { content: [{ type: 'text', text: 'Error: Admin access required' }], isError: true };
                 }
                 const result = await apiPut(`/motorcycles/${motorcycle_id}/features`, MCP_KEY_ADMIN, { feature_ids });
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
-            }
+            })
         );
     },
     {},
