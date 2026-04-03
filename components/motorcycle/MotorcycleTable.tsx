@@ -35,9 +35,10 @@ export default function MotorcycleTable({ motorcycles, title, showShopColumn = f
     // Helper to get best rate for sorting
     const getBestRateValue = (motorcycle: any) => {
         if (motorcycle.rental_rate_tiers && motorcycle.rental_rate_tiers.length > 0) {
-            const dailyRate = motorcycle.rental_rate_tiers.find((tier: any) => tier.min_days === 1)
-            if (dailyRate) return dailyRate.rate_per_day
-            return Math.min(...motorcycle.rental_rate_tiers.map((t: any) => t.rate_per_day))
+            const shortestPeriodTier = motorcycle.rental_rate_tiers.reduce((prev: any, current: any) => 
+                prev.min_days < current.min_days ? prev : current
+            )
+            return shortestPeriodTier.rate_per_day
         }
         return motorcycle.rental_rate_per_day || 0
     }
@@ -171,13 +172,10 @@ export default function MotorcycleTable({ motorcycles, title, showShopColumn = f
                         {displayedMotorcycles.map((motorcycle) => {
                             const getBestRate = () => {
                                 if (motorcycle.rental_rate_tiers && motorcycle.rental_rate_tiers.length > 0) {
-                                    const dailyRate = motorcycle.rental_rate_tiers.find((tier: any) => tier.min_days === 1)
-                                    if (dailyRate) return { amount: dailyRate.rate_per_day, currency: dailyRate.currency }
-
-                                    const lowestRate = motorcycle.rental_rate_tiers.reduce((prev: any, current: any) =>
-                                        prev.rate_per_day < current.rate_per_day ? prev : current
+                                    const shortestPeriodTier = motorcycle.rental_rate_tiers.reduce((prev: any, current: any) =>
+                                        prev.min_days < current.min_days ? prev : current
                                     )
-                                    return { amount: lowestRate.rate_per_day, currency: lowestRate.currency }
+                                    return { amount: shortestPeriodTier.rate_per_day, currency: shortestPeriodTier.currency }
                                 }
                                 return { amount: motorcycle.rental_rate_per_day, currency: motorcycle.rental_rate_currency }
                             }
@@ -252,12 +250,10 @@ export default function MotorcycleTable({ motorcycles, title, showShopColumn = f
                 {displayedMotorcycles.map((motorcycle) => {
                     const getBestRate = () => {
                         if (motorcycle.rental_rate_tiers && motorcycle.rental_rate_tiers.length > 0) {
-                            const dailyRate = motorcycle.rental_rate_tiers.find((tier: any) => tier.min_days === 1)
-                            if (dailyRate) return { amount: dailyRate.rate_per_day, currency: dailyRate.currency }
-                            const lowestRate = motorcycle.rental_rate_tiers.reduce((prev: any, current: any) =>
-                                prev.rate_per_day < current.rate_per_day ? prev : current
+                            const shortestPeriodTier = motorcycle.rental_rate_tiers.reduce((prev: any, current: any) =>
+                                prev.min_days < current.min_days ? prev : current
                             )
-                            return { amount: lowestRate.rate_per_day, currency: lowestRate.currency }
+                            return { amount: shortestPeriodTier.rate_per_day, currency: shortestPeriodTier.currency }
                         }
                         return { amount: motorcycle.rental_rate_per_day, currency: motorcycle.rental_rate_currency }
                     }

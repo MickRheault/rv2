@@ -51,16 +51,11 @@ export default function MotorcycleCard({
   // This matches the logic in MotorcycleDetails component
   const getBestRate = () => {
     if (motorcycle.rental_rate_tiers && motorcycle.rental_rate_tiers.length > 0) {
-      // Find the rate with min_days = 1 (daily rate) or the lowest rate
-      const dailyRate = motorcycle.rental_rate_tiers.find(tier => tier.min_days === 1)
-      if (dailyRate) {
-        return { amount: dailyRate.rate_per_day, currency: dailyRate.currency }
-      }
-      // If no daily rate, get the lowest rate
-      const lowestRate = motorcycle.rental_rate_tiers.reduce((prev, current) => 
-        prev.rate_per_day < current.rate_per_day ? prev : current
+      // Find the tier with the shortest min_days
+      const shortestPeriodTier = motorcycle.rental_rate_tiers.reduce((prev, current) => 
+        prev.min_days < current.min_days ? prev : current
       )
-      return { amount: lowestRate.rate_per_day, currency: lowestRate.currency }
+      return { amount: shortestPeriodTier.rate_per_day, currency: shortestPeriodTier.currency }
     }
     return { amount: motorcycle.rental_rate_per_day, currency: motorcycle.rental_rate_currency }
   }
