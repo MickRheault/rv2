@@ -85,16 +85,11 @@ export default function MotorcycleDetails({
   // Get the best (lowest) daily rate from rate tiers or fallback to base rate
   const getBestRate = () => {
     if (rental_rate_tiers && rental_rate_tiers.length > 0) {
-      // Find the rate with min_days = 1 (daily rate) or the lowest rate
-      const dailyRate = rental_rate_tiers.find(tier => tier.min_days === 1)
-      if (dailyRate) {
-        return { amount: dailyRate.rate_per_day, currency: dailyRate.currency }
-      }
-      // If no daily rate, get the lowest rate
-      const lowestRate = rental_rate_tiers.reduce((prev, current) =>
-        prev.rate_per_day < current.rate_per_day ? prev : current
+      // Find the tier with the shortest min_days
+      const shortestPeriodTier = rental_rate_tiers.reduce((prev, current) =>
+        prev.min_days < current.min_days ? prev : current
       )
-      return { amount: lowestRate.rate_per_day, currency: lowestRate.currency }
+      return { amount: shortestPeriodTier.rate_per_day, currency: shortestPeriodTier.currency }
     }
     return { amount: rental_rate_per_day, currency: rental_rate_currency }
   }
