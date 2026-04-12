@@ -244,15 +244,21 @@ const handler = createMcpHandler(
             'list_locations',
             {
                 title: 'List Locations',
-                description: 'List available locations (countries, provinces, cities)',
+                description: 'List available locations. Use type="cities" to get city IDs needed for creating shops. Use type="countries" for country info, type="provinces" for provinces, or type="search" to find a location by name.',
                 inputSchema: {
-                    countryCode: z.string().optional().describe('Filter by country code'),
+                    type: z.enum(['countries', 'provinces', 'cities', 'search']).optional().default('countries').describe('Type of locations to list (default: "countries"). Use "cities" to get city IDs.'),
+                    countryCode: z.string().optional().describe('Filter provinces or cities by country code (e.g., "TH", "VN")'),
+                    provinceId: z.string().optional().describe('Filter cities by province ID'),
+                    search: z.string().optional().describe('Search query (required when type="search")'),
                 },
             },
             withToolErrorHandling(async (params, extra) => {
                 const apiKey = getApiKey(extra.authInfo);
                 const queryParams: Record<string, string> = {};
+                if (params.type) queryParams.type = params.type;
                 if (params.countryCode) queryParams.countryCode = params.countryCode;
+                if (params.provinceId) queryParams.provinceId = params.provinceId;
+                if (params.search) queryParams.search = params.search;
                 const result = await apiGet('/locations', apiKey, queryParams);
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
             })
