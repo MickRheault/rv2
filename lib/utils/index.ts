@@ -387,7 +387,8 @@ export function isReservedRoute(param: string): boolean {
     'about', 'contact', 'help', 'privacy', 'terms', 'careers', 'safety',
     'how-it-works', 'report', 'cookies', 'motorcycle-demo', 'search-demo',
     'shop-demo', 'ui-demo', 'test-errors', 'test-location-search',
-    'test-search-url-state', 'test-services', 'test-url-params'
+    'test-search-url-state', 'test-services', 'test-url-params',
+    '.well-known', 'well-known'
   ]
   
   return reservedRoutes.includes(param.toLowerCase())

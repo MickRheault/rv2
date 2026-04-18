@@ -169,7 +169,12 @@ export default async function CityPage({ params }: CityPageProps) {
         </main>
       </Suspense>
     )
-  } catch (error) {
+  } catch (error: any) {
+    // Let Next.js navigation errors (like notFound) bubble up without logging
+    if (error && typeof error === 'object' && error.digest && typeof error.digest === 'string' && error.digest.includes('NEXT_HTTP_ERROR_FALLBACK')) {
+      throw error;
+    }
+
     console.error('Error fetching city data:', error)
 
     // Handle different types of errors more gracefully
