@@ -370,7 +370,7 @@ export function useLocationAutocomplete(initialQuery = '') {
 
   const { data: popularLocations = [] } = useQuery({
     queryKey: ['popular-locations-autocomplete'],
-    queryFn: () => searchService.getPopularSearchLocations(5),
+    queryFn: () => searchService.getPopularSearchLocations(1000),
     staleTime: 30 * 60 * 1000
   })
 

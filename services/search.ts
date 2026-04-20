@@ -300,7 +300,7 @@ export const searchService = {
           type: 'city',
           id: city.id,
           name: city.name,
-          fullName: `${city.name}, ${city.provinces.name}, ${city.provinces.countries.name}`,
+          fullName: `${city.name}, ${city.provinces.countries.name}`,
           country: city.provinces.countries,
           province: city.provinces,
           city: city,
@@ -310,77 +310,7 @@ export const searchService = {
       }
     }
 
-    // Search provinces with aggregated counts
-    const { data: provinces } = await typedSupabase
-      .from('provinces')
-      .select(`
-        *,
-        countries (*)
-      `)
-      .ilike('name', `%${searchQuery}%`)
-      .limit(Math.max(1, limit - results.length))
 
-    // Get counts for each province
-    for (const province of provinces || []) {
-      if (province.countries) {
-        // Get shop count for this province
-        const { count: shopCount } = await typedSupabase
-          .from('rental_shops')
-          .select('*, cities!inner(*)', { count: 'exact', head: true })
-          .eq('cities.province_id', province.id)
-
-        // Get motorcycle count for this province
-        const { count: motorcycleCount } = await typedSupabase
-          .from('motorcycle_rentals')
-          .select('*, rental_shops!inner(*, cities!inner(*))', { count: 'exact', head: true })
-          .eq('rental_shops.cities.province_id', province.id)
-
-        results.push({
-          type: 'province',
-          id: province.id,
-          name: province.name,
-          fullName: `${province.name}, ${province.countries.name}`,
-          country: province.countries,
-          province: province,
-          shopCount: shopCount || 0,
-          motorcycleCount: motorcycleCount || 0
-        })
-      }
-    }
-
-    // Search countries with aggregated counts
-    if (results.length < limit) {
-      const { data: countries } = await typedSupabase
-        .from('countries')
-        .select('*')
-        .or(`name.ilike.%${searchQuery}%,code.ilike.%${searchQuery}%`)
-        .limit(limit - results.length)
-
-      // Get counts for each country
-      for (const country of countries || []) {
-        // Get shop count for this country
-        const { count: shopCount } = await typedSupabase
-          .from('rental_shops')
-          .select('*, cities!inner(*, provinces!inner(*))', { count: 'exact', head: true })
-          .eq('cities.provinces.country_code', country.code)
-
-        // Get motorcycle count for this country
-        const { count: motorcycleCount } = await typedSupabase
-          .from('motorcycle_rentals')
-          .select('*, rental_shops!inner(*, cities!inner(*, provinces!inner(*)))', { count: 'exact', head: true })
-          .eq('rental_shops.cities.provinces.country_code', country.code)
-
-        results.push({
-          type: 'country',
-          id: country.code,
-          name: country.name,
-          fullName: country.name,
-          country: country,
-          shopCount: shopCount || 0,
-          motorcycleCount: motorcycleCount || 0
-        })
-      }
-    }
 
     // Sort by relevance (exact matches first, then by counts)
     return results.sort((a, b) => {
@@ -412,7 +342,7 @@ export const searchService = {
           type: 'city' as const,
           id: location.id,
           name: location.name,
-          fullName: `${location.name}, ${location.provinces?.name || ''}, ${location.provinces?.countries?.name || ''}`,
+          fullName: `${location.name}, ${location.provinces?.countries?.name || ''}`,
           country: location.provinces?.countries || undefined,
           province: location.provinces || undefined,
           city: location,
