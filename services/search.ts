@@ -401,17 +401,26 @@ export const searchService = {
   async getPopularSearchLocations(limit: number = 10) {
     const locations = await locationService.getPopularLocations(limit)
 
-    return locations.map(location => ({
-      type: 'city' as const,
-      id: location.id,
-      name: location.name,
-      fullName: `${location.name}, ${location.provinces?.name || ''}, ${location.provinces?.countries?.name || ''}`,
-      country: location.provinces?.countries || undefined,
-      province: location.provinces || undefined,
-      city: location,
-      shopCount: location.shopCount,
-      motorcycleCount: 0 // Will be calculated if needed
-    }))
+    return Promise.all(
+      locations.map(async location => {
+        const { count: motorcycleCount } = await typedSupabase
+          .from('motorcycle_rentals')
+          .select('*, rental_shops!inner(*)', { count: 'exact', head: true })
+          .eq('rental_shops.city_id', location.id)
+
+        return {
+          type: 'city' as const,
+          id: location.id,
+          name: location.name,
+          fullName: `${location.name}, ${location.provinces?.name || ''}, ${location.provinces?.countries?.name || ''}`,
+          country: location.provinces?.countries || undefined,
+          province: location.provinces || undefined,
+          city: location,
+          shopCount: location.shopCount,
+          motorcycleCount: motorcycleCount || 0
+        }
+      })
+    )
   },
 
   // Get location hierarchy for a specific location
