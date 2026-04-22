@@ -196,6 +196,11 @@ export default function MotorcycleTable({ motorcycles, title, showShopColumn = f
                                                     const fullName = `${motorcycle.brands?.name || ''} ${motorcycle.model || ''}`.trim()
                                                     return fullName.length > 25 ? `${fullName.slice(0, 25)}...` : fullName
                                                 })()}
+                                                {motorcycle.year && (
+                                                    <span className="text-[10px] md:text-xs text-gray-500 ml-1 font-normal">
+                                                        ({motorcycle.year})
+                                                    </span>
+                                                )}
                                             </span>
                                             {showShopColumn && (
                                                 <span className="md:hidden text-xs text-gray-500 font-normal line-clamp-1">
@@ -271,6 +276,11 @@ export default function MotorcycleTable({ motorcycles, title, showShopColumn = f
                             <div className="flex justify-between items-start mb-1">
                                 <h3 className="font-semibold text-gray-900 text-sm line-clamp-1 pr-2">
                                     {motorcycle.brands?.name} {motorcycle.model}
+                                    {motorcycle.year && (
+                                        <span className="text-[10px] font-normal text-gray-500 ml-1">
+                                            ({motorcycle.year})
+                                        </span>
+                                    )}
                                 </h3>
                                 <div className="text-right whitespace-nowrap">
                                     <span className="font-bold text-gray-900 text-sm">{price}</span>
