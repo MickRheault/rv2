@@ -31,7 +31,7 @@ export default function Home() {
               Where do you want to ride?
             </h1>
 
-            
+
             {/* Search Form */}
             <HeroSearchForm />
           </div>
@@ -45,10 +45,10 @@ export default function Home() {
         <div className="container-custom">
           <div className="max-w-3xl mx-auto text-center space-y-6">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
-              Ride the world, simply.
+              Ride the world!
             </h2>
             <p className="text-lg md:text-xl text-gray-600">
-              Discover verified rental shops, compare bikes at a glance, and go. No noise. Just the ride.
+              Discover rental shops and compare their bikes.
             </p>
           </div>
         </div>
