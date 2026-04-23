@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { Bars3Icon, XMarkIcon, MagnifyingGlassIcon, HeartIcon, UserIcon } from '@heroicons/react/24/outline'
 
@@ -23,8 +24,15 @@ export default function Header() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2 group">
-            <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg group-hover:scale-105 transition-transform">
-              <span className="text-white font-bold text-sm">🏍️</span>
+            <div className="flex items-center justify-center w-8 h-8 group-hover:scale-105 transition-transform">
+              <Image
+                src="/gmr-logo.png"
+                alt="Global Moto Rentals Logo"
+                width={32}
+                height={32}
+                className="w-full h-full object-contain"
+                priority
+              />
             </div>
             <span className="font-semibold text-gray-900 hidden sm:block">Global Moto Rentals</span>
           </Link>
