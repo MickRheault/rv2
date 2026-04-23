@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function Footer() {
   const footerLinks = {
@@ -23,8 +24,14 @@ export default function Footer() {
           {/* Brand Section */}
           <div className="md:col-span-1">
             <Link href="/" className="flex items-center space-x-2 mb-4">
-              <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg">
-                <span className="text-white font-bold text-sm">🏍️</span>
+              <div className="flex items-center justify-center w-8 h-8">
+                <Image
+                  src="/gmr-logo.png"
+                  alt="Global Moto Rentals Logo"
+                  width={32}
+                  height={32}
+                  className="w-full h-full object-contain"
+                />
               </div>
               <span className="font-semibold text-gray-900">Global Moto Rentals</span>
             </Link>
