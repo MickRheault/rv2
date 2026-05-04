@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import './markdown.css';
 
-const SECRET = 'd4fre320X';
+const SECRET = 'preview-test-202605';
 
 interface Message {
     role: 'user' | 'assistant';
