@@ -135,30 +135,6 @@ function ChatContent() {
                                         </ReactMarkdown>
                                     </div>
                                 )}
-
-                                {msg.toolCalls && msg.toolCalls.length > 0 && (
-                                    <details className="mt-3 text-xs text-gray-500 border-t border-gray-100/30 pt-3">
-                                        <summary className="cursor-pointer hover:text-gray-700 font-medium pb-1">
-                                            <span className="mr-1">🔧</span> Tool calls ({msg.toolCalls.length})
-                                        </summary>
-                                        <div className="space-y-2 mt-2">
-                                            {msg.toolCalls.map((tc, j) => (
-                                                <div key={j} className="bg-gray-50 rounded-lg p-2 border border-gray-100">
-                                                    <div className="text-indigo-600 font-medium mb-1 flex items-center">
-                                                        <span className="w-2 h-2 rounded-full bg-indigo-500 mr-1.5"></span>
-                                                        {tc.name}
-                                                    </div>
-                                                    <pre className="text-[10px] bg-gray-800 text-gray-200 p-2 rounded overflow-x-auto mb-1 font-mono">
-                                                        {tc.args}
-                                                    </pre>
-                                                    <pre className="text-[10px] bg-gray-800 text-green-400 p-2 rounded overflow-auto max-h-[150px] font-mono">
-                                                        {tc.result}
-                                                    </pre>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </details>
-                                )}
                             </div>
                         </div>
                     ))}
