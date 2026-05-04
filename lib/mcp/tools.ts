@@ -20,7 +20,7 @@ export const openAITools: ChatCompletionTool[] = [
         type: 'function',
         function: {
             name: 'list_motorcycles',
-            description: 'Search and list available motorcycles for rent. Returns results with model, brand, price, and location. Use city and category NAMES (e.g., "Bangkok", "Scooter") - they will be resolved automatically.',
+            description: 'Search and list available motorcycles for rent. Returns results with model, brand, price, and location. Use country, city and category NAMES (e.g., "Thailand", "Bangkok", "Scooter") - they will be resolved automatically.',
             parameters: {
                 type: 'object',
                 properties: {
@@ -56,11 +56,11 @@ export const openAITools: ChatCompletionTool[] = [
         type: 'function',
         function: {
             name: 'list_shops',
-            description: 'List and search rental shops. Use city NAMES (e.g., "Bangkok") - they will be resolved automatically.',
+            description: 'List and search rental shops. Use country and city NAMES (e.g., "Thailand", "Bangkok") - they will be resolved automatically.',
             parameters: {
                 type: 'object',
                 properties: {
-                    countryCode: { type: 'string', description: 'Country code (e.g., TH, VN)' },
+                    country: { type: 'string', description: 'Country name (e.g., Thailand, Vietnam)' },
                     city: { type: 'string', description: 'City name (e.g., Bangkok, Chiang Mai)' },
                     query: { type: 'string', description: 'Search query for shop name' },
                     minRating: { type: 'number', description: 'Minimum rating (0-5)' },
@@ -175,7 +175,9 @@ async function resolveBrandId(brandName: string): Promise<string | null> {
 async function resolveCountryCode(countryName: string): Promise<string | null> {
     const countries = await locationService.getCountries();
     const match = countries.find(
-        (c: { name: string }) => c.name.toLowerCase() === countryName.toLowerCase()
+        (c: { name: string, code: string }) => 
+            c.name.toLowerCase() === countryName.toLowerCase() || 
+            c.code.toLowerCase() === countryName.toLowerCase()
     );
     return match ? (match as { code: string }).code : null;
 }
@@ -317,13 +319,23 @@ export async function executeTool(
             // Shops
             case 'list_shops': {
                 let cityId: string | undefined;
+                let countryCode: string | undefined;
+                
                 if (args.city) {
                     const resolved = await resolveCityId(args.city as string);
                     if (resolved) cityId = resolved;
                 }
+                if (args.country) {
+                    const resolved = await resolveCountryCode(args.country as string);
+                    if (resolved) countryCode = resolved;
+                }
+                else if (args.countryCode) { // fallback just in case AI still uses countryCode
+                    const resolved = await resolveCountryCode(args.countryCode as string);
+                    if (resolved) countryCode = resolved;
+                }
 
                 const result = await shopService.getShops({
-                    countryCode: args.countryCode as string | undefined,
+                    countryCode,
                     cityId,
                     query: args.query as string | undefined,
                     minRating: args.minRating as number | undefined,
