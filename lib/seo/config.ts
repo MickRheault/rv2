@@ -23,7 +23,7 @@ export const SITE_CONFIG = {
   url: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
   twitterHandle: '@globalmotorentals', // Update with your actual Twitter handle
   locale: 'en_US',
-  defaultImage: '/images/og-default.png',
+  defaultImage: '/images/og-default.jpg',
   keywords: [
     'motorcycle rental',
     'bike rental',
