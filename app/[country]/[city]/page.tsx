@@ -12,7 +12,7 @@ import CityShopsGrid from './CityShopsGrid'
 import LocationHeroBanner from '@/components/location/LocationHeroBanner'
 import { motorcycleService } from '@/services/motorcycles'
 import MotorcycleTable from '@/components/motorcycle/MotorcycleTable'
-import { generateMetadata as generateSEOMetadata, getOGImageForCountry } from '@/lib/seo/config'
+import { generateMetadata as generateSEOMetadata } from '@/lib/seo/config'
 
 // Generate dynamic metadata based on city and country parameters
 export async function generateMetadata({ params }: CityPageProps): Promise<Metadata> {
@@ -45,7 +45,6 @@ export async function generateMetadata({ params }: CityPageProps): Promise<Metad
       title: `Motorcycle Rentals in ${cityDisplayName}, ${countryDisplayName} - Choose the best bike from the best rental`,
       description: `Find and compare motorcycle rental shops in ${cityDisplayName}, ${countryDisplayName}. Browse bikes, compare prices, and book your perfect ride.`,
       keywords: ['motorcycle rental', cityDisplayName, countryDisplayName, 'bike rental', 'scooter rental'],
-      images: [getOGImageForCountry(country)],
       url: `/${country}/${city}`,
     })
   } catch (error) {
