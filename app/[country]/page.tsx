@@ -10,7 +10,7 @@ import { StructuredData, generateLocationShopListingSchema } from '@/lib/seo/str
 import CountryShopsGrid from './CountryShopsGrid'
 import LocationHeroBanner from '@/components/location/LocationHeroBanner'
 import CountryContentWrapper from '@/components/content/CountryContentWrapper'
-import { generateMetadata as generateSEOMetadata, getOGImageForCountry } from '@/lib/seo/config'
+import { generateMetadata as generateSEOMetadata } from '@/lib/seo/config'
 
 // Revalidate country pages periodically to pick up new content sections
 export const revalidate = 300 // Revalidate every 5 minutes
@@ -45,7 +45,6 @@ export async function generateMetadata({ params }: CountryPageProps): Promise<Me
       title: `Motorcycle Rentals in ${countryDisplayName} - Choose the best bike from the best rental`,
       description: `Browse and compare motorcycle rental shops in ${countryDisplayName}. Find the perfect bike rental for your adventure.`,
       keywords: ['motorcycle rental', countryDisplayName, 'bike rental', 'scooter rental'],
-      images: [getOGImageForCountry(country)],
       url: `/${country}`,
     })
   } catch (error) {

@@ -329,21 +329,3 @@ export function generateSearchSEO(params: {
     ].filter(Boolean) as string[],
   };
 }
-
-// Helper to get country-specific OG image if it exists, otherwise fallback to default
-export function getOGImageForCountry(countrySlug?: string): string {
-  if (!countrySlug) return SITE_CONFIG.defaultImage;
-  
-  try {
-    const fs = require('fs');
-    const path = require('path');
-    const filePath = path.join(process.cwd(), 'public', 'images', `hero-${countrySlug.toLowerCase()}.jpg`);
-    if (fs.existsSync(filePath)) {
-      return `/images/hero-${countrySlug.toLowerCase()}.jpg`;
-    }
-  } catch (error) {
-    // Ignore and fallback
-  }
-  
-  return SITE_CONFIG.defaultImage;
-}
