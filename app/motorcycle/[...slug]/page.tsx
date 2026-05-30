@@ -10,7 +10,7 @@ import MotorcycleDetails from '@/components/motorcycle/MotorcycleDetails'
 import MotorcycleCard from '@/components/motorcycle/MotorcycleCard'
 import MotorcycleCityList from '@/components/motorcycle/MotorcycleCityList'
 import LocationHeroBanner from '@/components/location/LocationHeroBanner'
-import { generateMetadata as generateSEOMetadata, generateMotorcycleSEO } from '@/lib/seo/config'
+import { generateMetadata as generateSEOMetadata, generateMotorcycleSEO, getOGImageForCountry } from '@/lib/seo/config'
 import { StructuredData, generateEnhancedMotorcycleSchema } from '@/lib/seo/structured-data'
 import { generateSlug, formatLocationName } from '@/lib/utils'
 
@@ -77,10 +77,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         // "Rent {Model} in {list of cities}, {Country}"
         const metaTitle = `Rent ${displayModel} in ${citiesListSpan ? citiesListSpan : 'all locations'}, ${countryData.name}`
 
-        return {
+        return generateSEOMetadata({
             title: metaTitle,
-            description: `Compare prices for ${displayModel} rentals in ${countryData.name}. Available in ${uniqueCities.length} cities.`
-        }
+            description: `Compare prices for ${displayModel} rentals in ${countryData.name}. Available in ${uniqueCities.length} cities.`,
+            keywords: ['rent', displayModel, countryData.name, ...uniqueCities],
+            images: [getOGImageForCountry(countrySlug)],
+            url: `/motorcycle/${countrySlug}/${modelSlug}`,
+        })
     }
 
     return {
