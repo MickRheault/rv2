@@ -77,10 +77,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         // "Rent {Model} in {list of cities}, {Country}"
         const metaTitle = `Rent ${displayModel} in ${citiesListSpan ? citiesListSpan : 'all locations'}, ${countryData.name}`
 
-        return {
+        return generateSEOMetadata({
             title: metaTitle,
-            description: `Compare prices for ${displayModel} rentals in ${countryData.name}. Available in ${uniqueCities.length} cities.`
-        }
+            description: `Compare prices for ${displayModel} rentals in ${countryData.name}. Available in ${uniqueCities.length} cities.`,
+            keywords: ['rent', displayModel, countryData.name, ...uniqueCities],
+            url: `/motorcycle/${countrySlug}/${modelSlug}`,
+        })
     }
 
     return {
