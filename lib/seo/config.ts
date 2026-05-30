@@ -23,7 +23,7 @@ export const SITE_CONFIG = {
   url: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
   twitterHandle: '@globalmotorentals', // Update with your actual Twitter handle
   locale: 'en_US',
-  defaultImage: '/images/og-default.jpg', // We'll create this
+  defaultImage: '/images/og-default.png',
   keywords: [
     'motorcycle rental',
     'bike rental',
@@ -326,8 +326,24 @@ export function generateSearchSEO(params: {
       category?.toLowerCase(),
       brand?.toLowerCase(),
       location?.toLowerCase(),
-      'compare bikes',
-      'rental booking'
     ].filter(Boolean) as string[],
   };
+}
+
+// Helper to get country-specific OG image if it exists, otherwise fallback to default
+export function getOGImageForCountry(countrySlug?: string): string {
+  if (!countrySlug) return SITE_CONFIG.defaultImage;
+  
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const filePath = path.join(process.cwd(), 'public', 'images', `hero-${countrySlug.toLowerCase()}.jpg`);
+    if (fs.existsSync(filePath)) {
+      return `/images/hero-${countrySlug.toLowerCase()}.jpg`;
+    }
+  } catch (error) {
+    // Ignore and fallback
+  }
+  
+  return SITE_CONFIG.defaultImage;
 }
