@@ -41,22 +41,18 @@ If no results found, suggest alternatives (different city, category, or price ra
 
 export async function POST(request: NextRequest) {
     const accessSecret = process.env.AI_CHAT_ACCESS_SECRET;
-    if (!accessSecret || !accessSecret.trim()) {
-        return NextResponse.json(
-            { error: 'Chat access is not configured' },
-            { status: 503 }
-        );
-    }
-
-    const authorization = request.headers.get('authorization');
-    const suppliedSecret = authorization?.match(/^Bearer (.+)$/i)?.[1] ?? '';
-    const expected = Buffer.from(accessSecret);
-    const supplied = Buffer.from(suppliedSecret);
-    if (expected.length !== supplied.length || !timingSafeEqual(expected, supplied)) {
-        return NextResponse.json(
-            { error: 'Access denied' },
-            { status: 401 }
-        );
+    // An absent or blank access secret makes chat public. The provider key stays required.
+    if (accessSecret?.trim()) {
+        const authorization = request.headers.get('authorization');
+        const suppliedSecret = authorization?.match(/^Bearer (.+)$/i)?.[1] ?? '';
+        const expected = Buffer.from(accessSecret);
+        const supplied = Buffer.from(suppliedSecret);
+        if (expected.length !== supplied.length || !timingSafeEqual(expected, supplied)) {
+            return NextResponse.json(
+                { error: 'Access denied' },
+                { status: 401 }
+            );
+        }
     }
 
     try {
