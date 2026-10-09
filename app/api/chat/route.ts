@@ -35,6 +35,7 @@ SHOP EXAMPLE:
    - 15 motorcycles available • Phuket
 
 IMPORTANT: Every motorcycle MUST show which shop it's from with a link.
+Use the actual shop name and shopUrl supplied by the motorcycle tool results. Never use a placeholder such as "Shop Name" or invent a shop or URL. If shop information or its URL is unavailable, say so and show any known shop name as plain text.
 If no results found, suggest alternatives (different city, category, or price range).`;
 
 
