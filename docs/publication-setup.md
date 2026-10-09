@@ -2,11 +2,12 @@
 
 ## AI chat
 
-The OpenAI chat feature still uses `OPENAI_API_KEY` on the server. Its access code is now checked by `/api/chat` against `AI_CHAT_ACCESS_SECRET`, also on the server.
+The AI chat feature requires `OPENAI_API_KEY` on the server for AI responses. `AI_CHAT_ACCESS_SECRET` is an optional access lock, independent of the provider key. Neither variable should have a `NEXT_PUBLIC_` prefix.
 
-Set both values in your ignored `.env.local` for local development and in the deployment environment for production. Generate a new access code using `openssl rand -hex 32`; do not reuse the old committed code. Neither variable should have a `NEXT_PUBLIC_` prefix.
+- **Public chat:** Remove `AI_CHAT_ACCESS_SECRET` from the deployment environment (or leave it empty/whitespace-only). Open `/ai-chat` without an access code. The page and `/api/chat` both allow public access; old links containing a `secret` query parameter also work. Keep `OPENAI_API_KEY` configured.
+- **Restricted chat:** Set a non-empty `AI_CHAT_ACCESS_SECRET`. Generate a new access code using `openssl rand -hex 32`; do not reuse the old committed code. Open `/ai-chat?secret=<your-access-code>`. The page sends the supplied code in the request's `Authorization: Bearer` header. Missing or incorrect credentials return HTTP 401 before calling OpenAI. Keep the URL private because it contains your access code.
 
-Open `/ai-chat?secret=<your-access-code>` as before. The page sends the supplied code in the request's `Authorization: Bearer` header. An incorrect code returns HTTP 401 without calling OpenAI. A missing server configuration returns HTTP 503. Keep the URL private because it contains your access code; the configured server value is never bundled into the browser JavaScript.
+Use your ignored `.env.local` for local development and the deployment environment for production. Restart the local server or redeploy the application after adding, changing, or removing the access secret. No additional flag or code change is needed to switch modes. The page reads the mode on each request and passes only an access-required boolean to the browser; the configured secret is never bundled into client JavaScript.
 
 Populate `MCP_KEY_READ_ONLY` and `MCP_KEY_ADMIN` in your deployment environment with newly generated values if MCP is used. The example file deliberately contains no usable keys.
 
