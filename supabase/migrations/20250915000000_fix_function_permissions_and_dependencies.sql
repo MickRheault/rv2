@@ -262,10 +262,7 @@ BEGIN
 END;
 $$;
 
--- Update admin password for security
-UPDATE auth.users 
-SET encrypted_password = crypt('gmr123$%67', gen_salt('bf'))
-WHERE email = 'michael.rheault@gmail.com';
+-- Account passwords are managed through Supabase Auth, outside migrations.
 
 -- Log completion
 SELECT 'Function permissions and dependencies fixed successfully' as status;
