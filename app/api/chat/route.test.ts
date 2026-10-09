@@ -70,3 +70,21 @@ it('preserves the OpenAI chat response for the correct access code', async () =>
     expect(await response.json()).toEqual({ response: 'Here are some scooters.' });
     expect(mockCreateCompletion).toHaveBeenCalledTimes(1);
 });
+
+it('returns JSON explaining exhausted OpenAI credits', async () => {
+    const error = Object.assign(new OpenAI.APIError(429, undefined, 'No credits remaining', undefined), {
+        code: 'credit_balance_exhausted',
+        type: 'insufficient_quota',
+    });
+    mockCreateCompletion.mockRejectedValueOnce(error);
+    const log = jest.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+        const response = await POST(request(`Bearer ${configuredSecret}`));
+        expect(response.status).toBe(503);
+        expect(await response.json()).toEqual({
+            error: 'The AI assistant is unavailable because its OpenAI API credits are exhausted. Please contact the site owner.',
+        });
+    } finally {
+        log.mockRestore();
+    }
+});

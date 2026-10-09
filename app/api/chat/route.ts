@@ -136,15 +136,28 @@ export async function POST(request: NextRequest) {
             toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
         });
     } catch (error) {
-        console.error('Chat error:', error);
-
         if (error instanceof OpenAI.APIError) {
+            // Keep provider headers, cookies, and credentials out of runtime logs.
+            console.error('Chat AI service error:', { status: error.status, code: error.code, type: error.type });
+            if (error.code === 'credit_balance_exhausted') {
+                return NextResponse.json(
+                    { error: 'The AI assistant is unavailable because its OpenAI API credits are exhausted. Please contact the site owner.' },
+                    { status: 503 }
+                );
+            }
+            if (error.type === 'insufficient_quota') {
+                return NextResponse.json(
+                    { error: 'The AI assistant has reached its OpenAI API billing or usage limit. Please contact the site owner.' },
+                    { status: 503 }
+                );
+            }
             return NextResponse.json(
                 { error: 'AI service error. Please try again.' },
                 { status: 503 }
             );
         }
 
+        console.error('Chat error:', error);
         return NextResponse.json(
             { error: 'An unexpected error occurred' },
             { status: 500 }

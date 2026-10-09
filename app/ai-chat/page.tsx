@@ -55,13 +55,21 @@ function ChatContent() {
                 body: JSON.stringify({ message: userMessage }),
             });
 
-            const data = await res.json();
+            const fallbackError = res.status === 504
+                ? 'The chat request timed out. Please try again.'
+                : `The chat server returned an unexpected response (HTTP ${res.status}). Please try again.`;
+            let data;
+            try {
+                data = JSON.parse(await res.text());
+            } catch {
+                throw new Error(fallbackError);
+            }
+            if (!data || typeof data !== 'object' || Array.isArray(data)) {
+                throw new Error(fallbackError);
+            }
 
-            if (data.error) {
-                setMessages(prev => [
-                    ...prev,
-                    { role: 'assistant', content: `Error: ${data.error}` },
-                ]);
+            if (!res.ok || data.error) {
+                throw new Error(typeof data.error === 'string' ? data.error : fallbackError);
             } else {
                 setMessages(prev => [
                     ...prev,
@@ -75,7 +83,7 @@ function ChatContent() {
         } catch (error) {
             setMessages(prev => [
                 ...prev,
-                { role: 'assistant', content: `Error: ${error}` },
+                { role: 'assistant', content: `Error: ${error instanceof Error ? error.message : 'Unable to contact the chat server. Please try again.'}` },
             ]);
         } finally {
             setIsLoading(false);
