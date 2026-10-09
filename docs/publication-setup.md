@@ -12,7 +12,7 @@ Populate `MCP_KEY_READ_ONLY` and `MCP_KEY_ADMIN` in your deployment environment 
 
 ## Local development accounts
 
-`supabase/seed.sql` no longer creates a personal administrator or embeds a password. Use your local Supabase Studio to create a test user with a unique password, then assign its local `public.user_roles` entry as needed. Keep real account credentials and authentication exports outside Git. This source change does not reset or remove existing Supabase users; reset any live account that used the old seeded password separately.
+`supabase/seed.sql` no longer creates a personal administrator or embeds a password. The historical permissions migration no longer resets a personal account to a committed password. Use your local Supabase Studio to create a test user with a unique password, then assign its local `public.user_roles` entry as needed. Keep real account credentials and authentication exports outside Git. This source change does not reset or remove existing Supabase users; reset any live account that used the old seeded password separately.
 
 ## Import data
 
