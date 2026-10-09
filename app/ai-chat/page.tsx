@@ -5,8 +5,6 @@ import { useSearchParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import './markdown.css';
 
-const SECRET = 'preview-test-202605';
-
 interface Message {
     role: 'user' | 'assistant';
     content: string;
@@ -22,8 +20,8 @@ function ChatContent() {
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    // Block access if secret is wrong
-    if (secret !== SECRET) {
+    // The API validates the supplied access code against a server-only environment variable.
+    if (!secret) {
         return (
             <div style={{
                 display: 'flex',
@@ -50,7 +48,10 @@ function ChatContent() {
         try {
             const res = await fetch('/api/chat', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${secret}`,
+                },
                 body: JSON.stringify({ message: userMessage }),
             });
 

@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { openAITools, executeTool, formatToolResultForLLM } from '@/lib/mcp/tools';
+import { timingSafeEqual } from 'node:crypto';
 
 // Lazy initialization to avoid build-time failure
 let openaiClient: OpenAI | null = null;
@@ -38,6 +39,25 @@ If no results found, suggest alternatives (different city, category, or price ra
 
 
 export async function POST(request: NextRequest) {
+    const accessSecret = process.env.AI_CHAT_ACCESS_SECRET;
+    if (!accessSecret || !accessSecret.trim()) {
+        return NextResponse.json(
+            { error: 'Chat access is not configured' },
+            { status: 503 }
+        );
+    }
+
+    const authorization = request.headers.get('authorization');
+    const suppliedSecret = authorization?.match(/^Bearer (.+)$/i)?.[1] ?? '';
+    const expected = Buffer.from(accessSecret);
+    const supplied = Buffer.from(suppliedSecret);
+    if (expected.length !== supplied.length || !timingSafeEqual(expected, supplied)) {
+        return NextResponse.json(
+            { error: 'Access denied' },
+            { status: 401 }
+        );
+    }
+
     try {
         const { message, conversationHistory = [] } = await request.json();
 
