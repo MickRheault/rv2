@@ -8,6 +8,7 @@ import { shopService } from '@/services/shops';
 import { brandService } from '@/services/brands';
 import { categoryService } from '@/services/categories';
 import { locationService } from '@/services/locations';
+import { getShopUrl } from '@/lib/utils/urls';
 import type { ChatCompletionTool } from 'openai/resources/chat/completions';
 
 // ============================================
@@ -226,7 +227,7 @@ export async function executeTool(
                     categoryId,
                     countryCode,
                     cityId,
-                    query: args.query as string | undefined,
+                    model: args.query as string | undefined,
                     minPrice: args.minPrice as number | undefined,
                     maxPrice: args.maxPrice as number | undefined,
                     limit: Math.min((args.limit as number) || 10, 20),
@@ -236,42 +237,14 @@ export async function executeTool(
                 // Format result for better LLM understanding with URLs
                 const formatted = {
                     total: result.total,
-                    motorcycles: result.motorcycles.map((m: {
-                        id: string;
-                        model: string;
-                        year?: number | null;
-                        brand?: { name: string } | null;
-                        category?: { name: string } | null;
-                        daily_rate?: number | null;
-                        rental_rate_per_day?: number | null;
-                        rental_rate_currency?: string | null;
-                        rental_rate_tiers?: Array<{ rate_per_day?: number | null; currency?: string | null; min_days?: number | null }>;
-                        shop?: {
-                            provider_name: string;
-                            slug?: string | null;
-                            rating?: number | null;
-                            city?: {
-                                name: string;
-                                slug?: string | null;
-                                provinces?: {
-                                    countries?: { name: string } | null;
-                                } | null;
-                            } | null;
-                        } | null;
-                    }) => {
-                        // Build shop URL if we have required data
-                        let shopUrl: string | undefined;
-                        if (m.shop) {
-                            const countryName = m.shop.city?.provinces?.countries?.name?.toLowerCase().replace(/\s+/g, '-') || '';
-                            const citySlug = m.shop.city?.slug || m.shop.city?.name?.toLowerCase().replace(/\s+/g, '-') || '';
-                            const shopSlug = m.shop.slug || '';
-                            if (countryName && citySlug && shopSlug) {
-                                shopUrl = `/shop/${countryName}/${citySlug}/${shopSlug}`;
-                            }
-                        }
+                    motorcycles: result.motorcycles.map(m => {
+                        const shop = m.rental_shops;
+                        const shopUrl = shop?.slug && shop.cities?.name && shop.cities?.provinces?.countries?.name
+                            ? getShopUrl(shop)
+                            : undefined;
 
-                        // Get price from daily_rate, rental_rate_per_day, or first tier
-                        let dailyRate = m.daily_rate || m.rental_rate_per_day;
+                        // Get price from the direct daily rate or first tier.
+                        let dailyRate = m.rental_rate_per_day;
                         let currency = m.rental_rate_currency;
 
                         // If no direct rate, try to get from tiered pricing (first/lowest tier)
@@ -292,14 +265,14 @@ export async function executeTool(
                             url: `/motorcycle/${m.id}`,
                             model: m.model,
                             year: m.year,
-                            brand: m.brand?.name,
-                            category: m.category?.name,
+                            brand: m.brands?.name,
+                            category: m.categories?.name,
                             dailyRate,
                             currency: currency || 'THB',
-                            shop: m.shop?.provider_name,
+                            shop: shop?.provider_name,
                             shopUrl,
-                            shopRating: m.shop?.rating,
-                            city: m.shop?.city?.name,
+                            shopRating: shop?.rating,
+                            city: shop?.cities?.name,
                         };
                     }),
                 };
