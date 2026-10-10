@@ -15,7 +15,8 @@ import {
   FolderIcon,
   CheckCircleIcon,
   ClockIcon,
-  GlobeAltIcon
+  GlobeAltIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -103,6 +104,14 @@ function AdminDashboardContent() {
       href: '/admin/flagged-content',
       permission: 'content.moderate',
       color: 'border-red-200 hover:border-red-300'
+    },
+    {
+      name: 'Change Proposals',
+      description: 'Review scraped inventory updates from crawler agents',
+      icon: SparklesIcon,
+      href: '/admin/change-proposals',
+      permission: 'system.manage',
+      color: 'border-indigo-200 hover:border-indigo-300'
     },
     {
       name: 'Premium Management',
