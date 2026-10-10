@@ -21,6 +21,29 @@ export function formatCurrency(amount: number, currency: string = 'USD'): string
   }
 }
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  EUR: '€',
+  USD: '$',
+  GBP: '£',
+  VND: '₫',
+  THB: '฿',
+  JPY: '¥',
+  AUD: 'A$',
+  CAD: 'C$',
+  SGD: 'S$',
+  MYR: 'RM',
+  IDR: 'Rp',
+  PHP: '₱',
+};
+
+/**
+ * Returns canonical currency symbol or falls back to uppercase code.
+ */
+export function getCurrencySymbol(currency: string = 'THB'): string {
+  return CURRENCY_SYMBOLS[currency.toUpperCase()] || currency.toUpperCase();
+}
+
+
 // Format date to a readable string
 export function formatDate(date: string | Date): string {
   const d = typeof date === 'string' ? new Date(date) : date

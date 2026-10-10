@@ -35,6 +35,26 @@ export function validateGeodataImmutability(proposedData: Record<string, any>) {
   }
 }
 
+/**
+ * Inserts rental rate tiers for a motorcycle, using provided fallback currency.
+ */
+export async function insertRateTiers(
+  supabase: any,
+  motorcycleId: string,
+  rates: any[],
+  defaultCurrency?: string
+) {
+  const currency = defaultCurrency || rates[0]?.currency || 'THB';
+  const rateTiers = rates.map((r: any) => ({
+    motorcycle_id: motorcycleId,
+    min_days: r.minDays,
+    max_days: r.maxDays || null,
+    rate_per_day: r.ratePerDay,
+    currency: r.currency || currency,
+  }));
+  return (supabase.from('rental_rate_tiers') as any).insert(rateTiers);
+}
+
 export interface CreateProposalInput {
   shopId: string;
   sourceUrl: string;
@@ -355,15 +375,7 @@ export class ChangeProposalService {
 
           // Insert rate tiers
           if (newBike && Array.isArray(proposed.rates) && proposed.rates.length > 0) {
-            const currency = proposed.currency || proposed.rates[0]?.currency || 'THB';
-            const rateTiers = proposed.rates.map((r: any) => ({
-              motorcycle_id: newBike.id,
-              min_days: r.minDays,
-              max_days: r.maxDays || null,
-              rate_per_day: r.ratePerDay,
-              currency: r.currency || currency,
-            }));
-            await (supabase.from('rental_rate_tiers') as any).insert(rateTiers);
+            await insertRateTiers(supabase, newBike.id, proposed.rates, proposed.currency);
           }
 
           appliedCount++;
@@ -395,15 +407,7 @@ export class ChangeProposalService {
               .delete()
               .eq('motorcycle_id', item.entity_id);
 
-            const currency = proposed.currency || proposed.rates[0]?.currency || 'THB';
-            const rateTiers = proposed.rates.map((r: any) => ({
-              motorcycle_id: item.entity_id,
-              min_days: r.minDays,
-              max_days: r.maxDays || null,
-              rate_per_day: r.ratePerDay,
-              currency: r.currency || currency,
-            }));
-            await (supabase.from('rental_rate_tiers') as any).insert(rateTiers);
+            await insertRateTiers(supabase, item.entity_id, proposed.rates, proposed.currency);
           }
 
           appliedCount++;

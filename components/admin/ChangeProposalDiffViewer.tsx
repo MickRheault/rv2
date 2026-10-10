@@ -11,6 +11,7 @@ import {
   MinusCircleIcon,
   BuildingOfficeIcon,
 } from '@heroicons/react/24/outline';
+import { getCurrencySymbol } from '@/lib/utils';
 
 export interface DiffViewerItem {
   id: string;
@@ -246,8 +247,7 @@ export function ChangeProposalDiffViewer({
                   {item.proposed_data.rates && (
                     <div className="mt-1 flex gap-2 flex-wrap">
                       {item.proposed_data.rates.map((r: any, idx: number) => {
-                        const curr = r.currency || item.proposed_data.currency;
-                        const symbol = curr === 'EUR' ? '€' : curr === 'USD' ? '$' : curr === 'GBP' ? '£' : curr === 'VND' ? '₫' : '฿';
+                        const symbol = getCurrencySymbol(r.currency || item.proposed_data.currency || 'THB');
                         return (
                           <span
                             key={idx}
