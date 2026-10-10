@@ -70,6 +70,6 @@ An automated ingestion and staging system that decouples external scraping agent
 
 ## Implementation Tickets
 
-- [ ] [#78: feat: shop crawler configuration and urgency task dispatch scheduler](https://github.com/MickRheault/rv2/issues/78)
-- [ ] [#79: feat: change proposal ingestion engine and staging queue](https://github.com/MickRheault/rv2/issues/79)
-- [ ] [#80: feat: change proposal granular diff inspection and atomic mutation execution](https://github.com/MickRheault/rv2/issues/80)
+- [ ] [#78: feat: shop crawl settings and task queue](https://github.com/MickRheault/rv2/issues/78)
+- [ ] [#79: feat: save scraped changes and review list](https://github.com/MickRheault/rv2/issues/79)
+- [ ] [#80: feat: approve and apply changes to database](https://github.com/MickRheault/rv2/issues/80)
