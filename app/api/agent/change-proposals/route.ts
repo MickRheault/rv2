@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { validateAgentApiKey } from '@/lib/auth/agent-auth';
 import { ChangeProposalService } from '@/services/change-proposals';
 import { ZeroDropSafeguardError } from '@/services/diff-engine';
+import { recordCrawlRun } from '@/services/crawl-runs';
 
 /**
  * POST /api/agent/change-proposals
@@ -54,6 +55,14 @@ export async function POST(request: NextRequest) {
       agentRunId,
       bikes,
       shopUpdates,
+    });
+
+    await recordCrawlRun({
+      shopId,
+      status: 'success',
+      proposalId: result.proposal.id,
+      agentRunId: agentRunId || null,
+      metadata: { bikesCount: bikes.length },
     });
 
     return NextResponse.json(
