@@ -293,6 +293,54 @@ export type Database = {
         }
         Relationships: []
       }
+      crawl_runs: {
+        Row: {
+          agent_run_id: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          metadata: Json
+          proposal_id: string | null
+          shop_id: string
+          status: 'success' | 'failed'
+        }
+        Insert: {
+          agent_run_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json
+          proposal_id?: string | null
+          shop_id: string
+          status: 'success' | 'failed'
+        }
+        Update: {
+          agent_run_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json
+          proposal_id?: string | null
+          shop_id?: string
+          status?: 'success' | 'failed'
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crawl_runs_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "change_proposals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crawl_runs_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "rental_shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       data_freshness: {
         Row: {
           content_type: Database["public"]["Enums"]["freshness_content_type"]

@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { validateAgentApiKey } from '@/lib/auth/agent-auth';
 import { TaskSchedulerService } from '@/services/task-scheduler';
+import { recordCrawlRun } from '@/services/crawl-runs';
 
 /**
  * POST /api/agent/tasks/:id/status
@@ -47,6 +48,26 @@ export async function POST(
       status,
       crawlError
     );
+
+    const shopId = updatedTask?.shop_id || body.shopId;
+    if (shopId) {
+      const isCleanCrawl = status === 'success' && !body.proposalId && !body.proposalCreated && body.hasChanges !== true;
+      const isFailure = status === 'failed';
+
+      if (isFailure || isCleanCrawl) {
+        try {
+          await recordCrawlRun({
+            shopId,
+            status,
+            agentRunId: body.agentRunId || null,
+            errorMessage: isFailure ? (crawlError || null) : null,
+            metadata: body.metadata || {},
+          });
+        } catch (logErr) {
+          console.error(`Failed to record crawl audit log for task ${id}:`, logErr);
+        }
+      }
+    }
 
     return NextResponse.json({
       success: true,
