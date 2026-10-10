@@ -1,20 +1,11 @@
 import { createClient } from '@/lib/supabase/server';
-import { validateAgentApiKey } from '@/lib/auth/agent-auth';
 
 /**
  * Validates whether the incoming request is authorized to perform admin actions.
- * Accepts either:
- * 1. Bearer token matching AGENT_API_KEY (for headless bots/crawlers)
- * 2. Authenticated Supabase admin user session (via cookie or bearer)
+ * Only permits authenticated Supabase admin user sessions.
  */
-export async function isAuthorizedAdmin(req: Request): Promise<boolean> {
-  // 1. Check Bearer API key
-  const authHeader = req.headers.get('authorization');
-  if (validateAgentApiKey(authHeader)) {
-    return true;
-  }
-
-  // 2. Check Supabase user session
+export async function isAuthorizedAdmin(_req?: Request): Promise<boolean> {
+  // Check Supabase user session
   try {
     const supabase = await createClient();
     const {

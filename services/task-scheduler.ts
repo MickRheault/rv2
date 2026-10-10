@@ -213,5 +213,28 @@ export class TaskSchedulerService {
 
     return updated;
   }
+
+  /**
+   * Advances crawl timestamp and resets error counters after a successful crawl for a shop.
+   */
+  static async recordCrawlSuccess(shopId: string) {
+    const supabase = getSupabaseAdmin();
+    const { data: updated, error } = await supabase
+      .from('shop_agent_configs')
+      .update({
+        last_run_at: new Date().toISOString(),
+        consecutive_errors: 0,
+        last_error: null,
+      })
+      .eq('shop_id', shopId)
+      .select()
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(`Failed to record crawl success for shop ${shopId}: ${error.message}`);
+    }
+
+    return updated;
+  }
 }
 

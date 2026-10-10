@@ -5,6 +5,7 @@ import {
   type ExistingBikeRecord,
   type DiffResult,
 } from './diff-engine';
+import { TaskSchedulerService } from './task-scheduler';
 
 export interface CreateProposalInput {
   shopId: string;
@@ -130,13 +131,7 @@ export class ChangeProposalService {
     }
 
     // 5. Advance shop crawl timestamp to mark task completed
-    await (supabase.from('shop_agent_configs') as any)
-      .update({
-        last_run_at: new Date().toISOString(),
-        consecutive_errors: 0,
-        last_error: null,
-      })
-      .eq('shop_id', input.shopId);
+    await TaskSchedulerService.recordCrawlSuccess(input.shopId);
 
     return {
       proposal,
