@@ -5,7 +5,7 @@ export type ShopAgentConfig = Database['public']['Tables']['shop_agent_configs']
 export type ShopAgentConfigInsert = Database['public']['Tables']['shop_agent_configs']['Insert'];
 export type ShopAgentConfigUpdate = Database['public']['Tables']['shop_agent_configs']['Update'];
 
-export interface ShopCrawlerConfigFormData {
+export interface ShopAgentConfigFormData {
   shop_id: string;
   tier: number;
   source_url: string;
@@ -13,10 +13,12 @@ export interface ShopCrawlerConfigFormData {
   is_active: boolean;
 }
 
+export type ShopCrawlerConfigFormData = ShopAgentConfigFormData;
+
 /**
- * Fetches the crawler configuration for a specific shop.
+ * Fetches the agent configuration for a specific shop.
  */
-export async function getShopCrawlerConfig(shopId: string): Promise<ShopAgentConfig | null> {
+export async function getShopAgentConfig(shopId: string): Promise<ShopAgentConfig | null> {
   const { data, error } = await supabase
     .from('shop_agent_configs')
     .select('*')
@@ -24,18 +26,20 @@ export async function getShopCrawlerConfig(shopId: string): Promise<ShopAgentCon
     .maybeSingle();
 
   if (error) {
-    console.error('Error fetching shop crawler config:', error);
+    console.error('Error fetching shop agent config:', error);
     throw new Error(error.message);
   }
 
   return data;
 }
 
+export const getShopCrawlerConfig = getShopAgentConfig;
+
 /**
- * Saves or updates the crawler configuration for a shop.
+ * Saves or updates the agent configuration for a shop.
  */
-export async function saveShopCrawlerConfig(
-  formData: ShopCrawlerConfigFormData
+export async function saveShopAgentConfig(
+  formData: ShopAgentConfigFormData
 ): Promise<ShopAgentConfig> {
   const { data, error } = await (supabase
     .from('shop_agent_configs') as any)
@@ -53,9 +57,11 @@ export async function saveShopCrawlerConfig(
     .single();
 
   if (error) {
-    console.error('Error saving shop crawler config:', error);
+    console.error('Error saving shop agent config:', error);
     throw new Error(error.message);
   }
 
   return data;
 }
+
+export const saveShopCrawlerConfig = saveShopAgentConfig;

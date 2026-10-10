@@ -11,8 +11,8 @@ import Spinner from '@/components/ui/Spinner';
 import Textarea from '@/components/ui/Textarea';
 import Checkbox from '@/components/ui/Checkbox';
 import {
-  getShopCrawlerConfig,
-  saveShopCrawlerConfig,
+  getShopAgentConfig,
+  saveShopAgentConfig,
   type ShopAgentConfig,
 } from '@/services/shop-agent-configs';
 
@@ -57,7 +57,7 @@ export function RentalShopCrawlerModal({
     setSuccessMessage(null);
 
     try {
-      const data = await getShopCrawlerConfig(shop.id);
+      const data = await getShopAgentConfig(shop.id);
       setConfig(data);
       if (data) {
         setTier(data.tier);
@@ -99,7 +99,7 @@ export function RentalShopCrawlerModal({
     setSuccessMessage(null);
 
     try {
-      const saved = await saveShopCrawlerConfig({
+      const saved = await saveShopAgentConfig({
         shop_id: shop.id,
         tier,
         source_url: sourceUrl.trim(),

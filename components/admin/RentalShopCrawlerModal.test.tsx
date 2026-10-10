@@ -3,10 +3,16 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { RentalShopCrawlerModal } from './RentalShopCrawlerModal';
 import * as shopAgentConfigsService from '@/services/shop-agent-configs';
 
-jest.mock('@/services/shop-agent-configs', () => ({
-  getShopCrawlerConfig: jest.fn(),
-  saveShopCrawlerConfig: jest.fn(),
-}));
+jest.mock('@/services/shop-agent-configs', () => {
+  const getShopAgentConfig = jest.fn();
+  const saveShopAgentConfig = jest.fn();
+  return {
+    getShopAgentConfig,
+    saveShopAgentConfig,
+    getShopCrawlerConfig: getShopAgentConfig,
+    saveShopCrawlerConfig: saveShopAgentConfig,
+  };
+});
 
 describe('RentalShopCrawlerModal', () => {
   const mockShop = {
