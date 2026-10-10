@@ -25,7 +25,7 @@ export class ChangeProposalService {
       .from('motorcycle_rentals')
       .select(`
         id,
-        model_name,
+        model,
         year,
         engine_capacity_cc,
         availability_status,
@@ -128,6 +128,15 @@ export class ChangeProposalService {
         throw new Error(`Failed to stage change proposal items: ${itemsError.message}`);
       }
     }
+
+    // 5. Advance shop crawl timestamp to mark task completed
+    await (supabase.from('shop_agent_configs') as any)
+      .update({
+        last_run_at: new Date().toISOString(),
+        consecutive_errors: 0,
+        last_error: null,
+      })
+      .eq('shop_id', input.shopId);
 
     return {
       proposal,
