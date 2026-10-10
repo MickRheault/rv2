@@ -67,3 +67,9 @@ An automated ingestion and staging system that decouples external scraping agent
 
 - Once published, this specification will be decomposed into tracer-bullet vertical slice tickets using the `to-tickets` skill.
 - All database migrations will follow Supabase CLI conventions and reside in `supabase/migrations/`.
+
+## Implementation Tickets
+
+- [ ] [#78: feat: shop crawler configuration and urgency task dispatch scheduler](https://github.com/MickRheault/rv2/issues/78)
+- [ ] [#79: feat: change proposal ingestion engine and staging queue](https://github.com/MickRheault/rv2/issues/79)
+- [ ] [#80: feat: change proposal granular diff inspection and atomic mutation execution](https://github.com/MickRheault/rv2/issues/80)
