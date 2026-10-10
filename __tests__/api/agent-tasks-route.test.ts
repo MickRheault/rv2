@@ -119,7 +119,13 @@ describe('Agent Tasks API Endpoints', () => {
       const json = await response.json();
       expect(json.success).toBe(true);
       expect(TaskSchedulerService.updateTaskStatus).toHaveBeenCalledWith('task-123', 'success', undefined);
-      expect(recordCrawlRun).not.toHaveBeenCalled();
+      expect(recordCrawlRun).toHaveBeenCalledWith({
+        shopId: 'shop-123',
+        status: 'success',
+        agentRunId: null,
+        errorMessage: null,
+        metadata: {},
+      });
     });
 
     it('records failed crawl with error message and returns 200', async () => {

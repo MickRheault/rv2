@@ -119,7 +119,7 @@ describe('Agent Crawl Runs Integration', () => {
       });
     });
 
-    it('does not insert a crawl_run record when external agent reports success (handled by proposal endpoint)', async () => {
+    it('inserts a success crawl_run record for clean crawl when external agent reports success with no changes', async () => {
       (TaskSchedulerService.updateTaskStatus as jest.Mock).mockResolvedValue({
         id: 'task-200',
         shop_id: 'shop-uuid-3',
@@ -135,6 +135,40 @@ describe('Agent Crawl Runs Integration', () => {
         },
         body: JSON.stringify({
           status: 'success',
+          agentRunId: 'hermes-run-101',
+        }),
+      });
+
+      const res = await handleStatusPost(req, { params: Promise.resolve({ id: 'task-200' }) });
+      expect(res.status).toBe(200);
+
+      expect(recordCrawlRun).toHaveBeenCalledTimes(1);
+      expect(recordCrawlRun).toHaveBeenCalledWith({
+        shopId: 'shop-uuid-3',
+        status: 'success',
+        agentRunId: 'hermes-run-101',
+        errorMessage: null,
+        metadata: {},
+      });
+    });
+
+    it('does not insert duplicate crawl_run when external agent reports success with proposalId or proposalCreated', async () => {
+      (TaskSchedulerService.updateTaskStatus as jest.Mock).mockResolvedValue({
+        id: 'task-200',
+        shop_id: 'shop-uuid-3',
+        last_error: null,
+        consecutive_errors: 0,
+      });
+
+      const req = new NextRequest('http://localhost:3000/api/agent/tasks/task-200/status', {
+        method: 'POST',
+        headers: {
+          authorization: 'Bearer test-agent-secret',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: 'success',
+          proposalId: 'prop-uuid-999',
           agentRunId: 'hermes-run-101',
         }),
       });

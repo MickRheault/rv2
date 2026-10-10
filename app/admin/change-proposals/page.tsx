@@ -474,7 +474,7 @@ export default function ChangeProposalsPage() {
                               <ArrowTopRightOnSquareIcon className="w-3 h-3" />
                             </Link>
                           ) : run.status === 'success' ? (
-                            <span className="text-xs text-gray-400">No changes detected</span>
+                            <span className="text-xs text-gray-500 font-medium">Clean Crawl (No changes detected)</span>
                           ) : (
                             <span
                               className="text-xs text-red-600 font-mono truncate max-w-xs block"

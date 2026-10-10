@@ -10,7 +10,7 @@ export interface RecordCrawlRunInput {
 }
 
 export interface GetCrawlRunsOptions {
-  status?: string;
+  status?: 'success' | 'failed' | 'all' | string;
   shopId?: string;
   limit?: number;
   offset?: number;

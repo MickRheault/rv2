@@ -135,7 +135,7 @@ describe('ChangeProposalsPage', () => {
     expect(screen.getAllByText('Samui Scooter Club').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Phuket Bike Hub')).toBeInTheDocument();
     expect(screen.getByText('Proposal Generated')).toBeInTheDocument();
-    expect(screen.getByText('No changes detected')).toBeInTheDocument();
+    expect(screen.getByText('Clean Crawl (No changes detected)')).toBeInTheDocument();
     expect(screen.getByText(/Cloudflare captcha challenge encountered/i)).toBeInTheDocument();
 
     // Verify filter dropdown change

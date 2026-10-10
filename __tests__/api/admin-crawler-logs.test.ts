@@ -86,6 +86,27 @@ describe('GET /api/admin/crawler-logs', () => {
     });
   });
 
+  it('supports snake_case shop_id query parameter', async () => {
+    (isAuthorizedAdmin as jest.Mock).mockResolvedValue(true);
+    (getCrawlRuns as jest.Mock).mockResolvedValue({
+      runs: [],
+      totalCount: 0,
+    });
+
+    const req = new NextRequest(
+      'http://localhost:3000/api/admin/crawler-logs?shop_id=shop-abc'
+    );
+    const res = await GET(req);
+
+    expect(res.status).toBe(200);
+    expect(getCrawlRuns).toHaveBeenCalledWith({
+      status: undefined,
+      shopId: 'shop-abc',
+      limit: 50,
+      offset: 0,
+    });
+  });
+
   it('treats status=all as undefined (no status filter)', async () => {
     (isAuthorizedAdmin as jest.Mock).mockResolvedValue(true);
     (getCrawlRuns as jest.Mock).mockResolvedValue({

@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const statusParam = searchParams.get('status');
     const status = statusParam && statusParam !== 'all' ? statusParam : undefined;
-    const shopId = searchParams.get('shopId') || undefined;
+    const shopId = searchParams.get('shopId') || searchParams.get('shop_id') || undefined;
     const parsedLimit = parseInt(searchParams.get('limit') || '50', 10);
     const limit = Math.min(Math.max(isNaN(parsedLimit) ? 50 : parsedLimit, 1), 100);
     const parsedOffset = parseInt(searchParams.get('offset') || '0', 10);
