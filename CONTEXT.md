@@ -5,7 +5,7 @@ Global motorcycle rental aggregator platform connecting riders with rental shops
 ## Language
 
 **Change Proposal**:
-A staged set of proposed additions, updates, or removals to shop inventory and rates awaiting review or automated application.
+A staged set of proposed additions, updates, or removals to a rental shop's inventory and rates produced from a single ingestion run, awaiting review or automated application.
 _Avoid_: Scrape proposal, crawl diff, patch request
 
 **Shop Agent Config**:
