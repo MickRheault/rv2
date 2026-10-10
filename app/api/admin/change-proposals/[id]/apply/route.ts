@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { ChangeProposalService } from '@/services/change-proposals';
+import { isAuthorizedAdmin } from '@/lib/auth/admin-auth';
 
 /**
  * POST /api/admin/change-proposals/:id/apply
@@ -13,6 +14,10 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!(await isAuthorizedAdmin(request))) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const { id } = await params;
   if (!id) {
     return NextResponse.json({ error: 'Missing proposal id in path' }, { status: 400 });

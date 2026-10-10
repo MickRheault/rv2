@@ -115,9 +115,10 @@ export function ChangeProposalDiffViewer({
     }
   };
 
-  const addItems = items.filter((i) => i.action === 'add');
-  const updateItems = items.filter((i) => i.action === 'update');
-  const delistItems = items.filter((i) => i.action === 'delist');
+  const addItems = items.filter((i) => i.action === 'add' && i.entity_type === 'motorcycle');
+  const updateItems = items.filter((i) => i.action === 'update' && i.entity_type === 'motorcycle');
+  const delistItems = items.filter((i) => i.action === 'delist' && i.entity_type === 'motorcycle');
+  const shopItems = items.filter((i) => i.entity_type === 'rental_shop');
 
   const isCompleted = proposal.status === 'applied' || proposal.status === 'rejected';
 
@@ -343,6 +344,78 @@ export function ChangeProposalDiffViewer({
                   <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
                     Mark Unavailable
                   </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* 4. Shop Profile Updates Section */}
+      {shopItems.length > 0 && (
+        <Card>
+          <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
+            <BuildingOfficeIcon className="w-5 h-5 text-purple-600" />
+            <h3 className="text-base font-semibold text-gray-900">
+              Shop Profile Updates ({shopItems.length})
+            </h3>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {shopItems.map((item) => (
+              <div
+                key={item.id}
+                className="py-3 flex items-start gap-3 hover:bg-gray-50 px-2 rounded-lg transition-colors"
+              >
+                {!isCompleted && (
+                  <div className="pt-1">
+                    <Checkbox
+                      checked={selectedIds.has(item.id)}
+                      onChange={() => toggleItem(item.id)}
+                    />
+                  </div>
+                )}
+                <div className="flex-1 text-sm space-y-1">
+                  <div className="font-semibold text-gray-900">General Information</div>
+                  {item.diff_summary && (
+                    <div className="space-y-1 text-xs">
+                      {item.diff_summary.business_description && (
+                        <div className="text-gray-700">
+                          <span className="font-medium text-gray-900">Description:</span>{' '}
+                          <span className="line-through text-red-500 mr-1">
+                            {item.diff_summary.business_description.old || '(empty)'}
+                          </span>
+                          →{' '}
+                          <span className="text-emerald-700 font-medium">
+                            {item.diff_summary.business_description.new}
+                          </span>
+                        </div>
+                      )}
+                      {item.diff_summary.phone && (
+                        <div className="text-gray-700">
+                          <span className="font-medium text-gray-900">Phone:</span>{' '}
+                          <span className="line-through text-red-500 mr-1">
+                            {item.diff_summary.phone.old || '(empty)'}
+                          </span>
+                          →{' '}
+                          <span className="text-emerald-700 font-medium">
+                            {item.diff_summary.phone.new}
+                          </span>
+                        </div>
+                      )}
+                      {item.diff_summary.website && (
+                        <div className="text-gray-700">
+                          <span className="font-medium text-gray-900">Website:</span>{' '}
+                          <span className="line-through text-red-500 mr-1">
+                            {item.diff_summary.website.old || '(empty)'}
+                          </span>
+                          →{' '}
+                          <span className="text-emerald-700 font-medium">
+                            {item.diff_summary.website.new}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

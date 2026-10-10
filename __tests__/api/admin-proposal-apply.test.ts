@@ -12,9 +12,31 @@ jest.mock('@/services/change-proposals', () => ({
   },
 }));
 
+jest.mock('@/lib/auth/admin-auth', () => ({
+  isAuthorizedAdmin: jest.fn(),
+}));
+
+import { isAuthorizedAdmin } from '@/lib/auth/admin-auth';
+
 describe('POST /api/admin/change-proposals/[id]/apply', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (isAuthorizedAdmin as jest.Mock).mockResolvedValue(true);
+  });
+
+  it('rejects unauthenticated requests with 401', async () => {
+    (isAuthorizedAdmin as jest.Mock).mockResolvedValue(false);
+
+    const request = new NextRequest(
+      'http://localhost:3000/api/admin/change-proposals/prop-1/apply',
+      {
+        method: 'POST',
+        body: JSON.stringify({ approvedItemIds: ['item-1'] }),
+      }
+    );
+
+    const response = await POST(request, { params: Promise.resolve({ id: 'prop-1' }) });
+    expect(response.status).toBe(401);
   });
 
   it('validates request payload and returns 400 when approvedItemIds is missing', async () => {

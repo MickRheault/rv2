@@ -342,7 +342,7 @@ export class ChangeProposalService {
               engine_capacity_cc: proposed.engineCapacityCc || null,
               availability_status: 'available',
               rental_rate_per_day: proposed.rates?.[0]?.ratePerDay || null,
-              rental_rate_currency: 'THB',
+              rental_rate_currency: proposed.currency || proposed.rates?.[0]?.currency || 'THB',
               source_url: proposed.sourceUrl || null,
             })
             .select('id')
@@ -355,12 +355,13 @@ export class ChangeProposalService {
 
           // Insert rate tiers
           if (newBike && Array.isArray(proposed.rates) && proposed.rates.length > 0) {
+            const currency = proposed.currency || proposed.rates[0]?.currency || 'THB';
             const rateTiers = proposed.rates.map((r: any) => ({
               motorcycle_id: newBike.id,
               min_days: r.minDays,
               max_days: r.maxDays || null,
               rate_per_day: r.ratePerDay,
-              currency: 'THB',
+              currency: r.currency || currency,
             }));
             await (supabase.from('rental_rate_tiers') as any).insert(rateTiers);
           }
@@ -375,6 +376,9 @@ export class ChangeProposalService {
           }
           if (proposed.rates?.[0]?.ratePerDay !== undefined) {
             updatePayload.rental_rate_per_day = proposed.rates[0].ratePerDay;
+            if (proposed.currency || proposed.rates[0].currency) {
+              updatePayload.rental_rate_currency = proposed.currency || proposed.rates[0].currency;
+            }
           }
 
           if (Object.keys(updatePayload).length > 0) {
@@ -391,12 +395,13 @@ export class ChangeProposalService {
               .delete()
               .eq('motorcycle_id', item.entity_id);
 
+            const currency = proposed.currency || proposed.rates[0]?.currency || 'THB';
             const rateTiers = proposed.rates.map((r: any) => ({
               motorcycle_id: item.entity_id,
               min_days: r.minDays,
               max_days: r.maxDays || null,
               rate_per_day: r.ratePerDay,
-              currency: 'THB',
+              currency: r.currency || currency,
             }));
             await (supabase.from('rental_rate_tiers') as any).insert(rateTiers);
           }
