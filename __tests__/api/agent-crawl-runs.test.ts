@@ -119,14 +119,13 @@ describe('Agent Crawl Runs Integration', () => {
       });
     });
 
-    it('inserts a success crawl_run record when external agent reports clean success', async () => {
+    it('does not insert a crawl_run record when external agent reports success (handled by proposal endpoint)', async () => {
       (TaskSchedulerService.updateTaskStatus as jest.Mock).mockResolvedValue({
         id: 'task-200',
         shop_id: 'shop-uuid-3',
         last_error: null,
         consecutive_errors: 0,
       });
-      (recordCrawlRun as jest.Mock).mockResolvedValue({ id: 'crawl-run-3' });
 
       const req = new NextRequest('http://localhost:3000/api/agent/tasks/task-200/status', {
         method: 'POST',
@@ -143,14 +142,7 @@ describe('Agent Crawl Runs Integration', () => {
       const res = await handleStatusPost(req, { params: Promise.resolve({ id: 'task-200' }) });
       expect(res.status).toBe(200);
 
-      expect(recordCrawlRun).toHaveBeenCalledTimes(1);
-      expect(recordCrawlRun).toHaveBeenCalledWith({
-        shopId: 'shop-uuid-3',
-        status: 'success',
-        agentRunId: 'hermes-run-101',
-        errorMessage: null,
-        metadata: {},
-      });
+      expect(recordCrawlRun).not.toHaveBeenCalled();
     });
   });
 });

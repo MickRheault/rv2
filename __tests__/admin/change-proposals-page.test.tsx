@@ -6,6 +6,15 @@ import ChangeProposalsPage from '@/app/admin/change-proposals/page';
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
 
+jest.mock('@/services/shops', () => ({
+  shopService: {
+    getAllShopsForDropdown: jest.fn().mockResolvedValue([
+      { id: 'shop-1', provider_name: 'Pai Motor Shop' },
+      { id: 'shop-2', provider_name: 'Samui Scooter Club' },
+    ]),
+  },
+}));
+
 describe('ChangeProposalsPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -120,11 +129,12 @@ describe('ChangeProposalsPage', () => {
     fireEvent.click(crawlerTab);
 
     await waitFor(() => {
-      expect(screen.getByText('Pai Motor Shop')).toBeInTheDocument();
+      expect(screen.getAllByText('Pai Motor Shop').length).toBeGreaterThanOrEqual(1);
     });
 
-    expect(screen.getByText('Samui Scooter Club')).toBeInTheDocument();
+    expect(screen.getAllByText('Samui Scooter Club').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Phuket Bike Hub')).toBeInTheDocument();
+    expect(screen.getByText('Proposal Generated')).toBeInTheDocument();
     expect(screen.getByText('No changes detected')).toBeInTheDocument();
     expect(screen.getByText(/Cloudflare captcha challenge encountered/i)).toBeInTheDocument();
 
@@ -153,6 +163,26 @@ describe('ChangeProposalsPage', () => {
 
     await waitFor(() => {
       expect(mockFetch).toHaveBeenLastCalledWith('/api/admin/crawler-logs?status=failed&limit=50');
+    });
+
+    // Verify shop filter dropdown change
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        runs: [],
+        totalCount: 0,
+      }),
+    });
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('All Shops')).toBeInTheDocument();
+    });
+    const shopSelect = screen.getByDisplayValue('All Shops');
+    fireEvent.change(shopSelect, { target: { value: 'shop-1' } });
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenLastCalledWith('/api/admin/crawler-logs?status=failed&limit=50&shopId=shop-1');
     });
   });
 

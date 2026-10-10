@@ -57,13 +57,17 @@ export async function POST(request: NextRequest) {
       shopUpdates,
     });
 
-    await recordCrawlRun({
-      shopId,
-      status: 'success',
-      proposalId: result.proposal.id,
-      agentRunId: agentRunId || null,
-      metadata: { bikesCount: bikes.length },
-    });
+    try {
+      await recordCrawlRun({
+        shopId,
+        status: 'success',
+        proposalId: result.proposal.id,
+        agentRunId: agentRunId || null,
+        metadata: { bikesCount: bikes.length },
+      });
+    } catch (auditErr) {
+      console.error('Failed to record success crawl audit log:', auditErr);
+    }
 
     return NextResponse.json(
       {

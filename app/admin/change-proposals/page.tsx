@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Card, Button, Badge, Spinner, Alert, Select, Modal } from '@/components/ui';
+import { shopService } from '@/services/shops';
 import {
   ArrowLeftIcon,
   ArrowPathIcon,
@@ -73,9 +74,28 @@ export default function ChangeProposalsPage() {
   const [crawlerRuns, setCrawlerRuns] = useState<CrawlRunItem[]>([]);
   const [crawlerTotalCount, setCrawlerTotalCount] = useState<number>(0);
   const [crawlerStatusFilter, setCrawlerStatusFilter] = useState<string>('all');
+  const [crawlerShopFilter, setCrawlerShopFilter] = useState<string>('all');
+  const [shops, setShops] = useState<{ id: string; provider_name: string }[]>([]);
   const [loadingCrawler, setLoadingCrawler] = useState<boolean>(false);
   const [crawlerError, setCrawlerError] = useState<string | null>(null);
   const [selectedRun, setSelectedRun] = useState<CrawlRunItem | null>(null);
+
+  useEffect(() => {
+    async function loadShops() {
+      try {
+        const data = await shopService.getAllShopsForDropdown();
+        setShops(data || []);
+      } catch (err) {
+        console.error('Failed to load shops for filter:', err);
+      }
+    }
+    loadShops();
+  }, []);
+
+  const shopFilterOptions = [
+    { value: 'all', label: 'All Shops' },
+    ...shops.map((s) => ({ value: s.id, label: s.provider_name })),
+  ];
 
   const fetchProposals = useCallback(async () => {
     setLoadingProposals(true);
@@ -102,7 +122,14 @@ export default function ChangeProposalsPage() {
     setCrawlerError(null);
 
     try {
-      const res = await fetch(`/api/admin/crawler-logs?status=${crawlerStatusFilter}&limit=50`);
+      const params = new URLSearchParams({
+        status: crawlerStatusFilter,
+        limit: '50',
+      });
+      if (crawlerShopFilter && crawlerShopFilter !== 'all') {
+        params.set('shopId', crawlerShopFilter);
+      }
+      const res = await fetch(`/api/admin/crawler-logs?${params.toString()}`);
       if (!res.ok) {
         throw new Error(`Failed to load crawler logs (status: ${res.status})`);
       }
@@ -115,7 +142,7 @@ export default function ChangeProposalsPage() {
     } finally {
       setLoadingCrawler(false);
     }
-  }, [crawlerStatusFilter]);
+  }, [crawlerStatusFilter, crawlerShopFilter]);
 
   useEffect(() => {
     if (activeTab === 'proposals') {
@@ -193,12 +220,20 @@ export default function ChangeProposalsPage() {
             </Button>
           </div>
         ) : (
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Select
               options={CRAWLER_STATUS_FILTER_OPTIONS}
               value={crawlerStatusFilter}
               onChange={(e) => setCrawlerStatusFilter(e.target.value)}
-              className="w-48"
+              className="w-40"
+              aria-label="Filter by Status"
+            />
+            <Select
+              options={shopFilterOptions}
+              value={crawlerShopFilter}
+              onChange={(e) => setCrawlerShopFilter(e.target.value)}
+              className="w-52"
+              aria-label="Filter by Shop"
             />
             <Button
               variant="outline"
@@ -402,14 +437,7 @@ export default function ChangeProposalsPage() {
                     {crawlerRuns.map((run) => (
                       <tr
                         key={run.id}
-                        className={`hover:bg-gray-50 transition-colors ${
-                          run.status === 'failed' ? 'cursor-pointer hover:bg-red-50/30' : ''
-                        }`}
-                        onClick={() => {
-                          if (run.status === 'failed') {
-                            setSelectedRun(run);
-                          }
-                        }}
+                        className="hover:bg-gray-50 transition-colors"
                       >
                         <td className="px-6 py-4">
                           <div className="font-semibold text-gray-900">{run.shopName}</div>
@@ -436,9 +464,8 @@ export default function ChangeProposalsPage() {
                             <Link
                               href={`/admin/change-proposals/${run.proposalId}`}
                               className="inline-flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-medium"
-                              onClick={(e) => e.stopPropagation()}
                             >
-                              <Badge variant="info">View Proposal</Badge>
+                              <Badge variant="info">Proposal Generated</Badge>
                               {run.proposalSummaryCounts && (
                                 <span className="text-gray-500 text-xs">
                                   (+{run.proposalSummaryCounts.add || 0} ~{run.proposalSummaryCounts.update || 0} -{run.proposalSummaryCounts.delist || 0})
@@ -462,10 +489,7 @@ export default function ChangeProposalsPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedRun(run);
-                            }}
+                            onClick={() => setSelectedRun(run)}
                           >
                             View Details
                           </Button>

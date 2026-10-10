@@ -19,8 +19,10 @@ export async function GET(request: NextRequest) {
     const statusParam = searchParams.get('status');
     const status = statusParam && statusParam !== 'all' ? statusParam : undefined;
     const shopId = searchParams.get('shopId') || undefined;
-    const limit = parseInt(searchParams.get('limit') || '50', 10);
-    const offset = parseInt(searchParams.get('offset') || '0', 10);
+    const parsedLimit = parseInt(searchParams.get('limit') || '50', 10);
+    const limit = Math.min(Math.max(isNaN(parsedLimit) ? 50 : parsedLimit, 1), 100);
+    const parsedOffset = parseInt(searchParams.get('offset') || '0', 10);
+    const offset = Math.max(isNaN(parsedOffset) ? 0 : parsedOffset, 0);
 
     const data = await getCrawlRuns({
       status,

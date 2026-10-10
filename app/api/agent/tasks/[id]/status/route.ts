@@ -50,14 +50,18 @@ export async function POST(
     );
 
     const shopId = updatedTask?.shop_id || body.shopId;
-    if (shopId) {
-      await recordCrawlRun({
-        shopId,
-        status,
-        agentRunId: body.agentRunId || null,
-        errorMessage: crawlError || null,
-        metadata: body.metadata || {},
-      });
+    if (shopId && status === 'failed') {
+      try {
+        await recordCrawlRun({
+          shopId,
+          status: 'failed',
+          agentRunId: body.agentRunId || null,
+          errorMessage: crawlError || null,
+          metadata: body.metadata || {},
+        });
+      } catch (logErr) {
+        console.error(`Failed to record crawl audit log for task ${id}:`, logErr);
+      }
     }
 
     return NextResponse.json({

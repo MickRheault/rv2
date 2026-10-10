@@ -105,6 +105,27 @@ describe('GET /api/admin/crawler-logs', () => {
     });
   });
 
+  it('clamps excessive or negative pagination parameters', async () => {
+    (isAuthorizedAdmin as jest.Mock).mockResolvedValue(true);
+    (getCrawlRuns as jest.Mock).mockResolvedValue({
+      runs: [],
+      totalCount: 0,
+    });
+
+    const req = new NextRequest(
+      'http://localhost:3000/api/admin/crawler-logs?limit=9999&offset=-5'
+    );
+    const res = await GET(req);
+
+    expect(res.status).toBe(200);
+    expect(getCrawlRuns).toHaveBeenCalledWith({
+      status: undefined,
+      shopId: undefined,
+      limit: 100,
+      offset: 0,
+    });
+  });
+
   it('returns 500 when service throws error', async () => {
     (isAuthorizedAdmin as jest.Mock).mockResolvedValue(true);
     (getCrawlRuns as jest.Mock).mockRejectedValue(new Error('Database connection failed'));
