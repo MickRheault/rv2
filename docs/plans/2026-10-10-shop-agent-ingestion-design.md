@@ -121,3 +121,11 @@ CREATE TABLE public.change_proposal_items (
 3. **Soft Deactivation**: Missing inventory is marked with `availability_status = 'unavailable'`. Hard deletes are forbidden.
 4. **Zero-Drop Safeguard**: If an incoming snapshot returns 0 bikes for a shop with active inventory, server refuses to create a mass-delist proposal and flags for inspection.
 5. **Verbatim Pricing**: Rates and tiers are recorded verbatim as advertised on the website without synthetic mathematical division.
+
+## 6. Implementation Issues
+
+- [Issue #73: feat(db): schema and types for shop agent configs and change proposals](https://github.com/MickRheault/rv2/issues/73)
+- [Issue #74: feat(api): agent task dispatcher and proposal ingestion with diff engine](https://github.com/MickRheault/rv2/issues/74)
+- [Issue #75: feat(service): atomic change proposal application engine](https://github.com/MickRheault/rv2/issues/75)
+- [Issue #76: feat(admin): change proposal review dashboard and shop crawler config UI](https://github.com/MickRheault/rv2/issues/76)
+
