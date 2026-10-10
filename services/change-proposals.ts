@@ -418,8 +418,9 @@ export class ChangeProposalService {
         }
       } else if (item.entity_type === 'rental_shop') {
         const allowedUpdates: Record<string, any> = {};
-        if (proposed.description !== undefined) {
-          allowedUpdates.business_description = proposed.description;
+        const desc = proposed.business_description !== undefined ? proposed.business_description : proposed.description;
+        if (desc !== undefined) {
+          allowedUpdates.business_description = desc;
         }
         if (proposed.phone !== undefined) {
           allowedUpdates.phone = proposed.phone;

@@ -245,14 +245,18 @@ export function ChangeProposalDiffViewer({
                   </div>
                   {item.proposed_data.rates && (
                     <div className="mt-1 flex gap-2 flex-wrap">
-                      {item.proposed_data.rates.map((r: any, idx: number) => (
-                        <span
-                          key={idx}
-                          className="inline-flex text-xs bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200"
-                        >
-                          {r.minDays}{r.maxDays ? `-${r.maxDays}` : '+'} days: ฿{r.ratePerDay}/day
-                        </span>
-                      ))}
+                      {item.proposed_data.rates.map((r: any, idx: number) => {
+                        const curr = r.currency || item.proposed_data.currency;
+                        const symbol = curr === 'EUR' ? '€' : curr === 'USD' ? '$' : curr === 'GBP' ? '£' : curr === 'VND' ? '₫' : '฿';
+                        return (
+                          <span
+                            key={idx}
+                            className="inline-flex text-xs bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200"
+                          >
+                            {r.minDays}{r.maxDays ? `-${r.maxDays}` : '+'} days: {symbol}{r.ratePerDay}/day
+                          </span>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
