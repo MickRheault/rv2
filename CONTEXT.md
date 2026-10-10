@@ -1,0 +1,13 @@
+# RideVault Context
+
+Global motorcycle rental aggregator platform connecting riders with rental shops and motorcycle inventory worldwide.
+
+## Language
+
+**Change Proposal**:
+A staged set of proposed additions, updates, or removals to shop inventory and rates awaiting review or automated application.
+_Avoid_: Scrape proposal, crawl diff, patch request
+
+**Shop Agent Config**:
+Per-shop configuration defining target source URL, run frequency, extraction hints, and active status for automated ingestion agents.
+_Avoid_: Crawler config, scraper settings
