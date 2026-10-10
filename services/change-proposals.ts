@@ -38,7 +38,7 @@ export class ChangeProposalService {
           rate_per_day
         )
       `)
-      .eq('rental_shop_id', shopId)
+      .eq('shop_id', shopId)
       .or('availability_status.is.null,availability_status.neq.unavailable');
 
     if (error) {
@@ -48,7 +48,7 @@ export class ChangeProposalService {
     return (bikes || []).map((b: any) => ({
       id: b.id,
       brand_name: b.brands?.name || 'Unknown',
-      model_name: b.model_name,
+      model_name: b.model,
       year: b.year,
       engine_capacity_cc: b.engine_capacity_cc,
       availability_status: b.availability_status,
@@ -69,8 +69,20 @@ export class ChangeProposalService {
     // 1. Fetch current active database state for this shop
     const existingBikes = await this.getExistingShopInventory(input.shopId);
 
-    // 2. Compute diff (enforces zero-drop safeguard and canonical matching)
-    const diff: DiffResult = computeShopInventoryDiff(existingBikes, input.bikes);
+    // Fetch existing shop profile for shop-level diffing
+    const { data: existingShop } = await supabase
+      .from('rental_shops')
+      .select('id, business_description, phone, website')
+      .eq('id', input.shopId)
+      .maybeSingle();
+
+    // 2. Compute diff (enforces zero-drop safeguard, canonical matching & shop profile diffs)
+    const diff: DiffResult = computeShopInventoryDiff(
+      existingBikes,
+      input.bikes,
+      existingShop,
+      input.shopUpdates
+    );
 
     // 3. Insert parent proposal record
     const { data: proposal, error: proposalError } = await (supabase
