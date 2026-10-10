@@ -213,53 +213,5 @@ export class TaskSchedulerService {
 
     return updated;
   }
-
-  /**
-   * Gets crawler configuration for a specific shop.
-   */
-  static async getShopConfig(shopId: string) {
-    const supabase = getSupabaseAdmin();
-    const { data, error } = await supabase
-      .from('shop_agent_configs')
-      .select('*')
-      .eq('shop_id', shopId)
-      .maybeSingle();
-
-    if (error) {
-      throw new Error(`Failed to get shop config: ${error.message}`);
-    }
-    return data;
-  }
-
-  /**
-   * Upserts crawler configuration for a shop.
-   */
-  static async upsertShopConfig(config: {
-    shop_id: string;
-    tier: number;
-    source_url: string;
-    extraction_hints?: string | null;
-    is_active?: boolean;
-  }) {
-    const supabase = getSupabaseAdmin();
-    const { data, error } = await supabase
-      .from('shop_agent_configs')
-      .upsert(
-        {
-          shop_id: config.shop_id,
-          tier: config.tier,
-          source_url: config.source_url,
-          extraction_hints: config.extraction_hints ?? null,
-          is_active: config.is_active ?? true,
-        },
-        { onConflict: 'shop_id' }
-      )
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(`Failed to save shop crawler config: ${error.message}`);
-    }
-    return data;
-  }
 }
+
