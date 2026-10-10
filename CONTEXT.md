@@ -13,7 +13,7 @@ An individual proposed action (create, update, delist) targeting a specific moto
 _Avoid_: Diff item, patch row, mutation entry
 
 **Shop Agent Config**:
-Per-shop configuration defining target source URL, run frequency, 3-tier priority (1=Focus, 2=Standard, 3=Deferred), extraction hints, and active status for automated ingestion agents.
+Per-shop configuration defining target source URL, crawl cadence tier (Tier 1 = weekly, Tier 2 = monthly, Tier 3 = bi-monthly), extraction hints, and active status for automated ingestion agents.
 _Avoid_: Crawler config, scraper settings
 
 **Canonical Model Name**:

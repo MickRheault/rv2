@@ -1,3 +1,8 @@
-# Three-Tier Ingestion Priority
+# Three-Tier Ingestion Cadence
 
-`shop_agent_configs` includes a 3-tier priority system (1 = High/Focus, 2 = Standard, 3 = Low/Deferred). Tasks are ordered primarily by priority (`priority ASC, last_run_at ASC NULLS FIRST`), and the task dispatch API supports filtering by priority level. This allows phased rollouts and token conservation by focusing the crawler strictly on high-priority partner shops before processing broader catalog tiers.
+`shop_agent_configs` assigns each rental shop to one of three crawl cadence tiers:
+- **Tier 1 (Weekly / 7 days)**: High-priority partners and active inventory.
+- **Tier 2 (Monthly / 30 days)**: Standard catalog shops.
+- **Tier 3 (Bi-Monthly / 60 days)**: Infrequent or seasonal shops.
+
+The task scheduler queries shops where `last_run_at IS NULL OR last_run_at <= NOW() - cadence_interval`, prioritized by `priority ASC, last_run_at ASC NULLS FIRST`.
