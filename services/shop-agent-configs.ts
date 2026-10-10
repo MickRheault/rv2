@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/supabase/client';
-import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import type { Database } from '@/lib/supabase/database.types';
 
 export type ShopAgentConfig = Database['public']['Tables']['shop_agent_configs']['Row'];
@@ -18,8 +17,7 @@ export interface ShopCrawlerConfigFormData {
  * Fetches the crawler configuration for a specific shop.
  */
 export async function getShopCrawlerConfig(shopId: string): Promise<ShopAgentConfig | null> {
-  const client: any = typeof window === 'undefined' ? getSupabaseAdmin() : supabase;
-  const { data, error } = await client
+  const { data, error } = await supabase
     .from('shop_agent_configs')
     .select('*')
     .eq('shop_id', shopId)
@@ -39,18 +37,8 @@ export async function getShopCrawlerConfig(shopId: string): Promise<ShopAgentCon
 export async function saveShopCrawlerConfig(
   formData: ShopCrawlerConfigFormData
 ): Promise<ShopAgentConfig> {
-  // Use admin client on server or client with fallback
-  let client: any = supabase;
-  if (typeof window === 'undefined' || process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    try {
-      client = getSupabaseAdmin();
-    } catch {
-      client = supabase;
-    }
-  }
-
-  const { data, error } = await client
-    .from('shop_agent_configs')
+  const { data, error } = await (supabase
+    .from('shop_agent_configs') as any)
     .upsert(
       {
         shop_id: formData.shop_id,

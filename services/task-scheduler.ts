@@ -115,45 +115,53 @@ export class TaskSchedulerService {
       .sort((a, b) => b.urgencyScore - a.urgencyScore)
       .slice(0, limit);
 
-    // 4. For selected top tasks, fetch known motorcycle models for each shop
-    const tasks: AgentTask[] = await Promise.all(
-      scoredConfigs.map(async (cfg) => {
-        const { data: bikes } = await supabase
-          .from('motorcycle_rentals')
-          .select(`
-            model_name,
-            brands (
-              name
-            )
-          `)
-          .eq('rental_shop_id', cfg.shop_id);
+    // 4. Batch fetch known motorcycles for selected shops to prevent N+1 queries
+    const shopIds = scoredConfigs.map((cfg) => cfg.shop_id);
+    const { data: allBikes } = await supabase
+      .from('motorcycle_rentals')
+      .select(`
+        shop_id,
+        model,
+        brands (
+          name
+        )
+      `)
+      .in('shop_id', shopIds);
 
-        const knownModelsMap = new Map<string, { brand: string; modelName: string }>();
-        (bikes || []).forEach((bike: any) => {
-          const brandName = bike.brands?.name || 'Unknown';
-          const modelName = bike.model_name || '';
-          const key = `${brandName}:${modelName}`.toLowerCase();
-          if (modelName && !knownModelsMap.has(key)) {
-            knownModelsMap.set(key, { brand: brandName, modelName });
-          }
-        });
+    const bikesByShop = new Map<string, any[]>();
+    (allBikes || []).forEach((bike: any) => {
+      const list = bikesByShop.get(bike.shop_id) || [];
+      list.push(bike);
+      bikesByShop.set(bike.shop_id, list);
+    });
 
-        const shop = cfg.rental_shops as unknown as { id: string; provider_name: string };
+    const tasks: AgentTask[] = scoredConfigs.map((cfg) => {
+      const bikes = bikesByShop.get(cfg.shop_id) || [];
+      const knownModelsMap = new Map<string, { brand: string; modelName: string }>();
+      bikes.forEach((bike: any) => {
+        const brandName = bike.brands?.name || 'Unknown';
+        const modelName = bike.model || '';
+        const key = `${brandName}:${modelName}`.toLowerCase();
+        if (modelName && !knownModelsMap.has(key)) {
+          knownModelsMap.set(key, { brand: brandName, modelName });
+        }
+      });
 
-        return {
-          taskId: cfg.id,
-          shopId: cfg.shop_id,
-          providerName: shop.provider_name,
-          targetUrl: cfg.source_url,
-          extractionHints: cfg.extraction_hints,
-          tier: cfg.tier,
-          urgencyScore: cfg.urgencyScore,
-          lastRunAt: cfg.last_run_at,
-          canonicalBrands,
-          knownModels: Array.from(knownModelsMap.values()),
-        };
-      })
-    );
+      const shop = cfg.rental_shops as unknown as { id: string; provider_name: string };
+
+      return {
+        taskId: cfg.id,
+        shopId: cfg.shop_id,
+        providerName: shop.provider_name,
+        targetUrl: cfg.source_url,
+        extractionHints: cfg.extraction_hints,
+        tier: cfg.tier,
+        urgencyScore: cfg.urgencyScore,
+        lastRunAt: cfg.last_run_at,
+        canonicalBrands,
+        knownModels: Array.from(knownModelsMap.values()),
+      };
+    });
 
     return tasks;
   }
