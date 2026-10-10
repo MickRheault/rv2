@@ -16,6 +16,10 @@ _Avoid_: Diff item, patch row, mutation entry
 Per-shop configuration defining target source URL, crawl cadence tier (Tier 1 = weekly, Tier 2 = monthly, Tier 3 = bi-monthly), extraction hints, and active status for automated ingestion agents.
 _Avoid_: Crawler config, scraper settings
 
+**Urgency Score**:
+A scheduling ratio (`days_since_last_run / tier_cadence_days`) used to rank pending ingestion tasks fairly across priority tiers, preventing lower-tier starvation under fixed daily crawl budgets.
+_Avoid_: Crawl rank, overdue priority
+
 **Canonical Model Name**:
 The official manufacturer designation for a motorcycle model as curated in RideVault.
 _Avoid_: Scraped model title, listing alias, informal nickname
