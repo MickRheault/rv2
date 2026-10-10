@@ -38,6 +38,9 @@ next-env.d.ts
 
 # IDE
 .vscode/
+
+# worktrees
+.worktrees/
 .idea/
 *.swp
 *.swo
