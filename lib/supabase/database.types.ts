@@ -104,6 +104,115 @@ export type Database = {
         }
         Relationships: []
       }
+      change_proposals: {
+        Row: {
+          agent_run_id: string | null
+          applied_at: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          raw_snapshot: Json
+          reviewed_at: string | null
+          reviewed_by: string | null
+          shop_id: string
+          source_url: string
+          status: 'pending' | 'reviewing' | 'applied' | 'partially_applied' | 'rejected'
+          summary_counts: Json
+          updated_at: string
+        }
+        Insert: {
+          agent_run_id?: string | null
+          applied_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          raw_snapshot: Json
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          shop_id: string
+          source_url: string
+          status?: 'pending' | 'reviewing' | 'applied' | 'partially_applied' | 'rejected'
+          summary_counts?: Json
+          updated_at?: string
+        }
+        Update: {
+          agent_run_id?: string | null
+          applied_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          raw_snapshot?: Json
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          shop_id?: string
+          source_url?: string
+          status?: 'pending' | 'reviewing' | 'applied' | 'partially_applied' | 'rejected'
+          summary_counts?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "change_proposals_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "rental_shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      change_proposal_items: {
+        Row: {
+          action: 'add' | 'update' | 'delist'
+          brand_name: string | null
+          created_at: string
+          diff_summary: Json | null
+          entity_id: string | null
+          entity_type: 'motorcycle' | 'rental_shop' | 'rental_rate_tier' | 'motorcycle_condition' | 'rental_shop_inclusion'
+          id: string
+          model_name: string | null
+          original_data: Json | null
+          proposed_data: Json
+          proposal_id: string
+          status: 'pending' | 'approved' | 'rejected' | 'applied'
+        }
+        Insert: {
+          action: 'add' | 'update' | 'delist'
+          brand_name?: string | null
+          created_at?: string
+          diff_summary?: Json | null
+          entity_id?: string | null
+          entity_type: 'motorcycle' | 'rental_shop' | 'rental_rate_tier' | 'motorcycle_condition' | 'rental_shop_inclusion'
+          id?: string
+          model_name?: string | null
+          original_data?: Json | null
+          proposed_data: Json
+          proposal_id: string
+          status?: 'pending' | 'approved' | 'rejected' | 'applied'
+        }
+        Update: {
+          action?: 'add' | 'update' | 'delist'
+          brand_name?: string | null
+          created_at?: string
+          diff_summary?: Json | null
+          entity_id?: string | null
+          entity_type?: 'motorcycle' | 'rental_shop' | 'rental_rate_tier' | 'motorcycle_condition' | 'rental_shop_inclusion'
+          id?: string
+          model_name?: string | null
+          original_data?: Json | null
+          proposed_data?: Json
+          proposal_id?: string
+          status?: 'pending' | 'approved' | 'rejected' | 'applied'
+        }
+        Relationships: [
+          {
+            foreignKeyName: "change_proposal_items_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "change_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cities: {
         Row: {
           created_at: string
