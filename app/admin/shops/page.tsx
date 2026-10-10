@@ -2,6 +2,7 @@
 
 import { RentalShopConditionsModal } from '@/components/admin/RentalShopConditionsModal';
 import { RentalShopToursModal } from '@/components/admin/RentalShopToursModal';
+import { RentalShopCrawlerModal } from '@/components/admin/RentalShopCrawlerModal';
 import { useState, useEffect, useCallback } from 'react';
 import { shopService, ShopWithDetails } from '@/services/shops';
 import { businessStatusService } from '@/services/business-statuses';
@@ -59,6 +60,8 @@ function ShopsAdminContent() {
   const [conditionsShop, setConditionsShop] = useState<{ id: string; name: string } | null>(null);
   const [showToursModal, setShowToursModal] = useState(false);
   const [toursShop, setToursShop] = useState<{ id: string; name: string } | null>(null);
+  const [showCrawlerModal, setShowCrawlerModal] = useState(false);
+  const [crawlerShop, setCrawlerShop] = useState<{ id: string; name: string; website?: string | null } | null>(null);
   
   // Form data
   const [formData, setFormData] = useState<Partial<ShopInsert>>({});
@@ -349,6 +352,20 @@ function ShopsAdminContent() {
   const handleCloseToursModal = () => {
     setShowToursModal(false);
     setToursShop(null);
+  };
+
+  const handleManageCrawler = (shop: ShopWithDetails) => {
+    setCrawlerShop({
+      id: shop.id,
+      name: shop.provider_name,
+      website: shop.website,
+    });
+    setShowCrawlerModal(true);
+  };
+
+  const handleCloseCrawlerModal = () => {
+    setShowCrawlerModal(false);
+    setCrawlerShop(null);
   };
 
   // Selection handlers
@@ -651,6 +668,14 @@ function ShopsAdminContent() {
                                 title="Manage Tours"
                               >
                                 🗺️
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleManageCrawler(shop)}
+                                title="Crawler Settings"
+                              >
+                                🤖
                               </Button>
                               <Button 
                                 variant="ghost" 
@@ -1024,6 +1049,15 @@ function ShopsAdminContent() {
           onClose={handleCloseToursModal}
           shopId={toursShop.id}
           shopName={toursShop.name}
+        />
+      )}
+
+      {/* Rental Shop Crawler Modal */}
+      {crawlerShop && (
+        <RentalShopCrawlerModal
+          isOpen={showCrawlerModal}
+          onClose={handleCloseCrawlerModal}
+          shop={crawlerShop}
         />
       )}
     </div>

@@ -1092,6 +1092,56 @@ export type Database = {
           },
         ]
       }
+      shop_agent_configs: {
+        Row: {
+          consecutive_errors: number
+          created_at: string
+          extraction_hints: string | null
+          id: string
+          is_active: boolean
+          last_error: string | null
+          last_run_at: string | null
+          shop_id: string
+          source_url: string
+          tier: number
+          updated_at: string
+        }
+        Insert: {
+          consecutive_errors?: number
+          created_at?: string
+          extraction_hints?: string | null
+          id?: string
+          is_active?: boolean
+          last_error?: string | null
+          last_run_at?: string | null
+          shop_id: string
+          source_url: string
+          tier?: number
+          updated_at?: string
+        }
+        Update: {
+          consecutive_errors?: number
+          created_at?: string
+          extraction_hints?: string | null
+          id?: string
+          is_active?: boolean
+          last_error?: string | null
+          last_run_at?: string | null
+          shop_id?: string
+          source_url?: string
+          tier?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_agent_configs_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: true
+            referencedRelation: "rental_shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       required_document_types: {
         Row: {
           created_at: string
