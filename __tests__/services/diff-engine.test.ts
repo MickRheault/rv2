@@ -122,4 +122,46 @@ describe('Diff Engine', () => {
     expect(diff.items).toHaveLength(0);
     expect(diff.summaryCounts).toEqual({ add: 0, update: 0, delist: 0 });
   });
+
+  it('detects shop profile modifications (description, phone, website)', () => {
+    const existingShop = {
+      id: 'shop-uuid-1',
+      business_description: 'Old Description',
+      phone: '+66 81 111 2222',
+      website: 'https://old.example.com',
+    };
+
+    const crawledShop = {
+      business_description: 'New Description',
+      phone: '+66 81 999 8888',
+      website: 'https://new.example.com',
+    };
+
+    const diff = computeShopInventoryDiff(
+      existingActiveBikes,
+      existingActiveBikes.map((b) => ({
+        brand: b.brand_name,
+        modelName: b.model_name,
+        rates: [{ minDays: 1, maxDays: 6, ratePerDay: b.rates[0].rate_per_day }],
+      })),
+      existingShop,
+      crawledShop
+    );
+
+    const shopItem = diff.items.find((i) => i.entity_type === 'rental_shop');
+    expect(shopItem).toBeDefined();
+    expect(shopItem?.action).toBe('update');
+    expect(shopItem?.diff_summary?.business_description).toEqual({
+      old: 'Old Description',
+      new: 'New Description',
+    });
+    expect(shopItem?.diff_summary?.phone).toEqual({
+      old: '+66 81 111 2222',
+      new: '+66 81 999 8888',
+    });
+    expect(shopItem?.diff_summary?.website).toEqual({
+      old: 'https://old.example.com',
+      new: 'https://new.example.com',
+    });
+  });
 });

@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { ChangeProposalService } from '@/services/change-proposals';
+import { isAuthorizedAdmin } from '@/lib/auth/admin-auth';
 
 /**
  * GET /api/admin/change-proposals
@@ -9,6 +10,10 @@ import { ChangeProposalService } from '@/services/change-proposals';
  * Fetches staged change proposals for the admin review dashboard.
  */
 export async function GET(request: NextRequest) {
+  if (!(await isAuthorizedAdmin(request))) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const statusParam = searchParams.get('status');

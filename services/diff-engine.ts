@@ -50,8 +50,21 @@ export interface ExistingBikeRecord {
   rates: ExistingRateTier[];
 }
 
+export interface CrawledShopProfile {
+  business_description?: string | null;
+  phone?: string | null;
+  website?: string | null;
+}
+
+export interface ExistingShopProfile {
+  id?: string;
+  business_description?: string | null;
+  phone?: string | null;
+  website?: string | null;
+}
+
 export interface ProposedDiffItem {
-  entity_type: 'motorcycle';
+  entity_type: 'motorcycle' | 'rental_shop';
   action: 'add' | 'update' | 'delist';
   entity_id?: string | null;
   brand_name: string;
@@ -88,7 +101,9 @@ function ratesDiffer(oldRates: ExistingRateTier[] = [], newRates: CrawledRateTie
 
 export function computeShopInventoryDiff(
   existingBikes: ExistingBikeRecord[],
-  crawledBikes: CrawledBikeSnapshot[]
+  crawledBikes: CrawledBikeSnapshot[],
+  existingShop?: ExistingShopProfile | null,
+  crawledShop?: CrawledShopProfile | null
 ): DiffResult {
   // 1. Zero-Drop Safeguard (ADR 0003)
   if (existingBikes.length > 0 && crawledBikes.length === 0) {
@@ -190,6 +205,61 @@ export function computeShopInventoryDiff(
             new: 'unavailable',
           },
         },
+      });
+    }
+  }
+
+  // 4. Evaluate Shop Profile Updates
+  if (existingShop && crawledShop) {
+    const shopDiff: Record<string, { old: any; new: any }> = {};
+
+    if (
+      crawledShop.business_description !== undefined &&
+      crawledShop.business_description !== null &&
+      crawledShop.business_description !== existingShop.business_description
+    ) {
+      shopDiff.business_description = {
+        old: existingShop.business_description,
+        new: crawledShop.business_description,
+      };
+    }
+
+    if (
+      crawledShop.phone !== undefined &&
+      crawledShop.phone !== null &&
+      crawledShop.phone !== existingShop.phone
+    ) {
+      shopDiff.phone = {
+        old: existingShop.phone,
+        new: crawledShop.phone,
+      };
+    }
+
+    if (
+      crawledShop.website !== undefined &&
+      crawledShop.website !== null &&
+      crawledShop.website !== existingShop.website
+    ) {
+      shopDiff.website = {
+        old: existingShop.website,
+        new: crawledShop.website,
+      };
+    }
+
+    if (Object.keys(shopDiff).length > 0) {
+      items.push({
+        entity_type: 'rental_shop',
+        action: 'update',
+        entity_id: existingShop.id || null,
+        brand_name: 'Shop Profile',
+        model_name: 'General Information',
+        original_data: {
+          business_description: existingShop.business_description,
+          phone: existingShop.phone,
+          website: existingShop.website,
+        },
+        proposed_data: crawledShop,
+        diff_summary: shopDiff,
       });
     }
   }
