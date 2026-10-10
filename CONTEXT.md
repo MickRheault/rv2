@@ -11,3 +11,7 @@ _Avoid_: Scrape proposal, crawl diff, patch request
 **Shop Agent Config**:
 Per-shop configuration defining target source URL, run frequency, extraction hints, and active status for automated ingestion agents.
 _Avoid_: Crawler config, scraper settings
+
+**Canonical Model Name**:
+The official manufacturer designation for a motorcycle model as curated in RideVault.
+_Avoid_: Scraped model title, listing alias, informal nickname
