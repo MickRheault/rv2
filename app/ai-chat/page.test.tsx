@@ -170,3 +170,45 @@ it('submits on Enter keypress and allows newline on Shift+Enter', async () => {
         body: JSON.stringify({ message: 'First line' }),
     })));
 });
+
+it('does not submit on Enter when IME is actively composing (e.g. Thai/Japanese input)', () => {
+    delete process.env.AI_CHAT_ACCESS_SECRET;
+    render(<ChatPage />);
+    const textarea = screen.getByPlaceholderText('Ask about motorcycles, shops, or locations...');
+    fireEvent.change(textarea, { target: { value: 'มอเตอร์ไซค์' } });
+    
+    // Simulate IME composition selection
+    fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false, isComposing: true, nativeEvent: { isComposing: true } });
+    expect(fetch).not.toHaveBeenCalled();
+});
+
+it('aborts active in-flight request when New Chat is clicked', async () => {
+    delete process.env.AI_CHAT_ACCESS_SECRET;
+    let signalCaptured: AbortSignal | undefined;
+    jest.mocked(fetch).mockImplementation((_url, init) => {
+        signalCaptured = (init as RequestInit)?.signal as AbortSignal;
+        return new Promise(() => {}); // never resolves to keep in flight
+    });
+
+    const { container } = render(<ChatPage />);
+    fireEvent.change(screen.getByPlaceholderText('Ask about motorcycles, shops, or locations...'), {
+        target: { value: 'Find scooters' },
+    });
+    fireEvent.submit(container.querySelector('form')!);
+
+    expect(signalCaptured).toBeDefined();
+    expect(signalCaptured?.aborted).toBe(false);
+
+    fireEvent.click(screen.getByRole('button', { name: /New Chat/i }));
+
+    expect(signalCaptured?.aborted).toBe(true);
+});
+
+it('provides accessible labels for input and live region for message history', () => {
+    delete process.env.AI_CHAT_ACCESS_SECRET;
+    render(<ChatPage />);
+    expect(screen.getByRole('log', { name: /Conversation history/i })).toHaveAttribute('aria-live', 'polite');
+    expect(screen.getByRole('button', { name: 'Send message' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Ask about motorcycles, shops, or locations...')).toBeInTheDocument();
+});
+
