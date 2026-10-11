@@ -1,4 +1,4 @@
-import { Suspense } from 'react'
+import { Suspense, cache } from 'react'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { CityPageProps } from '@/types'
@@ -13,6 +13,13 @@ import LocationHeroBanner from '@/components/location/LocationHeroBanner'
 import { motorcycleService } from '@/services/motorcycles'
 import MotorcycleTable from '@/components/motorcycle/MotorcycleTable'
 import { generateMetadata as generateSEOMetadata } from '@/lib/seo/config'
+
+// Revalidate city pages periodically
+export const revalidate = 3600 // Revalidate every 1 hour
+
+const getCountryByName = cache(async (country: string) => {
+  return locationService.getCountryByName(country)
+})
 
 // Generate dynamic metadata based on city and country parameters
 export async function generateMetadata({ params }: CityPageProps): Promise<Metadata> {
@@ -30,7 +37,7 @@ export async function generateMetadata({ params }: CityPageProps): Promise<Metad
 
   try {
     // Get country data for validation
-    const countryData = await locationService.getCountryByName(country)
+    const countryData = await getCountryByName(country)
     if (!countryData) {
       return {
         title: 'City Not Found',
@@ -89,7 +96,7 @@ export default async function CityPage({ params }: CityPageProps) {
   // Fetch city data and shops
   try {
     // First, validate that the country exists
-    const countryData = await locationService.getCountryByName(country)
+    const countryData = await getCountryByName(country)
 
     // Return 404 if country doesn't exist in database
     if (!countryData) {
@@ -116,7 +123,7 @@ export default async function CityPage({ params }: CityPageProps) {
     // Fetch motorcycles for the city
     const motorcyclesResult = await motorcycleService.getMotorcycles({
       cityId: cityData.id,
-      limit: 10000
+      limit: 100
     })
     const motorcycles = motorcyclesResult.motorcycles || []
 

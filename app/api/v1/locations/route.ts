@@ -1,6 +1,4 @@
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-export const fetchCache = 'force-no-store';
 
 import { NextRequest } from 'next/server';
 import { successResponse, errors } from '@/lib/api/response';
@@ -96,6 +94,10 @@ export async function GET(request: NextRequest) {
         Object.entries(headers).forEach(([key, value]) => {
             response.headers.set(key, value);
         });
+
+        // Cache read-only locations for 1 hour at edge
+        response.headers.set('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
+        response.headers.set('Vary', 'Authorization');
 
         return response;
     } catch (error) {

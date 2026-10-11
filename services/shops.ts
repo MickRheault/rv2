@@ -358,51 +358,7 @@ export const shopService = {
       slug
     })
 
-    // Try a simpler query first to debug
-    const { data: simpleData, error: simpleError } = await typedSupabase
-      .from('rental_shops')
-      .select(`
-        *,
-        cities (
-          name,
-          provinces (
-            name,
-            countries (
-              name
-            )
-          )
-        )
-      `)
-      .eq('slug', slug)
-      .single()
-
-    console.log('🔍 Simple query result:', {
-      found: !!simpleData,
-      shopName: simpleData?.provider_name,
-      actualCity: simpleData?.cities?.name,
-      actualCountry: simpleData?.cities?.provinces?.countries?.name,
-      searchingFor: { cityName, countryName }
-    })
-
-    // Check if location matches (case-insensitive)
-    if (simpleData && (simpleData as any).cities?.name && (simpleData as any).cities?.provinces?.countries?.name) {
-      const actualCity = (simpleData as any).cities.name.toLowerCase()
-      const actualCountry = (simpleData as any).cities.provinces.countries.name.toLowerCase()
-      const expectedCity = cityName.toLowerCase()
-      const expectedCountry = countryName.toLowerCase()
-
-      console.log('🔍 Case-insensitive comparison:', {
-        actualCity, expectedCity, cityMatch: actualCity === expectedCity,
-        actualCountry, expectedCountry, countryMatch: actualCountry === expectedCountry
-      })
-
-      if (actualCity !== expectedCity || actualCountry !== expectedCountry) {
-        console.log('❌ Location mismatch detected')
-        throw new Error(`Location mismatch: expected ${countryName}/${cityName}, got ${(simpleData as any).cities.provinces.countries.name}/${(simpleData as any).cities.name}`)
-      }
-    }
-
-    // If we get here, location matches, so fetch full data
+    // Fetch shop data
     const { data, error } = await typedSupabase
       .from('rental_shops')
       .select(`
@@ -435,6 +391,19 @@ export const shopService = {
     if (error) {
       console.error('Error fetching shop by location and slug:', error)
       throw error
+    }
+
+    // Check if location matches (case-insensitive)
+    if (data && (data as any).cities?.name && (data as any).cities?.provinces?.countries?.name) {
+      const actualCity = (data as any).cities.name.toLowerCase()
+      const actualCountry = (data as any).cities.provinces.countries.name.toLowerCase()
+      const expectedCity = cityName.toLowerCase()
+      const expectedCountry = countryName.toLowerCase()
+
+      if (actualCity !== expectedCity || actualCountry !== expectedCountry) {
+        console.log('❌ Location mismatch detected')
+        throw new Error(`Location mismatch: expected ${countryName}/${cityName}, got ${(data as any).cities.provinces.countries.name}/${(data as any).cities.name}`)
+      }
     }
 
     console.log('🔍 Query result:', {
