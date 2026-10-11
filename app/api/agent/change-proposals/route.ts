@@ -5,7 +5,10 @@ import { validateAgentApiKey } from '@/lib/auth/agent-auth';
 import { ChangeProposalService } from '@/services/change-proposals';
 import { ZeroDropSafeguardError } from '@/services/diff-engine';
 import { recordCrawlRun } from '@/services/crawl-runs';
-import { TaskSchedulerService } from '@/services/task-scheduler';
+import {
+  extractLearnedAgentConfig,
+  updateShopLearnedConfig,
+} from '@/services/shop-agent-configs';
 
 /**
  * POST /api/agent/change-proposals
@@ -13,7 +16,7 @@ import { TaskSchedulerService } from '@/services/task-scheduler';
  * Ingestion endpoint for external crawler agents (Hermes) to submit
  * raw inventory crawl snapshots. Executes server-side diff calculation,
  * enforces zero-drop safeguard, and stages the batch proposal for admin review.
- * Also persists learned extraction hints and discovered fleet URLs for crawler memory.
+ * Also persists learned extraction hints and discovered fleet URLs for shop agent config memory.
  * 
  * Authenticated via Bearer AGENT_API_KEY.
  */
@@ -28,16 +31,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const {
-      shopId,
-      sourceUrl,
-      agentRunId,
-      bikes,
-      shopUpdates,
-      learnedExtractionHints,
-      extractionHints,
-      discoveredSourceUrl,
-    } = body;
+    const { shopId, sourceUrl, agentRunId, bikes, shopUpdates } = body;
 
     if (!shopId || typeof shopId !== 'string') {
       return NextResponse.json(
@@ -60,6 +54,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Persist learned extraction hints and discovered fleet URL before diffing
+    const learnedConfig = extractLearnedAgentConfig(body);
+    if (learnedConfig) {
+      try {
+        await updateShopLearnedConfig(shopId, learnedConfig);
+      } catch (hintsErr) {
+        console.error('Failed to persist learned agent config for shop:', shopId, hintsErr);
+      }
+    }
+
     const result = await ChangeProposalService.createProposalFromCrawl({
       shopId,
       sourceUrl,
@@ -78,21 +82,6 @@ export async function POST(request: NextRequest) {
       });
     } catch (auditErr) {
       console.error('Failed to record success crawl audit log:', auditErr);
-    }
-
-    const hints = learnedExtractionHints || extractionHints;
-    if (hints || discoveredSourceUrl) {
-      try {
-        await TaskSchedulerService.updateLearnedConfig(
-          { shopId },
-          {
-            extractionHints: hints,
-            discoveredSourceUrl,
-          }
-        );
-      } catch (hintsErr) {
-        console.error('Failed to persist learned crawler config for shop:', shopId, hintsErr);
-      }
     }
 
     return NextResponse.json(

@@ -6,9 +6,8 @@ import { NextRequest } from 'next/server';
 import { POST } from '@/app/api/agent/change-proposals/route';
 import { ChangeProposalService } from '@/services/change-proposals';
 import { ZeroDropSafeguardError } from '@/services/diff-engine';
-
 import { recordCrawlRun } from '@/services/crawl-runs';
-import { TaskSchedulerService } from '@/services/task-scheduler';
+import { updateShopLearnedConfig } from '@/services/shop-agent-configs';
 
 jest.mock('@/services/change-proposals', () => ({
   ChangeProposalService: {
@@ -20,10 +19,9 @@ jest.mock('@/services/crawl-runs', () => ({
   recordCrawlRun: jest.fn().mockResolvedValue({ id: 'crawl-run-1' }),
 }));
 
-jest.mock('@/services/task-scheduler', () => ({
-  TaskSchedulerService: {
-    updateLearnedConfig: jest.fn().mockResolvedValue({}),
-  },
+jest.mock('@/services/shop-agent-configs', () => ({
+  extractLearnedAgentConfig: jest.requireActual('@/services/shop-agent-configs').extractLearnedAgentConfig,
+  updateShopLearnedConfig: jest.fn().mockResolvedValue({}),
 }));
 
 describe('POST /api/agent/change-proposals', () => {
@@ -126,7 +124,7 @@ describe('POST /api/agent/change-proposals', () => {
     });
   });
 
-  it('persists learned extraction hints and discovered source URL when provided in crawl proposal', async () => {
+  it('persists learned extraction hints and discovered source URL when provided in Change Proposal payload', async () => {
     (ChangeProposalService.createProposalFromCrawl as jest.Mock).mockResolvedValue({
       proposal: { id: 'prop-456', status: 'pending' },
       diff: {
@@ -152,11 +150,41 @@ describe('POST /api/agent/change-proposals', () => {
 
     const response = await POST(request);
     expect(response.status).toBe(201);
-    expect(TaskSchedulerService.updateLearnedConfig).toHaveBeenCalledWith(
-      { shopId: 'shop-456' },
+    expect(updateShopLearnedConfig).toHaveBeenCalledWith(
+      'shop-456',
       {
         extractionHints: 'Rates in EUR on /rentals. 2 helmets included.',
         discoveredSourceUrl: 'https://example.com/rentals/motorcycles',
+      }
+    );
+  });
+
+  it('persists learned extraction hints even if zero-drop safeguard triggers', async () => {
+    (ChangeProposalService.createProposalFromCrawl as jest.Mock).mockRejectedValue(
+      new ZeroDropSafeguardError()
+    );
+
+    const request = new NextRequest('http://localhost:3000/api/agent/change-proposals', {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer secret-agent-key',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        shopId: 'shop-zero',
+        sourceUrl: 'https://example.com/bikes',
+        bikes: [],
+        learnedExtractionHints: 'Site blocked by Cloudflare challenge',
+      }),
+    });
+
+    const response = await POST(request);
+    expect(response.status).toBe(422);
+    expect(updateShopLearnedConfig).toHaveBeenCalledWith(
+      'shop-zero',
+      {
+        extractionHints: 'Site blocked by Cloudflare challenge',
+        discoveredSourceUrl: undefined,
       }
     );
   });

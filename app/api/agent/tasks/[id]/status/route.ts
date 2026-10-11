@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { validateAgentApiKey } from '@/lib/auth/agent-auth';
 import { TaskSchedulerService } from '@/services/task-scheduler';
 import { recordCrawlRun } from '@/services/crawl-runs';
+import { extractLearnedAgentConfig } from '@/services/shop-agent-configs';
 
 /**
  * POST /api/agent/tasks/:id/status
@@ -37,10 +38,6 @@ export async function POST(
     const {
       status,
       error: crawlError,
-      learnedExtractionHints,
-      extractionHints,
-      discoveredSourceUrl,
-      targetUrl,
     } = body;
 
     if (status !== 'success' && status !== 'failed') {
@@ -50,14 +47,7 @@ export async function POST(
       );
     }
 
-    const hints = learnedExtractionHints || extractionHints;
-    const discoveredUrl = discoveredSourceUrl || targetUrl;
-    const learnedConfig = (hints || discoveredUrl)
-      ? {
-          extractionHints: hints,
-          discoveredSourceUrl: discoveredUrl,
-        }
-      : undefined;
+    const learnedConfig = extractLearnedAgentConfig(body);
 
     const updatedTask = learnedConfig
       ? await TaskSchedulerService.updateTaskStatus(id, status, crawlError, learnedConfig)

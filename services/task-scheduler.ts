@@ -1,4 +1,8 @@
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import {
+  LearnedAgentConfig,
+  sanitizeLearnedConfig,
+} from '@/services/shop-agent-configs';
 
 export const CADENCE_DAYS: Record<number, number> = {
   1: 7,   // Tier 1: Weekly (High-priority / active inventory)
@@ -205,20 +209,12 @@ export class TaskSchedulerService {
             consecutive_errors: (current.consecutive_errors || 0) + 1,
           };
 
-    if (
-      learnedConfig?.extractionHints !== undefined &&
-      learnedConfig.extractionHints !== null &&
-      learnedConfig.extractionHints.trim() !== ''
-    ) {
-      updatePayload.extraction_hints = learnedConfig.extractionHints.trim();
+    const sanitized = sanitizeLearnedConfig(learnedConfig);
+    if (sanitized.extraction_hints) {
+      updatePayload.extraction_hints = sanitized.extraction_hints;
     }
-
-    if (
-      learnedConfig?.discoveredSourceUrl !== undefined &&
-      learnedConfig.discoveredSourceUrl !== null &&
-      learnedConfig.discoveredSourceUrl.trim() !== ''
-    ) {
-      updatePayload.source_url = learnedConfig.discoveredSourceUrl.trim();
+    if (sanitized.source_url) {
+      updatePayload.source_url = sanitized.source_url;
     }
 
     const { data: updated, error: updateError } = await supabase
@@ -233,56 +229,6 @@ export class TaskSchedulerService {
     }
 
     return updated;
-  }
-
-  /**
-   * Updates learned extraction hints or discovered source URL for a shop.
-   */
-  static async updateLearnedConfig(
-    identifier: { taskId?: string; shopId?: string },
-    updates: {
-      extractionHints?: string | null;
-      discoveredSourceUrl?: string | null;
-    }
-  ) {
-    const supabase = getSupabaseAdmin();
-    const updatePayload: Record<string, any> = {};
-
-    if (
-      updates.extractionHints !== undefined &&
-      updates.extractionHints !== null &&
-      updates.extractionHints.trim() !== ''
-    ) {
-      updatePayload.extraction_hints = updates.extractionHints.trim();
-    }
-
-    if (
-      updates.discoveredSourceUrl !== undefined &&
-      updates.discoveredSourceUrl !== null &&
-      updates.discoveredSourceUrl.trim() !== ''
-    ) {
-      updatePayload.source_url = updates.discoveredSourceUrl.trim();
-    }
-
-    if (Object.keys(updatePayload).length === 0) {
-      return null;
-    }
-
-    let query = supabase.from('shop_agent_configs').update(updatePayload);
-    if (identifier.taskId) {
-      query = (query as any).eq('id', identifier.taskId);
-    } else if (identifier.shopId) {
-      query = (query as any).eq('shop_id', identifier.shopId);
-    } else {
-      return null;
-    }
-
-    const { data, error } = await (query as any).select().maybeSingle();
-    if (error) {
-      console.error('Failed to update learned config:', error);
-      throw new Error(`Failed to update learned config: ${error.message}`);
-    }
-    return data;
   }
 
   /**
