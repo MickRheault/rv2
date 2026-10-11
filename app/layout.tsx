@@ -2,11 +2,8 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import QueryProvider from '@/lib/providers/QueryProvider'
-import Header from '@/components/common/Header'
-import Footer from '@/components/common/Footer'
+import AppLayout from '@/components/common/AppLayout'
 import GoogleAnalytics from '@/components/analytics/GoogleAnalytics'
-import CookieConsentBanner from '@/components/analytics/CookieConsentBanner'
-import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { generateMetadata as generateSEOMetadata, PAGE_CONFIGS } from '@/lib/seo/config'
 import { StructuredData, generateOrganizationSchema, generateWebsiteSchema } from '@/lib/seo/structured-data'
 import { SpeedInsights } from '@vercel/speed-insights/next'
@@ -36,20 +33,9 @@ export default function RootLayout({
           <StructuredData schema={generateOrganizationSchema()} />
           <StructuredData schema={generateWebsiteSchema()} />
           
-          <ErrorBoundary level="section" name="Header">
-            <Header />
-          </ErrorBoundary>
-          
-          <main className="flex-1">
-            <ErrorBoundary level="page" name="Main Content">
-              {children}
-            </ErrorBoundary>
-          </main>
-          
-          <ErrorBoundary level="section" name="Footer">
-            <Footer />
-          </ErrorBoundary>
-          <CookieConsentBanner />
+          <AppLayout>
+            {children}
+          </AppLayout>
         </QueryProvider>
       </body>
     </html>

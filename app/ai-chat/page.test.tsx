@@ -128,3 +128,87 @@ it('shows a useful error when the chat server returns an empty response', async 
     fireEvent.submit(container.querySelector('form')!);
     expect(await screen.findByText('Error: The chat request timed out. Please try again.')).toBeInTheDocument();
 });
+
+it('renders the minimal top navigation bar with back link, logo, Beta badge, and New Chat button', () => {
+    delete process.env.AI_CHAT_ACCESS_SECRET;
+    render(<ChatPage />);
+    expect(screen.getByRole('link', { name: /Back to Fleet/i })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('button', { name: /New Chat/i })).toBeInTheDocument();
+    expect(screen.getByText('Beta')).toBeInTheDocument();
+    expect(screen.getByAltText('Global Moto Rentals Logo')).toBeInTheDocument();
+});
+
+it('resets conversation and restores prompt suggestions when New Chat is clicked', async () => {
+    delete process.env.AI_CHAT_ACCESS_SECRET;
+    const { container } = render(<ChatPage />);
+    fireEvent.change(screen.getByPlaceholderText('Ask about motorcycles, shops, or locations...'), {
+        target: { value: 'Find scooters in Bangkok' },
+    });
+    fireEvent.submit(container.querySelector('form')!);
+    expect(await screen.findByText('Here are some scooters.')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /New Chat/i }));
+
+    expect(screen.queryByText('Here are some scooters.')).not.toBeInTheDocument();
+    expect(screen.getByText(/Find scooters in Bangkok/)).toBeInTheDocument();
+});
+
+it('submits on Enter keypress and allows newline on Shift+Enter', async () => {
+    delete process.env.AI_CHAT_ACCESS_SECRET;
+    render(<ChatPage />);
+    const textarea = screen.getByPlaceholderText('Ask about motorcycles, shops, or locations...');
+    
+    // Shift+Enter does not submit
+    fireEvent.change(textarea, { target: { value: 'First line' } });
+    fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: true });
+    expect(fetch).not.toHaveBeenCalled();
+
+    // Enter without Shift submits
+    fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false });
+    await waitFor(() => expect(fetch).toHaveBeenCalledWith('/api/chat', expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ message: 'First line' }),
+    })));
+});
+
+it('does not submit on Enter when IME is actively composing (e.g. Thai/Japanese input)', () => {
+    delete process.env.AI_CHAT_ACCESS_SECRET;
+    render(<ChatPage />);
+    const textarea = screen.getByPlaceholderText('Ask about motorcycles, shops, or locations...');
+    fireEvent.change(textarea, { target: { value: 'มอเตอร์ไซค์' } });
+    
+    // Simulate IME composition selection
+    fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false, isComposing: true, nativeEvent: { isComposing: true } });
+    expect(fetch).not.toHaveBeenCalled();
+});
+
+it('aborts active in-flight request when New Chat is clicked', async () => {
+    delete process.env.AI_CHAT_ACCESS_SECRET;
+    let signalCaptured: AbortSignal | undefined;
+    jest.mocked(fetch).mockImplementation((_url, init) => {
+        signalCaptured = (init as RequestInit)?.signal as AbortSignal;
+        return new Promise(() => {}); // never resolves to keep in flight
+    });
+
+    const { container } = render(<ChatPage />);
+    fireEvent.change(screen.getByPlaceholderText('Ask about motorcycles, shops, or locations...'), {
+        target: { value: 'Find scooters' },
+    });
+    fireEvent.submit(container.querySelector('form')!);
+
+    expect(signalCaptured).toBeDefined();
+    expect(signalCaptured?.aborted).toBe(false);
+
+    fireEvent.click(screen.getByRole('button', { name: /New Chat/i }));
+
+    expect(signalCaptured?.aborted).toBe(true);
+});
+
+it('provides accessible labels for input and live region for message history', () => {
+    delete process.env.AI_CHAT_ACCESS_SECRET;
+    render(<ChatPage />);
+    expect(screen.getByRole('log', { name: /Conversation history/i })).toHaveAttribute('aria-live', 'polite');
+    expect(screen.getByRole('button', { name: 'Send message' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Ask about motorcycles, shops, or locations...')).toBeInTheDocument();
+});
+
