@@ -2,8 +2,8 @@ import { createBrowserClient } from '@supabase/ssr'
 import { Database } from './database.types'
 
 // Supabase project configuration
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || (process.env.NODE_ENV === 'test' ? 'https://placeholder.supabase.co' : undefined)
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || (process.env.NODE_ENV === 'test' ? 'placeholder-anon-key' : undefined)
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error(

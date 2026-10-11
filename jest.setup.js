@@ -1,6 +1,12 @@
 // Jest setup file for React Testing Library
 import '@testing-library/jest-dom'
 
+// Provide fallback environment variables for test execution when .env.local is not present (e.g. CI)
+process.env.NEXT_PUBLIC_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
+process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-role-key';
+process.env.AGENT_API_KEY = process.env.AGENT_API_KEY || 'placeholder-agent-api-key';
+
 // Mock Next.js Image component
 jest.mock('next/image', () => ({
   __esModule: true,
