@@ -8,6 +8,7 @@ import { ChangeProposalService } from '@/services/change-proposals';
 import { ZeroDropSafeguardError } from '@/services/diff-engine';
 
 import { recordCrawlRun } from '@/services/crawl-runs';
+import { TaskSchedulerService } from '@/services/task-scheduler';
 
 jest.mock('@/services/change-proposals', () => ({
   ChangeProposalService: {
@@ -17,6 +18,12 @@ jest.mock('@/services/change-proposals', () => ({
 
 jest.mock('@/services/crawl-runs', () => ({
   recordCrawlRun: jest.fn().mockResolvedValue({ id: 'crawl-run-1' }),
+}));
+
+jest.mock('@/services/task-scheduler', () => ({
+  TaskSchedulerService: {
+    updateLearnedConfig: jest.fn().mockResolvedValue({}),
+  },
 }));
 
 describe('POST /api/agent/change-proposals', () => {
@@ -117,5 +124,40 @@ describe('POST /api/agent/change-proposals', () => {
       agentRunId: null,
       metadata: { bikesCount: 1 },
     });
+  });
+
+  it('persists learned extraction hints and discovered source URL when provided in crawl proposal', async () => {
+    (ChangeProposalService.createProposalFromCrawl as jest.Mock).mockResolvedValue({
+      proposal: { id: 'prop-456', status: 'pending' },
+      diff: {
+        items: [],
+        summaryCounts: { add: 0, update: 0, delist: 0 },
+      },
+    });
+
+    const request = new NextRequest('http://localhost:3000/api/agent/change-proposals', {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer secret-agent-key',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        shopId: 'shop-456',
+        sourceUrl: 'https://example.com/bikes',
+        bikes: [{ brand: 'Yamaha', modelName: 'NMAX' }],
+        learnedExtractionHints: 'Rates in EUR on /rentals. 2 helmets included.',
+        discoveredSourceUrl: 'https://example.com/rentals/motorcycles',
+      }),
+    });
+
+    const response = await POST(request);
+    expect(response.status).toBe(201);
+    expect(TaskSchedulerService.updateLearnedConfig).toHaveBeenCalledWith(
+      { shopId: 'shop-456' },
+      {
+        extractionHints: 'Rates in EUR on /rentals. 2 helmets included.',
+        discoveredSourceUrl: 'https://example.com/rentals/motorcycles',
+      }
+    );
   });
 });

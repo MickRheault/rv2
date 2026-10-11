@@ -159,6 +159,33 @@ describe('Agent Tasks API Endpoints', () => {
       });
     });
 
+    it('records learned extraction hints and discovered source URL when provided', async () => {
+      const request = new NextRequest('http://localhost:3000/api/agent/tasks/task-123/status', {
+        method: 'POST',
+        headers: {
+          authorization: 'Bearer valid-agent-key-secret',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: 'success',
+          learnedExtractionHints: 'Rates in THB, deposit 2000 cash',
+          discoveredSourceUrl: 'https://shop.com/fleet-rates',
+        }),
+      });
+
+      const response = await POST(request, { params: Promise.resolve({ id: 'task-123' }) });
+      expect(response.status).toBe(200);
+      expect(TaskSchedulerService.updateTaskStatus).toHaveBeenCalledWith(
+        'task-123',
+        'success',
+        undefined,
+        {
+          extractionHints: 'Rates in THB, deposit 2000 cash',
+          discoveredSourceUrl: 'https://shop.com/fleet-rates',
+        }
+      );
+    });
+
     it('rejects invalid status payload with 400', async () => {
       const request = new NextRequest('http://localhost:3000/api/agent/tasks/task-123/status', {
         method: 'POST',

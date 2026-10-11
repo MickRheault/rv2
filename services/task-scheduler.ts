@@ -168,11 +168,16 @@ export class TaskSchedulerService {
 
   /**
    * Updates task status after external agent completes or fails a crawl.
+   * Optionally updates learned extraction hints or discovered source URL.
    */
   static async updateTaskStatus(
     taskId: string,
     status: 'success' | 'failed',
-    errorMessage?: string
+    errorMessage?: string,
+    learnedConfig?: {
+      extractionHints?: string | null;
+      discoveredSourceUrl?: string | null;
+    }
   ) {
     const supabase = getSupabaseAdmin();
 
@@ -187,7 +192,7 @@ export class TaskSchedulerService {
     }
 
     const nowIso = new Date().toISOString();
-    const updatePayload =
+    const updatePayload: Record<string, any> =
       status === 'success'
         ? {
             last_run_at: nowIso,
@@ -199,6 +204,22 @@ export class TaskSchedulerService {
             last_error: errorMessage || 'Crawl failed',
             consecutive_errors: (current.consecutive_errors || 0) + 1,
           };
+
+    if (
+      learnedConfig?.extractionHints !== undefined &&
+      learnedConfig.extractionHints !== null &&
+      learnedConfig.extractionHints.trim() !== ''
+    ) {
+      updatePayload.extraction_hints = learnedConfig.extractionHints.trim();
+    }
+
+    if (
+      learnedConfig?.discoveredSourceUrl !== undefined &&
+      learnedConfig.discoveredSourceUrl !== null &&
+      learnedConfig.discoveredSourceUrl.trim() !== ''
+    ) {
+      updatePayload.source_url = learnedConfig.discoveredSourceUrl.trim();
+    }
 
     const { data: updated, error: updateError } = await supabase
       .from('shop_agent_configs')
@@ -212,6 +233,56 @@ export class TaskSchedulerService {
     }
 
     return updated;
+  }
+
+  /**
+   * Updates learned extraction hints or discovered source URL for a shop.
+   */
+  static async updateLearnedConfig(
+    identifier: { taskId?: string; shopId?: string },
+    updates: {
+      extractionHints?: string | null;
+      discoveredSourceUrl?: string | null;
+    }
+  ) {
+    const supabase = getSupabaseAdmin();
+    const updatePayload: Record<string, any> = {};
+
+    if (
+      updates.extractionHints !== undefined &&
+      updates.extractionHints !== null &&
+      updates.extractionHints.trim() !== ''
+    ) {
+      updatePayload.extraction_hints = updates.extractionHints.trim();
+    }
+
+    if (
+      updates.discoveredSourceUrl !== undefined &&
+      updates.discoveredSourceUrl !== null &&
+      updates.discoveredSourceUrl.trim() !== ''
+    ) {
+      updatePayload.source_url = updates.discoveredSourceUrl.trim();
+    }
+
+    if (Object.keys(updatePayload).length === 0) {
+      return null;
+    }
+
+    let query = supabase.from('shop_agent_configs').update(updatePayload);
+    if (identifier.taskId) {
+      query = (query as any).eq('id', identifier.taskId);
+    } else if (identifier.shopId) {
+      query = (query as any).eq('shop_id', identifier.shopId);
+    } else {
+      return null;
+    }
+
+    const { data, error } = await (query as any).select().maybeSingle();
+    if (error) {
+      console.error('Failed to update learned config:', error);
+      throw new Error(`Failed to update learned config: ${error.message}`);
+    }
+    return data;
   }
 
   /**
