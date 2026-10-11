@@ -212,3 +212,73 @@ it('provides accessible labels for input and live region for message history', (
     expect(screen.getByLabelText('Ask about motorcycles, shops, or locations...')).toBeInTheDocument();
 });
 
+it('renders an accessible sidebar toggle button and toggles 260px panel', () => {
+    delete process.env.AI_CHAT_ACCESS_SECRET;
+    render(<ChatPage />);
+    const toggleButton = screen.getByRole('button', { name: /toggle sidebar/i });
+    expect(toggleButton).toHaveAttribute('aria-expanded', 'false');
+    expect(toggleButton).toHaveAttribute('aria-controls', 'chat-sidebar');
+
+    const sidebar = screen.getByLabelText(/Rental Resources and Quick Links/i);
+    expect(sidebar).toHaveClass('-translate-x-full', 'md:w-0');
+
+    fireEvent.click(toggleButton);
+    expect(toggleButton).toHaveAttribute('aria-expanded', 'true');
+    expect(sidebar).toHaveClass('translate-x-0', 'md:w-[260px]');
+});
+
+it('renders mobile slide-over backdrop and closes sidebar on backdrop click or close button', () => {
+    delete process.env.AI_CHAT_ACCESS_SECRET;
+    render(<ChatPage />);
+    const toggleButton = screen.getByRole('button', { name: /toggle sidebar/i });
+    
+    // Open sidebar
+    fireEvent.click(toggleButton);
+    const backdrop = screen.getByTestId('sidebar-backdrop');
+    expect(backdrop).toBeInTheDocument();
+
+    // Click backdrop to close
+    fireEvent.click(backdrop);
+    expect(screen.queryByTestId('sidebar-backdrop')).not.toBeInTheDocument();
+
+    // Re-open and close with close button
+    fireEvent.click(toggleButton);
+    const closeBtn = screen.getByRole('button', { name: /close sidebar/i });
+    fireEvent.click(closeBtn);
+    expect(screen.queryByTestId('sidebar-backdrop')).not.toBeInTheDocument();
+});
+
+it('renders direct search navigation links to Bangkok, Phuket, Chiang Mai, and Bali', () => {
+    delete process.env.AI_CHAT_ACCESS_SECRET;
+    render(<ChatPage />);
+    fireEvent.click(screen.getByRole('button', { name: /toggle sidebar/i }));
+
+    expect(screen.getByRole('link', { name: /Bangkok/i })).toHaveAttribute('href', '/thailand/bangkok');
+    expect(screen.getByRole('link', { name: /Phuket/i })).toHaveAttribute('href', '/thailand/phuket');
+    expect(screen.getByRole('link', { name: /Chiang Mai/i })).toHaveAttribute('href', '/thailand/chiang-mai');
+    expect(screen.getByRole('link', { name: /Bali/i })).toHaveAttribute('href', '/indonesia/bali');
+});
+
+it('renders essential riding guides, license requirements, and safety links', () => {
+    delete process.env.AI_CHAT_ACCESS_SECRET;
+    render(<ChatPage />);
+    fireEvent.click(screen.getByRole('button', { name: /toggle sidebar/i }));
+
+    expect(screen.getByText(/IDP & License Requirements/i)).toBeInTheDocument();
+    expect(screen.getByText(/Helmet Laws & Safety/i)).toBeInTheDocument();
+    expect(screen.getByText(/Insurance & Damage Coverage/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Full Safety Tips/i })).toHaveAttribute('href', '/safety');
+});
+
+it('updates chat input text when clicking a prompt starter chip in the sidebar', () => {
+    delete process.env.AI_CHAT_ACCESS_SECRET;
+    render(<ChatPage />);
+    fireEvent.click(screen.getByRole('button', { name: /toggle sidebar/i }));
+
+    const starterChip = screen.getByRole('button', { name: /Scooters under \$15\/day in Bangkok/i });
+    fireEvent.click(starterChip);
+
+    const textarea = screen.getByPlaceholderText('Ask about motorcycles, shops, or locations...');
+    expect(textarea).toHaveValue('Scooters under $15/day in Bangkok');
+});
+
