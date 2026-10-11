@@ -10,6 +10,66 @@ import MotorcycleTable from '@/components/motorcycle/MotorcycleTable'
 import { LocationAutocomplete } from '@/components/search'
 import { Button } from '@/components/ui'
 
+type SortByType = NonNullable<LocationBasedSearchFilters['sortBy']>
+
+const SORT_OPTIONS: { value: SortByType; label: string }[] = [
+  { value: 'newest', label: 'Newest First' },
+  { value: 'price_asc', label: 'Price: Low to High' },
+  { value: 'price_desc', label: 'Price: High to Low' },
+  { value: 'rating_desc', label: 'Highest Rated' },
+]
+
+function FilterSkeleton() {
+  return (
+    <div
+      data-testid="search-filters-skeleton"
+      className="h-10 bg-gray-100 rounded animate-pulse"
+    />
+  )
+}
+
+interface RangeFilterInputProps {
+  label: string
+  minPlaceholder?: string
+  maxPlaceholder?: string
+  minValue?: number
+  maxValue?: number
+  onMinChange: (val: number | undefined) => void
+  onMaxChange: (val: number | undefined) => void
+}
+
+function RangeFilterInput({
+  label,
+  minPlaceholder = 'Min',
+  maxPlaceholder = 'Max',
+  minValue,
+  maxValue,
+  onMinChange,
+  onMaxChange,
+}: RangeFilterInputProps) {
+  return (
+    <div>
+      <label className="block text-xs font-medium mb-1 text-gray-500">{label}</label>
+      <div className="flex gap-2">
+        <input
+          type="number"
+          placeholder={minPlaceholder}
+          className="w-full p-2 text-sm border rounded"
+          value={minValue ?? ''}
+          onChange={(e) => onMinChange(e.target.value ? Number(e.target.value) : undefined)}
+        />
+        <input
+          type="number"
+          placeholder={maxPlaceholder}
+          className="w-full p-2 text-sm border rounded"
+          value={maxValue ?? ''}
+          onChange={(e) => onMaxChange(e.target.value ? Number(e.target.value) : undefined)}
+        />
+      </div>
+    </div>
+  )
+}
+
 export default function SearchPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -74,7 +134,7 @@ export default function SearchPageContent() {
       if (brand) initialFilters.brandId = brand
       if (category) initialFilters.categoryId = category
       if (model) initialFilters.model = model
-      if (sortBy) initialFilters.sortBy = sortBy as any
+      if (sortBy) initialFilters.sortBy = sortBy as SortByType
       if (minPrice) initialFilters.minPrice = Number(minPrice)
       if (maxPrice) initialFilters.maxPrice = Number(maxPrice)
       if (minEngineCapacity) initialFilters.minEngineCapacity = Number(minEngineCapacity)
@@ -87,7 +147,12 @@ export default function SearchPageContent() {
       }
 
       locationSearch.setFilters(initialFilters)
-      if (q || location || countryCode || cityId || provinceId || brand || category || model) {
+      const hasAnyFilter = Boolean(
+        q || location || countryCode || cityId || provinceId ||
+        brand || category || model || minPrice || maxPrice ||
+        minEngineCapacity || maxEngineCapacity || sortBy
+      )
+      if (hasAnyFilter) {
         locationSearch.search()
       }
       setIsInitialized(true)
@@ -134,7 +199,8 @@ export default function SearchPageContent() {
       cityId: undefined,
       provinceId: undefined,
       countryCode: undefined,
-      locationQuery: undefined
+      locationQuery: undefined,
+      query: undefined
     })
   }, [locationSearch])
 
@@ -143,6 +209,7 @@ export default function SearchPageContent() {
     if (location) {
       setLocationInput(location.name)
       locationSearch.selectLocation(location)
+      locationSearch.setFilters({ query: undefined })
     } else {
       clearLocationFilter()
     }
@@ -152,11 +219,8 @@ export default function SearchPageContent() {
   const handleLocationSubmit = useCallback((query: string) => {
     const trimmed = query.trim()
     if (!trimmed) {
-      if (!locationSearch.filters.cityId && !locationSearch.filters.provinceId && !locationSearch.filters.countryCode) {
-        clearLocationFilter()
-      } else {
-        locationSearch.search()
-      }
+      clearLocationFilter()
+      locationSearch.search()
       return
     }
 
@@ -165,13 +229,15 @@ export default function SearchPageContent() {
       Boolean(locationSearch.filters.cityId || locationSearch.filters.provinceId || locationSearch.filters.countryCode)
 
     if (hasMatchingLocation) {
+      locationSearch.setFilters({ query: undefined })
       locationSearch.search()
     } else {
       locationSearch.setFilters({
         locationQuery: trimmed,
         cityId: undefined,
         provinceId: undefined,
-        countryCode: undefined
+        countryCode: undefined,
+        query: undefined
       })
       locationSearch.search()
     }
@@ -189,7 +255,10 @@ export default function SearchPageContent() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">Find Your Ride</h1>
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">Find Your Ride</h1>
+          <p className="text-gray-600 mt-1">Discover available motorcycles for rent</p>
+        </div>
 
         {/* Top Search Controls Bar */}
         <div className="bg-white border rounded-lg p-6 mb-8 shadow-sm">
@@ -249,7 +318,7 @@ export default function SearchPageContent() {
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-700">Brand</label>
               {loadingFilterOptions && !filterOptions ? (
-                <div data-testid="search-filters-skeleton" className="h-10 bg-gray-100 rounded animate-pulse" />
+                <FilterSkeleton />
               ) : (
                 <select
                   value={locationSearch.filters.brandId || ''}
@@ -272,7 +341,7 @@ export default function SearchPageContent() {
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-700">Category</label>
               {loadingFilterOptions && !filterOptions ? (
-                <div className="h-10 bg-gray-100 rounded animate-pulse" />
+                <FilterSkeleton />
               ) : (
                 <select
                   value={locationSearch.filters.categoryId || ''}
@@ -295,7 +364,7 @@ export default function SearchPageContent() {
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-700">Model</label>
               {loadingFilterOptions && !filterOptions ? (
-                <div className="h-10 bg-gray-100 rounded animate-pulse" />
+                <FilterSkeleton />
               ) : (
                 <select
                   value={locationSearch.filters.model || ''}
@@ -311,7 +380,6 @@ export default function SearchPageContent() {
                       )
                       return selectedBrand?.name === m.brandName
                     })
-                    .slice(0, 50)
                     .map((m, i) => (
                       <option key={`${m.model}-${i}`} value={m.model}>
                         {m.model} ({m.count})
@@ -326,74 +394,35 @@ export default function SearchPageContent() {
               <label className="block text-sm font-medium mb-1 text-gray-700">Sort By</label>
               <select
                 value={locationSearch.filters.sortBy || 'newest'}
-                onChange={(e) => locationSearch.setFilters({ sortBy: e.target.value as any })}
+                onChange={(e) => locationSearch.setFilters({ sortBy: e.target.value as SortByType })}
                 className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
               >
-                <option value="newest">Newest First</option>
-                <option value="price_asc">Price: Low to High</option>
-                <option value="price_desc">Price: High to Low</option>
-                <option value="rating_desc">Highest Rated</option>
+                {SORT_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
 
           {/* ROW 3: Secondary Filters */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pb-2 border-t pt-4 border-gray-100">
-            <div>
-              <label className="block text-xs font-medium mb-1 text-gray-500">Price Range (Daily)</label>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  placeholder="Min"
-                  className="w-full p-2 text-sm border rounded"
-                  value={locationSearch.filters.minPrice || ''}
-                  onChange={(e) =>
-                    locationSearch.setFilters({
-                      minPrice: e.target.value ? Number(e.target.value) : undefined
-                    })
-                  }
-                />
-                <input
-                  type="number"
-                  placeholder="Max"
-                  className="w-full p-2 text-sm border rounded"
-                  value={locationSearch.filters.maxPrice || ''}
-                  onChange={(e) =>
-                    locationSearch.setFilters({
-                      maxPrice: e.target.value ? Number(e.target.value) : undefined
-                    })
-                  }
-                />
-              </div>
-            </div>
+            <RangeFilterInput
+              label="Price Range (Daily)"
+              minValue={locationSearch.filters.minPrice}
+              maxValue={locationSearch.filters.maxPrice}
+              onMinChange={(val) => locationSearch.setFilters({ minPrice: val })}
+              onMaxChange={(val) => locationSearch.setFilters({ maxPrice: val })}
+            />
 
-            <div>
-              <label className="block text-xs font-medium mb-1 text-gray-500">Engine (CC)</label>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  placeholder="Min"
-                  className="w-full p-2 text-sm border rounded"
-                  value={locationSearch.filters.minEngineCapacity || ''}
-                  onChange={(e) =>
-                    locationSearch.setFilters({
-                      minEngineCapacity: e.target.value ? Number(e.target.value) : undefined
-                    })
-                  }
-                />
-                <input
-                  type="number"
-                  placeholder="Max"
-                  className="w-full p-2 text-sm border rounded"
-                  value={locationSearch.filters.maxEngineCapacity || ''}
-                  onChange={(e) =>
-                    locationSearch.setFilters({
-                      maxEngineCapacity: e.target.value ? Number(e.target.value) : undefined
-                    })
-                  }
-                />
-              </div>
-            </div>
+            <RangeFilterInput
+              label="Engine (CC)"
+              minValue={locationSearch.filters.minEngineCapacity}
+              maxValue={locationSearch.filters.maxEngineCapacity}
+              onMinChange={(val) => locationSearch.setFilters({ minEngineCapacity: val })}
+              onMaxChange={(val) => locationSearch.setFilters({ maxEngineCapacity: val })}
+            />
           </div>
         </div>
 
@@ -405,42 +434,38 @@ export default function SearchPageContent() {
             </div>
           )}
 
-          {!locationSearch.hasSearched ? (
+          {locationSearch.isLoading ? (
+            <div className="flex justify-center py-20">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+          ) : !locationSearch.hasSearched ? (
             <div className="text-center py-20 bg-white rounded-lg border-2 border-dashed border-gray-200">
               <h3 className="text-xl font-medium text-gray-500">Enter your search criteria to find motorcycles</h3>
               <p className="text-gray-400 mt-2">Select a location or use filters to get started</p>
             </div>
-          ) : (
-            <>
-              {locationSearch.results ? (
-                <div className="bg-white rounded-lg p-6 shadow-sm border">
-                  <div className="mb-4 flex justify-between items-center">
-                    <h2 className="text-xl font-semibold">
-                      Found {locationSearch.results.motorcycles.total} Motorcycles
-                    </h2>
-                    {locationSearch.filters.locationQuery && (
-                      <span className="text-sm text-gray-500">
-                        in {locationSearch.filters.locationQuery}
-                      </span>
-                    )}
-                  </div>
+          ) : locationSearch.results && locationSearch.results.motorcycles.total > 0 ? (
+            <div className="bg-white rounded-lg p-6 shadow-sm border">
+              <div className="mb-4 flex justify-between items-center">
+                <h2 className="text-xl font-semibold">
+                  Found {locationSearch.results.motorcycles.total} Motorcycles
+                </h2>
+                {locationSearch.filters.locationQuery && (
+                  <span className="text-sm text-gray-500">
+                    in {locationSearch.filters.locationQuery}
+                  </span>
+                )}
+              </div>
 
-                  <MotorcycleTable
-                    motorcycles={locationSearch.results.motorcycles.motorcycles}
-                    showShopColumn={true}
-                  />
-                </div>
-              ) : locationSearch.isLoading ? (
-                <div className="flex justify-center py-20">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                </div>
-              ) : (
-                <div className="text-center py-20 bg-white rounded-lg border">
-                  <h3 className="text-lg text-gray-500">No results found.</h3>
-                  <p className="text-gray-400 mt-2">Try adjusting your filters</p>
-                </div>
-              )}
-            </>
+              <MotorcycleTable
+                motorcycles={locationSearch.results.motorcycles.motorcycles}
+                showShopColumn={true}
+              />
+            </div>
+          ) : (
+            <div className="text-center py-20 bg-white rounded-lg border">
+              <h3 className="text-lg text-gray-500">No results found.</h3>
+              <p className="text-gray-400 mt-2">Try adjusting your filters</p>
+            </div>
           )}
         </div>
       </div>

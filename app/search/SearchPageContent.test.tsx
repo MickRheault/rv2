@@ -71,17 +71,20 @@ const mockSearch = jest.fn()
 const mockClearSearch = jest.fn()
 
 let mockCurrentFilters: any = {}
+let mockResults: any = {
+  totalResults: 1,
+  motorcycles: { total: 1, motorcycles: [{ id: 'm-1', model: 'PCX 160' }] },
+  shops: { total: 1, shops: [] },
+}
+let mockIsLoading = false
+let mockHasSearched = true
 
 jest.mock('@/hooks/useLocationSearch', () => ({
   useLocationSearch: (config: any) => ({
     filters: mockCurrentFilters,
-    results: {
-      totalResults: 1,
-      motorcycles: { total: 1, motorcycles: [{ id: 'm-1', model: 'PCX 160' }] },
-      shops: { total: 1, shops: [] },
-    },
-    isLoading: false,
-    hasSearched: true,
+    results: mockResults,
+    isLoading: mockIsLoading,
+    hasSearched: mockHasSearched,
     query: '',
     setQuery: mockSetQuery,
     setFilters: mockSetFilters,
@@ -111,10 +114,24 @@ describe('SearchPageContent Top-Aligned Layout', () => {
     jest.clearAllMocks()
     mockSearchParams = new URLSearchParams()
     mockCurrentFilters = {}
+    mockResults = {
+      totalResults: 1,
+      motorcycles: { total: 1, motorcycles: [{ id: 'm-1', model: 'PCX 160' }] },
+      shops: { total: 1, shops: [] },
+    }
+    mockIsLoading = false
+    mockHasSearched = true
   })
 
-  it('initializes filters from URL search params (including countryCode and cityId)', () => {
-    mockSearchParams = new URLSearchParams('countryCode=TH&cityId=city-123&brand=brand-honda&q=scooter')
+  it('renders title and subtitle', () => {
+    renderWithClient(<SearchPageContent />)
+
+    expect(screen.getByRole('heading', { name: 'Find Your Ride' })).toBeInTheDocument()
+    expect(screen.getByText('Discover available motorcycles for rent')).toBeInTheDocument()
+  })
+
+  it('initializes filters and triggers search from URL search params (including secondary filters)', () => {
+    mockSearchParams = new URLSearchParams('countryCode=TH&cityId=city-123&brand=brand-honda&minPrice=50')
 
     renderWithClient(<SearchPageContent />)
 
@@ -123,9 +140,10 @@ describe('SearchPageContent Top-Aligned Layout', () => {
         countryCode: 'TH',
         cityId: 'city-123',
         brandId: 'brand-honda',
-        query: 'scooter',
+        minPrice: 50,
       })
     )
+    expect(mockSearch).toHaveBeenCalled()
   })
 
   it('renders top controls: location autocomplete, brand, category, model, sort, and motorcycle table', async () => {
@@ -137,6 +155,8 @@ describe('SearchPageContent Top-Aligned Layout', () => {
     expect(screen.getByText('Category')).toBeInTheDocument()
     expect(screen.getByText('Model')).toBeInTheDocument()
     expect(screen.getByText('Sort By')).toBeInTheDocument()
+    expect(screen.getByText('Price Range (Daily)')).toBeInTheDocument()
+    expect(screen.getByText('Engine (CC)')).toBeInTheDocument()
     expect(screen.getByTestId('mock-motorcycle-table')).toBeInTheDocument()
   })
 
@@ -162,6 +182,35 @@ describe('SearchPageContent Top-Aligned Layout', () => {
 
     expect(mockSetFilters).toHaveBeenCalledWith(expect.objectContaining({ locationQuery: 'Bangkok' }))
     expect(mockSearch).toHaveBeenCalled()
+  })
+
+  it('executes search and clears location when clicking Search button with empty location input', () => {
+    renderWithClient(<SearchPageContent />)
+
+    const searchButton = screen.getByRole('button', { name: /^search$/i })
+    fireEvent.click(searchButton)
+
+    expect(mockSetFilters).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cityId: undefined,
+        locationQuery: undefined,
+      })
+    )
+    expect(mockSearch).toHaveBeenCalled()
+  })
+
+  it('renders dedicated no results found state when total motorcycles is 0', () => {
+    mockResults = {
+      totalResults: 0,
+      motorcycles: { total: 0, motorcycles: [] },
+      shops: { total: 0, shops: [] },
+    }
+
+    renderWithClient(<SearchPageContent />)
+
+    expect(screen.getByText('No results found.')).toBeInTheDocument()
+    expect(screen.getByText('Try adjusting your filters')).toBeInTheDocument()
+    expect(screen.queryByTestId('mock-motorcycle-table')).not.toBeInTheDocument()
   })
 
   it('clears all filters and input when Clear button is clicked', () => {
