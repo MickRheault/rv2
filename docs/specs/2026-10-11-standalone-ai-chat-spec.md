@@ -48,3 +48,12 @@ Transform `/ai-chat` into a dedicated, standalone conversational application tha
 - Multi-conversation persistent history stored in user accounts (deferred to future authenticated user dashboard).
 - Voice audio input / speech-to-text (deferred to Phase 3).
 - Direct in-chat booking checkout gateway (chat redirects to shop/motorcycle detail pages for booking).
+
+## Further Notes
+
+- Once published, this specification is decomposed into tracer-bullet vertical slice tickets using the `to-tickets` skill.
+
+## Implementation Tickets
+
+- [ ] [#90: feat: standalone full-viewport layout and minimal app bar](https://github.com/MickRheault/rv2/issues/90)
+- [ ] [#91: feat: collapsible resource sidebar with quick city links](https://github.com/MickRheault/rv2/issues/91)
