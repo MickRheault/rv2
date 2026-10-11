@@ -128,3 +128,45 @@ it('shows a useful error when the chat server returns an empty response', async 
     fireEvent.submit(container.querySelector('form')!);
     expect(await screen.findByText('Error: The chat request timed out. Please try again.')).toBeInTheDocument();
 });
+
+it('renders the minimal top navigation bar with back link, logo, Beta badge, and New Chat button', () => {
+    delete process.env.AI_CHAT_ACCESS_SECRET;
+    render(<ChatPage />);
+    expect(screen.getByRole('link', { name: /Back to Fleet/i })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('button', { name: /New Chat/i })).toBeInTheDocument();
+    expect(screen.getByText('Beta')).toBeInTheDocument();
+    expect(screen.getByAltText('Global Moto Rentals Logo')).toBeInTheDocument();
+});
+
+it('resets conversation and restores prompt suggestions when New Chat is clicked', async () => {
+    delete process.env.AI_CHAT_ACCESS_SECRET;
+    const { container } = render(<ChatPage />);
+    fireEvent.change(screen.getByPlaceholderText('Ask about motorcycles, shops, or locations...'), {
+        target: { value: 'Find scooters in Bangkok' },
+    });
+    fireEvent.submit(container.querySelector('form')!);
+    expect(await screen.findByText('Here are some scooters.')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /New Chat/i }));
+
+    expect(screen.queryByText('Here are some scooters.')).not.toBeInTheDocument();
+    expect(screen.getByText(/Find scooters in Bangkok/)).toBeInTheDocument();
+});
+
+it('submits on Enter keypress and allows newline on Shift+Enter', async () => {
+    delete process.env.AI_CHAT_ACCESS_SECRET;
+    render(<ChatPage />);
+    const textarea = screen.getByPlaceholderText('Ask about motorcycles, shops, or locations...');
+    
+    // Shift+Enter does not submit
+    fireEvent.change(textarea, { target: { value: 'First line' } });
+    fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: true });
+    expect(fetch).not.toHaveBeenCalled();
+
+    // Enter without Shift submits
+    fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false });
+    await waitFor(() => expect(fetch).toHaveBeenCalledWith('/api/chat', expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ message: 'First line' }),
+    })));
+});
