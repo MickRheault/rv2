@@ -2,15 +2,13 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useQuery } from '@tanstack/react-query'
 import { useLocationSearch } from '@/hooks/useLocationSearch'
 import { LocationSearchResult, LocationBasedSearchFilters } from '@/services/search'
+import { motorcycleService } from '@/services/motorcycles'
+import MotorcycleTable from '@/components/motorcycle/MotorcycleTable'
+import { LocationAutocomplete } from '@/components/search'
 import { Button } from '@/components/ui'
-import {
-  SearchFilters,
-  SearchResults,
-  LocationAutocomplete,
-  MobileFilterToggle
-} from '@/components/search'
 
 export default function SearchPageContent() {
   const router = useRouter()
@@ -26,6 +24,28 @@ export default function SearchPageContent() {
     defaultFilters: {
       limit: 20
     }
+  })
+
+  // Load filter options based on active location filter with React Query caching
+  const {
+    data: filterOptions,
+    isLoading: loadingFilterOptions,
+    isError: errorFilterOptions,
+    refetch: refetchFilterOptions
+  } = useQuery({
+    queryKey: [
+      'filter-options',
+      locationSearch.filters.cityId,
+      locationSearch.filters.provinceId,
+      locationSearch.filters.countryCode
+    ],
+    queryFn: () =>
+      motorcycleService.getFilterOptions({
+        cityId: locationSearch.filters.cityId,
+        provinceId: locationSearch.filters.provinceId,
+        countryCode: locationSearch.filters.countryCode
+      }),
+    staleTime: 5 * 60 * 1000
   })
 
   // Initialize from URL search parameters
@@ -161,11 +181,7 @@ export default function SearchPageContent() {
     handleLocationSubmit(locationInput)
   }, [handleLocationSubmit, locationInput])
 
-  const handleFiltersChange = useCallback((updatedFilters: Partial<LocationBasedSearchFilters>) => {
-    locationSearch.setFilters(updatedFilters)
-  }, [locationSearch])
-
-  const handleClearFilters = useCallback(() => {
+  const handleClearAll = useCallback(() => {
     setLocationInput('')
     locationSearch.clearSearch()
   }, [locationSearch])
@@ -173,27 +189,14 @@ export default function SearchPageContent() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Find Your Ride</h1>
-            <p className="text-gray-600 mt-1">Discover available motorcycles for rent</p>
-          </div>
+        <h1 className="text-3xl font-bold text-gray-900 mb-6">Find Your Ride</h1>
 
-          {/* Mobile Filter Toggle */}
-          <MobileFilterToggle
-            filters={locationSearch.filters}
-            onFiltersChange={handleFiltersChange}
-            onClearFilters={handleClearFilters}
-            isLoading={locationSearch.isLoading}
-            resultCount={locationSearch.results?.totalResults}
-          />
-        </div>
-
-        {/* Top Search Bar */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-8">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1">
+        {/* Top Search Controls Bar */}
+        <div className="bg-white border rounded-lg p-6 mb-8 shadow-sm">
+          {/* ROW 1: Location & Search Button */}
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="flex-grow relative z-20">
+              <label className="block text-sm font-medium mb-1 text-gray-700">Location</label>
               <LocationAutocomplete
                 value={locationInput}
                 onLocationSelect={handleLocationSelect}
@@ -203,40 +206,242 @@ export default function SearchPageContent() {
                 className="w-full"
               />
             </div>
-            <Button
-              onClick={handleManualSearch}
-              loading={locationSearch.isLoading}
-              className="sm:w-auto px-6 py-2.5 font-medium"
-            >
-              Search
-            </Button>
-          </div>
-        </div>
 
-        {/* Main Content Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Desktop Sidebar Filters */}
-          <div className="hidden lg:block lg:col-span-1">
-            <div className="sticky top-6">
-              <SearchFilters
-                filters={locationSearch.filters}
-                onFiltersChange={handleFiltersChange}
-                onClearFilters={handleClearFilters}
-                isLoading={locationSearch.isLoading}
-                resultCount={locationSearch.results?.totalResults}
-              />
+            <div className="flex items-end gap-2">
+              <Button
+                onClick={handleManualSearch}
+                loading={locationSearch.isLoading}
+                className="bg-blue-600 text-white hover:bg-blue-700 h-[50px] px-8"
+              >
+                {locationSearch.isLoading ? 'Searching...' : 'Search'}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleClearAll}
+                className="h-[50px]"
+              >
+                Clear
+              </Button>
             </div>
           </div>
 
-          {/* Search Results */}
-          <div className="lg:col-span-3">
-            <SearchResults
-              results={locationSearch.results}
-              filters={locationSearch.filters}
-              onFiltersChange={handleFiltersChange}
-              isLoading={locationSearch.isLoading}
-            />
+          {/* Filter Options Error Recovery */}
+          {errorFilterOptions && (
+            <div
+              data-testid="search-filters-error"
+              className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-center justify-between text-sm text-red-700"
+            >
+              <span>Failed to load filter options.</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetchFilterOptions()}
+                className="text-xs"
+              >
+                Retry
+              </Button>
+            </div>
+          )}
+
+          {/* ROW 2: Primary Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            {/* Brand Filter */}
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Brand</label>
+              {loadingFilterOptions && !filterOptions ? (
+                <div data-testid="search-filters-skeleton" className="h-10 bg-gray-100 rounded animate-pulse" />
+              ) : (
+                <select
+                  value={locationSearch.filters.brandId || ''}
+                  onChange={(e) =>
+                    locationSearch.setFilters({ brandId: e.target.value || undefined, model: undefined })
+                  }
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">All Brands</option>
+                  {filterOptions?.brands.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name} ({b.count})
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            {/* Category Filter */}
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Category</label>
+              {loadingFilterOptions && !filterOptions ? (
+                <div className="h-10 bg-gray-100 rounded animate-pulse" />
+              ) : (
+                <select
+                  value={locationSearch.filters.categoryId || ''}
+                  onChange={(e) =>
+                    locationSearch.setFilters({ categoryId: e.target.value || undefined })
+                  }
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">All Categories</option>
+                  {filterOptions?.categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} ({c.count})
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            {/* Model Filter */}
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Model</label>
+              {loadingFilterOptions && !filterOptions ? (
+                <div className="h-10 bg-gray-100 rounded animate-pulse" />
+              ) : (
+                <select
+                  value={locationSearch.filters.model || ''}
+                  onChange={(e) => locationSearch.setFilters({ model: e.target.value || undefined })}
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">All Models</option>
+                  {filterOptions?.models
+                    .filter((m) => {
+                      if (!locationSearch.filters.brandId) return true
+                      const selectedBrand = filterOptions?.brands.find(
+                        (b) => b.id === locationSearch.filters.brandId
+                      )
+                      return selectedBrand?.name === m.brandName
+                    })
+                    .slice(0, 50)
+                    .map((m, i) => (
+                      <option key={`${m.model}-${i}`} value={m.model}>
+                        {m.model} ({m.count})
+                      </option>
+                    ))}
+                </select>
+              )}
+            </div>
+
+            {/* Sort By */}
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Sort By</label>
+              <select
+                value={locationSearch.filters.sortBy || 'newest'}
+                onChange={(e) => locationSearch.setFilters({ sortBy: e.target.value as any })}
+                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="newest">Newest First</option>
+                <option value="price_asc">Price: Low to High</option>
+                <option value="price_desc">Price: High to Low</option>
+                <option value="rating_desc">Highest Rated</option>
+              </select>
+            </div>
           </div>
+
+          {/* ROW 3: Secondary Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pb-2 border-t pt-4 border-gray-100">
+            <div>
+              <label className="block text-xs font-medium mb-1 text-gray-500">Price Range (Daily)</label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  placeholder="Min"
+                  className="w-full p-2 text-sm border rounded"
+                  value={locationSearch.filters.minPrice || ''}
+                  onChange={(e) =>
+                    locationSearch.setFilters({
+                      minPrice: e.target.value ? Number(e.target.value) : undefined
+                    })
+                  }
+                />
+                <input
+                  type="number"
+                  placeholder="Max"
+                  className="w-full p-2 text-sm border rounded"
+                  value={locationSearch.filters.maxPrice || ''}
+                  onChange={(e) =>
+                    locationSearch.setFilters({
+                      maxPrice: e.target.value ? Number(e.target.value) : undefined
+                    })
+                  }
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium mb-1 text-gray-500">Engine (CC)</label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  placeholder="Min"
+                  className="w-full p-2 text-sm border rounded"
+                  value={locationSearch.filters.minEngineCapacity || ''}
+                  onChange={(e) =>
+                    locationSearch.setFilters({
+                      minEngineCapacity: e.target.value ? Number(e.target.value) : undefined
+                    })
+                  }
+                />
+                <input
+                  type="number"
+                  placeholder="Max"
+                  className="w-full p-2 text-sm border rounded"
+                  value={locationSearch.filters.maxEngineCapacity || ''}
+                  onChange={(e) =>
+                    locationSearch.setFilters({
+                      maxEngineCapacity: e.target.value ? Number(e.target.value) : undefined
+                    })
+                  }
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Results Section - Full Width Below */}
+        <div className="min-h-[400px]">
+          {locationSearch.error && (
+            <div className="bg-red-50 text-red-600 p-4 rounded mb-6">
+              Error: {locationSearch.error.message}
+            </div>
+          )}
+
+          {!locationSearch.hasSearched ? (
+            <div className="text-center py-20 bg-white rounded-lg border-2 border-dashed border-gray-200">
+              <h3 className="text-xl font-medium text-gray-500">Enter your search criteria to find motorcycles</h3>
+              <p className="text-gray-400 mt-2">Select a location or use filters to get started</p>
+            </div>
+          ) : (
+            <>
+              {locationSearch.results ? (
+                <div className="bg-white rounded-lg p-6 shadow-sm border">
+                  <div className="mb-4 flex justify-between items-center">
+                    <h2 className="text-xl font-semibold">
+                      Found {locationSearch.results.motorcycles.total} Motorcycles
+                    </h2>
+                    {locationSearch.filters.locationQuery && (
+                      <span className="text-sm text-gray-500">
+                        in {locationSearch.filters.locationQuery}
+                      </span>
+                    )}
+                  </div>
+
+                  <MotorcycleTable
+                    motorcycles={locationSearch.results.motorcycles.motorcycles}
+                    showShopColumn={true}
+                  />
+                </div>
+              ) : locationSearch.isLoading ? (
+                <div className="flex justify-center py-20">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                </div>
+              ) : (
+                <div className="text-center py-20 bg-white rounded-lg border">
+                  <h3 className="text-lg text-gray-500">No results found.</h3>
+                  <p className="text-gray-400 mt-2">Try adjusting your filters</p>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import SearchPageContent from './SearchPageContent'
 
 const mockPush = jest.fn()
@@ -13,37 +14,7 @@ jest.mock('next/navigation', () => ({
   useSearchParams: () => mockSearchParams,
 }))
 
-// Mock search components to verify integration
-jest.mock('@/components/search/SearchFilters', () => {
-  return function MockSearchFilters(props: any) {
-    return (
-      <div data-testid="mock-search-filters">
-        <span>Mock Search Filters</span>
-        <button onClick={() => props.onFiltersChange({ brandId: 'brand-honda' })}>Select Honda</button>
-        <button onClick={props.onClearFilters}>Clear In Filters</button>
-      </div>
-    )
-  }
-})
-
-jest.mock('@/components/search/SearchResults', () => {
-  return function MockSearchResults(props: any) {
-    return (
-      <div data-testid="mock-search-results">
-        <span>Mock Search Results</span>
-        <span>Total: {props.results?.totalResults || 0}</span>
-        {props.isLoading && <span>Loading results...</span>}
-      </div>
-    )
-  }
-})
-
-jest.mock('@/components/search/MobileFilterToggle', () => {
-  return function MockMobileFilterToggle(props: any) {
-    return <button data-testid="mock-mobile-filter-toggle">Mobile Filters</button>
-  }
-})
-
+// Mock LocationAutocomplete
 jest.mock('@/components/search/LocationAutocomplete', () => {
   return function MockLocationAutocomplete(props: any) {
     return (
@@ -66,6 +37,33 @@ jest.mock('@/components/search/LocationAutocomplete', () => {
   }
 })
 
+// Mock MotorcycleTable
+jest.mock('@/components/motorcycle/MotorcycleTable', () => {
+  return function MockMotorcycleTable(props: any) {
+    return (
+      <div data-testid="mock-motorcycle-table">
+        <span>Bikes: {props.motorcycles?.length || 0}</span>
+      </div>
+    )
+  }
+})
+
+// Mock motorcycleService
+jest.mock('@/services/motorcycles', () => ({
+  motorcycleService: {
+    getFilterOptions: jest.fn(() =>
+      Promise.resolve({
+        brands: [{ id: 'brand-honda', name: 'Honda', count: 10 }],
+        categories: [{ id: 'cat-scooter', name: 'Scooter', count: 5 }],
+        models: [{ model: 'PCX 160', brandName: 'Honda', count: 4 }],
+        priceRange: { min: 10, max: 100 },
+        engineCapacityRange: { min: 110, max: 1000 },
+        features: [],
+      })
+    ),
+  },
+}))
+
 const mockSetFilters = jest.fn()
 const mockSetQuery = jest.fn()
 const mockSelectLocation = jest.fn()
@@ -77,8 +75,13 @@ let mockCurrentFilters: any = {}
 jest.mock('@/hooks/useLocationSearch', () => ({
   useLocationSearch: (config: any) => ({
     filters: mockCurrentFilters,
-    results: { totalResults: 12, motorcycles: { total: 10, motorcycles: [] }, shops: { total: 2, shops: [] } },
+    results: {
+      totalResults: 1,
+      motorcycles: { total: 1, motorcycles: [{ id: 'm-1', model: 'PCX 160' }] },
+      shops: { total: 1, shops: [] },
+    },
     isLoading: false,
+    hasSearched: true,
     query: '',
     setQuery: mockSetQuery,
     setFilters: mockSetFilters,
@@ -88,7 +91,22 @@ jest.mock('@/hooks/useLocationSearch', () => ({
   }),
 }))
 
-describe('SearchPageContent Integration', () => {
+function renderWithClient(ui: React.ReactElement) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+    },
+  })
+  return render(
+    <QueryClientProvider client={queryClient}>
+      {ui}
+    </QueryClientProvider>
+  )
+}
+
+describe('SearchPageContent Top-Aligned Layout', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockSearchParams = new URLSearchParams()
@@ -96,31 +114,34 @@ describe('SearchPageContent Integration', () => {
   })
 
   it('initializes filters from URL search params (including countryCode and cityId)', () => {
-    mockSearchParams = new URLSearchParams('countryCode=TH&cityId=city-123&brand=b-yamaha&q=scooter')
+    mockSearchParams = new URLSearchParams('countryCode=TH&cityId=city-123&brand=brand-honda&q=scooter')
 
-    render(<SearchPageContent />)
+    renderWithClient(<SearchPageContent />)
 
     expect(mockSetFilters).toHaveBeenCalledWith(
       expect.objectContaining({
         countryCode: 'TH',
         cityId: 'city-123',
-        brandId: 'b-yamaha',
+        brandId: 'brand-honda',
         query: 'scooter',
       })
     )
   })
 
-  it('renders modular components: search filters, results, autocomplete, mobile toggle', () => {
-    render(<SearchPageContent />)
+  it('renders top controls: location autocomplete, brand, category, model, sort, and motorcycle table', async () => {
+    renderWithClient(<SearchPageContent />)
 
     expect(screen.getByTestId('mock-location-autocomplete')).toBeInTheDocument()
-    expect(screen.getByTestId('mock-search-filters')).toBeInTheDocument()
-    expect(screen.getByTestId('mock-search-results')).toBeInTheDocument()
-    expect(screen.getByTestId('mock-mobile-filter-toggle')).toBeInTheDocument()
+    expect(await screen.findByRole('combobox', { name: '' })).toBeInTheDocument()
+    expect(screen.getByText('Brand')).toBeInTheDocument()
+    expect(screen.getByText('Category')).toBeInTheDocument()
+    expect(screen.getByText('Model')).toBeInTheDocument()
+    expect(screen.getByText('Sort By')).toBeInTheDocument()
+    expect(screen.getByTestId('mock-motorcycle-table')).toBeInTheDocument()
   })
 
   it('submits location search when Enter is pressed in LocationAutocomplete', () => {
-    render(<SearchPageContent />)
+    renderWithClient(<SearchPageContent />)
 
     const input = screen.getByTestId('location-input')
     fireEvent.change(input, { target: { value: 'Phuket' } })
@@ -131,7 +152,7 @@ describe('SearchPageContent Integration', () => {
   })
 
   it('submits location search when clicking Search button', () => {
-    render(<SearchPageContent />)
+    renderWithClient(<SearchPageContent />)
 
     const input = screen.getByTestId('location-input')
     fireEvent.change(input, { target: { value: 'Bangkok' } })
@@ -143,19 +164,10 @@ describe('SearchPageContent Integration', () => {
     expect(mockSearch).toHaveBeenCalled()
   })
 
-  it('updates filters when a filter is changed in SearchFilters', () => {
-    render(<SearchPageContent />)
+  it('clears all filters and input when Clear button is clicked', () => {
+    renderWithClient(<SearchPageContent />)
 
-    const selectHondaBtn = screen.getByRole('button', { name: /select honda/i })
-    fireEvent.click(selectHondaBtn)
-
-    expect(mockSetFilters).toHaveBeenCalledWith({ brandId: 'brand-honda' })
-  })
-
-  it('clears filters and input when clear is triggered', () => {
-    render(<SearchPageContent />)
-
-    const clearBtn = screen.getByRole('button', { name: /clear in filters/i })
+    const clearBtn = screen.getByRole('button', { name: /^clear$/i })
     fireEvent.click(clearBtn)
 
     expect(mockClearSearch).toHaveBeenCalled()
