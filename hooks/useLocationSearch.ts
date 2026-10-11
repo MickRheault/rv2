@@ -67,6 +67,21 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
   })
   const [hasSearched, setHasSearched] = useState(false)
 
+  const hasActiveCriteria = Boolean(
+    query.length >= minQueryLength ||
+    filters.locationQuery ||
+    filters.cityId ||
+    filters.provinceId ||
+    filters.countryCode ||
+    filters.brandId ||
+    filters.categoryId ||
+    filters.model ||
+    filters.minPrice !== undefined ||
+    filters.maxPrice !== undefined ||
+    filters.minEngineCapacity !== undefined ||
+    filters.maxEngineCapacity !== undefined
+  )
+
   // Main search query
   const {
     data: results,
@@ -98,7 +113,7 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
         throw error
       }
     },
-    enabled: hasSearched || (enableAutoSearch && (query.length >= minQueryLength || Boolean(filters.cityId) || Boolean(filters.provinceId) || Boolean(filters.countryCode))) // Keep enabled once searched or when auto-search conditions are met
+    enabled: hasSearched || (enableAutoSearch && hasActiveCriteria) // Keep enabled once searched or when auto-search conditions are met
   })
 
   // Location suggestions query (for autocomplete)
@@ -126,7 +141,7 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
     const debouncedFn = () => {
       clearTimeout(timeoutId)
       timeoutId = setTimeout(() => {
-        if (enableAutoSearch && (query.length >= minQueryLength || Boolean(filters.cityId) || Boolean(filters.provinceId) || Boolean(filters.countryCode))) {
+        if (enableAutoSearch && hasActiveCriteria) {
           executeSearch()
           setHasSearched(true)
         }
@@ -136,7 +151,7 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
     debouncedFn.cancel = () => clearTimeout(timeoutId)
     
     return debouncedFn
-  }, [query, filters, enableAutoSearch, minQueryLength, executeSearch, debounceMs])
+  }, [query, filters, enableAutoSearch, minQueryLength, executeSearch, debounceMs, hasActiveCriteria])
 
   // Auto-search when query or filters change
   useEffect(() => {
