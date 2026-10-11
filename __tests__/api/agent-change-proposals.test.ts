@@ -7,10 +7,16 @@ import { POST } from '@/app/api/agent/change-proposals/route';
 import { ChangeProposalService } from '@/services/change-proposals';
 import { ZeroDropSafeguardError } from '@/services/diff-engine';
 
+import { recordCrawlRun } from '@/services/crawl-runs';
+
 jest.mock('@/services/change-proposals', () => ({
   ChangeProposalService: {
     createProposalFromCrawl: jest.fn(),
   },
+}));
+
+jest.mock('@/services/crawl-runs', () => ({
+  recordCrawlRun: jest.fn().mockResolvedValue({ id: 'crawl-run-1' }),
 }));
 
 describe('POST /api/agent/change-proposals', () => {
@@ -104,5 +110,12 @@ describe('POST /api/agent/change-proposals', () => {
     expect(body.success).toBe(true);
     expect(body.proposalId).toBe('prop-123');
     expect(body.summaryCounts).toEqual({ add: 1, update: 0, delist: 0 });
+    expect(recordCrawlRun).toHaveBeenCalledWith({
+      shopId: 'shop-123',
+      status: 'success',
+      proposalId: 'prop-123',
+      agentRunId: null,
+      metadata: { bikesCount: 1 },
+    });
   });
 });

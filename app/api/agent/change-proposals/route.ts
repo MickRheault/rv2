@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { validateAgentApiKey } from '@/lib/auth/agent-auth';
 import { ChangeProposalService } from '@/services/change-proposals';
 import { ZeroDropSafeguardError } from '@/services/diff-engine';
+import { recordCrawlRun } from '@/services/crawl-runs';
 
 /**
  * POST /api/agent/change-proposals
@@ -55,6 +56,18 @@ export async function POST(request: NextRequest) {
       bikes,
       shopUpdates,
     });
+
+    try {
+      await recordCrawlRun({
+        shopId,
+        status: 'success',
+        proposalId: result.proposal.id,
+        agentRunId: agentRunId || null,
+        metadata: { bikesCount: bikes.length },
+      });
+    } catch (auditErr) {
+      console.error('Failed to record success crawl audit log:', auditErr);
+    }
 
     return NextResponse.json(
       {

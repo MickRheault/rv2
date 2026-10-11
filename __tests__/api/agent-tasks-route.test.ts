@@ -14,6 +14,12 @@ jest.mock('@/services/task-scheduler', () => ({
   },
 }));
 
+jest.mock('@/services/crawl-runs', () => ({
+  recordCrawlRun: jest.fn().mockResolvedValue({ id: 'crawl-run-1' }),
+}));
+
+import { recordCrawlRun } from '@/services/crawl-runs';
+
 describe('Agent Tasks API Endpoints', () => {
   const originalEnv = process.env;
 
@@ -94,6 +100,7 @@ describe('Agent Tasks API Endpoints', () => {
     it('records successful crawl and returns 200', async () => {
       (TaskSchedulerService.updateTaskStatus as jest.Mock).mockResolvedValue({
         id: 'task-123',
+        shop_id: 'shop-123',
         last_error: null,
         consecutive_errors: 0,
       });
@@ -112,11 +119,19 @@ describe('Agent Tasks API Endpoints', () => {
       const json = await response.json();
       expect(json.success).toBe(true);
       expect(TaskSchedulerService.updateTaskStatus).toHaveBeenCalledWith('task-123', 'success', undefined);
+      expect(recordCrawlRun).toHaveBeenCalledWith({
+        shopId: 'shop-123',
+        status: 'success',
+        agentRunId: null,
+        errorMessage: null,
+        metadata: {},
+      });
     });
 
     it('records failed crawl with error message and returns 200', async () => {
       (TaskSchedulerService.updateTaskStatus as jest.Mock).mockResolvedValue({
         id: 'task-123',
+        shop_id: 'shop-123',
         last_error: 'Cloudflare block',
         consecutive_errors: 1,
       });
@@ -135,6 +150,13 @@ describe('Agent Tasks API Endpoints', () => {
       const json = await response.json();
       expect(json.success).toBe(true);
       expect(TaskSchedulerService.updateTaskStatus).toHaveBeenCalledWith('task-123', 'failed', 'Cloudflare block');
+      expect(recordCrawlRun).toHaveBeenCalledWith({
+        shopId: 'shop-123',
+        status: 'failed',
+        agentRunId: null,
+        errorMessage: 'Cloudflare block',
+        metadata: {},
+      });
     });
 
     it('rejects invalid status payload with 400', async () => {

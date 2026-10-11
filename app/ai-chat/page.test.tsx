@@ -32,7 +32,7 @@ it.each([undefined, '', '   '])('renders usable public chat without an access co
     else process.env.AI_CHAT_ACCESS_SECRET = secret;
     jest.mocked(useSearchParams).mockReturnValue(new URLSearchParams() as ReturnType<typeof useSearchParams>);
     const { container } = render(<ChatPage />);
-    expect(screen.getByRole('heading', { level: 1, name: 'Motorcycle Rental Assistant' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Motorcycle Rental Assistant (Beta)' })).toBeInTheDocument();
     expect(screen.getByText('Find motorcycles, compare rental shops, and explore rental options.')).toBeInTheDocument();
     expect(screen.queryByText('Access denied')).not.toBeInTheDocument();
     fireEvent.change(screen.getByPlaceholderText('Ask about motorcycles, shops, or locations...'), {
@@ -71,7 +71,7 @@ it('reads the current mode on each server render', () => {
     delete process.env.AI_CHAT_ACCESS_SECRET;
     rerender(<ChatPage />);
     expect(screen.queryByText('Access denied')).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Motorcycle Rental Assistant' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Motorcycle Rental Assistant (Beta)' })).toBeInTheDocument();
 });
 
 it.each([
