@@ -92,7 +92,7 @@ describe('TaskSchedulerService Adaptive Learning', () => {
         source_url: 'https://shop.com/fleet',
       });
       expect(mockSupabase.eq).toHaveBeenCalledWith('shop_id', 'shop-abc');
-      expect(result.extraction_hints).toBe('Deposit 2000 THB cash');
+      expect(result?.extraction_hints).toBe('Deposit 2000 THB cash');
     });
 
     it('returns null when no updates are provided', async () => {
@@ -103,6 +103,55 @@ describe('TaskSchedulerService Adaptive Learning', () => {
 
       expect(result).toBeNull();
       expect(mockSupabase.update).not.toHaveBeenCalled();
+    });
+
+    it('safely handles non-string inputs without throwing TypeError', async () => {
+      const result = await TaskSchedulerService.updateLearnedConfig(
+        { shopId: 'shop-abc' },
+        { extractionHints: 12345 as any, discoveredSourceUrl: { url: 'bad' } as any }
+      );
+
+      expect(result).toBeNull();
+      expect(mockSupabase.update).not.toHaveBeenCalled();
+    });
+
+    it('upserts a new Tier 2 config when no existing config row exists for the shop', async () => {
+      // First update returns null (no existing row)
+      mockSupabase.maybeSingle
+        .mockResolvedValueOnce({ data: null, error: null }) // update query
+        .mockResolvedValueOnce({ data: { website: 'https://shop.com' }, error: null }) // rental_shops query
+        .mockResolvedValueOnce({
+          data: {
+            shop_id: 'shop-new',
+            tier: 2,
+            source_url: 'https://shop.com/rates',
+            extraction_hints: 'Learned hints',
+            is_active: true,
+          },
+          error: null,
+        }); // upsert query
+
+      mockSupabase.upsert = jest.fn().mockReturnThis();
+
+      const result = await TaskSchedulerService.updateLearnedConfig(
+        { shopId: 'shop-new' },
+        {
+          extractionHints: 'Learned hints',
+          discoveredSourceUrl: 'https://shop.com/rates',
+        }
+      );
+
+      expect(mockSupabase.upsert).toHaveBeenCalledWith(
+        {
+          shop_id: 'shop-new',
+          tier: 2,
+          source_url: 'https://shop.com/rates',
+          extraction_hints: 'Learned hints',
+          is_active: true,
+        },
+        { onConflict: 'shop_id' }
+      );
+      expect(result?.tier).toBe(2);
     });
   });
 });

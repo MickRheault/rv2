@@ -40,7 +40,6 @@ export async function POST(
       learnedExtractionHints,
       extractionHints,
       discoveredSourceUrl,
-      targetUrl,
     } = body;
 
     if (status !== 'success' && status !== 'failed') {
@@ -50,8 +49,10 @@ export async function POST(
       );
     }
 
-    const hints = learnedExtractionHints || extractionHints;
-    const discoveredUrl = discoveredSourceUrl || targetUrl;
+    const rawHints = learnedExtractionHints ?? extractionHints;
+    const hints = typeof rawHints === 'string' ? rawHints : undefined;
+    const discoveredUrl = typeof discoveredSourceUrl === 'string' ? discoveredSourceUrl : undefined;
+
     const learnedConfig = (hints || discoveredUrl)
       ? {
           extractionHints: hints,

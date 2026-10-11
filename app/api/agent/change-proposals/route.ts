@@ -80,18 +80,21 @@ export async function POST(request: NextRequest) {
       console.error('Failed to record success crawl audit log:', auditErr);
     }
 
-    const hints = learnedExtractionHints || extractionHints;
-    if (hints || discoveredSourceUrl) {
+    const rawHints = learnedExtractionHints ?? extractionHints;
+    const hints = typeof rawHints === 'string' ? rawHints : undefined;
+    const discoveredUrl = typeof discoveredSourceUrl === 'string' ? discoveredSourceUrl : undefined;
+
+    if (hints || discoveredUrl) {
       try {
         await TaskSchedulerService.updateLearnedConfig(
           { shopId },
           {
             extractionHints: hints,
-            discoveredSourceUrl,
+            discoveredSourceUrl: discoveredUrl,
           }
         );
       } catch (hintsErr) {
-        console.error('Failed to persist learned crawler config for shop:', shopId, hintsErr);
+        console.error('Failed to persist learned agent config for shop:', shopId, hintsErr);
       }
     }
 
