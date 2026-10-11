@@ -4,15 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
-import { 
-    ArrowLeftIcon, 
-    PlusIcon, 
-    Bars3Icon, 
-    XMarkIcon, 
-    MapPinIcon, 
-    ShieldCheckIcon, 
-    SparklesIcon 
-} from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, PlusIcon } from '@heroicons/react/24/outline';
 import ReactMarkdown from 'react-markdown';
 import './markdown.css';
 
@@ -29,38 +21,6 @@ const SUGGESTION_PROMPTS = [
     'Show me shops in Phuket',
 ] as const;
 
-const QUICK_CITY_LINKS = [
-    { city: 'Bangkok', href: '/thailand/bangkok', flag: '🇹🇭' },
-    { city: 'Phuket', href: '/thailand/phuket', flag: '🇹🇭' },
-    { city: 'Chiang Mai', href: '/thailand/chiang-mai', flag: '🇹🇭' },
-    { city: 'Bali', href: '/indonesia/bali', flag: '🇮🇩' },
-] as const;
-
-const RIDING_GUIDES = [
-    {
-        title: 'IDP & License Requirements',
-        summary: '1949 or 1968 International Driving Permit with motorcycle endorsement required.',
-        prompt: 'What license do I need to rent a motorcycle in Thailand and Bali?',
-    },
-    {
-        title: 'Helmet Laws & Safety',
-        summary: 'Helmets mandatory for rider & passenger. Strict traffic police checkpoints.',
-        prompt: 'What are the helmet and traffic enforcement rules for tourists?',
-    },
-    {
-        title: 'Insurance & Damage Coverage',
-        summary: 'Basic insurance included; ask shops about comprehensive CDW coverage.',
-        prompt: 'How does motorcycle rental insurance and damage deposit work?',
-    },
-] as const;
-
-const SIDEBAR_PROMPT_CHIPS = [
-    'Scooters under $15/day in Bangkok',
-    'Best adventure bikes in Chiang Mai',
-    'Automatic scooters in Bali',
-    'Big bikes available in Phuket',
-] as const;
-
 export default function ChatContent({ accessRequired }: { accessRequired: boolean }) {
     const searchParams = useSearchParams();
     const secret = searchParams.get('secret');
@@ -69,11 +29,9 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const formRef = useRef<HTMLFormElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const toggleButtonRef = useRef<HTMLButtonElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -89,18 +47,6 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
             }
         };
     }, []);
-
-    // Close mobile sidebar on Escape key press and restore focus to toggle button
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && isSidebarOpen) {
-                setIsSidebarOpen(false);
-                toggleButtonRef.current?.focus();
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isSidebarOpen]);
 
     // The API validates the supplied access code against a server-only environment variable.
     if (accessRequired && !secret) {
@@ -127,24 +73,13 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
         setIsLoading(false);
     };
 
-    const closeMobileSidebar = () => {
-        if (typeof window !== 'undefined' && window.innerWidth < 768) {
-            setIsSidebarOpen(false);
-        }
-    };
-
-    const handlePromptSelect = (promptText: string) => {
-        setInput(promptText);
+    const handleSuggestionClick = (prompt: string) => {
+        setInput(prompt);
         textareaRef.current?.focus();
-        closeMobileSidebar();
-    };
-
-    const handleNavigationClick = () => {
-        closeMobileSidebar();
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        const isComposing = e.nativeEvent.isComposing;
+        const isComposing = (e.nativeEvent as any)?.isComposing || (e as any).isComposing;
         if (e.key === 'Enter' && !e.shiftKey && !isComposing) {
             e.preventDefault();
             formRef.current?.requestSubmit();
@@ -215,20 +150,8 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
     return (
         <div className="flex flex-col h-full bg-gray-50 overflow-hidden font-sans">
             {/* Minimal App Header */}
-            <header className="h-14 shrink-0 border-b border-gray-200 bg-white px-4 sm:px-6 flex items-center justify-between z-20">
+            <header className="h-14 shrink-0 border-b border-gray-200 bg-white px-4 sm:px-6 flex items-center justify-between z-10">
                 <div className="flex items-center space-x-3">
-                    <button
-                        ref={toggleButtonRef}
-                        type="button"
-                        onClick={() => setIsSidebarOpen(prev => !prev)}
-                        className="p-1.5 -ml-1 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-                        aria-label="Toggle sidebar"
-                        aria-expanded={isSidebarOpen}
-                        aria-controls="chat-sidebar"
-                    >
-                        <Bars3Icon className="w-5 h-5" />
-                    </button>
-
                     <Link href="/" className="flex items-center space-x-2 group" aria-label="Global Moto Rentals Home">
                         <div className="flex items-center justify-center w-8 h-8 group-hover:scale-105 transition-transform">
                             <Image
@@ -269,144 +192,15 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
                 </div>
             </header>
 
-            {/* Body: Sidebar + Message Canvas */}
-            <div className="flex-1 flex min-h-0 overflow-hidden relative">
-                {/* Mobile Slide-Over Backdrop */}
-                {isSidebarOpen && (
-                    <div
-                        className="fixed inset-0 bg-black/40 z-30 md:hidden transition-opacity"
-                        onClick={() => {
-                            setIsSidebarOpen(false);
-                            toggleButtonRef.current?.focus();
-                        }}
-                        aria-hidden="true"
-                        data-testid="sidebar-backdrop"
-                    />
-                )}
-
-                {/* Collapsible Resource Sidebar */}
-                <aside
-                    id="chat-sidebar"
-                    aria-label="Rental Resources and Quick Links"
-                    inert={!isSidebarOpen}
-                    className={`
-                        fixed inset-y-0 left-0 z-40 md:static md:z-auto
-                        w-[260px] shrink-0 bg-white border-r border-gray-200
-                        flex flex-col h-full transition-all duration-300 ease-in-out shadow-lg md:shadow-none
-                        ${isSidebarOpen 
-                            ? 'flex translate-x-0 md:w-[260px] md:opacity-100' 
-                            : 'hidden md:flex -translate-x-full md:w-0 md:opacity-0 md:overflow-hidden md:border-r-0'
-                        }
-                    `}
+            {/* Main Chat Experience */}
+            <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                {/* Centered Message Canvas */}
+                <div 
+                    className="flex-1 overflow-y-auto px-4 py-6"
+                    role="log"
+                    aria-live="polite"
+                    aria-label="Conversation history"
                 >
-                    {/* Sidebar Header / Mobile Close */}
-                    <div className="h-14 shrink-0 px-4 border-b border-gray-100 flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-                            <SparklesIcon className="w-4 h-4 text-blue-600" />
-                            <span>Rental Resources</span>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setIsSidebarOpen(false);
-                                toggleButtonRef.current?.focus();
-                            }}
-                            className="p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg md:hidden cursor-pointer"
-                            aria-label="Close sidebar"
-                        >
-                            <XMarkIcon className="w-5 h-5" />
-                        </button>
-                    </div>
-
-                    {/* Scrollable Sidebar Content */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-6 text-sm">
-                        {/* Direct City Links */}
-                        <div>
-                            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2.5 flex items-center gap-1.5">
-                                <MapPinIcon className="w-3.5 h-3.5 text-gray-500" />
-                                <span>Top Rental Cities</span>
-                            </h2>
-                            <nav aria-label="Top rental cities" className="space-y-1">
-                                {QUICK_CITY_LINKS.map((city) => (
-                                    <Link
-                                        key={city.city}
-                                        href={city.href}
-                                        onClick={handleNavigationClick}
-                                        className="flex items-center justify-between px-3 py-2 rounded-lg text-gray-700 hover:text-blue-600 hover:bg-blue-50/60 transition-colors group"
-                                    >
-                                        <span className="font-medium text-xs sm:text-sm">{city.city}</span>
-                                        <span className="text-xs opacity-75 group-hover:translate-x-0.5 transition-transform">
-                                            <span aria-hidden="true">{city.flag}</span> <span aria-hidden="true">→</span>
-                                        </span>
-                                    </Link>
-                                ))}
-                            </nav>
-                        </div>
-
-                        {/* Riding Guides & Requirements */}
-                        <div>
-                            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2.5 flex items-center gap-1.5">
-                                <ShieldCheckIcon className="w-3.5 h-3.5 text-gray-500" />
-                                <span>Riding Guides</span>
-                            </h2>
-                            <div className="space-y-2.5">
-                                {RIDING_GUIDES.map((guide) => (
-                                    <div
-                                        key={guide.title}
-                                        className="p-2.5 bg-gray-50 rounded-xl border border-gray-100 space-y-1.5"
-                                    >
-                                        <div className="font-semibold text-xs text-gray-900">{guide.title}</div>
-                                        <p className="text-[11px] text-gray-600 leading-relaxed">{guide.summary}</p>
-                                        <button
-                                            type="button"
-                                            onClick={() => handlePromptSelect(guide.prompt)}
-                                            className="text-[11px] font-medium text-blue-600 hover:text-blue-800 hover:underline text-left cursor-pointer"
-                                        >
-                                            Ask assistant <span aria-hidden="true">→</span>
-                                        </button>
-                                    </div>
-                                ))}
-                                <Link
-                                    href="/safety"
-                                    onClick={handleNavigationClick}
-                                    className="inline-flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-blue-600 pt-1"
-                                >
-                                    <span>Full Safety Tips</span>
-                                    <span aria-hidden="true">→</span>
-                                </Link>
-                            </div>
-                        </div>
-
-                        {/* Quick Question Chips */}
-                        <div>
-                            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2.5">
-                                Quick Questions
-                            </h2>
-                            <div className="space-y-1.5">
-                                {SIDEBAR_PROMPT_CHIPS.map((chip) => (
-                                    <button
-                                        key={chip}
-                                        type="button"
-                                        onClick={() => handlePromptSelect(chip)}
-                                        className="w-full text-left px-3 py-2 text-xs text-gray-700 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50/50 transition-colors shadow-sm cursor-pointer"
-                                    >
-                                        &quot;{chip}&quot;
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </aside>
-
-                {/* Main Chat Experience */}
-                <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                    {/* Centered Message Canvas */}
-                    <div 
-                        className="flex-1 overflow-y-auto px-4 py-6"
-                        role="log"
-                        aria-live="polite"
-                        aria-label="Conversation history"
-                    >
                     <div className="max-w-3xl mx-auto w-full space-y-6">
                         {messages.length === 0 && (
                             <div className="flex flex-col items-center justify-center py-12 text-gray-500 space-y-6">
@@ -422,7 +216,7 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
                                                 key={prompt}
                                                 type="button"
                                                 className="bg-white px-4 py-2.5 rounded-xl shadow-sm border border-gray-200 text-gray-700 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50/50 transition-colors text-left cursor-pointer"
-                                                onClick={() => handlePromptSelect(prompt)}
+                                                onClick={() => handleSuggestionClick(prompt)}
                                             >
                                                 &quot;{prompt}&quot;
                                             </button>
@@ -515,6 +309,5 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
                 </div>
             </main>
         </div>
-    </div>
-);
+    );
 }
