@@ -149,7 +149,9 @@ describe('motorcycleService.getFilterOptions', () => {
 
     expect(result.brands).toEqual([])
     expect(result.categories).toEqual([])
-    expect(result.models).toEqual([])
+    expect(result.models).toEqual([
+      { model: 'Custom Bike', brandName: 'Other', count: 1 }
+    ])
   })
 
   it('applies cityId filter when provided', async () => {

@@ -41,6 +41,48 @@ interface FilterPanel {
   hasActiveFilters: boolean
 }
 
+function ModelFilterList({
+  filterOptions,
+  selectedBrandId,
+  selectedModel,
+  onModelSelect
+}: {
+  filterOptions: FilterOptions | undefined
+  selectedBrandId?: string
+  selectedModel?: string
+  onModelSelect: (model?: string) => void
+}) {
+  const selectedBrandName = selectedBrandId
+    ? filterOptions?.brands.find(b => b.id === selectedBrandId)?.name
+    : null
+  const visibleModels = (filterOptions?.models || []).filter(
+    m => !selectedBrandName || m.brandName === selectedBrandName
+  )
+
+  if (visibleModels.length === 0) return null
+
+  return (
+    <div className="max-h-48 overflow-y-auto space-y-1 pt-1">
+      {visibleModels.map((m) => (
+        <button
+          key={`${m.model}-${m.brandName}`}
+          type="button"
+          onClick={() => onModelSelect(selectedModel === m.model ? undefined : m.model)}
+          className={clsx(
+            'w-full text-left px-2 py-1 text-sm rounded flex items-center justify-between',
+            selectedModel === m.model
+              ? 'bg-blue-50 text-blue-700 font-medium'
+              : 'text-gray-700 hover:bg-gray-100'
+          )}
+        >
+          <span>{m.model}</span>
+          <span className="text-xs text-gray-500">({m.count})</span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
 export default function SearchFilters({
   filters,
   onFiltersChange,
@@ -359,37 +401,12 @@ export default function SearchFilters({
                 value={filters.model || ''}
                 onChange={(e) => onFiltersChange({ model: e.target.value || undefined })}
               />
-              {(() => {
-                const selectedBrandName = filters.brandId
-                  ? filterOptions?.brands.find(b => b.id === filters.brandId)?.name
-                  : null
-                const visibleModels = (filterOptions?.models || []).filter(
-                  m => !selectedBrandName || m.brandName === selectedBrandName
-                )
-
-                if (visibleModels.length === 0) return null
-
-                return (
-                  <div className="max-h-48 overflow-y-auto space-y-1 pt-1">
-                    {visibleModels.map((m) => (
-                      <button
-                        key={`${m.model}-${m.brandName}`}
-                        type="button"
-                        onClick={() => onFiltersChange({ model: filters.model === m.model ? undefined : m.model })}
-                        className={clsx(
-                          'w-full text-left px-2 py-1 text-sm rounded flex items-center justify-between',
-                          filters.model === m.model
-                            ? 'bg-blue-50 text-blue-700 font-medium'
-                            : 'text-gray-700 hover:bg-gray-100'
-                        )}
-                      >
-                        <span>{m.model}</span>
-                        <span className="text-xs text-gray-500">({m.count})</span>
-                      </button>
-                    ))}
-                  </div>
-                )
-              })()}
+              <ModelFilterList
+                filterOptions={filterOptions}
+                selectedBrandId={filters.brandId}
+                selectedModel={filters.model}
+                onModelSelect={(model) => onFiltersChange({ model })}
+              />
             </div>
           )}
 

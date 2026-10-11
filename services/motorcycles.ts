@@ -138,6 +138,7 @@ export const motorcycleService = {
       brandId,
       categoryId,
       model,
+      query: searchQuery,
       minPrice,
       maxPrice,
       minEngineCapacity,
@@ -199,8 +200,9 @@ export const motorcycleService = {
     if (categoryId) {
       query = query.eq('category_id', categoryId)
     }
-    if (model) {
-      query = query.ilike('model', `%${model}%`)
+    const effectiveModel = model || searchQuery
+    if (effectiveModel) {
+      query = query.ilike('model', `%${effectiveModel}%`)
     }
     if (minPrice !== undefined) {
       query = query.gte('rental_rate_per_day', minPrice)
@@ -1048,10 +1050,11 @@ export const motorcycleService = {
       }
 
       // Count models (exclude current model filter)
-      if (model && brand && (!currentFilters?.model || !model.toLowerCase().includes(currentFilters.model.toLowerCase()))) {
-        const key = `${model}|${brand.name}`
+      if (model && (!currentFilters?.model || !model.toLowerCase().includes(currentFilters.model.toLowerCase()))) {
+        const brandName = brand?.name || 'Other'
+        const key = `${model}|${brandName}`
         if (!modelCounts[key]) {
-          modelCounts[key] = { brandName: brand.name, count: 0 }
+          modelCounts[key] = { brandName, count: 0 }
         }
         modelCounts[key].count++
       }

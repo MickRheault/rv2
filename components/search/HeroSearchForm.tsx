@@ -109,17 +109,9 @@ export default function HeroSearchForm() {
     
     if (selectedCountry) {
       searchParams.set('countryCode', selectedCountry)
-      const selectedCountryData = countries.find(c => c.code === selectedCountry)
-      if (selectedCountryData) {
-        searchParams.set('location', selectedCountryData.name)
-      }
     }
     if (selectedCity) {
       searchParams.set('cityId', selectedCity)
-      const selectedCityData = cities.find(c => c.id === selectedCity)
-      if (selectedCityData) {
-        searchParams.set('location', selectedCityData.name)
-      }
     }
 
     router.push(`/search?${searchParams.toString()}`)

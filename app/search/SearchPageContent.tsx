@@ -60,12 +60,10 @@ export default function SearchPageContent() {
       if (minEngineCapacity) initialFilters.minEngineCapacity = Number(minEngineCapacity)
       if (maxEngineCapacity) initialFilters.maxEngineCapacity = Number(maxEngineCapacity)
 
-      if (location) {
-        setLocationInput(location)
-        locationSearch.setQuery(location)
-      } else if (q) {
-        setLocationInput(q)
-        locationSearch.setQuery(q)
+      const locationText = location || q
+      if (locationText) {
+        setLocationInput(locationText)
+        locationSearch.setQuery(locationText)
       }
 
       locationSearch.setFilters(initialFilters)
@@ -133,7 +131,22 @@ export default function SearchPageContent() {
   // Handle free-text submission (Enter or Search click)
   const handleLocationSubmit = useCallback((query: string) => {
     const trimmed = query.trim()
-    if (trimmed) {
+    if (!trimmed) {
+      if (!locationSearch.filters.cityId && !locationSearch.filters.provinceId && !locationSearch.filters.countryCode) {
+        clearLocationFilter()
+      } else {
+        locationSearch.search()
+      }
+      return
+    }
+
+    const hasMatchingLocation =
+      locationSearch.filters.locationQuery?.toLowerCase() === trimmed.toLowerCase() &&
+      Boolean(locationSearch.filters.cityId || locationSearch.filters.provinceId || locationSearch.filters.countryCode)
+
+    if (hasMatchingLocation) {
+      locationSearch.search()
+    } else {
       locationSearch.setFilters({
         locationQuery: trimmed,
         cityId: undefined,
@@ -141,8 +154,6 @@ export default function SearchPageContent() {
         countryCode: undefined
       })
       locationSearch.search()
-    } else {
-      clearLocationFilter()
     }
   }, [clearLocationFilter, locationSearch])
 
