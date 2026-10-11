@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { shopService } from '@/services/shops'
@@ -6,6 +7,12 @@ import ShopDetails from '@/components/shop/ShopDetails'
 import { generateMetadata as generateSEOMetadata, generateShopSEO } from '@/lib/seo/config'
 import { StructuredData, generateRentalShopSchema, generateRentalServiceSchema, generateTourSchema, generateEnhancedMotorcycleSchema } from '@/lib/seo/structured-data'
 import { parseShopLocation, validateShopLocation } from '@/lib/utils/urls'
+
+export const revalidate = 3600 // Revalidate every 1 hour
+
+const getShopByLocationAndSlug = cache(async (countryName: string, cityName: string, slug: string) => {
+  return shopService.getShopByLocationAndSlug(countryName, cityName, slug)
+})
 
 interface ShopPageProps {
   params: Promise<{
@@ -21,7 +28,7 @@ export async function generateMetadata({ params }: ShopPageProps): Promise<Metad
     const { country, city, slug } = resolvedParams
     const { countryName, cityName } = parseShopLocation(country, city)
     
-    const shop = await shopService.getShopByLocationAndSlug(countryName, cityName, slug)
+    const shop = await getShopByLocationAndSlug(countryName, cityName, slug)
     
     // Validate that the shop actually matches the URL location
     if (!validateShopLocation(shop, country, city)) {
@@ -63,7 +70,7 @@ export default async function ShopPage({ params }: ShopPageProps) {
       parsedLocation: { countryName, cityName }
     })
     
-    let shop = await shopService.getShopByLocationAndSlug(countryName, cityName, slug)
+    let shop = await getShopByLocationAndSlug(countryName, cityName, slug)
     
     // If location-based lookup fails, try fallback to just slug
     if (!shop) {

@@ -1,6 +1,6 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { Suspense } from 'react'
+import { Suspense, cache } from 'react'
 import Link from 'next/link'
 import { ArrowLeftIcon } from '@heroicons/react/24/outline'
 
@@ -13,6 +13,12 @@ import LocationHeroBanner from '@/components/location/LocationHeroBanner'
 import { generateMetadata as generateSEOMetadata, generateMotorcycleSEO } from '@/lib/seo/config'
 import { StructuredData, generateEnhancedMotorcycleSchema } from '@/lib/seo/structured-data'
 import { generateSlug, formatLocationName } from '@/lib/utils'
+
+export const revalidate = 3600 // Revalidate every 1 hour
+
+const getMotorcycleById = cache(async (id: string) => {
+    return motorcycleService.getMotorcycleById(id)
+})
 
 interface PageProps {
     params: Promise<{ slug: string[] }>
@@ -28,7 +34,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     if (slug.length === 1) {
         try {
             const id = slug[0]
-            const motorcycle = await motorcycleService.getMotorcycleById(id)
+            const motorcycle = await getMotorcycleById(id)
 
             const seoConfig = generateMotorcycleSEO({
                 id: (motorcycle as any).id,
@@ -109,7 +115,7 @@ export default async function MotorcycleCatchAllPage({ params }: PageProps) {
 
 async function renderMotorcycleDetails(id: string) {
     try {
-        const motorcycle = await motorcycleService.getMotorcycleById(id)
+        const motorcycle = await getMotorcycleById(id)
 
         if (!motorcycle) {
             notFound()
@@ -201,7 +207,7 @@ async function renderMotorcycleDetails(id: string) {
 
 // --- Helper Logic ---
 
-async function getSameModelData(countrySlug: string, modelSlug: string) {
+const getSameModelData = cache(async (countrySlug: string, modelSlug: string) => {
     // 1. Resolve Country
     const countryData = await locationService.getCountryByName(countrySlug.replace(/-/g, ' '))
 
@@ -253,7 +259,7 @@ async function getSameModelData(countrySlug: string, modelSlug: string) {
         displayBrandName,
         displayModelName
     }
-}
+})
 
 // --- Case 2 Logic: Same Model Page ---
 

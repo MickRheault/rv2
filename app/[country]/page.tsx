@@ -1,4 +1,4 @@
-import { Suspense } from 'react'
+import { Suspense, cache } from 'react'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { CountryPageProps, ContentSection } from '@/types'
@@ -13,7 +13,11 @@ import CountryContentWrapper from '@/components/content/CountryContentWrapper'
 import { generateMetadata as generateSEOMetadata } from '@/lib/seo/config'
 
 // Revalidate country pages periodically to pick up new content sections
-export const revalidate = 300 // Revalidate every 5 minutes
+export const revalidate = 3600 // Revalidate every 1 hour
+
+const getCountryByName = cache(async (country: string) => {
+  return locationService.getCountryByName(country)
+})
 
 // Generate dynamic metadata based on country parameter
 export async function generateMetadata({ params }: CountryPageProps): Promise<Metadata> {
@@ -30,7 +34,7 @@ export async function generateMetadata({ params }: CountryPageProps): Promise<Me
   
   try {
     // Check if country exists in database
-    const countryData = await locationService.getCountryByName(country)
+    const countryData = await getCountryByName(country)
     
     if (!countryData) {
       return {
@@ -79,7 +83,7 @@ export default async function CountryPage({ params }: CountryPageProps) {
 
   // Fetch country details and shops
   try {
-    const countryData = await locationService.getCountryByName(country)
+    const countryData = await getCountryByName(country)
     
     // Return 404 if country doesn't exist in database
     if (!countryData) {
