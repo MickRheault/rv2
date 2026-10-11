@@ -62,11 +62,16 @@ export default function SearchPageContent() {
 
       if (location) {
         setLocationInput(location)
+        locationSearch.setQuery(location)
       } else if (q) {
         setLocationInput(q)
+        locationSearch.setQuery(q)
       }
 
       locationSearch.setFilters(initialFilters)
+      if (q || location || countryCode || cityId || provinceId || brand || category || model) {
+        locationSearch.search()
+      }
       setIsInitialized(true)
     }
   }, [searchParams, isInitialized, locationSearch])
@@ -104,21 +109,26 @@ export default function SearchPageContent() {
     }
   }, [locationSearch.filters, isInitialized, router, searchParams])
 
+  // Helper to reset location input and filters
+  const clearLocationFilter = useCallback(() => {
+    setLocationInput('')
+    locationSearch.setFilters({
+      cityId: undefined,
+      provinceId: undefined,
+      countryCode: undefined,
+      locationQuery: undefined
+    })
+  }, [locationSearch])
+
   // Handle location suggestion selection from LocationAutocomplete
   const handleLocationSelect = useCallback((location: LocationSearchResult | null) => {
     if (location) {
       setLocationInput(location.name)
       locationSearch.selectLocation(location)
     } else {
-      setLocationInput('')
-      locationSearch.setFilters({
-        cityId: undefined,
-        provinceId: undefined,
-        countryCode: undefined,
-        locationQuery: undefined
-      })
+      clearLocationFilter()
     }
-  }, [locationSearch])
+  }, [clearLocationFilter, locationSearch])
 
   // Handle free-text submission (Enter or Search click)
   const handleLocationSubmit = useCallback((query: string) => {
@@ -132,15 +142,9 @@ export default function SearchPageContent() {
       })
       locationSearch.search()
     } else {
-      setLocationInput('')
-      locationSearch.setFilters({
-        cityId: undefined,
-        provinceId: undefined,
-        countryCode: undefined,
-        locationQuery: undefined
-      })
+      clearLocationFilter()
     }
-  }, [locationSearch])
+  }, [clearLocationFilter, locationSearch])
 
   const handleManualSearch = useCallback(() => {
     handleLocationSubmit(locationInput)

@@ -359,11 +359,19 @@ export default function SearchFilters({
                 value={filters.model || ''}
                 onChange={(e) => onFiltersChange({ model: e.target.value || undefined })}
               />
-              {filterOptions?.models && filterOptions.models.length > 0 && (
-                <div className="max-h-48 overflow-y-auto space-y-1 pt-1">
-                  {filterOptions.models
-                    .filter(m => !filters.brandId || filterOptions.brands.find(b => b.id === filters.brandId)?.name === m.brandName)
-                    .map((m) => (
+              {(() => {
+                const selectedBrandName = filters.brandId
+                  ? filterOptions?.brands.find(b => b.id === filters.brandId)?.name
+                  : null
+                const visibleModels = (filterOptions?.models || []).filter(
+                  m => !selectedBrandName || m.brandName === selectedBrandName
+                )
+
+                if (visibleModels.length === 0) return null
+
+                return (
+                  <div className="max-h-48 overflow-y-auto space-y-1 pt-1">
+                    {visibleModels.map((m) => (
                       <button
                         key={`${m.model}-${m.brandName}`}
                         type="button"
@@ -379,8 +387,9 @@ export default function SearchFilters({
                         <span className="text-xs text-gray-500">({m.count})</span>
                       </button>
                     ))}
-                </div>
-              )}
+                  </div>
+                )
+              })()}
             </div>
           )}
 
