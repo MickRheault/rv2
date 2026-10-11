@@ -115,6 +115,9 @@ export const searchService = {
             resolvedLocationFilters.countryCode = topResult.id
             break
         }
+      } else if (!otherFilters.query) {
+        // Fallback to text matching if location lookup yields no structured location
+        otherFilters.query = locationQuery
       }
     } else {
       // Use provided location filters

@@ -138,6 +138,7 @@ export const motorcycleService = {
       brandId,
       categoryId,
       model,
+      query: searchQuery,
       minPrice,
       maxPrice,
       minEngineCapacity,
@@ -199,8 +200,9 @@ export const motorcycleService = {
     if (categoryId) {
       query = query.eq('category_id', categoryId)
     }
-    if (model) {
-      query = query.ilike('model', `%${model}%`)
+    const effectiveModel = model || searchQuery
+    if (effectiveModel) {
+      query = query.ilike('model', `%${effectiveModel}%`)
     }
     if (minPrice !== undefined) {
       query = query.gte('rental_rate_per_day', minPrice)
@@ -950,22 +952,40 @@ export const motorcycleService = {
 
   // Get structured filter options with counts based on current filters
   async getFilterOptions(currentFilters?: Pick<SearchFilters, 'cityId' | 'provinceId' | 'countryCode' | 'brandId' | 'categoryId' | 'model'>): Promise<FilterOptions> {
-    // Build base query for counting
+    const hasLocationFilter = Boolean(currentFilters?.cityId || currentFilters?.provinceId || currentFilters?.countryCode)
+    const locationJoin = hasLocationFilter ? '!inner' : ''
+
+    // Build base query for counting with minimal projection
     let baseQuery = typedSupabase
       .from('motorcycle_rentals')
       .select(`
-        *,
-        brands!inner (*),
-        categories!inner (*),
-        motorcycle_features (
-          feature_id,
-          features (*)
+        id,
+        model,
+        brand_id,
+        category_id,
+        rental_rate_per_day,
+        engine_capacity_cc,
+        brands (
+          id,
+          name
         ),
-        rental_shops!inner (
+        categories (
+          id,
+          name,
+          description
+        ),
+        motorcycle_features (
+          features (
+            id,
+            name,
+            description
+          )
+        ),
+        rental_shops${locationJoin} (
           city_id,
-          cities!inner (
+          cities${locationJoin} (
             province_id,
-            provinces!inner (
+            provinces${locationJoin} (
               country_code
             )
           )
@@ -1010,7 +1030,7 @@ export const motorcycleService = {
       const model = (motorcycle as any).model
 
       // Count brands (exclude current brand filter)
-      if (!currentFilters?.brandId || currentFilters.brandId !== brand.id) {
+      if (brand && (!currentFilters?.brandId || currentFilters.brandId !== brand.id)) {
         if (!brandCounts[brand.id]) {
           brandCounts[brand.id] = { name: brand.name, count: 0 }
         }
@@ -1018,7 +1038,7 @@ export const motorcycleService = {
       }
 
       // Count categories (exclude current category filter)
-      if (!currentFilters?.categoryId || currentFilters.categoryId !== category.id) {
+      if (category && (!currentFilters?.categoryId || currentFilters.categoryId !== category.id)) {
         if (!categoryCounts[category.id]) {
           categoryCounts[category.id] = {
             name: category.name,
@@ -1030,10 +1050,11 @@ export const motorcycleService = {
       }
 
       // Count models (exclude current model filter)
-      if (!currentFilters?.model || !model.toLowerCase().includes(currentFilters.model.toLowerCase())) {
-        const key = `${model}|${brand.name}`
+      if (model && (!currentFilters?.model || !model.toLowerCase().includes(currentFilters.model.toLowerCase()))) {
+        const brandName = brand?.name || 'Other'
+        const key = `${model}|${brandName}`
         if (!modelCounts[key]) {
-          modelCounts[key] = { brandName: brand.name, count: 0 }
+          modelCounts[key] = { brandName, count: 0 }
         }
         modelCounts[key].count++
       }

@@ -17,6 +17,7 @@ interface LocationAutocompleteProps {
   value?: string
   onLocationSelect: (location: LocationSearchResult | null) => void
   onQueryChange?: (query: string) => void
+  onSubmit?: (query: string) => void
   placeholder?: string
   className?: string
   disabled?: boolean
@@ -27,6 +28,7 @@ export default function LocationAutocomplete({
   value = '',
   onLocationSelect,
   onQueryChange,
+  onSubmit,
   placeholder = 'Search locations...',
   className,
   disabled = false,
@@ -116,6 +118,9 @@ export default function LocationAutocomplete({
         e.preventDefault()
         if (selectedIndex >= 0 && items[selectedIndex]) {
           handleLocationSelect(items[selectedIndex])
+        } else {
+          setIsOpen(false)
+          onSubmit?.(query)
         }
         break
       case 'Escape':

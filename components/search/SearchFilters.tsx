@@ -41,6 +41,48 @@ interface FilterPanel {
   hasActiveFilters: boolean
 }
 
+function ModelFilterList({
+  filterOptions,
+  selectedBrandId,
+  selectedModel,
+  onModelSelect
+}: {
+  filterOptions: FilterOptions | undefined
+  selectedBrandId?: string
+  selectedModel?: string
+  onModelSelect: (model?: string) => void
+}) {
+  const selectedBrandName = selectedBrandId
+    ? filterOptions?.brands.find(b => b.id === selectedBrandId)?.name
+    : null
+  const visibleModels = (filterOptions?.models || []).filter(
+    m => !selectedBrandName || m.brandName === selectedBrandName
+  )
+
+  if (visibleModels.length === 0) return null
+
+  return (
+    <div className="max-h-48 overflow-y-auto space-y-1 pt-1">
+      {visibleModels.map((m) => (
+        <button
+          key={`${m.model}-${m.brandName}`}
+          type="button"
+          onClick={() => onModelSelect(selectedModel === m.model ? undefined : m.model)}
+          className={clsx(
+            'w-full text-left px-2 py-1 text-sm rounded flex items-center justify-between',
+            selectedModel === m.model
+              ? 'bg-blue-50 text-blue-700 font-medium'
+              : 'text-gray-700 hover:bg-gray-100'
+          )}
+        >
+          <span>{m.model}</span>
+          <span className="text-xs text-gray-500">({m.count})</span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
 export default function SearchFilters({
   filters,
   onFiltersChange,
@@ -54,6 +96,7 @@ export default function SearchFilters({
     location: true,
     brand: false,
     category: false,
+    model: false,
     price: false,
     engine: false,
     features: false,
@@ -61,7 +104,7 @@ export default function SearchFilters({
   })
 
   // Get filter options
-  const { data: filterOptions, isLoading: isLoadingOptions } = useQuery({
+  const { data: filterOptions, isLoading: isLoadingOptions, isError: isErrorOptions, refetch: refetchOptions } = useQuery({
     queryKey: ['filter-options', filters.cityId, filters.provinceId, filters.countryCode],
     queryFn: () => motorcycleService.getFilterOptions({
       cityId: filters.cityId,
@@ -88,6 +131,8 @@ export default function SearchFilters({
         return Boolean(filters.brandId)
       case 'category':
         return Boolean(filters.categoryId)
+      case 'model':
+        return Boolean(filters.model)
       case 'price':
         return Boolean(filters.minPrice || filters.maxPrice)
       case 'engine':
@@ -179,11 +224,36 @@ export default function SearchFilters({
 
   if (isLoadingOptions && !filterOptions) {
     return (
-      <Card className={className}>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-center">
-            <Spinner size="lg" />
+      <Card className={className} data-testid="search-filters-skeleton">
+        <CardContent className="p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="h-5 w-24 bg-gray-200 rounded animate-pulse" />
+            <div className="h-4 w-12 bg-gray-200 rounded animate-pulse" />
           </div>
+          <div className="space-y-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-10 bg-gray-100 rounded-lg animate-pulse" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (isErrorOptions && !filterOptions) {
+    return (
+      <Card className={className} data-testid="search-filters-error">
+        <CardContent className="p-6 text-center space-y-3">
+          <p className="text-sm text-red-600 font-medium">Failed to load filters</p>
+          <p className="text-xs text-gray-500">Please try again to see available brands and categories.</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetchOptions()}
+            className="mt-2"
+          >
+            Retry
+          </Button>
         </CardContent>
       </Card>
     )
@@ -317,6 +387,25 @@ export default function SearchFilters({
                   categoryId: e.target.value || undefined 
                 })}
                 placeholder="Select a category"
+              />
+            </div>
+          )}
+
+          {/* Model Filter */}
+          {renderPanel(
+            'model',
+            'Model',
+            <div className="space-y-2">
+              <Input
+                placeholder="Search model..."
+                value={filters.model || ''}
+                onChange={(e) => onFiltersChange({ model: e.target.value || undefined })}
+              />
+              <ModelFilterList
+                filterOptions={filterOptions}
+                selectedBrandId={filters.brandId}
+                selectedModel={filters.model}
+                onModelSelect={(model) => onFiltersChange({ model })}
               />
             </div>
           )}

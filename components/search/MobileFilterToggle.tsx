@@ -36,6 +36,7 @@ export default function MobileFilterToggle({
     if (filters.cityId || filters.provinceId || filters.countryCode || filters.locationQuery) count++
     if (filters.brandId) count++
     if (filters.categoryId) count++
+    if (filters.model) count++
     if (filters.minPrice || filters.maxPrice) count++
     if (filters.minEngineCapacity || filters.maxEngineCapacity) count++
     if (filters.features && filters.features.length > 0) count++
