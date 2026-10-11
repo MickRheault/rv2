@@ -132,7 +132,7 @@ it('shows a useful error when the chat server returns an empty response', async 
 it('renders the minimal top navigation bar with back link, logo, Beta badge, and New Chat button', () => {
     delete process.env.AI_CHAT_ACCESS_SECRET;
     render(<ChatPage />);
-    expect(screen.getByRole('link', { name: /Back to Fleet/i })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('link', { name: /^Back$/i })).toHaveAttribute('href', '/');
     expect(screen.getByRole('button', { name: /New Chat/i })).toBeInTheDocument();
     expect(screen.getByText('Beta')).toBeInTheDocument();
     expect(screen.getByAltText('Global Moto Rentals Logo')).toBeInTheDocument();

@@ -182,10 +182,10 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
                     <Link
                         href="/"
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium text-gray-600 hover:text-blue-600 hover:bg-gray-50 rounded-lg transition-colors"
-                        aria-label="Back to Fleet"
+                        aria-label="Back"
                     >
                         <ArrowLeftIcon className="w-4 h-4" />
-                        <span className="inline">Back to Fleet</span>
+                        <span className="inline">Back</span>
                     </Link>
                 </div>
             </header>
