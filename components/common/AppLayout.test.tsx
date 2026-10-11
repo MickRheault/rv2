@@ -6,11 +6,6 @@ jest.mock('next/navigation', () => ({
   usePathname: jest.fn(),
 }))
 
-jest.mock('next/link', () => ({
-  __esModule: true,
-  default: ({ href, children, ...props }: any) => <a href={href} {...props}>{children}</a>,
-}))
-
 jest.mock('@/components/common/Header', () => ({
   __esModule: true,
   default: () => <header data-testid="mock-header">Mock Header</header>,
@@ -41,7 +36,7 @@ describe('AppLayout', () => {
     expect(screen.getByTestId('child-content')).toBeInTheDocument()
   })
 
-  it('omits Header, Footer, and CookieBanner on /ai-chat standalone route', () => {
+  it('omits Header and Footer, retains CookieConsentBanner, and avoids landmark nesting on /ai-chat', () => {
     jest.mocked(usePathname).mockReturnValue('/ai-chat')
     render(
       <AppLayout>
@@ -51,10 +46,12 @@ describe('AppLayout', () => {
 
     expect(screen.queryByTestId('mock-header')).not.toBeInTheDocument()
     expect(screen.queryByTestId('mock-footer')).not.toBeInTheDocument()
-    expect(screen.queryByTestId('mock-cookie-banner')).not.toBeInTheDocument()
+    expect(screen.getByTestId('mock-cookie-banner')).toBeInTheDocument()
     expect(screen.getByTestId('child-content')).toBeInTheDocument()
     
-    const main = screen.getByTestId('child-content').closest('main')
-    expect(main).toHaveClass('h-screen', 'overflow-hidden')
+    // Ensure standalone container is a div, not main, preventing nested landmark violations
+    const container = screen.getByTestId('child-content').parentElement
+    expect(container).toHaveClass('h-screen', 'overflow-hidden')
+    expect(screen.getByTestId('child-content').closest('main')).toBeNull()
   })
 })

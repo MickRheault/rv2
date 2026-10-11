@@ -77,7 +77,7 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        const isComposing = (e.nativeEvent as any)?.isComposing || (e as any).isComposing;
+        const isComposing = e.nativeEvent.isComposing;
         if (e.key === 'Enter' && !e.shiftKey && !isComposing) {
             e.preventDefault();
             formRef.current?.requestSubmit();

@@ -12,11 +12,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (isStandaloneChat) {
     return (
-      <main className="h-screen h-[100dvh] overflow-hidden flex flex-col">
+      <div className="h-screen h-[100dvh] overflow-hidden flex flex-col">
         <ErrorBoundary level="page" name="Standalone Chat">
           {children}
         </ErrorBoundary>
-      </main>
+        <CookieConsentBanner />
+      </div>
     )
   }
 
