@@ -2,7 +2,6 @@ import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import {
   LearnedAgentConfig,
   sanitizeLearnedConfig,
-  updateShopLearnedConfig,
 } from '@/services/shop-agent-configs';
 
 export const CADENCE_DAYS: Record<number, number> = {
@@ -230,16 +229,6 @@ export class TaskSchedulerService {
     }
 
     return updated;
-  }
-
-  /**
-   * Updates learned extraction hints or discovered source URL for a shop agent config.
-   */
-  static async updateLearnedConfig(
-    identifier: { taskId?: string; shopId?: string },
-    updates: LearnedAgentConfig
-  ) {
-    return updateShopLearnedConfig(identifier, updates);
   }
 
   /**

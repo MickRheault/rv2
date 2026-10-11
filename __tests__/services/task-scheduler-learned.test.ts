@@ -3,6 +3,10 @@
  */
 
 import { TaskSchedulerService } from '@/services/task-scheduler';
+import {
+  updateShopLearnedConfig,
+  extractLearnedAgentConfig,
+} from '@/services/shop-agent-configs';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 jest.mock('@/lib/supabase/admin', () => ({
@@ -62,12 +66,41 @@ describe('TaskSchedulerService Adaptive Learning', () => {
           source_url: 'https://shop.com/rates',
         })
       );
-      expect(result.extraction_hints).toBe('Prices in THB');
-      expect(result.source_url).toBe('https://shop.com/rates');
+      expect(result?.extraction_hints).toBe('Prices in THB');
+      expect(result?.source_url).toBe('https://shop.com/rates');
     });
   });
 
-  describe('updateLearnedConfig', () => {
+  describe('extractLearnedAgentConfig', () => {
+    it('extracts learned hints and discovered URL when valid strings are provided', () => {
+      const config = extractLearnedAgentConfig({
+        learnedExtractionHints: '  Rates in THB  ',
+        discoveredSourceUrl: '  https://shop.com/rates  ',
+      });
+      expect(config).toEqual({
+        extractionHints: 'Rates in THB',
+        discoveredSourceUrl: 'https://shop.com/rates',
+      });
+    });
+
+    it('falls back to extractionHints and ignores empty strings or non-strings', () => {
+      const config = extractLearnedAgentConfig({
+        extractionHints: 'Deposit 2000',
+        discoveredSourceUrl: 12345,
+      });
+      expect(config).toEqual({
+        extractionHints: 'Deposit 2000',
+        discoveredSourceUrl: undefined,
+      });
+    });
+
+    it('returns undefined when no hints or discovered URL are present', () => {
+      expect(extractLearnedAgentConfig({})).toBeUndefined();
+      expect(extractLearnedAgentConfig({ learnedExtractionHints: '   ' })).toBeUndefined();
+    });
+  });
+
+  describe('updateShopLearnedConfig', () => {
     it('updates extraction_hints and source_url by shopId', async () => {
       mockSupabase.maybeSingle.mockResolvedValueOnce({
         data: {
@@ -78,8 +111,8 @@ describe('TaskSchedulerService Adaptive Learning', () => {
         error: null,
       });
 
-      const result = await TaskSchedulerService.updateLearnedConfig(
-        { shopId: 'shop-abc' },
+      const result = await updateShopLearnedConfig(
+        'shop-abc',
         {
           extractionHints: 'Deposit 2000 THB cash',
           discoveredSourceUrl: 'https://shop.com/fleet',
@@ -96,8 +129,8 @@ describe('TaskSchedulerService Adaptive Learning', () => {
     });
 
     it('returns null when no updates are provided', async () => {
-      const result = await TaskSchedulerService.updateLearnedConfig(
-        { shopId: 'shop-abc' },
+      const result = await updateShopLearnedConfig(
+        'shop-abc',
         { extractionHints: '', discoveredSourceUrl: null }
       );
 
@@ -106,8 +139,8 @@ describe('TaskSchedulerService Adaptive Learning', () => {
     });
 
     it('safely handles non-string inputs without throwing TypeError', async () => {
-      const result = await TaskSchedulerService.updateLearnedConfig(
-        { shopId: 'shop-abc' },
+      const result = await updateShopLearnedConfig(
+        'shop-abc',
         { extractionHints: 12345 as any, discoveredSourceUrl: { url: 'bad' } as any }
       );
 
@@ -116,7 +149,6 @@ describe('TaskSchedulerService Adaptive Learning', () => {
     });
 
     it('upserts a new Tier 2 config when no existing config row exists for the shop', async () => {
-      // First update returns null (no existing row)
       mockSupabase.maybeSingle
         .mockResolvedValueOnce({ data: null, error: null }) // update query
         .mockResolvedValueOnce({ data: { website: 'https://shop.com' }, error: null }) // rental_shops query
@@ -133,8 +165,8 @@ describe('TaskSchedulerService Adaptive Learning', () => {
 
       mockSupabase.upsert = jest.fn().mockReturnThis();
 
-      const result = await TaskSchedulerService.updateLearnedConfig(
-        { shopId: 'shop-new' },
+      const result = await updateShopLearnedConfig(
+        'shop-new',
         {
           extractionHints: 'Learned hints',
           discoveredSourceUrl: 'https://shop.com/rates',

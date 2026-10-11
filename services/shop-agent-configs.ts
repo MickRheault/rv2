@@ -39,6 +39,26 @@ export function sanitizeLearnedConfig(config?: LearnedAgentConfig | null): {
   return result;
 }
 
+export function extractLearnedAgentConfig(
+  body: Record<string, any>
+): LearnedAgentConfig | undefined {
+  if (!body || typeof body !== 'object') return undefined;
+
+  const rawHints = body.learnedExtractionHints ?? body.extractionHints;
+  const hints =
+    typeof rawHints === 'string' && rawHints.trim() !== '' ? rawHints.trim() : undefined;
+  const discoveredUrl =
+    typeof body.discoveredSourceUrl === 'string' && body.discoveredSourceUrl.trim() !== ''
+      ? body.discoveredSourceUrl.trim()
+      : undefined;
+
+  if (!hints && !discoveredUrl) return undefined;
+  return {
+    extractionHints: hints,
+    discoveredSourceUrl: discoveredUrl,
+  };
+}
+
 /**
  * Fetches the agent configuration for a specific shop.
  */
@@ -95,7 +115,7 @@ export const saveShopCrawlerConfig = saveShopAgentConfig;
  * If no configuration row exists yet for this shop, automatically provisions a Tier 2 config.
  */
 export async function updateShopLearnedConfig(
-  identifier: { taskId?: string; shopId?: string },
+  shopId: string,
   learned: LearnedAgentConfig
 ): Promise<ShopAgentConfig | null> {
   const sanitized = sanitizeLearnedConfig(learned);
@@ -104,17 +124,13 @@ export async function updateShopLearnedConfig(
   }
 
   const supabaseAdmin = getSupabaseAdmin();
-  let query = supabaseAdmin.from('shop_agent_configs').update(sanitized);
+  const { data, error } = await (supabaseAdmin
+    .from('shop_agent_configs') as any)
+    .update(sanitized)
+    .eq('shop_id', shopId)
+    .select()
+    .maybeSingle();
 
-  if (identifier.taskId) {
-    query = (query as any).eq('id', identifier.taskId);
-  } else if (identifier.shopId) {
-    query = (query as any).eq('shop_id', identifier.shopId);
-  } else {
-    return null;
-  }
-
-  const { data, error } = await (query as any).select().maybeSingle();
   if (error) {
     console.error('Failed to update learned agent config:', error);
     throw new Error(`Failed to update learned agent config: ${error.message}`);
@@ -124,39 +140,36 @@ export async function updateShopLearnedConfig(
     return data;
   }
 
-  // If no row existed to update and we have a shopId, upsert a new Tier 2 config
-  if (!data && identifier.shopId) {
-    const { data: shop } = await supabaseAdmin
-      .from('rental_shops')
-      .select('website')
-      .eq('id', identifier.shopId)
+  // If no row existed to update for this shopId, upsert a new Tier 2 config
+  const { data: shop } = await supabaseAdmin
+    .from('rental_shops')
+    .select('website')
+    .eq('id', shopId)
+    .maybeSingle();
+
+  const targetUrl = sanitized.source_url || shop?.website;
+  if (targetUrl) {
+    const { data: upserted, error: upsertError } = await (supabaseAdmin
+      .from('shop_agent_configs') as any)
+      .upsert(
+        {
+          shop_id: shopId,
+          tier: 2,
+          source_url: targetUrl,
+          extraction_hints: sanitized.extraction_hints || null,
+          is_active: true,
+        },
+        { onConflict: 'shop_id' }
+      )
+      .select()
       .maybeSingle();
 
-    const targetUrl = sanitized.source_url || shop?.website;
-    if (targetUrl) {
-      const { data: upserted, error: upsertError } = await (supabaseAdmin
-        .from('shop_agent_configs') as any)
-        .upsert(
-          {
-            shop_id: identifier.shopId,
-            tier: 2,
-            source_url: targetUrl,
-            extraction_hints: sanitized.extraction_hints || null,
-            is_active: true,
-          },
-          { onConflict: 'shop_id' }
-        )
-        .select()
-        .maybeSingle();
-
-      if (upsertError) {
-        console.error('Failed to upsert missing agent config with learned data:', upsertError);
-        throw new Error(`Failed to upsert agent config: ${upsertError.message}`);
-      }
-      return upserted;
+    if (upsertError) {
+      console.error('Failed to upsert missing agent config with learned data:', upsertError);
+      throw new Error(`Failed to upsert agent config: ${upsertError.message}`);
     }
+    return upserted;
   }
 
   return null;
 }
-
