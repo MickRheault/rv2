@@ -34,7 +34,14 @@ export async function POST(
 
   try {
     const body = await request.json();
-    const { status, error: crawlError } = body;
+    const {
+      status,
+      error: crawlError,
+      learnedExtractionHints,
+      extractionHints,
+      discoveredSourceUrl,
+      targetUrl,
+    } = body;
 
     if (status !== 'success' && status !== 'failed') {
       return NextResponse.json(
@@ -43,11 +50,18 @@ export async function POST(
       );
     }
 
-    const updatedTask = await TaskSchedulerService.updateTaskStatus(
-      id,
-      status,
-      crawlError
-    );
+    const hints = learnedExtractionHints || extractionHints;
+    const discoveredUrl = discoveredSourceUrl || targetUrl;
+    const learnedConfig = (hints || discoveredUrl)
+      ? {
+          extractionHints: hints,
+          discoveredSourceUrl: discoveredUrl,
+        }
+      : undefined;
+
+    const updatedTask = learnedConfig
+      ? await TaskSchedulerService.updateTaskStatus(id, status, crawlError, learnedConfig)
+      : await TaskSchedulerService.updateTaskStatus(id, status, crawlError);
 
     const shopId = updatedTask?.shop_id || body.shopId;
     if (shopId) {
