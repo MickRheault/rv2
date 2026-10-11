@@ -282,3 +282,57 @@ it('updates chat input text when clicking a prompt starter chip in the sidebar',
     expect(textarea).toHaveValue('Scooters under $15/day in Bangkok');
 });
 
+it('closes sidebar on Escape key press', () => {
+    delete process.env.AI_CHAT_ACCESS_SECRET;
+    render(<ChatPage />);
+    const toggleButton = screen.getByRole('button', { name: /toggle sidebar/i });
+    
+    // Open sidebar
+    fireEvent.click(toggleButton);
+    expect(toggleButton).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByTestId('sidebar-backdrop')).toBeInTheDocument();
+
+    // Press Escape
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(toggleButton).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByTestId('sidebar-backdrop')).not.toBeInTheDocument();
+});
+
+it('sets inert attribute on sidebar when collapsed and removes when open', () => {
+    delete process.env.AI_CHAT_ACCESS_SECRET;
+    render(<ChatPage />);
+    const toggleButton = screen.getByRole('button', { name: /toggle sidebar/i });
+    const sidebar = screen.getByLabelText(/Rental Resources and Quick Links/i);
+
+    expect(sidebar).toHaveAttribute('inert');
+
+    fireEvent.click(toggleButton);
+    expect(sidebar).not.toHaveAttribute('inert');
+});
+
+it('closes mobile sidebar when clicking a city link or safety guide link on mobile viewports', () => {
+    delete process.env.AI_CHAT_ACCESS_SECRET;
+    const originalInnerWidth = window.innerWidth;
+    try {
+        Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 500 });
+        render(<ChatPage />);
+        const toggleButton = screen.getByRole('button', { name: /toggle sidebar/i });
+
+        // Open sidebar on mobile
+        fireEvent.click(toggleButton);
+        expect(screen.getByTestId('sidebar-backdrop')).toBeInTheDocument();
+
+        // Click city link
+        fireEvent.click(screen.getByRole('link', { name: /Bangkok/i }));
+        expect(screen.queryByTestId('sidebar-backdrop')).not.toBeInTheDocument();
+
+        // Re-open and click safety link
+        fireEvent.click(toggleButton);
+        expect(screen.getByTestId('sidebar-backdrop')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('link', { name: /Full Safety Tips/i }));
+        expect(screen.queryByTestId('sidebar-backdrop')).not.toBeInTheDocument();
+    } finally {
+        Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: originalInnerWidth });
+    }
+});
+

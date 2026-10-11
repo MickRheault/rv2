@@ -30,10 +30,10 @@ const SUGGESTION_PROMPTS = [
 ] as const;
 
 const QUICK_CITY_LINKS = [
-    { name: 'Bangkok, Thailand', city: 'Bangkok', href: '/thailand/bangkok', flag: '🇹🇭' },
-    { name: 'Phuket, Thailand', city: 'Phuket', href: '/thailand/phuket', flag: '🇹🇭' },
-    { name: 'Chiang Mai, Thailand', city: 'Chiang Mai', href: '/thailand/chiang-mai', flag: '🇹🇭' },
-    { name: 'Bali, Indonesia', city: 'Bali', href: '/indonesia/bali', flag: '🇮🇩' },
+    { city: 'Bangkok', href: '/thailand/bangkok', flag: '🇹🇭' },
+    { city: 'Phuket', href: '/thailand/phuket', flag: '🇹🇭' },
+    { city: 'Chiang Mai', href: '/thailand/chiang-mai', flag: '🇹🇭' },
+    { city: 'Bali', href: '/indonesia/bali', flag: '🇮🇩' },
 ] as const;
 
 const RIDING_GUIDES = [
@@ -89,6 +89,17 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
         };
     }, []);
 
+    // Close mobile sidebar on Escape key press
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && isSidebarOpen) {
+                setIsSidebarOpen(false);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isSidebarOpen]);
+
     // The API validates the supplied access code against a server-only environment variable.
     if (accessRequired && !secret) {
         return (
@@ -114,14 +125,19 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
         setIsLoading(false);
     };
 
-    const handleSuggestionClick = (prompt: string) => {
-        setInput(prompt);
-        textareaRef.current?.focus();
-    };
-
     const handlePromptSelect = (promptText: string) => {
         setInput(promptText);
         textareaRef.current?.focus();
+        if (typeof window !== 'undefined' && window.innerWidth < 768) {
+            setIsSidebarOpen(false);
+        }
+    };
+
+    const handleSuggestionClick = (prompt: string) => {
+        handlePromptSelect(prompt);
+    };
+
+    const handleNavigationClick = () => {
         if (typeof window !== 'undefined' && window.innerWidth < 768) {
             setIsSidebarOpen(false);
         }
@@ -267,14 +283,16 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
                 {/* Collapsible Resource Sidebar */}
                 <aside
                     id="chat-sidebar"
+                    role="region"
                     aria-label="Rental Resources and Quick Links"
+                    inert={!isSidebarOpen}
                     className={`
                         fixed inset-y-0 left-0 z-40 md:static md:z-auto
                         w-[260px] shrink-0 bg-white border-r border-gray-200
                         flex flex-col h-full transition-all duration-300 ease-in-out shadow-lg md:shadow-none
                         ${isSidebarOpen 
-                            ? 'translate-x-0 md:w-[260px] md:opacity-100' 
-                            : '-translate-x-full md:w-0 md:opacity-0 md:overflow-hidden md:border-r-0'
+                            ? 'flex translate-x-0 md:w-[260px] md:opacity-100' 
+                            : 'hidden md:flex -translate-x-full md:w-0 md:opacity-0 md:overflow-hidden md:border-r-0'
                         }
                     `}
                 >
@@ -307,11 +325,12 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
                                     <Link
                                         key={city.city}
                                         href={city.href}
+                                        onClick={handleNavigationClick}
                                         className="flex items-center justify-between px-3 py-2 rounded-lg text-gray-700 hover:text-blue-600 hover:bg-blue-50/60 transition-colors group"
                                     >
                                         <span className="font-medium text-xs sm:text-sm">{city.city}</span>
                                         <span className="text-xs opacity-75 group-hover:translate-x-0.5 transition-transform">
-                                            {city.flag} →
+                                            <span role="img" aria-label={city.city}>{city.flag}</span> <span aria-hidden="true">→</span>
                                         </span>
                                     </Link>
                                 ))}
@@ -337,16 +356,17 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
                                             onClick={() => handlePromptSelect(guide.prompt)}
                                             className="text-[11px] font-medium text-blue-600 hover:text-blue-800 hover:underline text-left cursor-pointer"
                                         >
-                                            Ask assistant →
+                                            Ask assistant <span aria-hidden="true">→</span>
                                         </button>
                                     </div>
                                 ))}
                                 <Link
                                     href="/safety"
+                                    onClick={handleNavigationClick}
                                     className="inline-flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-blue-600 pt-1"
                                 >
                                     <span>Full Safety Tips</span>
-                                    <span>→</span>
+                                    <span aria-hidden="true">→</span>
                                 </Link>
                             </div>
                         </div>
@@ -362,7 +382,7 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
                                         key={chip}
                                         type="button"
                                         onClick={() => handlePromptSelect(chip)}
-                                        className="w-full text-left px-3 py-2 text-xs text-gray-700 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50/50 transition-colors shadow-2xs cursor-pointer"
+                                        className="w-full text-left px-3 py-2 text-xs text-gray-700 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50/50 transition-colors shadow-xs cursor-pointer"
                                     >
                                         &quot;{chip}&quot;
                                     </button>
