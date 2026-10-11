@@ -150,7 +150,8 @@ describe('SearchPageContent Top-Aligned Layout', () => {
     renderWithClient(<SearchPageContent />)
 
     expect(screen.getByTestId('mock-location-autocomplete')).toBeInTheDocument()
-    expect(await screen.findByRole('combobox', { name: '' })).toBeInTheDocument()
+    const selects = await screen.findAllByRole('combobox')
+    expect(selects.length).toBe(4)
     expect(screen.getByText('Brand')).toBeInTheDocument()
     expect(screen.getByText('Category')).toBeInTheDocument()
     expect(screen.getByText('Model')).toBeInTheDocument()

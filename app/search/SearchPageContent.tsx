@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { useLocationSearch } from '@/hooks/useLocationSearch'
@@ -107,6 +107,17 @@ export default function SearchPageContent() {
       }),
     staleTime: 5 * 60 * 1000
   })
+
+  // Memoize models filtered by selected brand
+  const availableModels = useMemo(() => {
+    if (!filterOptions?.models) return []
+    if (!locationSearch.filters.brandId) return filterOptions.models
+    const selectedBrand = filterOptions.brands.find(
+      (b) => b.id === locationSearch.filters.brandId
+    )
+    if (!selectedBrand) return filterOptions.models
+    return filterOptions.models.filter((m) => m.brandName === selectedBrand.name)
+  }, [filterOptions, locationSearch.filters.brandId])
 
   // Initialize from URL search parameters
   useEffect(() => {
@@ -372,19 +383,11 @@ export default function SearchPageContent() {
                   className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">All Models</option>
-                  {filterOptions?.models
-                    .filter((m) => {
-                      if (!locationSearch.filters.brandId) return true
-                      const selectedBrand = filterOptions?.brands.find(
-                        (b) => b.id === locationSearch.filters.brandId
-                      )
-                      return selectedBrand?.name === m.brandName
-                    })
-                    .map((m, i) => (
-                      <option key={`${m.model}-${i}`} value={m.model}>
-                        {m.model} ({m.count})
-                      </option>
-                    ))}
+                  {availableModels.map((m, i) => (
+                    <option key={`${m.model}-${i}`} value={m.model}>
+                      {m.model} ({m.count})
+                    </option>
+                  ))}
                 </select>
               )}
             </div>
@@ -392,17 +395,21 @@ export default function SearchPageContent() {
             {/* Sort By */}
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-700">Sort By</label>
-              <select
-                value={locationSearch.filters.sortBy || 'newest'}
-                onChange={(e) => locationSearch.setFilters({ sortBy: e.target.value as SortByType })}
-                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-              >
-                {SORT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+              {loadingFilterOptions && !filterOptions ? (
+                <FilterSkeleton />
+              ) : (
+                <select
+                  value={locationSearch.filters.sortBy || 'newest'}
+                  onChange={(e) => locationSearch.setFilters({ sortBy: e.target.value as SortByType })}
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                >
+                  {SORT_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
 
@@ -445,19 +452,9 @@ export default function SearchPageContent() {
             </div>
           ) : locationSearch.results && locationSearch.results.motorcycles.total > 0 ? (
             <div className="bg-white rounded-lg p-6 shadow-sm border">
-              <div className="mb-4 flex justify-between items-center">
-                <h2 className="text-xl font-semibold">
-                  Found {locationSearch.results.motorcycles.total} Motorcycles
-                </h2>
-                {locationSearch.filters.locationQuery && (
-                  <span className="text-sm text-gray-500">
-                    in {locationSearch.filters.locationQuery}
-                  </span>
-                )}
-              </div>
-
               <MotorcycleTable
                 motorcycles={locationSearch.results.motorcycles.motorcycles}
+                title={`Found ${locationSearch.results.motorcycles.total} Motorcycles${locationSearch.filters.locationQuery ? ` in ${locationSearch.filters.locationQuery}` : ''}`}
                 showShopColumn={true}
               />
             </div>
