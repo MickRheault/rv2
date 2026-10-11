@@ -73,6 +73,7 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
 
     const formRef = useRef<HTMLFormElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const toggleButtonRef = useRef<HTMLButtonElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -89,11 +90,12 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
         };
     }, []);
 
-    // Close mobile sidebar on Escape key press
+    // Close mobile sidebar on Escape key press and restore focus to toggle button
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape' && isSidebarOpen) {
                 setIsSidebarOpen(false);
+                toggleButtonRef.current?.focus();
             }
         };
         window.addEventListener('keydown', handleKeyDown);
@@ -125,22 +127,20 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
         setIsLoading(false);
     };
 
+    const closeMobileSidebar = () => {
+        if (typeof window !== 'undefined' && window.innerWidth < 768) {
+            setIsSidebarOpen(false);
+        }
+    };
+
     const handlePromptSelect = (promptText: string) => {
         setInput(promptText);
         textareaRef.current?.focus();
-        if (typeof window !== 'undefined' && window.innerWidth < 768) {
-            setIsSidebarOpen(false);
-        }
-    };
-
-    const handleSuggestionClick = (prompt: string) => {
-        handlePromptSelect(prompt);
+        closeMobileSidebar();
     };
 
     const handleNavigationClick = () => {
-        if (typeof window !== 'undefined' && window.innerWidth < 768) {
-            setIsSidebarOpen(false);
-        }
+        closeMobileSidebar();
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -218,6 +218,7 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
             <header className="h-14 shrink-0 border-b border-gray-200 bg-white px-4 sm:px-6 flex items-center justify-between z-20">
                 <div className="flex items-center space-x-3">
                     <button
+                        ref={toggleButtonRef}
                         type="button"
                         onClick={() => setIsSidebarOpen(prev => !prev)}
                         className="p-1.5 -ml-1 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
@@ -274,7 +275,10 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
                 {isSidebarOpen && (
                     <div
                         className="fixed inset-0 bg-black/40 z-30 md:hidden transition-opacity"
-                        onClick={() => setIsSidebarOpen(false)}
+                        onClick={() => {
+                            setIsSidebarOpen(false);
+                            toggleButtonRef.current?.focus();
+                        }}
                         aria-hidden="true"
                         data-testid="sidebar-backdrop"
                     />
@@ -283,7 +287,6 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
                 {/* Collapsible Resource Sidebar */}
                 <aside
                     id="chat-sidebar"
-                    role="region"
                     aria-label="Rental Resources and Quick Links"
                     inert={!isSidebarOpen}
                     className={`
@@ -304,7 +307,10 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
                         </div>
                         <button
                             type="button"
-                            onClick={() => setIsSidebarOpen(false)}
+                            onClick={() => {
+                                setIsSidebarOpen(false);
+                                toggleButtonRef.current?.focus();
+                            }}
                             className="p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg md:hidden cursor-pointer"
                             aria-label="Close sidebar"
                         >
@@ -330,7 +336,7 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
                                     >
                                         <span className="font-medium text-xs sm:text-sm">{city.city}</span>
                                         <span className="text-xs opacity-75 group-hover:translate-x-0.5 transition-transform">
-                                            <span role="img" aria-label={city.city}>{city.flag}</span> <span aria-hidden="true">→</span>
+                                            <span aria-hidden="true">{city.flag}</span> <span aria-hidden="true">→</span>
                                         </span>
                                     </Link>
                                 ))}
@@ -382,7 +388,7 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
                                         key={chip}
                                         type="button"
                                         onClick={() => handlePromptSelect(chip)}
-                                        className="w-full text-left px-3 py-2 text-xs text-gray-700 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50/50 transition-colors shadow-xs cursor-pointer"
+                                        className="w-full text-left px-3 py-2 text-xs text-gray-700 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50/50 transition-colors shadow-sm cursor-pointer"
                                     >
                                         &quot;{chip}&quot;
                                     </button>
@@ -416,7 +422,7 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
                                                 key={prompt}
                                                 type="button"
                                                 className="bg-white px-4 py-2.5 rounded-xl shadow-sm border border-gray-200 text-gray-700 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50/50 transition-colors text-left cursor-pointer"
-                                                onClick={() => handleSuggestionClick(prompt)}
+                                                onClick={() => handlePromptSelect(prompt)}
                                             >
                                                 &quot;{prompt}&quot;
                                             </button>

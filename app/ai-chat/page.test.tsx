@@ -296,6 +296,7 @@ it('closes sidebar on Escape key press', () => {
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(toggleButton).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByTestId('sidebar-backdrop')).not.toBeInTheDocument();
+    expect(document.activeElement).toBe(toggleButton);
 });
 
 it('sets inert attribute on sidebar when collapsed and removes when open', () => {
