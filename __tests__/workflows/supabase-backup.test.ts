@@ -20,6 +20,7 @@ describe('Supabase Automated Backup Workflow (.github/workflows/supabase-backup.
     expect(content).toContain("cron: '0 20 * * *'");
     expect(content).toContain('workflow_dispatch:');
     expect(content).toContain('contents: read');
+    expect(content).toContain('environment: Production');
   });
 
   it('dumps both public and auth schemas with clean recovery flags', () => {

@@ -13,6 +13,7 @@ jobs:
   backup:
     name: Create Encrypted Recovery Snapshot
     runs-on: ubuntu-latest
+    environment: Production
     timeout-minutes: 15
 
     steps:
