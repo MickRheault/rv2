@@ -51,6 +51,7 @@ jest.mock('@/components/motorcycle/MotorcycleTable', () => {
 // Mock motorcycleService
 jest.mock('@/services/motorcycles', () => ({
   hasLocationFilter: jest.requireActual('@/services/motorcycles').hasLocationFilter,
+  deriveFilterOptionsFromMotorcycles: jest.requireActual('@/services/motorcycles').deriveFilterOptionsFromMotorcycles,
   motorcycleService: {
     getFilterOptions: jest.fn(() =>
       Promise.resolve({
@@ -73,6 +74,7 @@ const mockClearSearch = jest.fn()
 let lastLocationSearchConfig: any = null
 
 let mockCurrentFilters: any = {}
+let mockLocationMotorcycles: any[] = []
 let mockResults: any = {
   totalResults: 1,
   motorcycles: { total: 1, motorcycles: [{ id: 'm-1', model: 'PCX 160' }] },
@@ -87,6 +89,7 @@ jest.mock('@/hooks/useLocationSearch', () => ({
     return {
       filters: mockCurrentFilters,
       results: mockResults,
+      locationMotorcycles: mockLocationMotorcycles,
       isLoading: mockIsLoading,
       hasSearched: mockHasSearched,
       query: '',
@@ -121,6 +124,7 @@ describe('SearchPageContent Top-Aligned Layout', () => {
     lastLocationSearchConfig = null
     mockSearchParams = new URLSearchParams()
     mockCurrentFilters = {}
+    mockLocationMotorcycles = []
     mockResults = {
       totalResults: 1,
       motorcycles: { total: 1, motorcycles: [{ id: 'm-1', model: 'PCX 160' }] },
@@ -250,6 +254,48 @@ describe('SearchPageContent Top-Aligned Layout', () => {
     expect(screen.getByText('Yamaha (14)')).toBeInTheDocument()
     expect(screen.getByText('Sport (7)')).toBeInTheDocument()
     expect(screen.getByText('MT-07 (5)')).toBeInTheDocument()
+    expect(motorcycleService.getFilterOptions).not.toHaveBeenCalled()
+  })
+
+  it('derives Brand, Category, and Model options in-memory from locationMotorcycles without calling getFilterOptions when a city is selected', () => {
+    const { motorcycleService } = require('@/services/motorcycles')
+    mockCurrentFilters = { cityId: 'city-bangkok', locationQuery: 'Bangkok' }
+    mockLocationMotorcycles = [
+      {
+        id: 'm-1',
+        model: 'PCX 160',
+        brand_id: 'b-honda',
+        category_id: 'c-scooter',
+        brands: { id: 'b-honda', name: 'Honda' },
+        categories: { id: 'c-scooter', name: 'Scooter', description: null },
+      },
+      {
+        id: 'm-2',
+        model: 'Click 160',
+        brand_id: 'b-honda',
+        category_id: 'c-scooter',
+        brands: { id: 'b-honda', name: 'Honda' },
+        categories: { id: 'c-scooter', name: 'Scooter', description: null },
+      },
+      {
+        id: 'm-3',
+        model: 'XSR 155',
+        brand_id: 'b-yamaha',
+        category_id: 'c-manual',
+        brands: { id: 'b-yamaha', name: 'Yamaha' },
+        categories: { id: 'c-manual', name: 'Manual', description: null },
+      },
+    ]
+
+    renderWithClient(<SearchPageContent />)
+
+    expect(screen.getByText('Honda (2)')).toBeInTheDocument()
+    expect(screen.getByText('Yamaha (1)')).toBeInTheDocument()
+    expect(screen.getByText('Scooter (2)')).toBeInTheDocument()
+    expect(screen.getByText('Manual (1)')).toBeInTheDocument()
+    expect(screen.getByText('PCX 160 (1)')).toBeInTheDocument()
+    expect(screen.getByText('Click 160 (1)')).toBeInTheDocument()
+    expect(screen.getByText('XSR 155 (1)')).toBeInTheDocument()
     expect(motorcycleService.getFilterOptions).not.toHaveBeenCalled()
   })
 })
