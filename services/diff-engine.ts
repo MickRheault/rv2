@@ -51,16 +51,19 @@ export interface ExistingBikeRecord {
   rates: ExistingRateTier[];
 }
 
-export interface RateTierDiffItem {
-  status: 'modified' | 'added' | 'removed' | 'unchanged';
+export interface RateTierComparison {
+  status: 'modified' | 'added' | 'removed' | 'unchanged' | 'duration_modified';
   minDays: number;
   maxDays?: number | null;
+  oldMaxDays?: number | null;
   oldRate?: number;
   newRate?: number;
   delta?: number;
   percentage?: number;
   currency?: string;
 }
+
+export type RateTierDiffItem = RateTierComparison;
 
 export interface CrawledShopProfile {
   business_description?: string | null;
@@ -184,8 +187,8 @@ function ratesDiffer(oldRates: ExistingRateTier[] = [], newRates: CrawledRateTie
 export function computeRateTiersDiff(
   oldRates: ExistingRateTier[] = [],
   newRates: CrawledRateTier[] = []
-): RateTierDiffItem[] {
-  const diffs: RateTierDiffItem[] = [];
+): RateTierComparison[] {
+  const diffs: RateTierComparison[] = [];
   const oldRemaining = [...oldRates];
   const newRemaining = [...newRates];
 
@@ -200,17 +203,28 @@ export function computeRateTiersDiff(
       const oldMax = o.max_days != null ? Number(o.max_days) : null;
       const newMax = n.maxDays != null ? Number(n.maxDays) : null;
 
-      if (oldRate !== newRate || oldMax !== newMax) {
+      if (oldRate !== newRate) {
         const delta = newRate - oldRate;
         const percentage = oldRate > 0 ? (delta / oldRate) * 100 : 0;
         diffs.push({
           status: 'modified',
           minDays: Number(n.minDays),
           maxDays: newMax,
+          oldMaxDays: oldMax,
           oldRate,
           newRate,
           delta,
           percentage,
+          currency: n.currency,
+        });
+      } else if (oldMax !== newMax) {
+        diffs.push({
+          status: 'duration_modified',
+          minDays: Number(n.minDays),
+          maxDays: newMax,
+          oldMaxDays: oldMax,
+          oldRate,
+          newRate,
           currency: n.currency,
         });
       } else {

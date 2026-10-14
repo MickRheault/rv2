@@ -62,6 +62,8 @@ describe('ChangeProposalDiffViewer', () => {
     expect(screen.getByText(/Missing Fleet — Soft Delist \(1\)/i)).toBeInTheDocument();
     expect(screen.getByText('Honda ADV 160')).toBeInTheDocument();
     expect(screen.getByText('Yamaha Aerox 155')).toBeInTheDocument();
+    expect(screen.getByText(/\+ New Bike/i)).toBeInTheDocument();
+    expect(screen.getByText(/- Delisted \/ Unavailable/i)).toBeInTheDocument();
     expect(screen.getByText(/2 of 2 items selected/i)).toBeInTheDocument();
   });
 
@@ -321,6 +323,54 @@ describe('ChangeProposalDiffViewer', () => {
     // Removed tier with "- Removed" badge
     expect(screen.getByText(/- Removed/i)).toBeInTheDocument();
     expect(screen.getByText(/14\+ days:/i)).toBeInTheDocument();
+  });
+
+  it('renders duration updated rate tiers without misleading zero delta', () => {
+    const durationModifiedItems: DiffViewerItem[] = [
+      {
+        id: 'item-duration-1',
+        proposal_id: 'prop-1',
+        entity_type: 'motorcycle',
+        action: 'update',
+        entity_id: 'bike-duration-1',
+        brand_name: 'Honda',
+        model_name: 'Click 160',
+        original_data: {
+          rates: [{ min_days: 1, max_days: 6, rate_per_day: 450 }],
+        },
+        proposed_data: {
+          rates: [{ minDays: 1, maxDays: 13, ratePerDay: 450, currency: 'THB' }],
+        },
+        diff_summary: {
+          rates: {
+            old: [{ min_days: 1, max_days: 6, rate_per_day: 450 }],
+            new: [{ minDays: 1, maxDays: 13, ratePerDay: 450, currency: 'THB' }],
+            tiersDiff: [
+              {
+                status: 'duration_modified',
+                minDays: 1,
+                maxDays: 13,
+                oldMaxDays: 6,
+                oldRate: 450,
+                newRate: 450,
+                currency: 'THB',
+              },
+            ],
+          },
+        },
+        status: 'pending',
+      },
+    ];
+
+    render(<ChangeProposalDiffViewer proposal={mockProposal} items={durationModifiedItems} />);
+
+    expect(screen.getByText('Honda Click 160')).toBeInTheDocument();
+    expect(screen.getByText(/Duration Updated/i)).toBeInTheDocument();
+    expect(screen.getByText(/1-6 days/i)).toBeInTheDocument();
+    expect(screen.getByText(/1-13 days:/i)).toBeInTheDocument();
+    expect(screen.getByText(/฿450\/day/i)).toBeInTheDocument();
+    // Must NOT show misleading +฿0 (+0%)
+    expect(screen.queryByText(/\+฿0/i)).not.toBeInTheDocument();
   });
 
   it('renders shop updates with added and removed inclusions and conditions', () => {

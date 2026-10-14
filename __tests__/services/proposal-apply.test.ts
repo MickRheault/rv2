@@ -879,14 +879,35 @@ describe('Change Proposal Application & Geodata Protection', () => {
           if (table === 'condition_types') {
             return {
               select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockImplementation((_col, val) => ({
+                  maybeSingle: jest.fn().mockResolvedValue({
+                    data: { id: `type-${String(val).toLowerCase().replace(/[^a-z0-9]/g, '-')}-uuid`, name: val },
+                    error: null,
+                  }),
+                })),
                 limit: jest.fn().mockReturnValue({
-                  maybeSingle: jest.fn().mockResolvedValue({ data: { id: 'type-general-uuid' }, error: null }),
+                  maybeSingle: jest.fn().mockResolvedValue({ data: { id: 'type-general-uuid', name: 'General Policy' }, error: null }),
                 }),
               }),
+              insert: jest.fn().mockImplementation((row) => ({
+                select: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({
+                    data: { id: `type-${String(row.name).toLowerCase().replace(/[^a-z0-9]/g, '-')}-uuid`, name: row.name },
+                    error: null,
+                  }),
+                }),
+              })),
             };
           }
           if (table === 'rental_shop_conditions') {
             return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  eq: jest.fn().mockReturnValue({
+                    maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+                  }),
+                }),
+              }),
               insert: jest.fn().mockImplementation((rows) => {
                 insertedConditions.push(...rows);
                 return Promise.resolve({ error: null });
@@ -916,6 +937,7 @@ describe('Change Proposal Application & Geodata Protection', () => {
       const result = await ChangeProposalService.apply('prop-shop-1', ['item-shop-update-1']);
 
       expect(result.success).toBe(true);
+      expect(result.appliedCount).toBe(1);
       expect(updatedShop).toEqual({
         phone: '+66 81 999 9999',
         website: 'https://bkkbike.com',
@@ -932,10 +954,155 @@ describe('Change Proposal Application & Geodata Protection', () => {
       expect(insertedConditions).toHaveLength(1);
       expect(insertedConditions[0]).toEqual({
         shop_id: 'shop-uuid-1',
-        condition_type_id: 'type-general-uuid',
+        condition_type_id: 'type-driver-license-uuid',
         condition_value: 'Valid driving license required',
       });
       expect(deletedConditions).toContain('Old condition');
+    });
+
+    it('assigns distinct condition_type_ids when multiple conditions are applied to prevent unique constraint collisions', async () => {
+      const proposalData = {
+        id: 'prop-shop-multi',
+        shop_id: 'shop-uuid-1',
+        status: 'pending',
+      };
+
+      const itemsData = [
+        {
+          id: 'item-shop-multi-1',
+          proposal_id: 'prop-shop-multi',
+          entity_type: 'rental_shop',
+          action: 'update',
+          entity_id: 'shop-uuid-1',
+          brand_name: 'Shop Profile',
+          model_name: 'Policies',
+          proposed_data: {
+            business_description: 'Shop with multiple conditions',
+          },
+          diff_summary: {
+            conditions: {
+              old: [],
+              new: [
+                'Valid motorcycle driving licence required',
+                'International driving permit may be required',
+                'Security deposit 3000 THB required',
+              ],
+              added: [
+                'Valid motorcycle driving licence required',
+                'International driving permit may be required',
+                'Security deposit 3000 THB required',
+              ],
+              removed: [],
+            },
+          },
+          status: 'pending',
+        },
+      ];
+
+      const insertedConditions: any[] = [];
+      const assignedIdsInDb = new Set<string>();
+
+      const mockSupabase = {
+        from: jest.fn().mockImplementation((table: string) => {
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({ data: proposalData, error: null }),
+                  maybeSingle: jest.fn().mockResolvedValue({ data: proposalData, error: null }),
+                }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ data: itemsData, error: null }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'rental_shops') {
+            return {
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'condition_types') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockImplementation((_col, val) => ({
+                  maybeSingle: jest.fn().mockResolvedValue({
+                    data: { id: `type-${String(val).toLowerCase().replace(/[^a-z0-9]/g, '-')}-uuid`, name: val },
+                    error: null,
+                  }),
+                })),
+                limit: jest.fn().mockReturnValue({
+                  maybeSingle: jest.fn().mockResolvedValue({ data: { id: 'type-general-uuid', name: 'General Policy' }, error: null }),
+                }),
+              }),
+              insert: jest.fn().mockImplementation((row) => ({
+                select: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({
+                    data: { id: `type-${String(row.name).toLowerCase().replace(/[^a-z0-9]/g, '-')}-uuid`, name: row.name },
+                    error: null,
+                  }),
+                }),
+              })),
+            };
+          }
+          if (table === 'rental_shop_conditions') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockImplementation((_col1, _val1) => ({
+                  eq: jest.fn().mockImplementation((_col2, val2) => ({
+                    maybeSingle: jest.fn().mockImplementation(() => {
+                      const exists = assignedIdsInDb.has(val2);
+                      return Promise.resolve({ data: exists ? { id: 'existing' } : null, error: null });
+                    }),
+                  })),
+                })),
+              }),
+              insert: jest.fn().mockImplementation((rows) => {
+                for (const row of rows) {
+                  if (assignedIdsInDb.has(row.condition_type_id)) {
+                    throw new Error(`Unique constraint violation: duplicate (shop_id, condition_type_id)`);
+                  }
+                  assignedIdsInDb.add(row.condition_type_id);
+                  insertedConditions.push(row);
+                }
+                return Promise.resolve({ error: null });
+              }),
+            };
+          }
+          return {
+            select: jest.fn().mockReturnThis(),
+            insert: jest.fn().mockResolvedValue({ error: null }),
+            update: jest.fn().mockReturnThis(),
+            delete: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+          };
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      const result = await ChangeProposalService.apply('prop-shop-multi', ['item-shop-multi-1']);
+
+      expect(result.success).toBe(true);
+      expect(result.appliedCount).toBe(1);
+      expect(insertedConditions).toHaveLength(3);
+
+      // Verify that all 3 conditions have DISTINCT condition_type_ids
+      const typeIds = insertedConditions.map((c) => c.condition_type_id);
+      const uniqueTypeIds = new Set(typeIds);
+      expect(uniqueTypeIds.size).toBe(3);
     });
   });
 });

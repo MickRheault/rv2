@@ -147,6 +147,27 @@ function renderRateTiersDiff(
               );
             }
 
+            if (tier.status === 'duration_modified') {
+              const oldDuration = `${tier.minDays}${tier.oldMaxDays ? `-${tier.oldMaxDays}` : '+'} days`;
+              return (
+                <div
+                  key={idx}
+                  className="flex items-center gap-2 text-xs bg-amber-50 border border-amber-200 rounded-lg p-2"
+                >
+                  <span className="font-medium text-gray-700 min-w-[75px]">
+                    <span className="line-through text-red-500 mr-1">{oldDuration}</span>
+                    <span className="text-gray-400">→</span> {duration}:
+                  </span>
+                  <span className="text-gray-900 font-bold">
+                    {symbol}{tier.newRate}/day
+                  </span>
+                  <span className="ml-auto bg-amber-100 text-amber-800 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                    Duration Updated
+                  </span>
+                </div>
+              );
+            }
+
             if (tier.status === 'added') {
               return (
                 <div

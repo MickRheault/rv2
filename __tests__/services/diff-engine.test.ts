@@ -375,6 +375,7 @@ describe('Diff Engine', () => {
         status: 'modified',
         minDays: 1,
         maxDays: 6,
+        oldMaxDays: 6,
         oldRate: 500,
         newRate: 600,
         delta: 100,
@@ -404,6 +405,26 @@ describe('Diff Engine', () => {
 
       const removed = diffs.find((d) => d.status === 'removed');
       expect(removed).toMatchObject({ minDays: 14, maxDays: null, oldRate: 350 });
+    });
+
+    it('flags duration_modified when rate is unchanged but maxDays changes', () => {
+      const oldRates = [{ min_days: 1, max_days: 6, rate_per_day: 500 }];
+      const newRates = [{ minDays: 1, maxDays: 13, ratePerDay: 500, currency: 'THB' }];
+
+      const diffs = computeRateTiersDiff(oldRates, newRates);
+      expect(diffs).toHaveLength(1);
+      expect(diffs[0]).toEqual({
+        status: 'duration_modified',
+        minDays: 1,
+        maxDays: 13,
+        oldMaxDays: 6,
+        oldRate: 500,
+        newRate: 500,
+        currency: 'THB',
+      });
+      // Ensure delta/percentage are undefined so no misleading zero delta is reported
+      expect(diffs[0].delta).toBeUndefined();
+      expect(diffs[0].percentage).toBeUndefined();
     });
   });
 

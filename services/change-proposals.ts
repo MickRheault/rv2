@@ -75,6 +75,83 @@ export function isActionableProposalAction(
   return action !== 'unchanged';
 }
 
+export function inferConditionTypeName(text: string): string {
+  const lower = text.toLowerCase();
+  if (lower.includes('deposit')) return 'Security Deposit';
+  if (lower.includes('licence') || lower.includes('license') || lower.includes('permit')) return 'Driver License';
+  if (lower.includes('age') || lower.includes('years old')) return 'Minimum Age';
+  if (lower.includes('fuel') || lower.includes('gas')) return 'Fuel Policy';
+  if (lower.includes('insurance') || lower.includes('coverage')) return 'Insurance Policy';
+  if (lower.includes('mileage') || lower.includes('kilometer') || lower.includes('km limit') || lower.includes('mileage limits')) return 'Mileage Policy';
+  if (lower.includes('helmet')) return 'Helmet Policy';
+  if (lower.includes('driver') || lower.includes('operator')) return 'Driver Requirements';
+  if (lower.includes('campaign') || lower.includes('discount') || lower.includes('promo')) return 'Promotion Policy';
+  if (lower.includes('cancellation') || lower.includes('cancel')) return 'Cancellation Policy';
+  if (lower.includes('payment') || lower.includes('cash') || lower.includes('card')) return 'Payment Policy';
+
+  const cleaned = text.split(/[:;.,-]/)[0].trim();
+  if (cleaned.length >= 3 && cleaned.length <= 40) {
+    return cleaned;
+  }
+  return text.slice(0, 40).trim() || 'General Policy';
+}
+
+export async function resolveConditionTypeId(
+  supabase: any,
+  shopId: string,
+  conditionText: string,
+  assignedTypeIds: Set<string>
+): Promise<string | null> {
+  const baseName = inferConditionTypeName(conditionText);
+  let candidateName = baseName;
+  let counter = 1;
+
+  while (counter <= 50) {
+    const { data: existingType } = await (supabase.from('condition_types') as any)
+      .select('id, name')
+      .eq('name', candidateName)
+      .maybeSingle();
+
+    let candidateId = existingType?.id;
+    if (!candidateId) {
+      const { data: newType, error: insertError } = await (supabase.from('condition_types') as any)
+        .insert({ name: candidateName, description: `Rental condition: ${candidateName}` })
+        .select('id')
+        .single();
+
+      if (insertError) {
+        const { data: retryType } = await (supabase.from('condition_types') as any)
+          .select('id')
+          .eq('name', candidateName)
+          .maybeSingle();
+        candidateId = retryType?.id;
+      } else {
+        candidateId = newType?.id;
+      }
+    }
+
+    if (candidateId) {
+      if (!assignedTypeIds.has(candidateId)) {
+        const { data: existingShopCondition } = await (supabase.from('rental_shop_conditions') as any)
+          .select('id')
+          .eq('shop_id', shopId)
+          .eq('condition_type_id', candidateId)
+          .maybeSingle();
+
+        if (!existingShopCondition) {
+          assignedTypeIds.add(candidateId);
+          return candidateId;
+        }
+      }
+    }
+
+    counter++;
+    candidateName = `${baseName} (${counter})`;
+  }
+
+  return null;
+}
+
 export interface CreateProposalInput {
   shopId: string;
   sourceUrl: string;
@@ -499,7 +576,6 @@ export class ChangeProposalService {
             .from('rental_shops') as any)
             .update(allowedUpdates)
             .eq('id', proposal.shop_id);
-          appliedCount++;
         }
 
         // Apply inclusions if diff_summary.inclusions present
@@ -511,7 +587,6 @@ export class ChangeProposalService {
             inclusion_text: text,
           }));
           await (supabase.from('rental_shop_inclusions') as any).insert(inserts);
-          appliedCount++;
         }
         if (inclusionsDiff?.removed && Array.isArray(inclusionsDiff.removed) && inclusionsDiff.removed.length > 0) {
           await (supabase.from('rental_shop_inclusions') as any)
@@ -523,29 +598,20 @@ export class ChangeProposalService {
         // Apply conditions if diff_summary.conditions present
         const conditionsDiff = diffSummary?.conditions;
         if (conditionsDiff?.added && Array.isArray(conditionsDiff.added) && conditionsDiff.added.length > 0) {
-          // Resolve condition_type_id
-          const { data: existingType } = await (supabase.from('condition_types') as any)
-            .select('id')
-            .limit(1)
-            .maybeSingle();
-
-          let conditionTypeId = existingType?.id;
-          if (!conditionTypeId) {
-            const { data: newType } = await (supabase.from('condition_types') as any)
-              .insert({ name: 'General Policy', description: 'General rental policy' })
-              .select('id')
-              .single();
-            conditionTypeId = newType?.id;
+          const assignedTypeIds = new Set<string>();
+          const inserts = [];
+          for (const val of conditionsDiff.added) {
+            const conditionTypeId = await resolveConditionTypeId(supabase, proposal.shop_id, val, assignedTypeIds);
+            if (conditionTypeId) {
+              inserts.push({
+                shop_id: proposal.shop_id,
+                condition_type_id: conditionTypeId,
+                condition_value: val,
+              });
+            }
           }
-
-          if (conditionTypeId) {
-            const inserts = conditionsDiff.added.map((val: string) => ({
-              shop_id: proposal.shop_id,
-              condition_type_id: conditionTypeId,
-              condition_value: val,
-            }));
+          if (inserts.length > 0) {
             await (supabase.from('rental_shop_conditions') as any).insert(inserts);
-            appliedCount++;
           }
         }
         if (conditionsDiff?.removed && Array.isArray(conditionsDiff.removed) && conditionsDiff.removed.length > 0) {
@@ -554,6 +620,8 @@ export class ChangeProposalService {
             .eq('shop_id', proposal.shop_id)
             .in('condition_value', conditionsDiff.removed);
         }
+
+        appliedCount++;
       }
 
       // Mark item applied
