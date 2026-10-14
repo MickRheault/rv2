@@ -96,3 +96,8 @@ rm restore.sql
 - External cloud object storage buckets (S3, Cloudflare R2, Backblaze B2).
 - Automated issue creation on failure (relying on GitHub's native failed-workflow email notification).
 - Custom CLI restore scripts in `scripts/`.
+
+## Implementation Tickets
+
+- [x] [#117: feat(ops): automated daily GPG-encrypted Supabase database backups via GitHub Actions](https://github.com/MickRheault/rv2/issues/117)
+
