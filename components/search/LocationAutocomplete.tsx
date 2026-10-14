@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { clsx } from 'clsx'
 import {
@@ -12,6 +12,11 @@ import {
 } from '@heroicons/react/24/outline'
 import { Input, Spinner, Card } from '@/components/ui'
 import { searchService, LocationSearchResult } from '@/services/search'
+import {
+  POPULAR_LOCATIONS_TTL_MS,
+  readCachedPopularLocations,
+  writeCachedPopularLocations
+} from '@/lib/cache/popularLocationsCache'
 
 interface LocationAutocompleteProps {
   value?: string
@@ -22,6 +27,7 @@ interface LocationAutocompleteProps {
   className?: string
   disabled?: boolean
   showPopularLocations?: boolean
+  initialPopularLocations?: LocationSearchResult[]
 }
 
 export default function LocationAutocomplete({
@@ -32,7 +38,8 @@ export default function LocationAutocomplete({
   placeholder = 'Search locations...',
   className,
   disabled = false,
-  showPopularLocations = true
+  showPopularLocations = true,
+  initialPopularLocations
 }: LocationAutocompleteProps) {
   const [query, setQuery] = useState(value)
   const [isOpen, setIsOpen] = useState(false)
@@ -44,28 +51,46 @@ export default function LocationAutocomplete({
   // Close dropdown when clicking outside
   useClickOutside(containerRef, () => setIsOpen(false))
 
-  // Search locations query
+  // Resolve initial popular locations from server props or client localStorage TTL cache
+  const resolvedInitialPopular = useMemo(
+    () => (initialPopularLocations?.length ? initialPopularLocations : readCachedPopularLocations()),
+    [initialPopularLocations]
+  )
+
+  useEffect(() => {
+    if (initialPopularLocations?.length) {
+      writeCachedPopularLocations(initialPopularLocations)
+    }
+  }, [initialPopularLocations])
+
+  // Search locations query (only enabled when dropdown is open and user typed >= 2 chars)
   const { data: suggestions = [], isLoading: isLoadingSuggestions } = useQuery({
     queryKey: ['location-suggestions', query],
     queryFn: () => searchService.searchLocations(query, 8),
-    enabled: query.length >= 2,
-    staleTime: 5 * 60 * 1000 // 5 minutes
+    enabled: isOpen && query.length >= 2,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false
   })
 
-  // Popular locations query
+  // Popular locations query backed by server initialData and localStorage TTL cache
   const { data: popularLocations = [], isLoading: isLoadingPopular } = useQuery({
     queryKey: ['popular-locations'],
-    queryFn: () => searchService.getPopularSearchLocations(6),
+    queryFn: async () => {
+      const results = await searchService.getPopularSearchLocations(6)
+      writeCachedPopularLocations(results)
+      return results
+    },
+    initialData: resolvedInitialPopular,
     enabled: showPopularLocations,
-    staleTime: 30 * 60 * 1000 // 30 minutes
+    staleTime: POPULAR_LOCATIONS_TTL_MS,
+    gcTime: 60 * 60 * 1000,
+    refetchOnWindowFocus: false
   })
 
-  // Update local query when value prop changes
+  // Update local query only when controlled value prop changes externally
   useEffect(() => {
-    if (value !== query) {
-      setQuery(value)
-    }
-  }, [value, query])
+    setQuery(value)
+  }, [value])
 
   // Handle input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -148,6 +173,7 @@ export default function LocationAutocomplete({
   // Render location item
   const renderLocationItem = (location: LocationSearchResult, index: number) => (
     <button
+      type="button"
       key={`${location.type}-${location.id}`}
       onClick={() => handleLocationSelect(location)}
       className={clsx(
@@ -196,6 +222,7 @@ export default function LocationAutocomplete({
         {/* Clear button */}
         {query && (
           <button
+            type="button"
             onClick={handleClear}
             className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors"
             aria-label="Clear search"

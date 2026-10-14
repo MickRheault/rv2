@@ -222,4 +222,23 @@ describe('SearchPageContent Top-Aligned Layout', () => {
 
     expect(mockClearSearch).toHaveBeenCalled()
   })
+
+  it('renders initialFilterOptions immediately without calling getFilterOptions when no location filter is active (#115)', () => {
+    const { motorcycleService } = require('@/services/motorcycles')
+    const initialFilterOptions = {
+      brands: [{ id: 'brand-yamaha', name: 'Yamaha', count: 14 }],
+      categories: [{ id: 'cat-sport', name: 'Sport', description: 'Sport bikes', count: 7 }],
+      models: [{ model: 'MT-07', brandName: 'Yamaha', count: 5 }],
+      priceRange: { min: 15, max: 120 },
+      engineCapacityRange: { min: 125, max: 900 },
+      features: [],
+    }
+
+    renderWithClient(<SearchPageContent initialFilterOptions={initialFilterOptions} />)
+
+    expect(screen.getByText('Yamaha (14)')).toBeInTheDocument()
+    expect(screen.getByText('Sport (7)')).toBeInTheDocument()
+    expect(screen.getByText('MT-07 (5)')).toBeInTheDocument()
+    expect(motorcycleService.getFilterOptions).not.toHaveBeenCalled()
+  })
 })

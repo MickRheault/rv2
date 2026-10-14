@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { useLocationSearch } from '@/hooks/useLocationSearch'
 import { LocationSearchResult, LocationBasedSearchFilters } from '@/services/search'
-import { motorcycleService } from '@/services/motorcycles'
+import { motorcycleService, FilterOptions } from '@/services/motorcycles'
 import MotorcycleTable from '@/components/motorcycle/MotorcycleTable'
 import { LocationAutocomplete } from '@/components/search'
 import { Button } from '@/components/ui'
@@ -70,7 +70,15 @@ function RangeFilterInput({
   )
 }
 
-export default function SearchPageContent() {
+export interface SearchPageContentProps {
+  initialPopularLocations?: LocationSearchResult[]
+  initialFilterOptions?: FilterOptions
+}
+
+export default function SearchPageContent({
+  initialPopularLocations,
+  initialFilterOptions
+}: SearchPageContentProps = {}) {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -78,13 +86,20 @@ export default function SearchPageContent() {
   const [isInitialized, setIsInitialized] = useState(false)
   const isUpdatingUrlRef = useRef(false)
 
-  // Location search hook with auto-search enabled for responsive filtering
+  // Location search hook scoped to motorcycles with auto-search enabled
   const locationSearch = useLocationSearch({
     enableAutoSearch: true,
     defaultFilters: {
-      limit: 20
+      limit: 20,
+      contentType: 'motorcycles'
     }
   })
+
+  const hasActiveLocationFilter = Boolean(
+    locationSearch.filters.cityId ||
+    locationSearch.filters.provinceId ||
+    locationSearch.filters.countryCode
+  )
 
   // Load filter options based on active location filter with React Query caching
   const {
@@ -105,7 +120,9 @@ export default function SearchPageContent() {
         provinceId: locationSearch.filters.provinceId,
         countryCode: locationSearch.filters.countryCode
       }),
-    staleTime: 5 * 60 * 1000
+    initialData: hasActiveLocationFilter ? undefined : initialFilterOptions,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false
   })
 
   // Memoize models filtered by selected brand
@@ -282,6 +299,7 @@ export default function SearchPageContent() {
                 onLocationSelect={handleLocationSelect}
                 onQueryChange={setLocationInput}
                 onSubmit={handleLocationSubmit}
+                initialPopularLocations={initialPopularLocations}
                 placeholder="Where do you want to ride? (e.g. Chiang Mai, Phuket)"
                 className="w-full"
               />

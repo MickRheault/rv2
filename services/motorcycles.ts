@@ -953,7 +953,18 @@ export const motorcycleService = {
   // Get structured filter options with counts based on current filters
   async getFilterOptions(currentFilters?: Pick<SearchFilters, 'cityId' | 'provinceId' | 'countryCode' | 'brandId' | 'categoryId' | 'model'>): Promise<FilterOptions> {
     const hasLocationFilter = Boolean(currentFilters?.cityId || currentFilters?.provinceId || currentFilters?.countryCode)
-    const locationJoin = hasLocationFilter ? '!inner' : ''
+    const locationSelect = hasLocationFilter
+      ? `,
+        rental_shops!inner (
+          city_id,
+          cities!inner (
+            province_id,
+            provinces!inner (
+              country_code
+            )
+          )
+        )`
+      : ''
 
     // Build base query for counting with minimal projection
     let baseQuery = typedSupabase
@@ -975,21 +986,8 @@ export const motorcycleService = {
           description
         ),
         motorcycle_features (
-          features (
-            id,
-            name,
-            description
-          )
-        ),
-        rental_shops${locationJoin} (
-          city_id,
-          cities${locationJoin} (
-            province_id,
-            provinces${locationJoin} (
-              country_code
-            )
-          )
-        )
+          feature_id
+        )${locationSelect}
       `)
 
     // Apply location filters
@@ -1012,22 +1010,29 @@ export const motorcycleService = {
       baseQuery = baseQuery.ilike('model', `%${currentFilters.model}%`)
     }
 
-    const { data: motorcycles, error } = await baseQuery
+    const [{ data: motorcycles, error }, priceRange, engineCapacityRange, features] = await Promise.all([
+      baseQuery,
+      this.getPriceRange(),
+      this.getEngineCapacityRange(),
+      this.getFeatures()
+    ])
 
     if (error) {
       console.error('Error fetching filter options:', error)
       throw error
     }
 
-    // Count brands
+    // Count brands, categories, models, and features
     const brandCounts: Record<string, { name: string; count: number }> = {}
     const categoryCounts: Record<string, { name: string; description: string | null; count: number }> = {}
     const modelCounts: Record<string, { brandName: string; count: number }> = {}
+    const featureCounts: Record<string, number> = {}
 
     motorcycles?.forEach(motorcycle => {
       const brand = (motorcycle as any).brands
       const category = (motorcycle as any).categories
       const model = (motorcycle as any).model
+      const motorcycleFeatures = (motorcycle as any).motorcycle_features || []
 
       // Count brands (exclude current brand filter)
       if (brand && (!currentFilters?.brandId || currentFilters.brandId !== brand.id)) {
@@ -1058,41 +1063,22 @@ export const motorcycleService = {
         }
         modelCounts[key].count++
       }
-    })
 
-    // Get price and engine capacity ranges
-    const [priceRange, engineCapacityRange, features] = await Promise.all([
-      this.getPriceRange(),
-      this.getEngineCapacityRange(),
-      this.getFeatures()
-    ])
-
-    // Count features based on motorcycle_features relationships
-    const featureCounts: Record<string, { name: string; description: string | null; count: number }> = {}
-
-    motorcycles?.forEach(motorcycle => {
-      const motorcycleFeatures = (motorcycle as any).motorcycle_features || []
+      // Count features from projected feature_id (or nested features.id fallback)
       motorcycleFeatures.forEach((mf: any) => {
-        if (mf.features) {
-          const feature = mf.features
-          if (!featureCounts[feature.id]) {
-            featureCounts[feature.id] = {
-              name: feature.name,
-              description: feature.description,
-              count: 0
-            }
-          }
-          featureCounts[feature.id].count++
+        const featureId = mf?.feature_id || mf?.features?.id
+        if (featureId) {
+          featureCounts[featureId] = (featureCounts[featureId] || 0) + 1
         }
       })
     })
 
     // Merge with all available features to show features with 0 count
-    const featureOptions = (features as any[]).map(feature => ({
+    const featureOptions = ((features as any[]) || []).map(feature => ({
       id: feature.id,
       name: feature.name,
       description: feature.description,
-      count: featureCounts[feature.id]?.count || 0
+      count: featureCounts[feature.id] || 0
     }))
 
     return {

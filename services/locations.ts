@@ -22,6 +22,41 @@ export interface CityWithLocation extends City {
   }) | null
 }
 
+export const CITY_WITH_COUNTS_SELECT = `
+  id,
+  name,
+  province_id,
+  created_at,
+  updated_at,
+  provinces (
+    id,
+    name,
+    country_code,
+    created_at,
+    updated_at,
+    countries (
+      code,
+      name,
+      created_at,
+      updated_at
+    )
+  ),
+  rental_shops (
+    id,
+    motorcycle_rentals (count)
+  )
+`
+
+export function aggregateCityCounts(city: any): { shopCount: number; motorcycleCount: number } {
+  const shops = Array.isArray(city?.rental_shops) ? city.rental_shops : []
+  const shopCount = shops.length
+  const motorcycleCount = shops.reduce(
+    (sum: number, shop: any) => sum + (shop?.motorcycle_rentals?.[0]?.count || 0),
+    0
+  )
+  return { shopCount, motorcycleCount }
+}
+
 export const locationService = {
   // Get all countries
   async getCountries() {
@@ -308,14 +343,7 @@ export const locationService = {
   async getPopularLocations(limit: number = 10) {
     const { data, error } = await supabase
       .from('cities')
-      .select(`
-        *,
-        provinces (
-          *,
-          countries (*)
-        ),
-        rental_shops (id)
-      `)
+      .select(CITY_WITH_COUNTS_SELECT)
       .not('rental_shops', 'is', null)
       .order('name')
 
@@ -324,11 +352,15 @@ export const locationService = {
       throw error
     }
 
-    // Count shops per city and sort by popularity
-    const citiesWithCounts = (data as any[] || [])?.map((city: any) => ({
-      ...city as CityWithLocation,
-      shopCount: city.rental_shops?.length || 0
-    })).sort((a: any, b: any) => b.shopCount - a.shopCount).slice(0, limit) || []
+    // Count shops and motorcycles per city and sort by popularity
+    const citiesWithCounts = ((data as any[]) || [])
+      .map((city: any) => ({
+        ...(city as CityWithLocation),
+        ...aggregateCityCounts(city)
+      }))
+      .filter((city: any) => city.shopCount > 0)
+      .sort((a: any, b: any) => b.shopCount - a.shopCount)
+      .slice(0, limit)
 
     return citiesWithCounts
   },
