@@ -65,6 +65,7 @@ export interface RateTierComparison {
 
 export interface CrawledShopProfile {
   business_description?: string | null;
+  businessDescription?: string | null;
   phone?: string | null;
   website?: string | null;
   inclusions?: string[] | null;
@@ -101,8 +102,38 @@ export interface DiffResult {
   };
 }
 
+function normalizeModelToken(modelName: string): string {
+  return modelName
+    .trim()
+    .toLowerCase()
+    .replace(/[-_]+/g, ' ')
+    .replace(/\b(\d+)\s*cc\b/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function canonicalKey(brand: string, modelName: string): string {
-  return `${brand.trim().toLowerCase()}:${modelName.trim().toLowerCase()}`;
+  return `${brand.trim().toLowerCase()}:${normalizeModelToken(modelName)}`;
+}
+
+export function normalizeCrawledShopProfile(
+  rawShop?: CrawledShopProfile | Record<string, any> | null
+): CrawledShopProfile | null {
+  if (!rawShop || typeof rawShop !== 'object') {
+    return null;
+  }
+
+  const business_description =
+    rawShop.business_description !== undefined
+      ? rawShop.business_description
+      : rawShop.businessDescription !== undefined
+      ? rawShop.businessDescription
+      : undefined;
+
+  return {
+    ...rawShop,
+    ...(business_description !== undefined ? { business_description } : {}),
+  };
 }
 
 /**
@@ -292,20 +323,61 @@ export function computeShopInventoryDiff(
   }
 
   const normalizedCrawledBikes = (crawledBikes || []).map(normalizeCrawledBikeSnapshot);
+  const normalizedCrawledShop = normalizeCrawledShopProfile(crawledShop);
 
   const items: ProposedDiffItem[] = [];
   const existingMap = new Map<string, ExistingBikeRecord>();
+
+  const existingBikeIdentity = (bike: ExistingBikeRecord) =>
+    bike.id || canonicalKey(bike.brand_name, bike.model_name);
 
   for (const bike of existingBikes) {
     existingMap.set(canonicalKey(bike.brand_name, bike.model_name), bike);
   }
 
-  const observedExistingKeys = new Set<string>();
+  // Register secondary composite keys (model + engine_capacity_cc) when model omits displacement
+  for (const bike of existingBikes) {
+    if (bike.engine_capacity_cc != null && bike.engine_capacity_cc > 0) {
+      const normalizedModel = normalizeModelToken(bike.model_name);
+      const ccPattern = new RegExp(`\\b${bike.engine_capacity_cc}\\b`);
+      if (!ccPattern.test(normalizedModel)) {
+        const compositeKey = canonicalKey(
+          bike.brand_name,
+          `${bike.model_name} ${bike.engine_capacity_cc}`
+        );
+        if (!existingMap.has(compositeKey)) {
+          existingMap.set(compositeKey, bike);
+        }
+      }
+    }
+  }
+
+  const observedExistingIdentities = new Set<string>();
 
   // 2. Evaluate Additions and Updates
   for (const crawled of normalizedCrawledBikes) {
-    const key = canonicalKey(crawled.brand, crawled.modelName);
-    const existing = existingMap.get(key);
+    const primaryKey = canonicalKey(crawled.brand, crawled.modelName);
+    let existing = existingMap.get(primaryKey);
+
+    if (
+      !existing &&
+      crawled.engineCapacityCc != null &&
+      crawled.engineCapacityCc > 0
+    ) {
+      const normalizedCrawledModel = normalizeModelToken(crawled.modelName);
+      const ccPattern = new RegExp(`\\b${crawled.engineCapacityCc}\\b`);
+      if (!ccPattern.test(normalizedCrawledModel)) {
+        const compositeKey = canonicalKey(
+          crawled.brand,
+          `${crawled.modelName} ${crawled.engineCapacityCc}`
+        );
+        existing = existingMap.get(compositeKey);
+      }
+    }
+
+    if (existing && observedExistingIdentities.has(existingBikeIdentity(existing))) {
+      existing = undefined;
+    }
 
     if (!existing) {
       // New motorcycle discovered
@@ -322,7 +394,7 @@ export function computeShopInventoryDiff(
         },
       });
     } else {
-      observedExistingKeys.add(key);
+      observedExistingIdentities.add(existingBikeIdentity(existing));
 
       // Check for specification or pricing modifications
       const diffSummary: Record<string, { old: any; new: any; [key: string]: any }> = {};
@@ -385,8 +457,7 @@ export function computeShopInventoryDiff(
 
   // 3. Evaluate Missing Inventory -> Soft Delist (ADR 0005)
   for (const bike of existingBikes) {
-    const key = canonicalKey(bike.brand_name, bike.model_name);
-    if (!observedExistingKeys.has(key)) {
+    if (!observedExistingIdentities.has(existingBikeIdentity(bike))) {
       items.push({
         entity_type: 'motorcycle',
         action: 'delist',
@@ -408,46 +479,46 @@ export function computeShopInventoryDiff(
   }
 
   // 4. Evaluate Shop Profile Updates
-  if (existingShop && crawledShop) {
+  if (existingShop && normalizedCrawledShop) {
     const shopDiff: Record<string, { old: any; new: any; [key: string]: any }> = {};
 
     if (
-      crawledShop.business_description !== undefined &&
-      crawledShop.business_description !== null &&
-      crawledShop.business_description !== existingShop.business_description
+      normalizedCrawledShop.business_description !== undefined &&
+      normalizedCrawledShop.business_description !== null &&
+      normalizedCrawledShop.business_description !== existingShop.business_description
     ) {
       shopDiff.business_description = {
         old: existingShop.business_description,
-        new: crawledShop.business_description,
+        new: normalizedCrawledShop.business_description,
       };
     }
 
     if (
-      crawledShop.phone !== undefined &&
-      crawledShop.phone !== null &&
-      crawledShop.phone !== existingShop.phone
+      normalizedCrawledShop.phone !== undefined &&
+      normalizedCrawledShop.phone !== null &&
+      normalizedCrawledShop.phone !== existingShop.phone
     ) {
       shopDiff.phone = {
         old: existingShop.phone,
-        new: crawledShop.phone,
+        new: normalizedCrawledShop.phone,
       };
     }
 
     if (
-      crawledShop.website !== undefined &&
-      crawledShop.website !== null &&
-      crawledShop.website !== existingShop.website
+      normalizedCrawledShop.website !== undefined &&
+      normalizedCrawledShop.website !== null &&
+      normalizedCrawledShop.website !== existingShop.website
     ) {
       shopDiff.website = {
         old: existingShop.website,
-        new: crawledShop.website,
+        new: normalizedCrawledShop.website,
       };
     }
 
     // Inclusions diff
-    if (Array.isArray(crawledShop.inclusions)) {
+    if (Array.isArray(normalizedCrawledShop.inclusions)) {
       const oldIncls = existingShop.inclusions || [];
-      const newIncls = crawledShop.inclusions.map(String);
+      const newIncls = normalizedCrawledShop.inclusions.map(String);
       const { added, removed } = computeStringListDiff(oldIncls, newIncls);
 
       if (added.length > 0 || removed.length > 0) {
@@ -461,11 +532,11 @@ export function computeShopInventoryDiff(
     }
 
     // Conditions diff
-    if (Array.isArray(crawledShop.conditions)) {
+    if (Array.isArray(normalizedCrawledShop.conditions)) {
       const oldConds = (existingShop.conditions || []).map((c) =>
         typeof c === 'string' ? c : (c as any).value || (c as any).condition_value || ''
       );
-      const newConds = crawledShop.conditions.map((c) =>
+      const newConds = normalizedCrawledShop.conditions.map((c) =>
         typeof c === 'string' ? c : (c as any).value || (c as any).condition_value || ''
       );
       const { added, removed } = computeStringListDiff(oldConds, newConds);
@@ -494,7 +565,7 @@ export function computeShopInventoryDiff(
           inclusions: existingShop.inclusions || [],
           conditions: existingShop.conditions || [],
         },
-        proposed_data: crawledShop,
+        proposed_data: normalizedCrawledShop,
         diff_summary: shopDiff,
       });
     }

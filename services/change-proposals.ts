@@ -266,11 +266,35 @@ export class ChangeProposalService {
         .insert(itemsToInsert);
 
       if (itemsError) {
+        try {
+          const rollbackQuery = (supabase.from('change_proposals') as any).delete?.();
+          if (rollbackQuery && typeof rollbackQuery.eq === 'function') {
+            await rollbackQuery.eq('id', proposal.id);
+          }
+        } catch (rollbackErr) {
+          console.error('Failed to roll back parent change proposal after item staging error:', rollbackErr);
+        }
         throw new Error(`Failed to stage change proposal items: ${itemsError.message}`);
       }
     }
 
-    // 5. Advance shop crawl timestamp to mark task completed
+    // Supersede any previous pending proposal for the same (shopId, agentRunId)
+    if (input.agentRunId && typeof input.agentRunId === 'string' && input.agentRunId.trim().length > 0) {
+      try {
+        const supersedeQuery = (supabase.from('change_proposals') as any).delete?.();
+        if (supersedeQuery && typeof supersedeQuery.eq === 'function') {
+          await supersedeQuery
+            .eq('shop_id', input.shopId)
+            .eq('agent_run_id', input.agentRunId)
+            .eq('status', 'pending')
+            .neq('id', proposal.id);
+        }
+      } catch (supersedeErr) {
+        console.error('Failed to replace prior pending proposal for agentRunId:', supersedeErr);
+      }
+    }
+
+    // 6. Advance shop crawl timestamp to mark task completed
     await TaskSchedulerService.recordCrawlSuccess(input.shopId);
 
     return {
@@ -535,7 +559,12 @@ export class ChangeProposalService {
         }
       } else if (item.entity_type === 'rental_shop') {
         const allowedUpdates: Record<string, any> = {};
-        const desc = proposed.business_description !== undefined ? proposed.business_description : proposed.description;
+        const desc =
+          proposed.business_description !== undefined
+            ? proposed.business_description
+            : proposed.businessDescription !== undefined
+            ? proposed.businessDescription
+            : proposed.description;
         if (desc !== undefined) {
           allowedUpdates.business_description = desc;
         }

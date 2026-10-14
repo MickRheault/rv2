@@ -460,5 +460,187 @@ describe('Diff Engine', () => {
         removed: ['Deposit required'],
       });
     });
+
+    it('matches bare family names with engine_capacity_cc and punctuation normalization while preserving distinct variants and camelCase businessDescription', () => {
+      const existingBikes: ExistingBikeRecord[] = [
+        {
+          id: 'bike-zoomer',
+          brand_name: 'Honda',
+          model_name: 'Zoomer-X',
+          year: null,
+          engine_capacity_cc: 110,
+          availability_status: null,
+          rates: [{ min_days: 1, max_days: null, rate_per_day: 10 }],
+        },
+        {
+          id: 'bike-pcx',
+          brand_name: 'Honda',
+          model_name: 'PCX',
+          year: null,
+          engine_capacity_cc: 150,
+          availability_status: null,
+          rates: [{ min_days: 1, max_days: null, rate_per_day: 15 }],
+        },
+        {
+          id: 'bike-dream',
+          brand_name: 'Honda',
+          model_name: 'Dream',
+          year: null,
+          engine_capacity_cc: 125,
+          availability_status: null,
+          rates: [{ min_days: 1, max_days: null, rate_per_day: 10 }],
+        },
+        {
+          id: 'bike-scoopy',
+          brand_name: 'Honda',
+          model_name: 'Scoopy',
+          year: null,
+          engine_capacity_cc: 110,
+          availability_status: null,
+          rates: [{ min_days: 1, max_days: null, rate_per_day: 15 }],
+        },
+        {
+          id: 'bike-click',
+          brand_name: 'Honda',
+          model_name: 'Click',
+          year: null,
+          engine_capacity_cc: 125,
+          availability_status: null,
+          rates: [{ min_days: 1, max_days: null, rate_per_day: 10 }],
+        },
+      ];
+
+      const crawledBikes: any[] = [
+        {
+          brand: 'Honda',
+          modelName: 'Click 125',
+          engineCapacity: 125,
+          rates: [{ minDays: 1, dailyRate: 11, currency: 'USD' }],
+        },
+        {
+          brand: 'Honda',
+          modelName: 'Dream 125',
+          engineCapacity: 125,
+          rates: [{ minDays: 1, dailyRate: 10, currency: 'USD' }],
+        },
+        {
+          brand: 'Honda',
+          modelName: 'ADV 160',
+          modelYear: 2026,
+          engineCapacity: 160,
+          rates: [{ minDays: 1, dailyRate: 45, currency: 'USD' }],
+        },
+        {
+          brand: 'Honda',
+          modelName: 'Click 125 Gen 5th',
+          engineCapacity: 125,
+          rates: [{ minDays: 1, dailyRate: 13, currency: 'USD' }],
+        },
+        {
+          brand: 'Honda',
+          modelName: 'PCX',
+          rates: [{ minDays: 1, dailyRate: 15, currency: 'USD' }],
+        },
+        {
+          brand: 'Honda',
+          modelName: 'Scoopy 110',
+          modelYear: 2026,
+          engineCapacity: 110,
+          rates: [{ minDays: 1, dailyRate: 15, currency: 'USD' }],
+        },
+        {
+          brand: 'Yamaha',
+          modelName: 'PG1',
+          modelYear: 2026,
+          engineCapacity: 115,
+          rates: [{ minDays: 1, dailyRate: 18, currency: 'USD' }],
+        },
+        {
+          brand: 'Honda',
+          modelName: 'Zoomer X 110',
+          engineCapacity: 110,
+          rates: [{ minDays: 1, dailyRate: 10, currency: 'USD' }],
+        },
+      ];
+
+      const existingShop = {
+        id: '2b97f3dc-b0af-42b0-bb3a-68d286d94ef3',
+        business_description: null,
+        inclusions: ['Perfectly maintained scooters', 'Free delivery to accommodation'],
+        conditions: [],
+      };
+
+      const crawledShop: any = {
+        businessDescription:
+          'Family-run scooter and motorbike rental business in Siem Reap offering daily, weekly and monthly rentals, free delivery to accommodation and 24-hour service support.',
+        inclusions: [
+          'Helmets provided',
+          'Phone holder provided',
+          'Free delivery to accommodation',
+          '24-hour service support',
+        ],
+        conditions: [
+          'Rental day is 24 hours',
+          '10% off or more advertised for 3-day rentals; contact the shop for the applicable quotation',
+        ],
+      };
+
+      const diff = computeShopInventoryDiff(existingBikes, crawledBikes, existingShop, crawledShop);
+
+      // Click (125cc) matched Click 125 with 10 -> 11 USD update
+      const clickItem = diff.items.find((i) => i.entity_id === 'bike-click');
+      expect(clickItem).toBeDefined();
+      expect(clickItem?.action).toBe('update');
+      expect(clickItem?.diff_summary?.rates?.tiersDiff).toEqual([
+        {
+          status: 'modified',
+          minDays: 1,
+          maxDays: null,
+          oldMaxDays: null,
+          oldRate: 10,
+          newRate: 11,
+          delta: 1,
+          percentage: 10,
+          currency: 'USD',
+        },
+      ]);
+
+      // Scoopy (110cc) matched Scoopy 110 with year null -> 2026 update
+      const scoopyItem = diff.items.find((i) => i.entity_id === 'bike-scoopy');
+      expect(scoopyItem).toBeDefined();
+      expect(scoopyItem?.action).toBe('update');
+      expect(scoopyItem?.diff_summary?.year).toEqual({ old: null, new: 2026 });
+
+      // Dream, Zoomer-X, PCX matched as unchanged
+      expect(diff.items.find((i) => i.entity_id === 'bike-dream')?.action).toBe('unchanged');
+      expect(diff.items.find((i) => i.entity_id === 'bike-zoomer')?.action).toBe('unchanged');
+      expect(diff.items.find((i) => i.entity_id === 'bike-pcx')?.action).toBe('unchanged');
+
+      // Click 125 Gen 5th, ADV 160, PG1 are separate additions
+      const addedModels = diff.items
+        .filter((i) => i.entity_type === 'motorcycle' && i.action === 'add')
+        .map((i) => i.model_name);
+      expect(addedModels).toEqual(['ADV 160', 'Click 125 Gen 5th', 'PG1']);
+
+      // Zero false delists
+      expect(diff.items.filter((i) => i.action === 'delist')).toHaveLength(0);
+
+      // Shop profile update includes normalized business_description
+      const shopUpdate = diff.items.find((i) => i.entity_type === 'rental_shop');
+      expect(shopUpdate).toBeDefined();
+      expect(shopUpdate?.diff_summary?.business_description).toEqual({
+        old: null,
+        new: crawledShop.businessDescription,
+      });
+
+      // Summary counts: 3 add (ADV 160, Click 125 Gen 5th, PG1), 3 update (Click, Scoopy, Shop Profile), 0 delist, 3 unchanged (Dream, Zoomer-X, PCX)
+      expect(diff.summaryCounts).toEqual({
+        add: 3,
+        update: 3,
+        delist: 0,
+        unchanged: 3,
+      });
+    });
   });
 });
+
