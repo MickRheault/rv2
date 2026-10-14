@@ -408,6 +408,13 @@ describe('Change Proposal Application & Geodata Protection', () => {
               insert: insertItemsMock,
             };
           }
+          if (table === 'rental_shop_inclusions' || table === 'rental_shop_conditions') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ data: [], error: null }),
+              }),
+            };
+          }
           return {};
         }),
       };
@@ -515,6 +522,13 @@ describe('Change Proposal Application & Geodata Protection', () => {
           if (table === 'change_proposal_items') {
             return {
               insert: jest.fn().mockResolvedValue({ error: null }),
+            };
+          }
+          if (table === 'rental_shop_inclusions' || table === 'rental_shop_conditions') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ data: [], error: null }),
+              }),
             };
           }
           return {};
@@ -769,6 +783,159 @@ describe('Change Proposal Application & Geodata Protection', () => {
         rate_per_day: 600,
         currency: 'THB',
       });
+    });
+
+    it('correctly applies approved shop updates with inclusions and conditions diffs', async () => {
+      const proposalData = {
+        id: 'prop-shop-1',
+        shop_id: 'shop-uuid-1',
+        status: 'pending',
+      };
+
+      const shopItem = {
+        id: 'item-shop-update-1',
+        proposal_id: 'prop-shop-1',
+        entity_type: 'rental_shop',
+        action: 'update',
+        entity_id: 'shop-uuid-1',
+        brand_name: 'Shop Profile',
+        model_name: 'General Information & Policies',
+        proposed_data: {
+          phone: '+66 81 999 9999',
+          website: 'https://bkkbike.com',
+          business_description: 'Updated bio',
+        },
+        diff_summary: {
+          phone: { old: '+66 81 000 0000', new: '+66 81 999 9999' },
+          inclusions: {
+            added: ['Helmets provided', 'Basic insurance coverage'],
+            removed: ['Old inclusion'],
+          },
+          conditions: {
+            added: ['Valid driving license required'],
+            removed: ['Old condition'],
+          },
+        },
+        status: 'pending',
+      };
+
+      const insertedInclusions: any[] = [];
+      const deletedInclusions: any[] = [];
+      const insertedConditions: any[] = [];
+      const deletedConditions: any[] = [];
+      let updatedShop: any = null;
+
+      const mockSupabase = {
+        from: jest.fn().mockImplementation((table: string) => {
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({ data: proposalData, error: null }),
+                }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ data: [shopItem], error: null }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+                in: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'rental_shops') {
+            return {
+              update: jest.fn().mockImplementation((payload) => {
+                updatedShop = payload;
+                return {
+                  eq: jest.fn().mockResolvedValue({ error: null }),
+                };
+              }),
+            };
+          }
+          if (table === 'rental_shop_inclusions') {
+            return {
+              insert: jest.fn().mockImplementation((rows) => {
+                insertedInclusions.push(...rows);
+                return Promise.resolve({ error: null });
+              }),
+              delete: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  in: jest.fn().mockImplementation((_col, vals) => {
+                    deletedInclusions.push(...vals);
+                    return Promise.resolve({ error: null });
+                  }),
+                }),
+              }),
+            };
+          }
+          if (table === 'condition_types') {
+            return {
+              select: jest.fn().mockReturnValue({
+                limit: jest.fn().mockReturnValue({
+                  maybeSingle: jest.fn().mockResolvedValue({ data: { id: 'type-general-uuid' }, error: null }),
+                }),
+              }),
+            };
+          }
+          if (table === 'rental_shop_conditions') {
+            return {
+              insert: jest.fn().mockImplementation((rows) => {
+                insertedConditions.push(...rows);
+                return Promise.resolve({ error: null });
+              }),
+              delete: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  in: jest.fn().mockImplementation((_col, vals) => {
+                    deletedConditions.push(...vals);
+                    return Promise.resolve({ error: null });
+                  }),
+                }),
+              }),
+            };
+          }
+          return {
+            select: jest.fn().mockReturnThis(),
+            insert: jest.fn().mockResolvedValue({ error: null }),
+            update: jest.fn().mockReturnThis(),
+            delete: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+          };
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      const result = await ChangeProposalService.apply('prop-shop-1', ['item-shop-update-1']);
+
+      expect(result.success).toBe(true);
+      expect(updatedShop).toEqual({
+        phone: '+66 81 999 9999',
+        website: 'https://bkkbike.com',
+        business_description: 'Updated bio',
+      });
+
+      expect(insertedInclusions).toHaveLength(2);
+      expect(insertedInclusions[0]).toEqual({
+        shop_id: 'shop-uuid-1',
+        inclusion_text: 'Helmets provided',
+      });
+      expect(deletedInclusions).toContain('Old inclusion');
+
+      expect(insertedConditions).toHaveLength(1);
+      expect(insertedConditions[0]).toEqual({
+        shop_id: 'shop-uuid-1',
+        condition_type_id: 'type-general-uuid',
+        condition_value: 'Valid driving license required',
+      });
+      expect(deletedConditions).toContain('Old condition');
     });
   });
 });

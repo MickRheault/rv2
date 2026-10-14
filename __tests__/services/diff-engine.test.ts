@@ -5,6 +5,7 @@
 import {
   computeShopInventoryDiff,
   normalizeCrawledBikeSnapshot,
+  computeRateTiersDiff,
   ZeroDropSafeguardError,
   type CrawledBikeSnapshot,
   type ExistingBikeRecord,
@@ -359,6 +360,83 @@ describe('Diff Engine', () => {
         update: 0,
         delist: 0,
         unchanged: 1,
+      });
+    });
+  });
+
+  describe('computeRateTiersDiff & Detailed Rate Diffs', () => {
+    it('computes modified rate tiers with delta amounts and percentages', () => {
+      const oldRates = [{ min_days: 1, max_days: 6, rate_per_day: 500 }];
+      const newRates = [{ minDays: 1, maxDays: 6, ratePerDay: 600, currency: 'THB' }];
+
+      const diffs = computeRateTiersDiff(oldRates, newRates);
+      expect(diffs).toHaveLength(1);
+      expect(diffs[0]).toEqual({
+        status: 'modified',
+        minDays: 1,
+        maxDays: 6,
+        oldRate: 500,
+        newRate: 600,
+        delta: 100,
+        percentage: 20,
+        currency: 'THB',
+      });
+    });
+
+    it('identifies added and removed rate tiers when discount tiers change', () => {
+      const oldRates = [
+        { min_days: 1, max_days: 6, rate_per_day: 500 },
+        { min_days: 14, max_days: null, rate_per_day: 350 },
+      ];
+      const newRates = [
+        { minDays: 1, maxDays: 6, ratePerDay: 500, currency: 'THB' }, // Unchanged
+        { minDays: 7, maxDays: 13, ratePerDay: 400, currency: 'THB' }, // Added
+      ];
+
+      const diffs = computeRateTiersDiff(oldRates, newRates);
+      expect(diffs).toHaveLength(3);
+
+      const unchanged = diffs.find((d) => d.status === 'unchanged');
+      expect(unchanged).toMatchObject({ minDays: 1, maxDays: 6, newRate: 500 });
+
+      const added = diffs.find((d) => d.status === 'added');
+      expect(added).toMatchObject({ minDays: 7, maxDays: 13, newRate: 400 });
+
+      const removed = diffs.find((d) => d.status === 'removed');
+      expect(removed).toMatchObject({ minDays: 14, maxDays: null, oldRate: 350 });
+    });
+  });
+
+  describe('Shop Inclusions & Conditions Diffing', () => {
+    it('detects added and removed shop inclusions and conditions', () => {
+      const existingShop = {
+        id: 'shop-uuid',
+        business_description: 'Moto rentals',
+        inclusions: ['Helmets provided', 'Free map'],
+        conditions: ['Driver license required', 'Deposit required'],
+      };
+
+      const crawledShop = {
+        inclusions: ['Helmets provided', 'Basic insurance coverage'], // 'Free map' removed, 'Basic insurance coverage' added
+        conditions: ['Driver license required', 'Minimum age 21'], // 'Deposit required' removed, 'Minimum age 21' added
+      };
+
+      const diff = computeShopInventoryDiff([], [], existingShop, crawledShop);
+      const shopItem = diff.items.find((i) => i.entity_type === 'rental_shop');
+
+      expect(shopItem).toBeDefined();
+      expect(shopItem?.diff_summary?.inclusions).toEqual({
+        old: ['Helmets provided', 'Free map'],
+        new: ['Helmets provided', 'Basic insurance coverage'],
+        added: ['Basic insurance coverage'],
+        removed: ['Free map'],
+      });
+
+      expect(shopItem?.diff_summary?.conditions).toEqual({
+        old: ['Driver license required', 'Deposit required'],
+        new: ['Driver license required', 'Minimum age 21'],
+        added: ['Minimum age 21'],
+        removed: ['Deposit required'],
       });
     });
   });

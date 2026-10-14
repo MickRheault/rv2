@@ -139,11 +139,27 @@ export class ChangeProposalService {
     const existingBikes = await this.getExistingShopInventory(input.shopId);
 
     // Fetch existing shop profile for shop-level diffing
-    const { data: existingShop } = await supabase
-      .from('rental_shops')
-      .select('id, business_description, phone, website')
-      .eq('id', input.shopId)
-      .maybeSingle();
+    const [shopRes, inclusionsRes, conditionsRes] = await Promise.all([
+      supabase
+        .from('rental_shops')
+        .select('id, business_description, phone, website')
+        .eq('id', input.shopId)
+        .maybeSingle(),
+      (supabase.from('rental_shop_inclusions') as any)
+        .select('inclusion_text')
+        .eq('shop_id', input.shopId),
+      (supabase.from('rental_shop_conditions') as any)
+        .select('condition_value')
+        .eq('shop_id', input.shopId),
+    ]);
+
+    const existingShop = shopRes.data
+      ? {
+          ...shopRes.data,
+          inclusions: ((inclusionsRes.data as any[]) || []).map((i) => i.inclusion_text),
+          conditions: ((conditionsRes.data as any[]) || []).map((c) => c.condition_value),
+        }
+      : null;
 
     // 2. Compute diff (enforces zero-drop safeguard, canonical matching & shop profile diffs)
     const diff: DiffResult = computeShopInventoryDiff(
@@ -484,6 +500,59 @@ export class ChangeProposalService {
             .update(allowedUpdates)
             .eq('id', proposal.shop_id);
           appliedCount++;
+        }
+
+        // Apply inclusions if diff_summary.inclusions present
+        const diffSummary = item.diff_summary as Record<string, any> | null;
+        const inclusionsDiff = diffSummary?.inclusions;
+        if (inclusionsDiff?.added && Array.isArray(inclusionsDiff.added) && inclusionsDiff.added.length > 0) {
+          const inserts = inclusionsDiff.added.map((text: string) => ({
+            shop_id: proposal.shop_id,
+            inclusion_text: text,
+          }));
+          await (supabase.from('rental_shop_inclusions') as any).insert(inserts);
+          appliedCount++;
+        }
+        if (inclusionsDiff?.removed && Array.isArray(inclusionsDiff.removed) && inclusionsDiff.removed.length > 0) {
+          await (supabase.from('rental_shop_inclusions') as any)
+            .delete()
+            .eq('shop_id', proposal.shop_id)
+            .in('inclusion_text', inclusionsDiff.removed);
+        }
+
+        // Apply conditions if diff_summary.conditions present
+        const conditionsDiff = diffSummary?.conditions;
+        if (conditionsDiff?.added && Array.isArray(conditionsDiff.added) && conditionsDiff.added.length > 0) {
+          // Resolve condition_type_id
+          const { data: existingType } = await (supabase.from('condition_types') as any)
+            .select('id')
+            .limit(1)
+            .maybeSingle();
+
+          let conditionTypeId = existingType?.id;
+          if (!conditionTypeId) {
+            const { data: newType } = await (supabase.from('condition_types') as any)
+              .insert({ name: 'General Policy', description: 'General rental policy' })
+              .select('id')
+              .single();
+            conditionTypeId = newType?.id;
+          }
+
+          if (conditionTypeId) {
+            const inserts = conditionsDiff.added.map((val: string) => ({
+              shop_id: proposal.shop_id,
+              condition_type_id: conditionTypeId,
+              condition_value: val,
+            }));
+            await (supabase.from('rental_shop_conditions') as any).insert(inserts);
+            appliedCount++;
+          }
+        }
+        if (conditionsDiff?.removed && Array.isArray(conditionsDiff.removed) && conditionsDiff.removed.length > 0) {
+          await (supabase.from('rental_shop_conditions') as any)
+            .delete()
+            .eq('shop_id', proposal.shop_id)
+            .in('condition_value', conditionsDiff.removed);
         }
       }
 
