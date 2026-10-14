@@ -21,7 +21,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update -y
-          sudo apt-get install -y postgresql-common gnupg gzip
+          sudo apt-get install -y postgresql-common gnupg gzip python3
           sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
           sudo apt-get install -y postgresql-client-17
 
@@ -47,15 +47,55 @@ jobs:
           ENCRYPTED_OUT="supabase-backup-${TIMESTAMP}.sql.gz.gpg"
 
           echo "Running pg_dump for public and auth schemas..."
-          /usr/lib/postgresql/17/bin/pg_dump "$SUPABASE_DB_URL" \
-            --schema=public \
-            --schema=auth \
-            --clean \
-            --if-exists \
-            --no-owner \
-            --no-privileges \
-            --quote-all-identifiers \
-            --file="$RAW_SQL"
+          # Parse SUPABASE_DB_URL in Python and pass credentials via libpq PG* env vars
+          # so raw special characters (%, $, @, :, #, /, ?) in passwords never break URI parsing.
+          python3 - "$RAW_SQL" << 'PYEOF'
+          import base64, os, re, subprocess, sys
+
+          out_file = sys.argv[1]
+          raw_url = os.environ["SUPABASE_DB_URL"].strip()
+          rest = re.sub(r"^postgres(?:ql)?://", "", raw_url)
+
+          if "@" not in rest or ":" not in rest.rsplit("@", 1)[0]:
+              print("::error::SUPABASE_DB_URL must be in format postgresql://user:password@host:port/dbname", file=sys.stderr)
+              sys.exit(1)
+
+          userinfo, hostinfo = rest.rsplit("@", 1)
+          user, password = userinfo.split(":", 1)
+
+          if password.startswith("go-keyring-base64:"):
+              password = base64.b64decode(password.split(":", 1)[1]).decode("utf-8")
+
+          hostport, dbname = (hostinfo.split("/", 1) + ["postgres"])[:2]
+          dbname = dbname.split("?", 1)[0] or "postgres"
+          if ":" in hostport:
+              host, port = hostport.rsplit(":", 1)
+          else:
+              host, port = hostport, "5432"
+
+          env = os.environ.copy()
+          env.update({
+              "PGHOST": host,
+              "PGPORT": port,
+              "PGUSER": user,
+              "PGPASSWORD": password,
+              "PGDATABASE": dbname,
+              "PGSSLMODE": "require",
+          })
+
+          cmd = [
+              "/usr/lib/postgresql/17/bin/pg_dump",
+              "--schema=public",
+              "--schema=auth",
+              "--clean",
+              "--if-exists",
+              "--no-owner",
+              "--no-privileges",
+              "--quote-all-identifiers",
+              f"--file={out_file}",
+          ]
+          subprocess.run(cmd, env=env, check=True)
+          PYEOF
 
           echo "Running pre-encryption integrity gate..."
           FILE_SIZE=$(wc -c < "$RAW_SQL")

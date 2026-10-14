@@ -23,9 +23,10 @@ describe('Supabase Automated Backup Workflow (.github/workflows/supabase-backup.
     expect(content).toContain('environment: Production');
   });
 
-  it('dumps both public and auth schemas with clean recovery flags', () => {
+  it('dumps both public and auth schemas using PGPASSWORD env vars to avoid URI percent-encoding issues', () => {
     const content = fs.readFileSync(workflowPath, 'utf8');
 
+    expect(content).toContain('"PGPASSWORD": password');
     expect(content).toContain('--schema=public');
     expect(content).toContain('--schema=auth');
     expect(content).toContain('--clean');
