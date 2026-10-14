@@ -115,6 +115,27 @@ export const searchService = {
       ...otherFilters
     } = filters
 
+    const contentType = otherFilters.contentType || 'all'
+
+    if (contentType === 'motorcycles') {
+      const tableLimit = Math.max(1, Math.min(500, otherFilters.limit || 500))
+      const motorcycleResults = await motorcycleService.getSearchTableMotorcycles({
+        cityId,
+        provinceId,
+        countryCode,
+        locationQuery,
+        query: otherFilters.query,
+        limit: tableLimit
+      })
+
+      return {
+        motorcycles: motorcycleResults,
+        shops: { shops: [], total: 0 },
+        locations: [],
+        totalResults: motorcycleResults.total
+      }
+    }
+
     let resolvedLocationFilters: Pick<MotorcycleFilters, 'cityId' | 'provinceId' | 'countryCode'> = {}
 
     // If locationQuery is provided, resolve it to specific location IDs
@@ -140,24 +161,6 @@ export const searchService = {
     } else {
       // Use provided location filters
       resolvedLocationFilters = { cityId, provinceId, countryCode }
-    }
-
-    const contentType = otherFilters.contentType || 'all'
-
-    if (contentType === 'motorcycles') {
-      const tableLimit = Math.max(1, Math.min(500, otherFilters.limit || 500))
-      const motorcycleResults = await motorcycleService.getSearchTableMotorcycles({
-        ...resolvedLocationFilters,
-        query: otherFilters.query,
-        limit: tableLimit
-      })
-
-      return {
-        motorcycles: motorcycleResults,
-        shops: { shops: [], total: 0 },
-        locations: [],
-        totalResults: motorcycleResults.total
-      }
     }
 
     // Resolve brand name to ID if provided

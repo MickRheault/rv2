@@ -139,8 +139,8 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
       }
     },
     enabled: hasSearched || (enableAutoSearch && hasActiveCriteria), // Keep enabled once searched or when auto-search conditions are met
-    staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false
+    staleTime: isMotorcycleOnly ? 5 * 60 * 1000 : undefined,
+    refetchOnWindowFocus: isMotorcycleOnly ? false : undefined
   })
 
   const locationMotorcycles = useMemo<MotorcycleWithDetails[]>(
@@ -154,16 +154,7 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
 
     const filteredMotorcycles = filterAndSortMotorcycles(
       rawResults.motorcycles.motorcycles,
-      {
-        brandId: filters.brandId,
-        categoryId: filters.categoryId,
-        model: filters.model,
-        minPrice: filters.minPrice,
-        maxPrice: filters.maxPrice,
-        minEngineCapacity: filters.minEngineCapacity,
-        maxEngineCapacity: filters.maxEngineCapacity,
-        sortBy: filters.sortBy
-      }
+      filters
     )
 
     return {
@@ -174,18 +165,7 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
       },
       totalResults: filteredMotorcycles.length
     }
-  }, [
-    rawResults,
-    isMotorcycleOnly,
-    filters.brandId,
-    filters.categoryId,
-    filters.model,
-    filters.minPrice,
-    filters.maxPrice,
-    filters.minEngineCapacity,
-    filters.maxEngineCapacity,
-    filters.sortBy
-  ])
+  }, [rawResults, isMotorcycleOnly, filters])
 
   const locationSuggestions: LocationSearchResult[] = []
   const popularLocations: LocationSearchResult[] = []
@@ -309,8 +289,10 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
       offset: 0 // Reset pagination
     })
     setQuery(location.fullName)
-    setHasSearched(true)
-  }, [setFilters])
+    if (isMotorcycleOnly) {
+      setHasSearched(true)
+    }
+  }, [setFilters, isMotorcycleOnly])
 
   // Update query and location filters
   const setQueryWithLocation = useCallback((newQuery: string) => {

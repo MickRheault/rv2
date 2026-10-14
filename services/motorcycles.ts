@@ -93,6 +93,45 @@ export interface FilterOptions {
 
 export type DerivedFilterOptions = Pick<FilterOptions, 'brands' | 'categories' | 'models'>
 
+export function getEffectiveDailyRate(motorcycle: any): number | null {
+  if (Array.isArray(motorcycle?.rental_rate_tiers) && motorcycle.rental_rate_tiers.length > 0) {
+    const shortestTier = motorcycle.rental_rate_tiers.reduce((prev: any, curr: any) =>
+      prev.min_days < curr.min_days ? prev : curr
+    )
+    if (typeof shortestTier?.rate_per_day === 'number') {
+      return shortestTier.rate_per_day
+    }
+  }
+  return typeof motorcycle?.rental_rate_per_day === 'number'
+    ? motorcycle.rental_rate_per_day
+    : null
+}
+
+function matchesEntityFilter(
+  fkId: string | null | undefined,
+  entity: { id?: string; name?: string } | null | undefined,
+  normalizedTarget: string
+): boolean {
+  return (
+    fkId?.toLowerCase() === normalizedTarget ||
+    entity?.id?.toLowerCase() === normalizedTarget ||
+    entity?.name?.toLowerCase() === normalizedTarget
+  )
+}
+
+function compareNullableNumbers(
+  a: number | null | undefined,
+  b: number | null | undefined,
+  direction: 'asc' | 'desc'
+): number {
+  const aValid = typeof a === 'number' && !Number.isNaN(a)
+  const bValid = typeof b === 'number' && !Number.isNaN(b)
+  if (!aValid && !bValid) return 0
+  if (!aValid) return 1
+  if (!bValid) return -1
+  return direction === 'asc' ? a - b : b - a
+}
+
 export function deriveFilterOptionsFromMotorcycles(motorcycles: any[] = []): DerivedFilterOptions {
   const brandsMap = new Map<string, { id: string; name: string; count: number }>()
   const categoriesMap = new Map<string, { id: string; name: string; description: string | null; count: number }>()
@@ -125,7 +164,7 @@ export function deriveFilterOptionsFromMotorcycles(motorcycles: any[] = []): Der
     }
 
     if (motorcycle?.model && brand?.name) {
-      const modelKey = `${brand.name}:::${motorcycle.model}`
+      const modelKey = `${motorcycle.model}-${brand.name}`
       const existingModel = modelsMap.get(modelKey)
       if (existingModel) {
         existingModel.count += 1
@@ -176,41 +215,40 @@ export function filterAndSortMotorcycles<T extends Record<string, any>>(
   const normalizedModel = model?.toLowerCase()
 
   const filtered = motorcycles.filter((motorcycle) => {
-    if (normalizedBrand) {
-      const matchesBrandId =
-        motorcycle.brand_id?.toLowerCase() === normalizedBrand ||
-        motorcycle.brands?.id?.toLowerCase() === normalizedBrand
-      const matchesBrandName = motorcycle.brands?.name?.toLowerCase() === normalizedBrand
-      if (!matchesBrandId && !matchesBrandName) return false
+    if (
+      normalizedBrand &&
+      !matchesEntityFilter(motorcycle.brand_id, motorcycle.brands, normalizedBrand)
+    ) {
+      return false
     }
 
-    if (normalizedCategory) {
-      const matchesCategoryId =
-        motorcycle.category_id?.toLowerCase() === normalizedCategory ||
-        motorcycle.categories?.id?.toLowerCase() === normalizedCategory
-      const matchesCategoryName = motorcycle.categories?.name?.toLowerCase() === normalizedCategory
-      if (!matchesCategoryId && !matchesCategoryName) return false
+    if (
+      normalizedCategory &&
+      !matchesEntityFilter(motorcycle.category_id, motorcycle.categories, normalizedCategory)
+    ) {
+      return false
     }
 
     if (normalizedModel) {
       const bikeModel = motorcycle.model?.toLowerCase() || ''
-      if (!bikeModel.includes(normalizedModel)) return false
+      if (bikeModel !== normalizedModel) return false
     }
 
-    if (minPrice !== undefined && (motorcycle.rental_rate_per_day ?? 0) < minPrice) {
-      return false
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      const effectiveRate = getEffectiveDailyRate(motorcycle)
+      if (effectiveRate === null) return false
+      if (minPrice !== undefined && effectiveRate < minPrice) return false
+      if (maxPrice !== undefined && effectiveRate > maxPrice) return false
     }
 
-    if (maxPrice !== undefined && (motorcycle.rental_rate_per_day ?? 0) > maxPrice) {
-      return false
-    }
-
-    if (minEngineCapacity !== undefined && (motorcycle.engine_capacity_cc ?? 0) < minEngineCapacity) {
-      return false
-    }
-
-    if (maxEngineCapacity !== undefined && (motorcycle.engine_capacity_cc ?? 0) > maxEngineCapacity) {
-      return false
+    if (minEngineCapacity !== undefined || maxEngineCapacity !== undefined) {
+      const cc =
+        typeof motorcycle.engine_capacity_cc === 'number'
+          ? motorcycle.engine_capacity_cc
+          : null
+      if (cc === null) return false
+      if (minEngineCapacity !== undefined && cc < minEngineCapacity) return false
+      if (maxEngineCapacity !== undefined && cc > maxEngineCapacity) return false
     }
 
     return true
@@ -219,15 +257,15 @@ export function filterAndSortMotorcycles<T extends Record<string, any>>(
   return [...filtered].sort((a, b) => {
     switch (sortBy) {
       case 'price_asc':
-        return (a.rental_rate_per_day ?? 0) - (b.rental_rate_per_day ?? 0)
+        return compareNullableNumbers(getEffectiveDailyRate(a), getEffectiveDailyRate(b), 'asc')
       case 'price_desc':
-        return (b.rental_rate_per_day ?? 0) - (a.rental_rate_per_day ?? 0)
+        return compareNullableNumbers(getEffectiveDailyRate(a), getEffectiveDailyRate(b), 'desc')
       case 'engine_capacity_asc':
-        return (a.engine_capacity_cc ?? 0) - (b.engine_capacity_cc ?? 0)
+        return compareNullableNumbers(a.engine_capacity_cc, b.engine_capacity_cc, 'asc')
       case 'engine_capacity_desc':
-        return (b.engine_capacity_cc ?? 0) - (a.engine_capacity_cc ?? 0)
+        return compareNullableNumbers(a.engine_capacity_cc, b.engine_capacity_cc, 'desc')
       case 'rating_desc':
-        return (b.rental_shops?.rating ?? -1) - (a.rental_shops?.rating ?? -1)
+        return compareNullableNumbers(a.rental_shops?.rating, b.rental_shops?.rating, 'desc')
       case 'newest':
       default:
         return (
@@ -238,10 +276,6 @@ export function filterAndSortMotorcycles<T extends Record<string, any>>(
 }
 
 let cachedActiveBusinessStatusIds: number[] | null = null
-
-export function resetActiveBusinessStatusIdsCache(): void {
-  cachedActiveBusinessStatusIds = null
-}
 
 // Helper function to get active business status IDs for motorcycles (memoized once non-empty)
 async function getActiveBusinessStatusIdsForMotorcycles(): Promise<number[]> {
@@ -268,6 +302,23 @@ function applyActiveShopStatusFilterSync(query: any, activeStatusIds: number[]):
   }
   // If no active statuses, return query that matches nothing
   return query.eq('rental_shops.id', 'impossible-id-that-will-never-match')
+}
+
+async function applyLocationAndActiveShopFilters(
+  query: any,
+  filters: LocationFilterScope
+): Promise<any> {
+  const { cityId, provinceId, countryCode } = filters
+  if (cityId) {
+    query = query.eq('rental_shops.city_id', cityId)
+  } else if (provinceId) {
+    query = query.eq('rental_shops.cities.province_id', provinceId)
+  } else if (countryCode) {
+    query = query.eq('rental_shops.cities.provinces.country_code', countryCode)
+  }
+
+  const activeStatusIds = await getActiveBusinessStatusIdsForMotorcycles()
+  return applyActiveShopStatusFilterSync(query, activeStatusIds)
 }
 
 // Helper to get admin client
@@ -297,21 +348,29 @@ function getSupabaseAdmin(): SupabaseClient<Database> {
 export const motorcycleService = {
   // Lightweight single-query motorcycle fetch for Search table + client-side filtering/facets
   async getSearchTableMotorcycles(
-    filters: Pick<SearchFilters, 'cityId' | 'provinceId' | 'countryCode' | 'query' | 'limit'> = {}
+    filters: Pick<SearchFilters, 'cityId' | 'provinceId' | 'countryCode' | 'query' | 'limit'> & {
+      locationQuery?: string
+    } = {}
   ) {
     const {
       cityId,
       provinceId,
       countryCode,
+      locationQuery,
       query: searchQuery,
       limit = 500
     } = filters
 
+    const hasUnresolvedLocationQuery = Boolean(
+      locationQuery && !cityId && !provinceId && !countryCode
+    )
+
     const shopLocationJoin =
-      !cityId && (provinceId || countryCode)
+      !cityId && (provinceId || countryCode || hasUnresolvedLocationQuery)
         ? `,
           cities!inner (
             id,
+            name,
             province_id,
             provinces!inner (
               id,
@@ -333,7 +392,7 @@ export const motorcycleService = {
         rental_rate_currency,
         created_at,
         brands (id, name),
-        categories (id, name, description),
+        categories (id, name),
         rental_shops!inner (
           id,
           provider_name,
@@ -348,16 +407,11 @@ export const motorcycleService = {
         )
       `)
 
-    if (cityId) {
-      query = query.eq('rental_shops.city_id', cityId)
-    } else if (provinceId) {
-      query = query.eq('rental_shops.cities.province_id', provinceId)
-    } else if (countryCode) {
-      query = query.eq('rental_shops.cities.provinces.country_code', countryCode)
-    }
+    query = await applyLocationAndActiveShopFilters(query, { cityId, provinceId, countryCode })
 
-    const activeStatusIds = await getActiveBusinessStatusIdsForMotorcycles()
-    query = applyActiveShopStatusFilterSync(query, activeStatusIds)
+    if (hasUnresolvedLocationQuery && locationQuery) {
+      query = query.ilike('rental_shops.cities.name', `%${locationQuery}%`)
+    }
 
     if (searchQuery) {
       query = query.ilike('model', `%${searchQuery}%`)
@@ -430,18 +484,8 @@ export const motorcycleService = {
         )
       `, { count: 'exact' })
 
-    // Apply location filters
-    if (cityId) {
-      query = query.eq('rental_shops.city_id', cityId)
-    } else if (provinceId) {
-      query = query.eq('rental_shops.cities.province_id', provinceId)
-    } else if (countryCode) {
-      query = query.eq('rental_shops.cities.provinces.country_code', countryCode)
-    }
-
-    // Filter by active shop status only (shop visibility control)
-    const activeStatusIds = await getActiveBusinessStatusIdsForMotorcycles()
-    query = applyActiveShopStatusFilterSync(query, activeStatusIds)
+    // Apply location and active shop status filters
+    query = await applyLocationAndActiveShopFilters(query, { cityId, provinceId, countryCode })
 
     // Apply motorcycle filters
     if (brandId) {

@@ -7,7 +7,8 @@ import { LocationSearchResult, LocationBasedSearchFilters } from '@/services/sea
 import {
   FilterOptions,
   DerivedFilterOptions,
-  deriveFilterOptionsFromMotorcycles
+  deriveFilterOptionsFromMotorcycles,
+  hasLocationFilter
 } from '@/services/motorcycles'
 import {
   readCachedFilterOptionsEntry,
@@ -115,6 +116,13 @@ export default function SearchPageContent({
     if (Array.isArray(locationSearch.locationMotorcycles) && locationSearch.locationMotorcycles.length > 0) {
       return deriveFilterOptionsFromMotorcycles(locationSearch.locationMotorcycles)
     }
+    if (
+      hasLocationFilter(locationSearch.filters) &&
+      locationSearch.hasSearched &&
+      !locationSearch.isLoading
+    ) {
+      return EMPTY_FILTER_OPTIONS
+    }
     if (cachedFilterOptions) {
       return cachedFilterOptions
     }
@@ -124,6 +132,9 @@ export default function SearchPageContent({
     return EMPTY_FILTER_OPTIONS
   }, [
     locationSearch.locationMotorcycles,
+    locationSearch.filters,
+    locationSearch.hasSearched,
+    locationSearch.isLoading,
     locationSearch.results,
     cachedFilterOptions
   ])
@@ -443,6 +454,7 @@ export default function SearchPageContent({
                 motorcycles={locationSearch.results.motorcycles.motorcycles}
                 title={`Found ${locationSearch.results.motorcycles.total} Motorcycles${locationSearch.filters.locationQuery ? ` in ${locationSearch.filters.locationQuery}` : ''}`}
                 showShopColumn={true}
+                preserveInitialOrder={true}
               />
             </div>
           ) : (

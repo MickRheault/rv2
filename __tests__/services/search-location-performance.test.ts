@@ -199,7 +199,7 @@ describe('Search Location N+1 Elimination (#113)', () => {
     searchLocationsSpy.mockRestore()
   })
 
-  it('filters and sorts motorcycles client-side in memory and derives brand/category/model counts without DB queries', () => {
+  it('filters and sorts motorcycles client-side in memory (including rate tiers, null rates/CC, and exact model match) and derives brand/category/model counts without DB queries', () => {
     const {
       deriveFilterOptionsFromMotorcycles,
       filterAndSortMotorcycles,
@@ -208,50 +208,72 @@ describe('Search Location N+1 Elimination (#113)', () => {
     const sampleBikes = [
       {
         id: 'm-1',
-        model: 'PCX 160',
+        model: 'Click 125',
         brand_id: 'b-honda',
         category_id: 'c-scooter',
         rental_rate_per_day: 25,
-        engine_capacity_cc: 160,
+        rental_rate_tiers: [{ min_days: 1, rate_per_day: 20, currency: 'USD' }],
+        engine_capacity_cc: 125,
         created_at: '2026-01-01T00:00:00Z',
         brands: { id: 'b-honda', name: 'Honda' },
-        categories: { id: 'c-scooter', name: 'Scooter', description: null },
+        categories: { id: 'c-scooter', name: 'Scooter' },
         rental_shops: { rating: 4.5 },
       },
       {
         id: 'm-2',
-        model: 'MT-07',
+        model: 'Click 125i',
         brand_id: 'b-yamaha',
         category_id: 'c-sport',
         rental_rate_per_day: 60,
         engine_capacity_cc: 689,
         created_at: '2026-01-02T00:00:00Z',
         brands: { id: 'b-yamaha', name: 'Yamaha' },
-        categories: { id: 'c-sport', name: 'Sport', description: null },
+        categories: { id: 'c-sport', name: 'Sport' },
         rental_shops: { rating: 4.9 },
+      },
+      {
+        id: 'm-3',
+        model: 'CB500X',
+        brand_id: 'b-honda',
+        category_id: 'c-sport',
+        rental_rate_per_day: null,
+        engine_capacity_cc: null,
+        created_at: '2026-01-03T00:00:00Z',
+        brands: { id: 'b-honda', name: 'Honda' },
+        categories: { id: 'c-sport', name: 'Sport' },
+        rental_shops: { rating: null },
       },
     ]
 
     const derived = deriveFilterOptionsFromMotorcycles(sampleBikes)
     expect(derived.brands).toEqual([
-      { id: 'b-honda', name: 'Honda', count: 1 },
+      { id: 'b-honda', name: 'Honda', count: 2 },
       { id: 'b-yamaha', name: 'Yamaha', count: 1 },
     ])
     expect(derived.categories).toEqual([
       { id: 'c-scooter', name: 'Scooter', description: null, count: 1 },
-      { id: 'c-sport', name: 'Sport', description: null, count: 1 },
+      { id: 'c-sport', name: 'Sport', description: null, count: 2 },
     ])
 
-    const filteredByBrand = filterAndSortMotorcycles(sampleBikes, {
-      brandId: 'b-honda',
+    // Exact model match: 'Click 125' should not match 'Click 125i'
+    const filteredByModel = filterAndSortMotorcycles(sampleBikes, {
+      model: 'Click 125',
     })
-    expect(filteredByBrand).toHaveLength(1)
-    expect(filteredByBrand[0].id).toBe('m-1')
+    expect(filteredByModel.map((b: any) => b.id)).toEqual(['m-1'])
 
-    const sortedByPriceDesc = filterAndSortMotorcycles(sampleBikes, {
-      sortBy: 'price_desc',
+    // Max price excludes null rate ('On request') and uses shortest tier rate (20 <= 30)
+    const filteredByMaxPrice = filterAndSortMotorcycles(sampleBikes, {
+      maxPrice: 30,
     })
-    expect(sortedByPriceDesc.map((b: any) => b.id)).toEqual(['m-2', 'm-1'])
+    expect(filteredByMaxPrice.map((b: any) => b.id)).toEqual(['m-1'])
+
+    // Price sort places null rates last in both asc and desc
+    expect(
+      filterAndSortMotorcycles(sampleBikes, { sortBy: 'price_asc' }).map((b: any) => b.id)
+    ).toEqual(['m-1', 'm-2', 'm-3'])
+    expect(
+      filterAndSortMotorcycles(sampleBikes, { sortBy: 'price_desc' }).map((b: any) => b.id)
+    ).toEqual(['m-2', 'm-1', 'm-3'])
   })
 
   it('configures ISR revalidate = 3600 on app/search/page.tsx and handles rejected prefetches gracefully (#115)', async () => {
