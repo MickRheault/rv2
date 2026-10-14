@@ -65,13 +65,13 @@ export interface ExistingShopProfile {
 
 export interface ProposedDiffItem {
   entity_type: 'motorcycle' | 'rental_shop';
-  action: 'add' | 'update' | 'delist';
+  action: 'add' | 'update' | 'delist' | 'unchanged';
   entity_id?: string | null;
   brand_name: string;
   model_name: string;
   original_data?: any;
   proposed_data: any;
-  diff_summary?: Record<string, { old: any; new: any }>;
+  diff_summary?: Record<string, { old: any; new: any }> | null;
 }
 
 export interface DiffResult {
@@ -80,6 +80,7 @@ export interface DiffResult {
     add: number;
     update: number;
     delist: number;
+    unchanged: number;
   };
 }
 
@@ -179,6 +180,22 @@ export function computeShopInventoryDiff(
           proposed_data: crawled,
           diff_summary: diffSummary,
         });
+      } else {
+        items.push({
+          entity_type: 'motorcycle',
+          action: 'unchanged',
+          entity_id: existing.id,
+          brand_name: existing.brand_name,
+          model_name: existing.model_name,
+          original_data: {
+            year: existing.year,
+            engine_capacity_cc: existing.engine_capacity_cc,
+            rates: existing.rates,
+            availability_status: existing.availability_status,
+          },
+          proposed_data: crawled,
+          diff_summary: null,
+        });
       }
     }
   }
@@ -194,6 +211,9 @@ export function computeShopInventoryDiff(
         brand_name: bike.brand_name,
         model_name: bike.model_name,
         original_data: {
+          year: bike.year,
+          engine_capacity_cc: bike.engine_capacity_cc,
+          rates: bike.rates,
           availability_status: bike.availability_status || 'available',
         },
         proposed_data: {
@@ -268,6 +288,7 @@ export function computeShopInventoryDiff(
     add: items.filter((i) => i.action === 'add').length,
     update: items.filter((i) => i.action === 'update').length,
     delist: items.filter((i) => i.action === 'delist').length,
+    unchanged: items.filter((i) => i.action === 'unchanged').length,
   };
 
   return {

@@ -7,6 +7,17 @@ import {
   GeodataImmutabilityError,
   ChangeProposalService,
 } from '@/services/change-proposals';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
+
+jest.mock('@/lib/supabase/admin', () => ({
+  getSupabaseAdmin: jest.fn(),
+}));
+
+jest.mock('@/services/task-scheduler', () => ({
+  TaskSchedulerService: {
+    recordCrawlSuccess: jest.fn().mockResolvedValue({}),
+  },
+}));
 
 describe('Change Proposal Application & Geodata Protection', () => {
   describe('validateGeodataImmutability', () => {
@@ -47,6 +58,313 @@ describe('Change Proposal Application & Geodata Protection', () => {
           provider_name: 'Renamed Shop Provider',
         });
       }).toThrow(GeodataImmutabilityError);
+    });
+  });
+
+  describe('ChangeProposalService.apply with unchanged items', () => {
+    let mockSupabase: any;
+    let fromCalls: Record<string, any>;
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      fromCalls = {};
+    });
+
+    it('ignores unchanged items from database mutations and preserves applied status', async () => {
+      const proposalData = {
+        id: 'prop-1',
+        shop_id: 'shop-1',
+        status: 'pending',
+      };
+
+      const itemsData = [
+        {
+          id: 'item-unchanged-1',
+          proposal_id: 'prop-1',
+          entity_type: 'motorcycle',
+          action: 'unchanged',
+          entity_id: 'bike-unchanged-uuid',
+          brand_name: 'Honda',
+          model_name: 'Click 125i',
+          proposed_data: { year: 2023, rates: [{ minDays: 1, ratePerDay: 250 }] },
+          status: 'applied',
+        },
+        {
+          id: 'item-update-1',
+          proposal_id: 'prop-1',
+          entity_type: 'motorcycle',
+          action: 'update',
+          entity_id: 'bike-update-uuid',
+          brand_name: 'Yamaha',
+          model_name: 'NMAX 155',
+          proposed_data: { year: 2024, rates: [{ minDays: 1, ratePerDay: 500 }] },
+          status: 'pending',
+        },
+      ];
+
+      const updateRentalMock = jest.fn().mockReturnValue({
+        eq: jest.fn().mockResolvedValue({ error: null }),
+      });
+      const deleteRatesMock = jest.fn().mockReturnValue({
+        eq: jest.fn().mockResolvedValue({ error: null }),
+      });
+      const insertRatesMock = jest.fn().mockResolvedValue({ error: null });
+      const updateProposalItemsMock = jest.fn().mockReturnValue({
+        eq: jest.fn().mockResolvedValue({ error: null }),
+        in: jest.fn().mockResolvedValue({ error: null }),
+      });
+      const updateProposalsMock = jest.fn().mockReturnValue({
+        eq: jest.fn().mockResolvedValue({ error: null }),
+      });
+
+      mockSupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({ data: proposalData, error: null }),
+                }),
+              }),
+              update: updateProposalsMock,
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ data: itemsData, error: null }),
+              }),
+              update: updateProposalItemsMock,
+            };
+          }
+          if (table === 'motorcycle_rentals') {
+            return {
+              update: updateRentalMock,
+            };
+          }
+          if (table === 'rental_rate_tiers') {
+            return {
+              delete: deleteRatesMock,
+              insert: insertRatesMock,
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      // Approve both update and unchanged item IDs
+      const result = await ChangeProposalService.apply('prop-1', ['item-update-1', 'item-unchanged-1']);
+
+      expect(result.success).toBe(true);
+      expect(result.appliedCount).toBe(1); // Only the update item triggers a mutation
+
+      // Verify motorcycle_rentals update was called ONLY for bike-update-uuid, NEVER for unchanged bike
+      expect(updateRentalMock).toHaveBeenCalledTimes(1);
+      expect(updateRentalMock().eq).toHaveBeenCalledWith('id', 'bike-update-uuid');
+
+      // Verify proposal was marked as 'applied' (full approval of mutable items)
+      expect(updateProposalsMock).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'applied' })
+      );
+    });
+
+    it('does not reject unchanged items when only some mutable items are rejected', async () => {
+      const proposalData = {
+        id: 'prop-2',
+        shop_id: 'shop-1',
+        status: 'pending',
+      };
+
+      const itemsData = [
+        {
+          id: 'item-unchanged-1',
+          proposal_id: 'prop-2',
+          entity_type: 'motorcycle',
+          action: 'unchanged',
+          entity_id: 'bike-unchanged-uuid',
+          brand_name: 'Honda',
+          model_name: 'Click 125i',
+          proposed_data: { year: 2023 },
+          status: 'applied',
+        },
+        {
+          id: 'item-add-1',
+          proposal_id: 'prop-2',
+          entity_type: 'motorcycle',
+          action: 'add',
+          entity_id: null,
+          brand_name: 'Honda',
+          model_name: 'Forza 350',
+          proposed_data: { year: 2024 },
+          status: 'pending',
+        },
+      ];
+
+      const rejectedInMock = jest.fn().mockResolvedValue({ error: null });
+      const updateProposalItemsMock = jest.fn().mockReturnValue({
+        eq: jest.fn().mockResolvedValue({ error: null }),
+        in: rejectedInMock,
+      });
+      const updateProposalsMock = jest.fn().mockReturnValue({
+        eq: jest.fn().mockResolvedValue({ error: null }),
+      });
+
+      mockSupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({ data: proposalData, error: null }),
+                }),
+              }),
+              update: updateProposalsMock,
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ data: itemsData, error: null }),
+              }),
+              update: updateProposalItemsMock,
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      // Caller rejects all mutable items by passing empty approvedItemIds
+      const result = await ChangeProposalService.apply('prop-2', []);
+
+      expect(result.success).toBe(true);
+      expect(result.appliedCount).toBe(0);
+
+      // Rejection should only apply to item-add-1, NOT item-unchanged-1
+      expect(updateProposalItemsMock).toHaveBeenCalledWith({ status: 'rejected' });
+      expect(rejectedInMock).toHaveBeenCalledWith('id', ['item-add-1']);
+    });
+  });
+
+  describe('ChangeProposalService.createProposalFromCrawl with unchanged items', () => {
+    it('stages unchanged items with status: "applied" and mutable items with status: "pending"', async () => {
+      const existingInventory = [
+        {
+          id: 'bike-existing-1',
+          brand_name: 'Honda',
+          model_name: 'Click 125i',
+          year: 2023,
+          engine_capacity_cc: 125,
+          availability_status: 'available',
+          rates: [{ min_days: 1, max_days: 6, rate_per_day: 250 }],
+        },
+      ];
+
+      const getExistingInventorySpy = jest
+        .spyOn(ChangeProposalService, 'getExistingShopInventory')
+        .mockResolvedValue(existingInventory as any);
+
+      let stagedProposal: any = null;
+      let stagedItems: any[] = [];
+
+      const insertProposalMock = jest.fn((payload) => {
+        stagedProposal = payload;
+        return {
+          select: jest.fn().mockReturnValue({
+            single: jest.fn().mockResolvedValue({
+              data: { id: 'prop-staged-1', ...payload },
+              error: null,
+            }),
+          }),
+        };
+      });
+
+      const insertItemsMock = jest.fn((items) => {
+        stagedItems = items;
+        return Promise.resolve({ error: null });
+      });
+
+      const mockSupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'rental_shops') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+                }),
+              }),
+            };
+          }
+          if (table === 'change_proposals') {
+            return {
+              insert: insertProposalMock,
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              insert: insertItemsMock,
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      const crawlSnapshot = {
+        shopId: 'shop-uuid-1',
+        sourceUrl: 'https://example.com/rates',
+        bikes: [
+          {
+            brand: 'Honda',
+            modelName: 'Click 125i',
+            year: 2023,
+            rates: [{ minDays: 1, maxDays: 6, ratePerDay: 250 }],
+          },
+          {
+            brand: 'Honda',
+            modelName: 'Forza 350',
+            year: 2024,
+            rates: [{ minDays: 1, maxDays: 6, ratePerDay: 700 }],
+          },
+        ],
+      };
+
+      const result = await ChangeProposalService.createProposalFromCrawl(crawlSnapshot);
+
+      expect(result.proposal).toBeDefined();
+      expect(result.diff.summaryCounts).toEqual({
+        add: 1,
+        update: 0,
+        delist: 0,
+        unchanged: 1,
+      });
+
+      // Verify proposal summary_counts includes unchanged counter
+      expect(stagedProposal.summary_counts).toEqual({
+        add: 1,
+        update: 0,
+        delist: 0,
+        unchanged: 1,
+      });
+
+      // Verify staged items statuses
+      expect(stagedItems).toHaveLength(2);
+      const unchangedItem = stagedItems.find((i) => i.action === 'unchanged');
+      const addedItem = stagedItems.find((i) => i.action === 'add');
+
+      expect(unchangedItem).toBeDefined();
+      expect(unchangedItem.status).toBe('applied');
+      expect(unchangedItem.model_name).toBe('Click 125i');
+
+      expect(addedItem).toBeDefined();
+      expect(addedItem.status).toBe('pending');
+      expect(addedItem.model_name).toBe('Forza 350');
+
+      getExistingInventorySpy.mockRestore();
     });
   });
 });

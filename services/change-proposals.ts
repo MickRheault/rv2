@@ -166,7 +166,7 @@ export class ChangeProposalService {
         original_data: item.original_data || null,
         proposed_data: item.proposed_data,
         diff_summary: item.diff_summary || null,
-        status: 'pending' as const,
+        status: (item.action === 'unchanged' ? 'applied' : 'pending') as 'applied' | 'pending',
       }));
 
       const { error: itemsError } = await (supabase
@@ -317,7 +317,8 @@ export class ChangeProposalService {
     }
 
     const approvedSet = new Set(approvedItemIds);
-    const approvedItems = allItems.filter((i) => approvedSet.has(i.id));
+    // Ignore unchanged items from mutation operations even if supplied in approvedItemIds
+    const approvedItems = allItems.filter((i) => approvedSet.has(i.id) && i.action !== 'unchanged');
 
     // 3. Validate geodata immutability across all approved items
     for (const item of approvedItems) {
@@ -449,8 +450,8 @@ export class ChangeProposalService {
         .eq('id', item.id);
     }
 
-    // 5. Mark non-approved items as rejected
-    const unapprovedItems = allItems.filter((i) => !approvedSet.has(i.id));
+    // 5. Mark non-approved mutable items as rejected (leave unchanged items as applied)
+    const unapprovedItems = allItems.filter((i) => !approvedSet.has(i.id) && i.action !== 'unchanged');
     if (unapprovedItems.length > 0) {
       await (supabase
         .from('change_proposal_items') as any)
@@ -458,8 +459,9 @@ export class ChangeProposalService {
         .in('id', unapprovedItems.map((i) => i.id));
     }
 
-    // 6. Update proposal status
-    const isFullApproval = approvedItems.length === allItems.length;
+    // 6. Update proposal status based on mutable items
+    const mutableItems = allItems.filter((i) => i.action !== 'unchanged');
+    const isFullApproval = mutableItems.length === 0 || approvedItems.length === mutableItems.length;
     const finalStatus = isFullApproval ? 'applied' : 'partially_applied';
 
     await (supabase
