@@ -75,6 +75,58 @@ export function isActionableProposalAction(
   return action !== 'unchanged';
 }
 
+export async function resolveConditionTypeId(
+  supabase: any,
+  shopId: string,
+  conditionText: string,
+  assignedTypeIds: Set<string>
+): Promise<string | null> {
+  const lower = conditionText.toLowerCase();
+
+  // 1. Fetch condition types from database (read-only per ADR 0011)
+  const { data: allTypes } = await (supabase.from('condition_types') as any)
+    .select('id, name')
+    .limit(100);
+
+  if (!allTypes || allTypes.length === 0) {
+    return null;
+  }
+
+  // 2. Exclude types already assigned in this batch
+  const availableTypes = allTypes.filter((t: any) => !assignedTypeIds.has(t.id));
+  if (availableTypes.length === 0) {
+    return null;
+  }
+
+  // 3. Exclude types already in DB for this shop to preserve unique(shop_id, condition_type_id)
+  const { data: existingShopConditions } = await (supabase.from('rental_shop_conditions') as any)
+    .select('condition_type_id')
+    .eq('shop_id', shopId);
+
+  const existingShopTypeIds = new Set(
+    (existingShopConditions || []).map((c: any) => c.condition_type_id)
+  );
+
+  const usableTypes = availableTypes.filter((t: any) => !existingShopTypeIds.has(t.id));
+  if (usableTypes.length === 0) {
+    return null;
+  }
+
+  // 4. Try semantic match against available usable types
+  const matched = usableTypes.find((t: any) => {
+    const typeName = t.name.toLowerCase();
+    return lower.includes(typeName) || typeName.includes(lower.slice(0, 20));
+  });
+
+  const selected = matched || usableTypes[0];
+  if (selected) {
+    assignedTypeIds.add(selected.id);
+    return selected.id;
+  }
+
+  return null;
+}
+
 export interface CreateProposalInput {
   shopId: string;
   sourceUrl: string;
@@ -139,11 +191,27 @@ export class ChangeProposalService {
     const existingBikes = await this.getExistingShopInventory(input.shopId);
 
     // Fetch existing shop profile for shop-level diffing
-    const { data: existingShop } = await supabase
-      .from('rental_shops')
-      .select('id, business_description, phone, website')
-      .eq('id', input.shopId)
-      .maybeSingle();
+    const [shopRes, inclusionsRes, conditionsRes] = await Promise.all([
+      supabase
+        .from('rental_shops')
+        .select('id, business_description, phone, website')
+        .eq('id', input.shopId)
+        .maybeSingle(),
+      (supabase.from('rental_shop_inclusions') as any)
+        .select('inclusion_text')
+        .eq('shop_id', input.shopId),
+      (supabase.from('rental_shop_conditions') as any)
+        .select('condition_value')
+        .eq('shop_id', input.shopId),
+    ]);
+
+    const existingShop = shopRes.data
+      ? {
+          ...shopRes.data,
+          inclusions: ((inclusionsRes.data as any[]) || []).map((i) => i.inclusion_text),
+          conditions: ((conditionsRes.data as any[]) || []).map((c) => c.condition_value),
+        }
+      : null;
 
     // 2. Compute diff (enforces zero-drop safeguard, canonical matching & shop profile diffs)
     const diff: DiffResult = computeShopInventoryDiff(
@@ -483,8 +551,52 @@ export class ChangeProposalService {
             .from('rental_shops') as any)
             .update(allowedUpdates)
             .eq('id', proposal.shop_id);
-          appliedCount++;
         }
+
+        // Apply inclusions if diff_summary.inclusions present
+        const diffSummary = item.diff_summary as Record<string, any> | null;
+        const inclusionsDiff = diffSummary?.inclusions;
+        if (inclusionsDiff?.added && Array.isArray(inclusionsDiff.added) && inclusionsDiff.added.length > 0) {
+          const inserts = inclusionsDiff.added.map((text: string) => ({
+            shop_id: proposal.shop_id,
+            inclusion_text: text,
+          }));
+          await (supabase.from('rental_shop_inclusions') as any).insert(inserts);
+        }
+        if (inclusionsDiff?.removed && Array.isArray(inclusionsDiff.removed) && inclusionsDiff.removed.length > 0) {
+          await (supabase.from('rental_shop_inclusions') as any)
+            .delete()
+            .eq('shop_id', proposal.shop_id)
+            .in('inclusion_text', inclusionsDiff.removed);
+        }
+
+        // Apply conditions if diff_summary.conditions present
+        const conditionsDiff = diffSummary?.conditions;
+        if (conditionsDiff?.added && Array.isArray(conditionsDiff.added) && conditionsDiff.added.length > 0) {
+          const assignedTypeIds = new Set<string>();
+          const inserts = [];
+          for (const val of conditionsDiff.added) {
+            const conditionTypeId = await resolveConditionTypeId(supabase, proposal.shop_id, val, assignedTypeIds);
+            if (conditionTypeId) {
+              inserts.push({
+                shop_id: proposal.shop_id,
+                condition_type_id: conditionTypeId,
+                condition_value: val,
+              });
+            }
+          }
+          if (inserts.length > 0) {
+            await (supabase.from('rental_shop_conditions') as any).insert(inserts);
+          }
+        }
+        if (conditionsDiff?.removed && Array.isArray(conditionsDiff.removed) && conditionsDiff.removed.length > 0) {
+          await (supabase.from('rental_shop_conditions') as any)
+            .delete()
+            .eq('shop_id', proposal.shop_id)
+            .in('condition_value', conditionsDiff.removed);
+        }
+
+        appliedCount++;
       }
 
       // Mark item applied

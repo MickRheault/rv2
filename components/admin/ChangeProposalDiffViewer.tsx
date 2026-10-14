@@ -65,7 +65,8 @@ function getRateAmount(tier: any): number {
 function renderRateTiers(
   rates: any[] | undefined,
   defaultCurrency?: string,
-  variant: 'emerald' | 'blue' | 'gray' = 'emerald'
+  variant: 'emerald' | 'blue' | 'gray' | 'red' = 'emerald',
+  strikeThrough = false
 ) {
   if (!rates || !Array.isArray(rates) || rates.length === 0) return null;
   const colorClasses =
@@ -73,6 +74,8 @@ function renderRateTiers(
       ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
       : variant === 'blue'
       ? 'bg-blue-50 text-blue-800 border-blue-200'
+      : variant === 'red'
+      ? 'bg-red-50 text-red-700 border-red-200'
       : 'bg-gray-50 text-gray-700 border-gray-200';
 
   return (
@@ -85,12 +88,183 @@ function renderRateTiers(
         return (
           <span
             key={idx}
-            className={`inline-flex text-xs px-2 py-0.5 rounded border ${colorClasses}`}
+            className={`inline-flex text-xs px-2 py-0.5 rounded border ${colorClasses} ${
+              strikeThrough ? 'line-through' : ''
+            }`}
           >
             {min}{max ? `-${max}` : '+'} days: {symbol}{rateAmount}/day
           </span>
         );
       })}
+    </div>
+  );
+}
+
+function renderPolicyList(title: string, added: string[] = [], removed: string[] = []) {
+  if (added.length === 0 && removed.length === 0) return null;
+  return (
+    <div className="mt-2.5 pt-2 border-t border-gray-100 space-y-1">
+      <span className="font-semibold text-gray-900 block mb-1">{title}:</span>
+      {added.map((text: string, idx: number) => (
+        <div key={`add-${idx}`} className="flex items-center gap-1.5 text-emerald-700 font-medium">
+          <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1 rounded uppercase tracking-wider">
+            + Added
+          </span>
+          <span>{text}</span>
+        </div>
+      ))}
+      {removed.map((text: string, idx: number) => (
+        <div key={`rem-${idx}`} className="flex items-center gap-1.5 text-red-600 line-through">
+          <span className="bg-red-100 text-red-800 text-[10px] font-bold px-1 rounded uppercase tracking-wider no-underline">
+            - Removed
+          </span>
+          <span>{text}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function renderRateTiersDiff(
+  ratesDiff: any,
+  originalRates?: any[],
+  proposedRates?: any[],
+  defaultCurrency?: string
+) {
+  const tiersDiff: any[] = ratesDiff?.tiersDiff || [];
+
+  if (tiersDiff.length > 0) {
+    return (
+      <div className="mt-2 space-y-1.5">
+        <div className="text-xs font-semibold text-gray-700">Rate Tier Changes:</div>
+        <div className="flex flex-col gap-1.5">
+          {tiersDiff.map((tier: any, idx: number) => {
+            const symbol = getCurrencySymbol(tier.currency || defaultCurrency || 'THB');
+            const duration = `${tier.minDays}${tier.maxDays ? `-${tier.maxDays}` : '+'} days`;
+
+            if (tier.status === 'modified') {
+              const delta = tier.delta ?? (tier.newRate - tier.oldRate);
+              const percentage = tier.percentage ?? (tier.oldRate > 0 ? (delta / tier.oldRate) * 100 : 0);
+              const isIncrease = delta >= 0;
+              const hasDurationChange = tier.oldMaxDays !== undefined && tier.oldMaxDays !== tier.maxDays;
+              const oldDuration = `${tier.minDays}${tier.oldMaxDays ? `-${tier.oldMaxDays}` : '+'} days`;
+
+              return (
+                <div
+                  key={idx}
+                  className="flex items-center gap-2 text-xs bg-gray-50 border border-gray-200 rounded-lg p-2"
+                >
+                  <span className="font-medium text-gray-700 min-w-[75px]">
+                    {hasDurationChange ? (
+                      <>
+                        <span className="line-through text-red-500 mr-1">{oldDuration}</span>
+                        <span className="text-gray-400">→</span> {duration}:
+                      </>
+                    ) : (
+                      `${duration}:`
+                    )}
+                  </span>
+                  <span className="line-through text-red-500 font-medium">
+                    {symbol}{tier.oldRate}
+                  </span>
+                  <span className="text-gray-400">→</span>
+                  <span className="text-emerald-700 font-bold">
+                    {symbol}{tier.newRate}/day
+                  </span>
+                  <span
+                    className={`ml-auto text-[11px] px-1.5 py-0.5 rounded font-semibold ${
+                      isIncrease ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'
+                    }`}
+                  >
+                    {isIncrease ? `+${symbol}${delta}` : `-${symbol}${Math.abs(delta)}`} (
+                    {percentage >= 0 ? `+${percentage.toFixed(0)}%` : `${percentage.toFixed(0)}%`})
+                  </span>
+                </div>
+              );
+            }
+
+            if (tier.status === 'duration_modified') {
+              const oldDuration = `${tier.minDays}${tier.oldMaxDays ? `-${tier.oldMaxDays}` : '+'} days`;
+              return (
+                <div
+                  key={idx}
+                  className="flex items-center gap-2 text-xs bg-amber-50 border border-amber-200 rounded-lg p-2"
+                >
+                  <span className="font-medium text-gray-700 min-w-[75px]">
+                    <span className="line-through text-red-500 mr-1">{oldDuration}</span>
+                    <span className="text-gray-400">→</span> {duration}:
+                  </span>
+                  <span className="text-gray-900 font-bold">
+                    {symbol}{tier.newRate}/day
+                  </span>
+                  <span className="ml-auto bg-amber-100 text-amber-800 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                    Duration Updated
+                  </span>
+                </div>
+              );
+            }
+
+            if (tier.status === 'added') {
+              return (
+                <div
+                  key={idx}
+                  className="flex items-center gap-2 text-xs bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg p-2"
+                >
+                  <span className="font-medium min-w-[75px]">{duration}:</span>
+                  <span className="font-bold">{symbol}{tier.newRate}/day</span>
+                  <span className="ml-auto bg-emerald-200 text-emerald-900 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                    + Added
+                  </span>
+                </div>
+              );
+            }
+
+            if (tier.status === 'removed') {
+              return (
+                <div
+                  key={idx}
+                  className="flex items-center gap-2 text-xs bg-red-50 border border-red-200 text-red-700 rounded-lg p-2 line-through"
+                >
+                  <span className="font-medium min-w-[75px]">{duration}:</span>
+                  <span>{symbol}{tier.oldRate}/day</span>
+                  <span className="ml-auto bg-red-200 text-red-900 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider no-underline">
+                    - Removed
+                  </span>
+                </div>
+              );
+            }
+
+            return (
+              <div
+                key={idx}
+                className="flex items-center gap-2 text-xs bg-gray-50 border border-gray-100 text-gray-600 rounded-lg p-1.5"
+              >
+                <span className="min-w-[75px]">{duration}:</span>
+                <span>{symbol}{tier.newRate}/day</span>
+                <span className="ml-auto text-[10px] text-gray-400 font-medium">Unchanged</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // Fallback: If no precomputed tiersDiff, pair original and proposed rates dynamically
+  const oldTiers = originalRates || ratesDiff?.old || [];
+  const newTiers = proposedRates || ratesDiff?.new || [];
+
+  return (
+    <div className="mt-2 space-y-1 text-xs">
+      <div className="font-semibold text-gray-700">Rates Comparison:</div>
+      <div className="flex items-center gap-2">
+        <span className="text-gray-500 min-w-[45px]">Before:</span>
+        {renderRateTiers(oldTiers, defaultCurrency, 'red', true)}
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-gray-500 min-w-[45px]">After:</span>
+        {renderRateTiers(newTiers, defaultCurrency, 'emerald')}
+      </div>
     </div>
   );
 }
@@ -291,8 +465,13 @@ export function ChangeProposalDiffViewer({
                     </div>
                   )}
                   <div className="flex-1 text-sm">
-                    <div className="font-semibold text-gray-900">
-                      {item.brand_name} {item.model_name}
+                    <div className="flex items-center gap-2">
+                      <div className="font-semibold text-gray-900">
+                        {item.brand_name} {item.model_name}
+                      </div>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800">
+                        + New Bike
+                      </span>
                     </div>
                     <div className="text-xs text-gray-500 flex gap-4 mt-0.5">
                       {year != null && <span>Year: {year}</span>}
@@ -342,27 +521,33 @@ export function ChangeProposalDiffViewer({
                       {engineCc != null && <span>Engine: {engineCc}cc</span>}
                     </div>
                     {item.diff_summary && (
-                      <div className="mt-2 space-y-1 text-xs">
-                        {item.diff_summary.rates && (
-                          <div className="bg-blue-50 p-2 rounded border border-blue-200 text-blue-900">
-                            <span className="font-medium">Rates updated:</span> New rate schedule proposed.
-                          </div>
-                        )}
+                      <div className="mt-2 space-y-2 text-xs">
                         {item.diff_summary.year && (
-                          <div className="text-gray-600">
-                            Year: <span className="line-through text-red-500">{item.diff_summary.year.old}</span> →{' '}
-                            <span className="text-emerald-600 font-medium">{item.diff_summary.year.new}</span>
+                          <div className="text-gray-600 flex items-center gap-1.5">
+                            <span className="font-medium text-gray-800">Year:</span>{' '}
+                            <span className="line-through text-red-500 font-medium">{item.diff_summary.year.old}</span> →{' '}
+                            <span className="text-emerald-600 font-semibold">{item.diff_summary.year.new}</span>
                           </div>
                         )}
                         {item.diff_summary.engine_capacity_cc && (
-                          <div className="text-gray-600">
-                            Engine: <span className="line-through text-red-500">{item.diff_summary.engine_capacity_cc.old}cc</span> →{' '}
-                            <span className="text-emerald-600 font-medium">{item.diff_summary.engine_capacity_cc.new}cc</span>
+                          <div className="text-gray-600 flex items-center gap-1.5">
+                            <span className="font-medium text-gray-800">Engine:</span>{' '}
+                            <span className="line-through text-red-500 font-medium">{item.diff_summary.engine_capacity_cc.old}cc</span> →{' '}
+                            <span className="text-emerald-600 font-semibold">{item.diff_summary.engine_capacity_cc.new}cc</span>
                           </div>
+                        )}
+                        {item.diff_summary.rates ? (
+                          renderRateTiersDiff(
+                            item.diff_summary.rates,
+                            item.original_data?.rates,
+                            item.proposed_data?.rates,
+                            item.proposed_data?.currency
+                          )
+                        ) : (
+                          renderRateTiers(item.proposed_data?.rates, item.proposed_data?.currency, 'gray')
                         )}
                       </div>
                     )}
-                    {renderRateTiers(item.proposed_data?.rates, item.proposed_data?.currency, 'blue')}
                   </div>
                 </div>
               );
@@ -398,12 +583,15 @@ export function ChangeProposalDiffViewer({
                   </div>
                 )}
                 <div className="flex-1 text-sm">
-                  <span className="font-medium text-gray-900">
-                    {item.brand_name} {item.model_name}
-                  </span>
-                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
-                    Mark Unavailable
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-gray-900">
+                      {item.brand_name} {item.model_name}
+                    </span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-red-100 text-red-800 line-through">
+                      - Delisted / Unavailable
+                    </span>
+                  </div>
+                  {renderRateTiers(item.original_data?.rates, item.original_data?.currency, 'red', true)}
                 </div>
               </div>
             ))}
@@ -474,6 +662,18 @@ export function ChangeProposalDiffViewer({
                           </span>
                         </div>
                       )}
+                      {item.diff_summary.inclusions &&
+                        renderPolicyList(
+                          'Rental Inclusions',
+                          item.diff_summary.inclusions.added,
+                          item.diff_summary.inclusions.removed
+                        )}
+                      {item.diff_summary.conditions &&
+                        renderPolicyList(
+                          'Rental Conditions',
+                          item.diff_summary.conditions.added,
+                          item.diff_summary.conditions.removed
+                        )}
                     </div>
                   )}
                 </div>

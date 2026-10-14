@@ -51,10 +51,24 @@ export interface ExistingBikeRecord {
   rates: ExistingRateTier[];
 }
 
+export interface RateTierComparison {
+  status: 'modified' | 'added' | 'removed' | 'unchanged' | 'duration_modified';
+  minDays: number;
+  maxDays?: number | null;
+  oldMaxDays?: number | null;
+  oldRate?: number;
+  newRate?: number;
+  delta?: number;
+  percentage?: number;
+  currency?: string;
+}
+
 export interface CrawledShopProfile {
   business_description?: string | null;
   phone?: string | null;
   website?: string | null;
+  inclusions?: string[] | null;
+  conditions?: string[] | Array<{ type?: string; value?: string }> | null;
 }
 
 export interface ExistingShopProfile {
@@ -62,6 +76,8 @@ export interface ExistingShopProfile {
   business_description?: string | null;
   phone?: string | null;
   website?: string | null;
+  inclusions?: string[] | null;
+  conditions?: string[] | null;
 }
 
 export interface ProposedDiffItem {
@@ -72,7 +88,7 @@ export interface ProposedDiffItem {
   model_name: string;
   original_data?: any;
   proposed_data: any;
-  diff_summary?: Record<string, { old: any; new: any }> | null;
+  diff_summary?: Record<string, { old: any; new: any; [key: string]: any }> | null;
 }
 
 export interface DiffResult {
@@ -166,6 +182,87 @@ function ratesDiffer(oldRates: ExistingRateTier[] = [], newRates: CrawledRateTie
   return false;
 }
 
+export function computeRateTiersDiff(
+  oldRates: ExistingRateTier[] = [],
+  newRates: CrawledRateTier[] = []
+): RateTierComparison[] {
+  const diffs: RateTierComparison[] = [];
+  const oldRemaining = [...oldRates];
+  const newRemaining = [...newRates];
+
+  // 1. Match by minDays
+  for (let i = newRemaining.length - 1; i >= 0; i--) {
+    const newTier = newRemaining[i];
+    const oldIdx = oldRemaining.findIndex((oldTier) => Number(oldTier.min_days) === Number(newTier.minDays));
+    if (oldIdx !== -1) {
+      const oldTier = oldRemaining[oldIdx];
+      const oldRate = Number(oldTier.rate_per_day);
+      const newRate = Number(newTier.ratePerDay);
+      const oldMax = oldTier.max_days != null ? Number(oldTier.max_days) : null;
+      const newMax = newTier.maxDays != null ? Number(newTier.maxDays) : null;
+
+      if (oldRate !== newRate) {
+        const delta = newRate - oldRate;
+        const percentage = oldRate > 0 ? (delta / oldRate) * 100 : 0;
+        diffs.push({
+          status: 'modified',
+          minDays: Number(newTier.minDays),
+          maxDays: newMax,
+          oldMaxDays: oldMax,
+          oldRate,
+          newRate,
+          delta,
+          percentage,
+          currency: newTier.currency,
+        });
+      } else if (oldMax !== newMax) {
+        diffs.push({
+          status: 'duration_modified',
+          minDays: Number(newTier.minDays),
+          maxDays: newMax,
+          oldMaxDays: oldMax,
+          oldRate,
+          newRate,
+          currency: newTier.currency,
+        });
+      } else {
+        diffs.push({
+          status: 'unchanged',
+          minDays: Number(newTier.minDays),
+          maxDays: newMax,
+          newRate,
+          currency: newTier.currency,
+        });
+      }
+      oldRemaining.splice(oldIdx, 1);
+      newRemaining.splice(i, 1);
+    }
+  }
+
+  // 2. Added tiers
+  for (const newTier of newRemaining) {
+    diffs.push({
+      status: 'added',
+      minDays: Number(newTier.minDays),
+      maxDays: newTier.maxDays != null ? Number(newTier.maxDays) : null,
+      newRate: Number(newTier.ratePerDay),
+      currency: newTier.currency,
+    });
+  }
+
+  // 3. Removed tiers
+  for (const oldTier of oldRemaining) {
+    diffs.push({
+      status: 'removed',
+      minDays: Number(oldTier.min_days),
+      maxDays: oldTier.max_days != null ? Number(oldTier.max_days) : null,
+      oldRate: Number(oldTier.rate_per_day),
+    });
+  }
+
+  return diffs.sort((a, b) => a.minDays - b.minDays);
+}
+
 function toOriginalMotorcycleSnapshot(bike: ExistingBikeRecord) {
   return {
     year: bike.year ?? null,
@@ -173,6 +270,14 @@ function toOriginalMotorcycleSnapshot(bike: ExistingBikeRecord) {
     rates: bike.rates || [],
     availability_status: bike.availability_status || 'available',
   };
+}
+
+export function computeStringListDiff(oldList: string[] = [], newList: string[] = []) {
+  const oldSet = new Set(oldList.map((s) => s.trim().toLowerCase()));
+  const newSet = new Set(newList.map((s) => s.trim().toLowerCase()));
+  const added = newList.filter((s) => s.trim() && !oldSet.has(s.trim().toLowerCase()));
+  const removed = oldList.filter((s) => s.trim() && !newSet.has(s.trim().toLowerCase()));
+  return { added, removed };
 }
 
 export function computeShopInventoryDiff(
@@ -220,7 +325,7 @@ export function computeShopInventoryDiff(
       observedExistingKeys.add(key);
 
       // Check for specification or pricing modifications
-      const diffSummary: Record<string, { old: any; new: any }> = {};
+      const diffSummary: Record<string, { old: any; new: any; [key: string]: any }> = {};
 
       if (
         crawled.year !== undefined &&
@@ -242,7 +347,11 @@ export function computeShopInventoryDiff(
       }
 
       if (ratesDiffer(existing.rates, crawled.rates || [])) {
-        diffSummary.rates = { old: existing.rates, new: crawled.rates || [] };
+        diffSummary.rates = {
+          old: existing.rates,
+          new: crawled.rates || [],
+          tiersDiff: computeRateTiersDiff(existing.rates, crawled.rates || []),
+        };
       }
 
       if (Object.keys(diffSummary).length > 0) {
@@ -300,7 +409,7 @@ export function computeShopInventoryDiff(
 
   // 4. Evaluate Shop Profile Updates
   if (existingShop && crawledShop) {
-    const shopDiff: Record<string, { old: any; new: any }> = {};
+    const shopDiff: Record<string, { old: any; new: any; [key: string]: any }> = {};
 
     if (
       crawledShop.business_description !== undefined &&
@@ -335,6 +444,42 @@ export function computeShopInventoryDiff(
       };
     }
 
+    // Inclusions diff
+    if (Array.isArray(crawledShop.inclusions)) {
+      const oldIncls = existingShop.inclusions || [];
+      const newIncls = crawledShop.inclusions.map(String);
+      const { added, removed } = computeStringListDiff(oldIncls, newIncls);
+
+      if (added.length > 0 || removed.length > 0) {
+        shopDiff.inclusions = {
+          old: oldIncls,
+          new: newIncls,
+          added,
+          removed,
+        };
+      }
+    }
+
+    // Conditions diff
+    if (Array.isArray(crawledShop.conditions)) {
+      const oldConds = (existingShop.conditions || []).map((c) =>
+        typeof c === 'string' ? c : (c as any).value || (c as any).condition_value || ''
+      );
+      const newConds = crawledShop.conditions.map((c) =>
+        typeof c === 'string' ? c : (c as any).value || (c as any).condition_value || ''
+      );
+      const { added, removed } = computeStringListDiff(oldConds, newConds);
+
+      if (added.length > 0 || removed.length > 0) {
+        shopDiff.conditions = {
+          old: oldConds,
+          new: newConds,
+          added,
+          removed,
+        };
+      }
+    }
+
     if (Object.keys(shopDiff).length > 0) {
       items.push({
         entity_type: 'rental_shop',
@@ -346,6 +491,8 @@ export function computeShopInventoryDiff(
           business_description: existingShop.business_description,
           phone: existingShop.phone,
           website: existingShop.website,
+          inclusions: existingShop.inclusions || [],
+          conditions: existingShop.conditions || [],
         },
         proposed_data: crawledShop,
         diff_summary: shopDiff,

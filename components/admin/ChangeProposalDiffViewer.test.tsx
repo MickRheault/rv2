@@ -62,6 +62,8 @@ describe('ChangeProposalDiffViewer', () => {
     expect(screen.getByText(/Missing Fleet — Soft Delist \(1\)/i)).toBeInTheDocument();
     expect(screen.getByText('Honda ADV 160')).toBeInTheDocument();
     expect(screen.getByText('Yamaha Aerox 155')).toBeInTheDocument();
+    expect(screen.getByText(/\+ New Bike/i)).toBeInTheDocument();
+    expect(screen.getByText(/- Delisted \/ Unavailable/i)).toBeInTheDocument();
     expect(screen.getByText(/2 of 2 items selected/i)).toBeInTheDocument();
   });
 
@@ -202,5 +204,221 @@ describe('ChangeProposalDiffViewer', () => {
     const selectAllBtn = screen.getByRole('button', { name: /^Select All$/i });
     fireEvent.click(selectAllBtn);
     expect(screen.getByText(/1 of 1 items selected/i)).toBeInTheDocument();
+  });
+
+  it('renders detailed before-and-after rate diff showing old and new rates instead of generic banner', () => {
+    const rateUpdateItems: DiffViewerItem[] = [
+      {
+        id: 'item-update-rates-1',
+        proposal_id: 'prop-1',
+        entity_type: 'motorcycle',
+        action: 'update',
+        entity_id: 'bike-existing-adv',
+        brand_name: 'Honda',
+        model_name: 'ADV 160',
+        original_data: {
+          rates: [{ min_days: 1, max_days: null, rate_per_day: 500, currency: 'THB' }],
+        },
+        proposed_data: {
+          rates: [{ minDays: 1, maxDays: null, ratePerDay: 600, currency: 'THB' }],
+        },
+        diff_summary: {
+          rates: {
+            old: [{ min_days: 1, max_days: null, rate_per_day: 500 }],
+            new: [{ minDays: 1, maxDays: null, ratePerDay: 600, currency: 'THB' }],
+          },
+        },
+        status: 'pending',
+      },
+    ];
+
+    render(<ChangeProposalDiffViewer proposal={mockProposal} items={rateUpdateItems} />);
+
+    // Must show bike title
+    expect(screen.getByText('Honda ADV 160')).toBeInTheDocument();
+    // Must show the previous/old rate (e.g. 500)
+    expect(screen.getByText(/500/)).toBeInTheDocument();
+    // Must show the new/proposed rate (e.g. 600)
+    expect(screen.getByText(/600/)).toBeInTheDocument();
+    // Must NOT just show a generic vague message with zero numbers
+    expect(screen.queryByText(/Rates updated: New rate schedule proposed/i)).not.toBeInTheDocument();
+  });
+
+  it('renders tiered rate diffs with added, removed, and modified tier indicators', () => {
+    const tieredItems: DiffViewerItem[] = [
+      {
+        id: 'item-tiered-1',
+        proposal_id: 'prop-1',
+        entity_type: 'motorcycle',
+        action: 'update',
+        entity_id: 'bike-tiered',
+        brand_name: 'Yamaha',
+        model_name: 'NMAX 155',
+        original_data: {
+          rates: [
+            { min_days: 1, max_days: 6, rate_per_day: 500 },
+            { min_days: 14, max_days: null, rate_per_day: 350 },
+          ],
+        },
+        proposed_data: {
+          rates: [
+            { minDays: 1, maxDays: 6, ratePerDay: 600, currency: 'THB' },
+            { minDays: 7, maxDays: 13, ratePerDay: 450, currency: 'THB' },
+          ],
+        },
+        diff_summary: {
+          rates: {
+            old: [
+              { min_days: 1, max_days: 6, rate_per_day: 500 },
+              { min_days: 14, max_days: null, rate_per_day: 350 },
+            ],
+            new: [
+              { minDays: 1, maxDays: 6, ratePerDay: 600, currency: 'THB' },
+              { minDays: 7, maxDays: 13, ratePerDay: 450, currency: 'THB' },
+            ],
+            tiersDiff: [
+              {
+                status: 'modified',
+                minDays: 1,
+                maxDays: 6,
+                oldRate: 500,
+                newRate: 600,
+                delta: 100,
+                percentage: 20,
+                currency: 'THB',
+              },
+              {
+                status: 'added',
+                minDays: 7,
+                maxDays: 13,
+                newRate: 450,
+                currency: 'THB',
+              },
+              {
+                status: 'removed',
+                minDays: 14,
+                maxDays: null,
+                oldRate: 350,
+              },
+            ],
+          },
+        },
+        status: 'pending',
+      },
+    ];
+
+    render(<ChangeProposalDiffViewer proposal={mockProposal} items={tieredItems} />);
+
+    expect(screen.getByText('Yamaha NMAX 155')).toBeInTheDocument();
+    // Modified tier: 500 -> 600 with delta
+    expect(screen.getByText(/500/)).toBeInTheDocument();
+    expect(screen.getByText(/600\/day/)).toBeInTheDocument();
+    expect(screen.getByText(/\+฿100/)).toBeInTheDocument();
+    expect(screen.getByText(/\+20%/)).toBeInTheDocument();
+
+    // Added tier with "+ Added" badge
+    expect(screen.getByText(/\+ Added/i)).toBeInTheDocument();
+    expect(screen.getByText(/7-13 days:/i)).toBeInTheDocument();
+
+    // Removed tier with "- Removed" badge
+    expect(screen.getByText(/- Removed/i)).toBeInTheDocument();
+    expect(screen.getByText(/14\+ days:/i)).toBeInTheDocument();
+  });
+
+  it('renders duration updated rate tiers without misleading zero delta', () => {
+    const durationModifiedItems: DiffViewerItem[] = [
+      {
+        id: 'item-duration-1',
+        proposal_id: 'prop-1',
+        entity_type: 'motorcycle',
+        action: 'update',
+        entity_id: 'bike-duration-1',
+        brand_name: 'Honda',
+        model_name: 'Click 160',
+        original_data: {
+          rates: [{ min_days: 1, max_days: 6, rate_per_day: 450 }],
+        },
+        proposed_data: {
+          rates: [{ minDays: 1, maxDays: 13, ratePerDay: 450, currency: 'THB' }],
+        },
+        diff_summary: {
+          rates: {
+            old: [{ min_days: 1, max_days: 6, rate_per_day: 450 }],
+            new: [{ minDays: 1, maxDays: 13, ratePerDay: 450, currency: 'THB' }],
+            tiersDiff: [
+              {
+                status: 'duration_modified',
+                minDays: 1,
+                maxDays: 13,
+                oldMaxDays: 6,
+                oldRate: 450,
+                newRate: 450,
+                currency: 'THB',
+              },
+            ],
+          },
+        },
+        status: 'pending',
+      },
+    ];
+
+    render(<ChangeProposalDiffViewer proposal={mockProposal} items={durationModifiedItems} />);
+
+    expect(screen.getByText('Honda Click 160')).toBeInTheDocument();
+    expect(screen.getByText(/Duration Updated/i)).toBeInTheDocument();
+    expect(screen.getByText(/1-6 days/i)).toBeInTheDocument();
+    expect(screen.getByText(/1-13 days:/i)).toBeInTheDocument();
+    expect(screen.getByText(/฿450\/day/i)).toBeInTheDocument();
+    // Must NOT show misleading +฿0 (+0%)
+    expect(screen.queryByText(/\+฿0/i)).not.toBeInTheDocument();
+  });
+
+  it('renders shop updates with added and removed inclusions and conditions', () => {
+    const shopUpdateItems: DiffViewerItem[] = [
+      {
+        id: 'item-shop-1',
+        proposal_id: 'prop-1',
+        entity_type: 'rental_shop',
+        action: 'update',
+        entity_id: 'shop-1',
+        brand_name: 'Shop Profile',
+        model_name: 'General Information & Policies',
+        original_data: {
+          phone: '+66 81 111 1111',
+          inclusions: ['Helmets provided'],
+          conditions: ['Driver license required'],
+        },
+        proposed_data: {
+          phone: '+66 81 222 2222',
+          inclusions: ['Helmets provided', 'Free insurance'],
+          conditions: ['Driver license required', 'Passport deposit'],
+        },
+        diff_summary: {
+          phone: { old: '+66 81 111 1111', new: '+66 81 222 2222' },
+          inclusions: {
+            old: ['Helmets provided'],
+            new: ['Helmets provided', 'Free insurance'],
+            added: ['Free insurance'],
+            removed: [],
+          },
+          conditions: {
+            old: ['Driver license required'],
+            new: ['Driver license required', 'Passport deposit'],
+            added: ['Passport deposit'],
+            removed: [],
+          },
+        },
+        status: 'pending',
+      },
+    ];
+
+    render(<ChangeProposalDiffViewer proposal={mockProposal} items={shopUpdateItems} />);
+
+    expect(screen.getByText(/Shop Profile Updates/i)).toBeInTheDocument();
+    expect(screen.getByText(/\+66 81 111 1111/)).toBeInTheDocument();
+    expect(screen.getByText(/\+66 81 222 2222/)).toBeInTheDocument();
+
+    expect(screen.getByText('Free insurance')).toBeInTheDocument();
+    expect(screen.getByText('Passport deposit')).toBeInTheDocument();
   });
 });
