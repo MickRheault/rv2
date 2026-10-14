@@ -23,3 +23,8 @@ _Avoid_: Crawl rank, overdue priority
 **Canonical Model Name**:
 The official manufacturer designation for a motorcycle model as curated in RideVault.
 _Avoid_: Scraped model title, listing alias, informal nickname
+
+**Recovery Snapshot**:
+A full, self-contained SQL dump of the `public` and `auth` database schemas and data, compressed and GPG-encrypted for point-in-time disaster recovery.
+_Avoid_: Partial dump, unencrypted export, table CSV
+
