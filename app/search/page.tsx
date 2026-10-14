@@ -2,10 +2,24 @@ import { Suspense } from 'react'
 import { Metadata } from 'next'
 import SearchPageContent from './SearchPageContent'
 import { generateMetadata as generateSEOMetadata, PAGE_CONFIGS } from '@/lib/seo/config'
+import { searchService } from '@/services/search'
+import { motorcycleService } from '@/services/motorcycles'
+
+export const revalidate = 3600
 
 export const metadata: Metadata = generateSEOMetadata(PAGE_CONFIGS.search)
 
-export default function SearchPage() {
+export default async function SearchPage() {
+  const [popularResult, filterOptionsResult] = await Promise.allSettled([
+    searchService.getPopularSearchLocations(6),
+    motorcycleService.getFilterOptions()
+  ])
+
+  const initialPopularLocations =
+    popularResult.status === 'fulfilled' ? popularResult.value : undefined
+  const initialFilterOptions =
+    filterOptionsResult.status === 'fulfilled' ? filterOptionsResult.value : undefined
+
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -15,7 +29,10 @@ export default function SearchPage() {
         </div>
       </div>
     }>
-      <SearchPageContent />
+      <SearchPageContent
+        initialPopularLocations={initialPopularLocations}
+        initialFilterOptions={initialFilterOptions}
+      />
     </Suspense>
   )
-} 
+}

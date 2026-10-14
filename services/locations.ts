@@ -22,6 +22,52 @@ export interface CityWithLocation extends City {
   }) | null
 }
 
+export interface CityWithCounts extends CityWithLocation {
+  fullName: string
+  shopCount: number
+  motorcycleCount: number
+}
+
+export const CITY_WITH_COUNTS_SELECT = `
+  id,
+  name,
+  province_id,
+  provinces (
+    id,
+    name,
+    country_code,
+    countries (
+      code,
+      name
+    )
+  ),
+  rental_shops (
+    id,
+    motorcycle_rentals (count)
+  )
+`
+
+function countShopMotorcycles(shop: any): number {
+  const counts = shop?.motorcycle_rentals
+  return Array.isArray(counts) && counts[0]?.count ? counts[0].count : 0
+}
+
+export function toCityWithCounts(city: any): CityWithCounts {
+  const shops = Array.isArray(city?.rental_shops) ? city.rental_shops : []
+  const shopCount = typeof city?.shopCount === 'number' ? city.shopCount : shops.length
+  const motorcycleCount =
+    typeof city?.motorcycleCount === 'number'
+      ? city.motorcycleCount
+      : shops.reduce((sum: number, shop: any) => sum + countShopMotorcycles(shop), 0)
+  const countryName = city?.provinces?.countries?.name || ''
+  return {
+    ...(city as CityWithLocation),
+    fullName: `${city.name}, ${countryName}`,
+    shopCount,
+    motorcycleCount
+  }
+}
+
 export const locationService = {
   // Get all countries
   async getCountries() {
@@ -308,14 +354,7 @@ export const locationService = {
   async getPopularLocations(limit: number = 10) {
     const { data, error } = await supabase
       .from('cities')
-      .select(`
-        *,
-        provinces (
-          *,
-          countries (*)
-        ),
-        rental_shops (id)
-      `)
+      .select(CITY_WITH_COUNTS_SELECT)
       .not('rental_shops', 'is', null)
       .order('name')
 
@@ -324,11 +363,12 @@ export const locationService = {
       throw error
     }
 
-    // Count shops per city and sort by popularity
-    const citiesWithCounts = (data as any[] || [])?.map((city: any) => ({
-      ...city as CityWithLocation,
-      shopCount: city.rental_shops?.length || 0
-    })).sort((a: any, b: any) => b.shopCount - a.shopCount).slice(0, limit) || []
+    // Count shops and motorcycles per city and sort by popularity
+    const citiesWithCounts = ((data as any[]) || [])
+      .map((city: any) => toCityWithCounts(city))
+      .filter((city: CityWithCounts) => city.shopCount > 0)
+      .sort((a: CityWithCounts, b: CityWithCounts) => b.shopCount - a.shopCount)
+      .slice(0, limit)
 
     return citiesWithCounts
   },

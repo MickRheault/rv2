@@ -86,8 +86,7 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
   const {
     data: results,
     isLoading: isSearchLoading,
-    error: searchError,
-    refetch: executeSearch
+    error: searchError
   } = useQuery({
     queryKey: ['location-search', filters],
     queryFn: async () => {
@@ -116,25 +115,10 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
     enabled: hasSearched || (enableAutoSearch && hasActiveCriteria) // Keep enabled once searched or when auto-search conditions are met
   })
 
-  // Location suggestions query (for autocomplete)
-  const {
-    data: locationSuggestions = [],
-    isLoading: isSuggestionsLoading
-  } = useQuery({
-    queryKey: ['location-suggestions', query],
-    queryFn: () => searchService.searchLocations(query, 10),
-    enabled: query.length >= minQueryLength,
-    staleTime: 5 * 60 * 1000 // 5 minutes
-  })
+  const locationSuggestions: LocationSearchResult[] = []
+  const popularLocations: LocationSearchResult[] = []
 
-  // Popular locations query
-  const { data: popularLocations = [] } = useQuery({
-    queryKey: ['popular-locations'],
-    queryFn: () => searchService.getPopularSearchLocations(10),
-    staleTime: 30 * 60 * 1000 // 30 minutes
-  })
-
-  // Debounced search function
+  // Mark search active when auto-search criteria are met (React Query handles the fetch via queryKey)
   const debouncedSearch = useMemo(() => {
     let timeoutId: NodeJS.Timeout
     
@@ -142,7 +126,6 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
       clearTimeout(timeoutId)
       timeoutId = setTimeout(() => {
         if (enableAutoSearch && hasActiveCriteria) {
-          executeSearch()
           setHasSearched(true)
         }
       }, debounceMs)
@@ -151,7 +134,7 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
     debouncedFn.cancel = () => clearTimeout(timeoutId)
     
     return debouncedFn
-  }, [query, filters, enableAutoSearch, minQueryLength, executeSearch, debounceMs, hasActiveCriteria])
+  }, [enableAutoSearch, debounceMs, hasActiveCriteria])
 
   // Auto-search when query or filters change
   useEffect(() => {
@@ -209,11 +192,10 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
     })
   }, [results])
 
-  // Manual search function
+  // Manual search function (React Query executes via enabled + ['location-search', filters])
   const search = useCallback(() => {
-    executeSearch()
     setHasSearched(true)
-  }, [executeSearch])
+  }, [])
 
   // Clear search function
   const clearSearch = useCallback(() => {
@@ -284,13 +266,8 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
     
     console.log('Setting new offset:', newOffset, 'for page:', validPage)
     setFilters({ offset: newOffset })
-    
-    // Trigger search after updating offset
-    setTimeout(() => {
-      console.log('Executing search with new offset')
-      executeSearch()
-    }, 0)
-  }, [filters.limit, filters.offset, results?.totalResults, setFilters, executeSearch])
+    setHasSearched(true)
+  }, [filters.limit, filters.offset, results?.totalResults, setFilters])
 
   const nextPage = useCallback(() => {
     const currentPage = Math.floor((filters.offset || 0) / (filters.limit || 5)) + 1
@@ -309,12 +286,8 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
 
   const setPageSize = useCallback((limit: number) => {
     setFilters({ limit, offset: 0 }) // Reset to first page when changing page size
-    
-    // Trigger search after updating page size
-    setTimeout(() => {
-      executeSearch()
-    }, 0)
-  }, [setFilters, executeSearch])
+    setHasSearched(true)
+  }, [setFilters])
 
   // Pagination info
   const paginationInfo = useMemo(() => {
@@ -342,7 +315,7 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
     // Search state
     query,
     filters,
-    isSearching: isSearchLoading || isSuggestionsLoading,
+    isSearching: isSearchLoading,
     
     // Results
     results: results || null,
@@ -379,13 +352,14 @@ export function useLocationAutocomplete(initialQuery = '') {
   const { data: suggestions = [], isLoading } = useQuery({
     queryKey: ['location-autocomplete', query],
     queryFn: () => searchService.searchLocations(query, 8),
-    enabled: query.length >= 2,
+    enabled: isOpen && query.length >= 2,
     staleTime: 5 * 60 * 1000
   })
 
   const { data: popularLocations = [] } = useQuery({
     queryKey: ['popular-locations-autocomplete'],
-    queryFn: () => searchService.getPopularSearchLocations(1000),
+    queryFn: () => searchService.getPopularSearchLocations(6),
+    enabled: isOpen,
     staleTime: 30 * 60 * 1000
   })
 

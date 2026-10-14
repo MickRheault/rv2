@@ -66,7 +66,7 @@ describe('motorcycleService.getFilterOptions', () => {
         brands: { id: 'b-honda', name: 'Honda' },
         categories: { id: 'c-scooter', name: 'Scooter', description: 'Easy commuting' },
         motorcycle_features: [
-          { features: { id: 'f-1', name: 'ABS', description: 'Anti-lock braking' } },
+          { feature_id: 'f-1' },
         ],
         rental_shops: {
           city_id: 'city-1',
@@ -165,6 +165,37 @@ describe('motorcycleService.getFilterOptions', () => {
 
     await motorcycleService.getFilterOptions({ cityId: 'city-bangkok' })
 
+    expect(mockSelect).toHaveBeenCalledWith(expect.stringContaining('rental_shops!inner'))
     expect(chainable.eq).toHaveBeenCalledWith('rental_shops.city_id', 'city-bangkok')
+  })
+
+  it('omits rental_shops join when no location filter is active and counts feature_id projections (#114)', async () => {
+    const leanMotorcycles = [
+      {
+        id: 'm-1',
+        model: 'PCX 160',
+        brand_id: 'b-honda',
+        category_id: 'c-scooter',
+        rental_rate_per_day: 25,
+        engine_capacity_cc: 160,
+        brands: { id: 'b-honda', name: 'Honda' },
+        categories: { id: 'c-scooter', name: 'Scooter', description: 'Easy commuting' },
+        motorcycle_features: [{ feature_id: 'f-1' }, { feature_id: 'f-2' }],
+      },
+    ]
+
+    mockSelect.mockImplementation(() => ({
+      then: (onfulfilled: any) => Promise.resolve({ data: leanMotorcycles, error: null }).then(onfulfilled),
+      eq: mockEq,
+      ilike: mockIlike,
+    }))
+
+    const result = await motorcycleService.getFilterOptions()
+
+    expect(mockSelect).toHaveBeenCalledWith(expect.not.stringContaining('rental_shops'))
+    expect(result.features).toEqual([
+      { id: 'f-1', name: 'ABS', description: 'Anti-lock braking', count: 1 },
+      { id: 'f-2', name: 'Top Box', description: 'Luggage box', count: 1 },
+    ])
   })
 })

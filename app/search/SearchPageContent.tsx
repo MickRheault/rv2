@@ -5,7 +5,12 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { useLocationSearch } from '@/hooks/useLocationSearch'
 import { LocationSearchResult, LocationBasedSearchFilters } from '@/services/search'
-import { motorcycleService } from '@/services/motorcycles'
+import { motorcycleService, FilterOptions, hasLocationFilter } from '@/services/motorcycles'
+import {
+  FILTER_OPTIONS_TTL_MS,
+  readCachedFilterOptionsEntry,
+  writeCachedFilterOptions
+} from '@/lib/cache/popularLocationsCache'
 import MotorcycleTable from '@/components/motorcycle/MotorcycleTable'
 import { LocationAutocomplete } from '@/components/search'
 import { Button } from '@/components/ui'
@@ -70,7 +75,15 @@ function RangeFilterInput({
   )
 }
 
-export default function SearchPageContent() {
+export interface SearchPageContentProps {
+  initialPopularLocations?: LocationSearchResult[]
+  initialFilterOptions?: FilterOptions
+}
+
+export default function SearchPageContent({
+  initialPopularLocations,
+  initialFilterOptions
+}: SearchPageContentProps = {}) {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -78,15 +91,32 @@ export default function SearchPageContent() {
   const [isInitialized, setIsInitialized] = useState(false)
   const isUpdatingUrlRef = useRef(false)
 
-  // Location search hook with auto-search enabled for responsive filtering
+  // Location search hook scoped to motorcycles with auto-search enabled
   const locationSearch = useLocationSearch({
     enableAutoSearch: true,
     defaultFilters: {
-      limit: 20
+      limit: 20,
+      contentType: 'motorcycles'
     }
   })
 
-  // Load filter options based on active location filter with React Query caching
+  const hasActiveLocation = hasLocationFilter(locationSearch.filters)
+
+  const resolvedInitialFilterEntry = useMemo(() => {
+    if (hasActiveLocation) return undefined
+    if (initialFilterOptions) {
+      return { data: initialFilterOptions, timestamp: Date.now() }
+    }
+    return readCachedFilterOptionsEntry()
+  }, [hasActiveLocation, initialFilterOptions])
+
+  useEffect(() => {
+    if (initialFilterOptions) {
+      writeCachedFilterOptions(initialFilterOptions)
+    }
+  }, [initialFilterOptions])
+
+  // Load filter options based on active location filter with React Query and localStorage caching
   const {
     data: filterOptions,
     isLoading: loadingFilterOptions,
@@ -99,13 +129,21 @@ export default function SearchPageContent() {
       locationSearch.filters.provinceId,
       locationSearch.filters.countryCode
     ],
-    queryFn: () =>
-      motorcycleService.getFilterOptions({
+    queryFn: async () => {
+      const options = await motorcycleService.getFilterOptions({
         cityId: locationSearch.filters.cityId,
         provinceId: locationSearch.filters.provinceId,
         countryCode: locationSearch.filters.countryCode
-      }),
-    staleTime: 5 * 60 * 1000
+      })
+      if (!hasActiveLocation) {
+        writeCachedFilterOptions(options)
+      }
+      return options
+    },
+    initialData: resolvedInitialFilterEntry?.data,
+    initialDataUpdatedAt: resolvedInitialFilterEntry?.timestamp,
+    staleTime: FILTER_OPTIONS_TTL_MS,
+    refetchOnWindowFocus: false
   })
 
   // Memoize models filtered by selected brand
@@ -282,6 +320,7 @@ export default function SearchPageContent() {
                 onLocationSelect={handleLocationSelect}
                 onQueryChange={setLocationInput}
                 onSubmit={handleLocationSubmit}
+                initialPopularLocations={initialPopularLocations}
                 placeholder="Where do you want to ride? (e.g. Chiang Mai, Phuket)"
                 className="w-full"
               />

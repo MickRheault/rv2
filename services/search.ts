@@ -5,7 +5,7 @@ import { SupabaseClient } from '@supabase/supabase-js'
 const typedSupabase = supabase as unknown as SupabaseClient<Database>
 import { motorcycleService, SearchFilters as MotorcycleFilters } from './motorcycles'
 import { shopService, ShopSearchFilters, ShopWithDetails } from './shops'
-import { locationService } from './locations'
+import { locationService, CITY_WITH_COUNTS_SELECT, toCityWithCounts, CityWithLocation } from './locations'
 import { PremiumUtilsService } from './premium-listings'
 import { PremiumTier, PremiumFeatureConfig } from '@/types/premium-listings'
 
@@ -23,6 +23,24 @@ export interface LocationSearchResult {
   city?: City
   shopCount: number
   motorcycleCount: number
+}
+
+function mapCityToLocationSearchResult(
+  city: CityWithLocation & { fullName?: string; shopCount?: number; motorcycleCount?: number; rental_shops?: any[] }
+): LocationSearchResult {
+  const enriched = toCityWithCounts(city)
+
+  return {
+    type: 'city',
+    id: enriched.id,
+    name: enriched.name,
+    fullName: enriched.fullName,
+    country: enriched.provinces?.countries || undefined,
+    province: enriched.provinces || undefined,
+    city: enriched,
+    shopCount: enriched.shopCount,
+    motorcycleCount: enriched.motorcycleCount
+  }
 }
 
 export interface LocationBasedSearchFilters extends MotorcycleFilters {
@@ -216,20 +234,12 @@ export const searchService = {
         shops: sortedShops
       }
     } else {
-      // When only showing motorcycles, return empty shop results but get count
-      const countResults = await shopService.getShopsWithCounts({
-        ...resolvedLocationFilters,
-        query: otherFilters.query,
-        sortBy: otherFilters.sortBy === 'rating_desc' ? 'rating_desc' : 'newest',
-        limit: 1,
-        offset: 0
-      })
-      shopResults = { shops: [], total: countResults.total }
+      // When only showing motorcycles, skip shop queries
+      shopResults = { shops: [], total: 0 }
     }
 
-
-    // Get location suggestions if locationQuery was provided
-    const locationSuggestions = locationQuery
+    // Get location suggestions only when showing all content types and locationQuery was provided
+    const locationSuggestions = contentType === 'all' && locationQuery
       ? await this.searchLocations(locationQuery, 5)
       : []
 
@@ -271,49 +281,18 @@ export const searchService = {
 
     const results: LocationSearchResult[] = []
 
-    // Search cities with shop/motorcycle counts
+    // Search cities with embedded shop and motorcycle counts in a single query
     const { data: cities } = await typedSupabase
       .from('cities')
-      .select(`
-        *,
-        provinces (
-          *,
-          countries (*)
-        )
-      `)
+      .select(CITY_WITH_COUNTS_SELECT)
       .ilike('name', `%${searchQuery}%`)
       .limit(limit)
 
-    // Get counts for each city
-    for (const city of cities || []) {
+    for (const city of (cities as any[]) || []) {
       if (city.provinces?.countries) {
-        // Get shop count for this city
-        const { count: shopCount } = await typedSupabase
-          .from('rental_shops')
-          .select('*', { count: 'exact', head: true })
-          .eq('city_id', city.id)
-
-        // Get motorcycle count for this city - need to join through rental_shops
-        const { count: motorcycleCount } = await typedSupabase
-          .from('motorcycle_rentals')
-          .select('*, rental_shops!inner(*)', { count: 'exact', head: true })
-          .eq('rental_shops.city_id', city.id)
-
-        results.push({
-          type: 'city',
-          id: city.id,
-          name: city.name,
-          fullName: `${city.name}, ${city.provinces.countries.name}`,
-          country: city.provinces.countries,
-          province: city.provinces,
-          city: city,
-          shopCount: shopCount || 0,
-          motorcycleCount: motorcycleCount || 0
-        })
+        results.push(mapCityToLocationSearchResult(city))
       }
     }
-
-
 
     // Sort by relevance (exact matches first, then by counts)
     return results.sort((a, b) => {
@@ -333,27 +312,7 @@ export const searchService = {
   // Get popular search locations
   async getPopularSearchLocations(limit: number = 10) {
     const locations = await locationService.getPopularLocations(limit)
-
-    return Promise.all(
-      locations.map(async location => {
-        const { count: motorcycleCount } = await typedSupabase
-          .from('motorcycle_rentals')
-          .select('*, rental_shops!inner(*)', { count: 'exact', head: true })
-          .eq('rental_shops.city_id', location.id)
-
-        return {
-          type: 'city' as const,
-          id: location.id,
-          name: location.name,
-          fullName: `${location.name}, ${location.provinces?.countries?.name || ''}`,
-          country: location.provinces?.countries || undefined,
-          province: location.provinces || undefined,
-          city: location,
-          shopCount: location.shopCount,
-          motorcycleCount: motorcycleCount || 0
-        }
-      })
-    )
+    return locations.map(location => mapCityToLocationSearchResult(location))
   },
 
   // Get location hierarchy for a specific location

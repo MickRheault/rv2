@@ -50,6 +50,7 @@ jest.mock('@/components/motorcycle/MotorcycleTable', () => {
 
 // Mock motorcycleService
 jest.mock('@/services/motorcycles', () => ({
+  hasLocationFilter: jest.requireActual('@/services/motorcycles').hasLocationFilter,
   motorcycleService: {
     getFilterOptions: jest.fn(() =>
       Promise.resolve({
@@ -69,6 +70,7 @@ const mockSetQuery = jest.fn()
 const mockSelectLocation = jest.fn()
 const mockSearch = jest.fn()
 const mockClearSearch = jest.fn()
+let lastLocationSearchConfig: any = null
 
 let mockCurrentFilters: any = {}
 let mockResults: any = {
@@ -80,18 +82,21 @@ let mockIsLoading = false
 let mockHasSearched = true
 
 jest.mock('@/hooks/useLocationSearch', () => ({
-  useLocationSearch: (config: any) => ({
-    filters: mockCurrentFilters,
-    results: mockResults,
-    isLoading: mockIsLoading,
-    hasSearched: mockHasSearched,
-    query: '',
-    setQuery: mockSetQuery,
-    setFilters: mockSetFilters,
-    selectLocation: mockSelectLocation,
-    search: mockSearch,
-    clearSearch: mockClearSearch,
-  }),
+  useLocationSearch: (config: any) => {
+    lastLocationSearchConfig = config
+    return {
+      filters: mockCurrentFilters,
+      results: mockResults,
+      isLoading: mockIsLoading,
+      hasSearched: mockHasSearched,
+      query: '',
+      setQuery: mockSetQuery,
+      setFilters: mockSetFilters,
+      selectLocation: mockSelectLocation,
+      search: mockSearch,
+      clearSearch: mockClearSearch,
+    }
+  },
 }))
 
 function renderWithClient(ui: React.ReactElement) {
@@ -112,6 +117,8 @@ function renderWithClient(ui: React.ReactElement) {
 describe('SearchPageContent Top-Aligned Layout', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    window.localStorage.clear()
+    lastLocationSearchConfig = null
     mockSearchParams = new URLSearchParams()
     mockCurrentFilters = {}
     mockResults = {
@@ -123,11 +130,15 @@ describe('SearchPageContent Top-Aligned Layout', () => {
     mockHasSearched = true
   })
 
-  it('renders title and subtitle', () => {
+  it('renders title and subtitle and configures useLocationSearch with contentType: motorcycles (#114)', () => {
     renderWithClient(<SearchPageContent />)
 
     expect(screen.getByRole('heading', { name: 'Find Your Ride' })).toBeInTheDocument()
     expect(screen.getByText('Discover available motorcycles for rent')).toBeInTheDocument()
+    expect(lastLocationSearchConfig?.defaultFilters).toEqual({
+      limit: 20,
+      contentType: 'motorcycles',
+    })
   })
 
   it('initializes filters and triggers search from URL search params (including secondary filters)', () => {
@@ -221,5 +232,24 @@ describe('SearchPageContent Top-Aligned Layout', () => {
     fireEvent.click(clearBtn)
 
     expect(mockClearSearch).toHaveBeenCalled()
+  })
+
+  it('renders initialFilterOptions immediately without calling getFilterOptions when no location filter is active (#115)', () => {
+    const { motorcycleService } = require('@/services/motorcycles')
+    const initialFilterOptions = {
+      brands: [{ id: 'brand-yamaha', name: 'Yamaha', count: 14 }],
+      categories: [{ id: 'cat-sport', name: 'Sport', description: 'Sport bikes', count: 7 }],
+      models: [{ model: 'MT-07', brandName: 'Yamaha', count: 5 }],
+      priceRange: { min: 15, max: 120 },
+      engineCapacityRange: { min: 125, max: 900 },
+      features: [],
+    }
+
+    renderWithClient(<SearchPageContent initialFilterOptions={initialFilterOptions} />)
+
+    expect(screen.getByText('Yamaha (14)')).toBeInTheDocument()
+    expect(screen.getByText('Sport (7)')).toBeInTheDocument()
+    expect(screen.getByText('MT-07 (5)')).toBeInTheDocument()
+    expect(motorcycleService.getFilterOptions).not.toHaveBeenCalled()
   })
 })
