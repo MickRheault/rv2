@@ -19,6 +19,7 @@ export interface CrawledRateTier {
   minDays: number;
   maxDays?: number | null;
   ratePerDay: number;
+  currency?: string;
 }
 
 export interface CrawledBikeSnapshot {
@@ -32,6 +33,7 @@ export interface CrawledBikeSnapshot {
   deposit?: number | null;
   inclusions?: string[];
   conditions?: Array<{ type: string; value: string }>;
+  [key: string]: any;
 }
 
 export interface ExistingRateTier {
@@ -88,14 +90,86 @@ function canonicalKey(brand: string, modelName: string): string {
   return `${brand.trim().toLowerCase()}:${modelName.trim().toLowerCase()}`;
 }
 
+/**
+ * Normalizes raw crawled motorcycle snapshots defensively (Postel's Law / ADR 0010).
+ * Maps common crawler and MCP agent property aliases:
+ * - Rates: dailyRate, rate_per_day, daily_rate -> ratePerDay
+ * - Durations: min_days -> minDays, max_days -> maxDays
+ * - Engine capacity: engineCapacity, engine_capacity_cc -> engineCapacityCc
+ * - Model year: modelYear, model_year -> year
+ */
+export function normalizeCrawledBikeSnapshot(rawBike: any): CrawledBikeSnapshot {
+  if (!rawBike || typeof rawBike !== 'object') {
+    return {
+      brand: '',
+      modelName: '',
+      rates: [],
+    };
+  }
+
+  const rates: CrawledRateTier[] = Array.isArray(rawBike.rates)
+    ? rawBike.rates.map((r: any) => {
+        const rawMinDays = r?.minDays ?? r?.min_days;
+        const minDays = rawMinDays !== undefined && rawMinDays !== null ? Number(rawMinDays) : 1;
+        const rawMaxDays = r?.maxDays !== undefined ? r.maxDays : r?.max_days;
+        const maxDays = rawMaxDays !== undefined && rawMaxDays !== null ? Number(rawMaxDays) : null;
+        const rawRate = r?.ratePerDay ?? r?.dailyRate ?? r?.rate_per_day ?? r?.daily_rate;
+        const ratePerDay = rawRate !== undefined && rawRate !== null ? Number(rawRate) : 0;
+        const currency = r?.currency || rawBike?.currency;
+        return {
+          minDays: isNaN(minDays) ? 1 : minDays,
+          maxDays: maxDays !== null && !isNaN(maxDays) ? maxDays : null,
+          ratePerDay: isNaN(ratePerDay) ? 0 : ratePerDay,
+          ...(currency ? { currency } : {}),
+        };
+      })
+    : [];
+
+  const rawEngine =
+    rawBike.engineCapacityCc !== undefined && rawBike.engineCapacityCc !== null
+      ? rawBike.engineCapacityCc
+      : rawBike.engineCapacity !== undefined && rawBike.engineCapacity !== null
+      ? rawBike.engineCapacity
+      : rawBike.engine_capacity_cc !== undefined && rawBike.engine_capacity_cc !== null
+      ? rawBike.engine_capacity_cc
+      : null;
+  const engineCapacityCc = rawEngine !== null && !isNaN(Number(rawEngine)) ? Number(rawEngine) : null;
+
+  const rawYear =
+    rawBike.year !== undefined && rawBike.year !== null
+      ? rawBike.year
+      : rawBike.modelYear !== undefined && rawBike.modelYear !== null
+      ? rawBike.modelYear
+      : rawBike.model_year !== undefined && rawBike.model_year !== null
+      ? rawBike.model_year
+      : null;
+  const year = rawYear !== null && !isNaN(Number(rawYear)) ? Number(rawYear) : null;
+
+  return {
+    ...rawBike,
+    brand: String(rawBike.brand || '').trim(),
+    modelName: String(rawBike.modelName || rawBike.model_name || rawBike.model || '').trim(),
+    year,
+    engineCapacityCc,
+    rates,
+  };
+}
+
 function ratesDiffer(oldRates: ExistingRateTier[] = [], newRates: CrawledRateTier[] = []): boolean {
   if (oldRates.length !== newRates.length) return true;
   for (let i = 0; i < oldRates.length; i++) {
     const o = oldRates[i];
     const n = newRates[i];
-    if (o.min_days !== n.minDays) return true;
-    if ((o.max_days ?? null) !== (n.maxDays ?? null)) return true;
-    if (Number(o.rate_per_day) !== Number(n.ratePerDay)) return true;
+    const oMin = Number(o.min_days);
+    const nMin = Number(n.minDays ?? (n as any).min_days ?? 1);
+    if (oMin !== nMin) return true;
+
+    const oMax = o.max_days !== undefined && o.max_days !== null ? Number(o.max_days) : null;
+    const nMax = (n.maxDays !== undefined ? n.maxDays : (n as any).max_days) ?? null;
+    if (oMax !== (nMax !== null ? Number(nMax) : null)) return true;
+
+    const nRate = Number(n.ratePerDay ?? (n as any).dailyRate ?? (n as any).rate_per_day ?? 0);
+    if (Number(o.rate_per_day) !== nRate) return true;
   }
   return false;
 }
@@ -120,6 +194,8 @@ export function computeShopInventoryDiff(
     throw new ZeroDropSafeguardError();
   }
 
+  const normalizedCrawledBikes = (crawledBikes || []).map(normalizeCrawledBikeSnapshot);
+
   const items: ProposedDiffItem[] = [];
   const existingMap = new Map<string, ExistingBikeRecord>();
 
@@ -130,7 +206,7 @@ export function computeShopInventoryDiff(
   const observedExistingKeys = new Set<string>();
 
   // 2. Evaluate Additions and Updates
-  for (const crawled of crawledBikes) {
+  for (const crawled of normalizedCrawledBikes) {
     const key = canonicalKey(crawled.brand, crawled.modelName);
     const existing = existingMap.get(key);
 

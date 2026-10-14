@@ -10,6 +10,7 @@ import {
   ArrowPathIcon,
   MinusCircleIcon,
   BuildingOfficeIcon,
+  CheckCircleIcon,
 } from '@heroicons/react/24/outline';
 import { getCurrencySymbol } from '@/lib/utils';
 
@@ -17,7 +18,7 @@ export interface DiffViewerItem {
   id: string;
   proposal_id: string;
   entity_type: 'motorcycle' | 'rental_shop' | 'rental_rate_tier' | 'motorcycle_condition' | 'rental_shop_inclusion';
-  action: 'add' | 'update' | 'delist';
+  action: 'add' | 'update' | 'delist' | 'unchanged';
   entity_id: string | null;
   brand_name: string | null;
   model_name: string | null;
@@ -51,9 +52,11 @@ export function ChangeProposalDiffViewer({
   items,
   onApplySuccess,
 }: ChangeProposalDiffViewerProps) {
-  // All items selected by default (binary approval workflow, ADR 0012)
+  const actionableItems = items.filter((i) => i.action !== 'unchanged');
+
+  // All actionable items selected by default (binary approval workflow, ADR 0012)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
-    new Set(items.filter((i) => i.status === 'pending').map((i) => i.id))
+    new Set(actionableItems.filter((i) => i.status === 'pending').map((i) => i.id))
   );
   const [isApplying, setIsApplying] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +73,7 @@ export function ChangeProposalDiffViewer({
   };
 
   const selectAll = () => {
-    setSelectedIds(new Set(items.map((i) => i.id)));
+    setSelectedIds(new Set(actionableItems.map((i) => i.id)));
   };
 
   const deselectAll = () => {
@@ -119,6 +122,7 @@ export function ChangeProposalDiffViewer({
   const addItems = items.filter((i) => i.action === 'add' && i.entity_type === 'motorcycle');
   const updateItems = items.filter((i) => i.action === 'update' && i.entity_type === 'motorcycle');
   const delistItems = items.filter((i) => i.action === 'delist' && i.entity_type === 'motorcycle');
+  const unchangedItems = items.filter((i) => i.action === 'unchanged' && i.entity_type === 'motorcycle');
   const shopItems = items.filter((i) => i.entity_type === 'rental_shop');
 
   const isCompleted = proposal.status === 'applied' || proposal.status === 'rejected';
@@ -170,7 +174,7 @@ export function ChangeProposalDiffViewer({
           <div className="flex flex-wrap items-center justify-between gap-4 mt-6 pt-4 border-t border-gray-200">
             <div className="flex items-center gap-2 text-sm">
               <span className="font-semibold text-gray-800">
-                {selectedIds.size} of {items.length} items selected
+                {selectedIds.size} of {actionableItems.length} items selected
               </span>
               <span className="text-gray-300">|</span>
               <button
@@ -239,21 +243,26 @@ export function ChangeProposalDiffViewer({
                     {item.brand_name} {item.model_name}
                   </div>
                   <div className="text-xs text-gray-500 flex gap-4 mt-0.5">
-                    {item.proposed_data.year && <span>Year: {item.proposed_data.year}</span>}
-                    {item.proposed_data.engineCapacityCc && (
-                      <span>Engine: {item.proposed_data.engineCapacityCc}cc</span>
+                    {(item.proposed_data?.year ?? item.proposed_data?.modelYear) && (
+                      <span>Year: {item.proposed_data.year ?? item.proposed_data.modelYear}</span>
+                    )}
+                    {(item.proposed_data?.engineCapacityCc ?? item.proposed_data?.engineCapacity) && (
+                      <span>Engine: {item.proposed_data.engineCapacityCc ?? item.proposed_data.engineCapacity}cc</span>
                     )}
                   </div>
-                  {item.proposed_data.rates && (
+                  {item.proposed_data?.rates && (
                     <div className="mt-1 flex gap-2 flex-wrap">
                       {item.proposed_data.rates.map((r: any, idx: number) => {
                         const symbol = getCurrencySymbol(r.currency || item.proposed_data.currency || 'THB');
+                        const rateAmount = r.ratePerDay ?? r.dailyRate ?? r.rate_per_day ?? r.daily_rate;
+                        const min = r.minDays ?? r.min_days ?? 1;
+                        const max = r.maxDays ?? r.max_days;
                         return (
                           <span
                             key={idx}
                             className="inline-flex text-xs bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200"
                           >
-                            {r.minDays}{r.maxDays ? `-${r.maxDays}` : '+'} days: {symbol}{r.ratePerDay}/day
+                            {min}{max ? `-${max}` : '+'} days: {symbol}{rateAmount}/day
                           </span>
                         );
                       })}
@@ -293,6 +302,14 @@ export function ChangeProposalDiffViewer({
                   <div className="font-semibold text-gray-900">
                     {item.brand_name} {item.model_name}
                   </div>
+                  <div className="text-xs text-gray-500 flex gap-4 mt-0.5">
+                    {(item.proposed_data?.year ?? item.proposed_data?.modelYear) && (
+                      <span>Year: {item.proposed_data.year ?? item.proposed_data.modelYear}</span>
+                    )}
+                    {(item.proposed_data?.engineCapacityCc ?? item.proposed_data?.engineCapacity) && (
+                      <span>Engine: {item.proposed_data.engineCapacityCc ?? item.proposed_data.engineCapacity}cc</span>
+                    )}
+                  </div>
                   {item.diff_summary && (
                     <div className="mt-2 space-y-1 text-xs">
                       {item.diff_summary.rates && (
@@ -306,6 +323,30 @@ export function ChangeProposalDiffViewer({
                           <span className="text-emerald-600 font-medium">{item.diff_summary.year.new}</span>
                         </div>
                       )}
+                      {item.diff_summary.engine_capacity_cc && (
+                        <div className="text-gray-600">
+                          Engine: <span className="line-through text-red-500">{item.diff_summary.engine_capacity_cc.old}cc</span> →{' '}
+                          <span className="text-emerald-600 font-medium">{item.diff_summary.engine_capacity_cc.new}cc</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {item.proposed_data?.rates && (
+                    <div className="mt-1 flex gap-2 flex-wrap">
+                      {item.proposed_data.rates.map((r: any, idx: number) => {
+                        const symbol = getCurrencySymbol(r.currency || item.proposed_data.currency || 'THB');
+                        const rateAmount = r.ratePerDay ?? r.dailyRate ?? r.rate_per_day ?? r.daily_rate;
+                        const min = r.minDays ?? r.min_days ?? 1;
+                        const max = r.maxDays ?? r.max_days;
+                        return (
+                          <span
+                            key={idx}
+                            className="inline-flex text-xs bg-blue-50 text-blue-800 px-2 py-0.5 rounded border border-blue-200"
+                          >
+                            {min}{max ? `-${max}` : '+'} days: {symbol}{rateAmount}/day
+                          </span>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -418,6 +459,60 @@ export function ChangeProposalDiffViewer({
                           </span>
                         </div>
                       )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* 5. Confirmed Unchanged Fleet Section */}
+      {unchangedItems.length > 0 && (
+        <Card>
+          <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-100">
+            <CheckCircleIcon className="w-5 h-5 text-gray-500" />
+            <h3 className="text-base font-semibold text-gray-900">
+              Confirmed Unchanged Inventory ({unchangedItems.length})
+            </h3>
+          </div>
+          <p className="text-xs text-gray-500 mb-3">
+            These motorcycles were observed on the shop website with identical rates and specifications as the database.
+          </p>
+          <div className="divide-y divide-gray-100">
+            {unchangedItems.map((item) => (
+              <div key={item.id} className="py-2.5 flex items-start gap-3 px-2">
+                <div className="flex-1 text-sm">
+                  <div className="font-medium text-gray-900">
+                    {item.brand_name} {item.model_name}
+                  </div>
+                  <div className="text-xs text-gray-500 flex gap-4 mt-0.5">
+                    {(item.proposed_data?.year ?? item.proposed_data?.modelYear) && (
+                      <span>Year: {item.proposed_data.year ?? item.proposed_data.modelYear}</span>
+                    )}
+                    {(item.proposed_data?.engineCapacityCc ?? item.proposed_data?.engineCapacity) && (
+                      <span>
+                        Engine: {item.proposed_data.engineCapacityCc ?? item.proposed_data.engineCapacity}cc
+                      </span>
+                    )}
+                  </div>
+                  {item.proposed_data?.rates && (
+                    <div className="mt-1 flex gap-2 flex-wrap">
+                      {item.proposed_data.rates.map((r: any, idx: number) => {
+                        const symbol = getCurrencySymbol(r.currency || item.proposed_data.currency || 'THB');
+                        const rateAmount = r.ratePerDay ?? r.dailyRate ?? r.rate_per_day ?? r.daily_rate;
+                        const min = r.minDays ?? r.min_days ?? 1;
+                        const max = r.maxDays ?? r.max_days;
+                        return (
+                          <span
+                            key={idx}
+                            className="inline-flex text-xs bg-gray-50 text-gray-700 px-2 py-0.5 rounded border border-gray-200"
+                          >
+                            {min}{max ? `-${max}` : '+'} days: {symbol}{rateAmount}/day
+                          </span>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

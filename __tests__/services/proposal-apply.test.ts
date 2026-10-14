@@ -643,5 +643,132 @@ describe('Change Proposal Application & Geodata Protection', () => {
       expect((result.items[0].proposed_data as any).availability_status).toBe('available');
       expect(result.items[1].action).toBe('unchanged');
     });
+
+    it('correctly applies proposed add and update items containing dailyRate, engineCapacity, and modelYear aliases', async () => {
+      const proposalData = {
+        id: 'prop-alias-1',
+        shop_id: 'shop-alias-1',
+        status: 'pending',
+      };
+
+      const itemsData = [
+        {
+          id: 'item-alias-add-1',
+          proposal_id: 'prop-alias-1',
+          entity_type: 'motorcycle',
+          action: 'add',
+          entity_id: null,
+          brand_name: 'Honda',
+          model_name: 'ADV 160',
+          original_data: null,
+          proposed_data: {
+            brand: 'Honda',
+            modelName: 'ADV 160',
+            engineCapacity: 157,
+            modelYear: 2024,
+            rates: [
+              {
+                minDays: 1,
+                dailyRate: 600,
+                currency: 'THB',
+              },
+            ],
+          },
+          status: 'pending',
+        },
+      ];
+
+      const insertedMotorcycles: any[] = [];
+      const insertedRateTiers: any[] = [];
+
+      const mockSupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({ data: proposalData, error: null }),
+                }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ data: itemsData, error: null }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+                in: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'brands') {
+            return {
+              select: jest.fn().mockReturnValue({
+                ilike: jest.fn().mockReturnValue({
+                  maybeSingle: jest.fn().mockResolvedValue({ data: { id: 'brand-honda' }, error: null }),
+                }),
+              }),
+            };
+          }
+          if (table === 'motorcycle_rentals') {
+            return {
+              insert: jest.fn((payload) => {
+                insertedMotorcycles.push(payload);
+                return {
+                  select: jest.fn().mockReturnValue({
+                    single: jest.fn().mockResolvedValue({ data: { id: 'bike-new-uuid' }, error: null }),
+                  }),
+                };
+              }),
+            };
+          }
+          if (table === 'rental_rate_tiers') {
+            return {
+              insert: jest.fn((tiers) => {
+                insertedRateTiers.push(...tiers);
+                return Promise.resolve({ error: null });
+              }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      const result = await ChangeProposalService.apply('prop-alias-1', ['item-alias-add-1']);
+
+      expect(result.success).toBe(true);
+      expect(result.appliedCount).toBe(1);
+
+      // Verify motorcycle insertion mapped aliases
+      expect(insertedMotorcycles).toHaveLength(1);
+      expect(insertedMotorcycles[0]).toEqual(
+        expect.objectContaining({
+          shop_id: 'shop-alias-1',
+          brand_id: 'brand-honda',
+          model: 'ADV 160',
+          year: 2024,
+          engine_capacity_cc: 157,
+          rental_rate_per_day: 600,
+          rental_rate_currency: 'THB',
+        })
+      );
+
+      // Verify rate tier insertion mapped dailyRate to rate_per_day
+      expect(insertedRateTiers).toHaveLength(1);
+      expect(insertedRateTiers[0]).toEqual({
+        motorcycle_id: 'bike-new-uuid',
+        min_days: 1,
+        max_days: null,
+        rate_per_day: 600,
+        currency: 'THB',
+      });
+    });
   });
 });
