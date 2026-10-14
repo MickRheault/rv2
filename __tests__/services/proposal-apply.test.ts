@@ -367,4 +367,104 @@ describe('Change Proposal Application & Geodata Protection', () => {
       getExistingInventorySpy.mockRestore();
     });
   });
+
+  describe('ChangeProposalService.getProposalById with unchanged items', () => {
+    it('retrieves proposal with full fleet items including unchanged inventory', async () => {
+      const proposalData = {
+        id: 'prop-retrieval-1',
+        shop_id: 'shop-retrieval-1',
+        status: 'pending',
+        summary_counts: { add: 0, update: 0, delist: 0, unchanged: 2 },
+        rental_shops: {
+          id: 'shop-retrieval-1',
+          provider_name: 'Phuket Bike Rentals',
+          slug: 'phuket-bike-rentals',
+        },
+      };
+
+      const itemsData = [
+        {
+          id: 'item-1',
+          proposal_id: 'prop-retrieval-1',
+          entity_type: 'motorcycle',
+          action: 'unchanged',
+          brand_name: 'Honda',
+          model_name: 'Click 125i',
+          original_data: {
+            year: 2023,
+            engine_capacity_cc: 125,
+            rates: [{ min_days: 1, max_days: 6, rate_per_day: 250 }],
+            availability_status: 'available',
+          },
+          proposed_data: {
+            brand: 'Honda',
+            modelName: 'Click 125i',
+            year: 2023,
+            rates: [{ minDays: 1, maxDays: 6, ratePerDay: 250 }],
+            availability_status: 'available',
+          },
+          diff_summary: null,
+          status: 'applied',
+        },
+        {
+          id: 'item-2',
+          proposal_id: 'prop-retrieval-1',
+          entity_type: 'motorcycle',
+          action: 'unchanged',
+          brand_name: 'Yamaha',
+          model_name: 'NMAX 155',
+          original_data: {
+            year: 2024,
+            engine_capacity_cc: 155,
+            rates: [{ min_days: 1, max_days: 6, rate_per_day: 450 }],
+            availability_status: 'available',
+          },
+          proposed_data: {
+            brand: 'Yamaha',
+            modelName: 'NMAX 155',
+            year: 2024,
+            rates: [{ minDays: 1, maxDays: 6, ratePerDay: 450 }],
+            availability_status: 'available',
+          },
+          diff_summary: null,
+          status: 'applied',
+        },
+      ];
+
+      const mockSupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({ data: proposalData, error: null }),
+                }),
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  order: jest.fn().mockResolvedValue({ data: itemsData, error: null }),
+                }),
+              }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      const result = await ChangeProposalService.getProposalById('prop-retrieval-1');
+
+      expect(result.proposal).toEqual(proposalData);
+      expect(result.items).toHaveLength(2);
+      expect(result.items[0].action).toBe('unchanged');
+      expect((result.items[0].original_data as any).availability_status).toBe('available');
+      expect((result.items[0].proposed_data as any).availability_status).toBe('available');
+      expect(result.items[1].action).toBe('unchanged');
+    });
+  });
 });

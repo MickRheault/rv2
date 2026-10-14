@@ -100,6 +100,15 @@ function ratesDiffer(oldRates: ExistingRateTier[] = [], newRates: CrawledRateTie
   return false;
 }
 
+function toOriginalMotorcycleSnapshot(bike: ExistingBikeRecord) {
+  return {
+    year: bike.year ?? null,
+    engine_capacity_cc: bike.engine_capacity_cc ?? null,
+    rates: bike.rates || [],
+    availability_status: bike.availability_status || 'available',
+  };
+}
+
 export function computeShopInventoryDiff(
   existingBikes: ExistingBikeRecord[],
   crawledBikes: CrawledBikeSnapshot[],
@@ -145,17 +154,21 @@ export function computeShopInventoryDiff(
       // Check for specification or pricing modifications
       const diffSummary: Record<string, { old: any; new: any }> = {};
 
-      if (crawled.year && existing.year && crawled.year !== existing.year) {
-        diffSummary.year = { old: existing.year, new: crawled.year };
+      if (
+        crawled.year !== undefined &&
+        crawled.year !== null &&
+        crawled.year !== (existing.year ?? null)
+      ) {
+        diffSummary.year = { old: existing.year ?? null, new: crawled.year };
       }
 
       if (
-        crawled.engineCapacityCc &&
-        existing.engine_capacity_cc &&
-        crawled.engineCapacityCc !== existing.engine_capacity_cc
+        crawled.engineCapacityCc !== undefined &&
+        crawled.engineCapacityCc !== null &&
+        crawled.engineCapacityCc !== (existing.engine_capacity_cc ?? null)
       ) {
         diffSummary.engine_capacity_cc = {
-          old: existing.engine_capacity_cc,
+          old: existing.engine_capacity_cc ?? null,
           new: crawled.engineCapacityCc,
         };
       }
@@ -171,12 +184,7 @@ export function computeShopInventoryDiff(
           entity_id: existing.id,
           brand_name: existing.brand_name,
           model_name: existing.model_name,
-          original_data: {
-            year: existing.year,
-            engine_capacity_cc: existing.engine_capacity_cc,
-            rates: existing.rates,
-            availability_status: existing.availability_status,
-          },
+          original_data: toOriginalMotorcycleSnapshot(existing),
           proposed_data: crawled,
           diff_summary: diffSummary,
         });
@@ -187,13 +195,11 @@ export function computeShopInventoryDiff(
           entity_id: existing.id,
           brand_name: existing.brand_name,
           model_name: existing.model_name,
-          original_data: {
-            year: existing.year,
-            engine_capacity_cc: existing.engine_capacity_cc,
-            rates: existing.rates,
-            availability_status: existing.availability_status,
+          original_data: toOriginalMotorcycleSnapshot(existing),
+          proposed_data: {
+            ...crawled,
+            availability_status: existing.availability_status || 'available',
           },
-          proposed_data: crawled,
           diff_summary: null,
         });
       }
@@ -210,12 +216,7 @@ export function computeShopInventoryDiff(
         entity_id: bike.id,
         brand_name: bike.brand_name,
         model_name: bike.model_name,
-        original_data: {
-          year: bike.year,
-          engine_capacity_cc: bike.engine_capacity_cc,
-          rates: bike.rates,
-          availability_status: bike.availability_status || 'available',
-        },
+        original_data: toOriginalMotorcycleSnapshot(bike),
         proposed_data: {
           availability_status: 'unavailable',
         },

@@ -152,14 +152,52 @@ describe('Diff Engine', () => {
       rates: [{ min_days: 1, max_days: 6, rate_per_day: 250 }],
     });
 
-    // Verify proposed_data snapshot
-    expect(item.proposed_data).toEqual(crawledBikes[0]);
+    // Verify proposed_data snapshot includes availability_status
+    expect(item.proposed_data).toEqual({
+      ...crawledBikes[0],
+      availability_status: 'available',
+    });
 
     expect(diff.summaryCounts).toEqual({
       add: 0,
       update: 0,
       delist: 0,
       unchanged: 1,
+    });
+  });
+
+  it('detects specification update when existing record had null attributes', () => {
+    const bikeWithNullYear: ExistingBikeRecord = {
+      id: 'bike-null-year',
+      brand_name: 'Honda',
+      model_name: 'Wave 110i',
+      year: null,
+      engine_capacity_cc: null,
+      availability_status: 'available',
+      rates: [{ min_days: 1, max_days: 6, rate_per_day: 180 }],
+    };
+
+    const crawledWave: CrawledBikeSnapshot = {
+      brand: 'Honda',
+      modelName: 'Wave 110i',
+      year: 2024,
+      engineCapacityCc: 110,
+      rates: [{ minDays: 1, maxDays: 6, ratePerDay: 180 }],
+    };
+
+    const diff = computeShopInventoryDiff([bikeWithNullYear], [crawledWave]);
+
+    expect(diff.items).toHaveLength(1);
+    expect(diff.items[0].action).toBe('update');
+    expect(diff.items[0].diff_summary).toEqual({
+      year: { old: null, new: 2024 },
+      engine_capacity_cc: { old: null, new: 110 },
+    });
+    expect(diff.summaryCounts).toEqual({
+      add: 0,
+      update: 1,
+      delist: 0,
+      unchanged: 0,
     });
   });
 

@@ -55,6 +55,14 @@ export async function insertRateTiers(
   return (supabase.from('rental_rate_tiers') as any).insert(rateTiers);
 }
 
+/**
+ * Determines whether a Change Proposal Item is an actionable mutation
+ * requiring review (add, update, delist) rather than an unchanged informational record.
+ */
+export function isActionableProposalItem(action: string): boolean {
+  return action !== 'unchanged';
+}
+
 export interface CreateProposalInput {
   shopId: string;
   sourceUrl: string;
@@ -317,8 +325,9 @@ export class ChangeProposalService {
     }
 
     const approvedSet = new Set(approvedItemIds);
-    // Ignore unchanged items from mutation operations even if supplied in approvedItemIds
-    const approvedItems = allItems.filter((i) => approvedSet.has(i.id) && i.action !== 'unchanged');
+    // Partition actionable mutation items from unchanged informational items
+    const mutableItems = allItems.filter((i) => isActionableProposalItem(i.action));
+    const approvedItems = mutableItems.filter((i) => approvedSet.has(i.id));
 
     // 3. Validate geodata immutability across all approved items
     for (const item of approvedItems) {
@@ -451,7 +460,7 @@ export class ChangeProposalService {
     }
 
     // 5. Mark non-approved mutable items as rejected (leave unchanged items as applied)
-    const unapprovedItems = allItems.filter((i) => !approvedSet.has(i.id) && i.action !== 'unchanged');
+    const unapprovedItems = mutableItems.filter((i) => !approvedSet.has(i.id));
     if (unapprovedItems.length > 0) {
       await (supabase
         .from('change_proposal_items') as any)
@@ -460,7 +469,6 @@ export class ChangeProposalService {
     }
 
     // 6. Update proposal status based on mutable items
-    const mutableItems = allItems.filter((i) => i.action !== 'unchanged');
     const isFullApproval = mutableItems.length === 0 || approvedItems.length === mutableItems.length;
     const finalStatus = isFullApproval ? 'applied' : 'partially_applied';
 
