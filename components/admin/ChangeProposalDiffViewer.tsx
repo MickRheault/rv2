@@ -62,6 +62,39 @@ function getRateAmount(tier: any): number {
   return val != null && !isNaN(Number(val)) ? Number(val) : 0;
 }
 
+function renderRateTiers(
+  rates: any[] | undefined,
+  defaultCurrency?: string,
+  variant: 'emerald' | 'blue' | 'gray' = 'emerald'
+) {
+  if (!rates || !Array.isArray(rates) || rates.length === 0) return null;
+  const colorClasses =
+    variant === 'emerald'
+      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+      : variant === 'blue'
+      ? 'bg-blue-50 text-blue-800 border-blue-200'
+      : 'bg-gray-50 text-gray-700 border-gray-200';
+
+  return (
+    <div className="mt-1 flex gap-2 flex-wrap">
+      {rates.map((r: any, idx: number) => {
+        const symbol = getCurrencySymbol(r.currency || defaultCurrency || 'THB');
+        const rateAmount = getRateAmount(r);
+        const min = r.minDays ?? r.min_days ?? 1;
+        const max = r.maxDays ?? r.max_days;
+        return (
+          <span
+            key={idx}
+            className={`inline-flex text-xs px-2 py-0.5 rounded border ${colorClasses}`}
+          >
+            {min}{max ? `-${max}` : '+'} days: {symbol}{rateAmount}/day
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 export function ChangeProposalDiffViewer({
   proposal,
   items,
@@ -265,24 +298,7 @@ export function ChangeProposalDiffViewer({
                       {year != null && <span>Year: {year}</span>}
                       {engineCc != null && <span>Engine: {engineCc}cc</span>}
                     </div>
-                    {item.proposed_data?.rates && (
-                      <div className="mt-1 flex gap-2 flex-wrap">
-                        {item.proposed_data.rates.map((r: any, idx: number) => {
-                          const symbol = getCurrencySymbol(r.currency || item.proposed_data.currency || 'THB');
-                          const rateAmount = getRateAmount(r);
-                          const min = r.minDays ?? r.min_days ?? 1;
-                          const max = r.maxDays ?? r.max_days;
-                          return (
-                            <span
-                              key={idx}
-                              className="inline-flex text-xs bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200"
-                            >
-                              {min}{max ? `-${max}` : '+'} days: {symbol}{rateAmount}/day
-                            </span>
-                          );
-                        })}
-                      </div>
-                    )}
+                    {renderRateTiers(item.proposed_data?.rates, item.proposed_data?.currency, 'emerald')}
                   </div>
                 </div>
               );
@@ -346,24 +362,7 @@ export function ChangeProposalDiffViewer({
                         )}
                       </div>
                     )}
-                    {item.proposed_data?.rates && (
-                      <div className="mt-1 flex gap-2 flex-wrap">
-                        {item.proposed_data.rates.map((r: any, idx: number) => {
-                          const symbol = getCurrencySymbol(r.currency || item.proposed_data.currency || 'THB');
-                          const rateAmount = getRateAmount(r);
-                          const min = r.minDays ?? r.min_days ?? 1;
-                          const max = r.maxDays ?? r.max_days;
-                          return (
-                            <span
-                              key={idx}
-                              className="inline-flex text-xs bg-blue-50 text-blue-800 px-2 py-0.5 rounded border border-blue-200"
-                            >
-                              {min}{max ? `-${max}` : '+'} days: {symbol}{rateAmount}/day
-                            </span>
-                          );
-                        })}
-                      </div>
-                    )}
+                    {renderRateTiers(item.proposed_data?.rates, item.proposed_data?.currency, 'blue')}
                   </div>
                 </div>
               );
@@ -510,24 +509,7 @@ export function ChangeProposalDiffViewer({
                       {year != null && <span>Year: {year}</span>}
                       {engineCc != null && <span>Engine: {engineCc}cc</span>}
                     </div>
-                    {item.proposed_data?.rates && (
-                      <div className="mt-1 flex gap-2 flex-wrap">
-                        {item.proposed_data.rates.map((r: any, idx: number) => {
-                          const symbol = getCurrencySymbol(r.currency || item.proposed_data.currency || 'THB');
-                          const rateAmount = getRateAmount(r);
-                          const min = r.minDays ?? r.min_days ?? 1;
-                          const max = r.maxDays ?? r.max_days;
-                          return (
-                            <span
-                              key={idx}
-                              className="inline-flex text-xs bg-gray-50 text-gray-700 px-2 py-0.5 rounded border border-gray-200"
-                            >
-                              {min}{max ? `-${max}` : '+'} days: {symbol}{rateAmount}/day
-                            </span>
-                          );
-                        })}
-                      </div>
-                    )}
+                    {renderRateTiers(item.proposed_data?.rates, item.proposed_data?.currency, 'gray')}
                   </div>
                 </div>
               );

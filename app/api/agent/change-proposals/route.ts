@@ -3,10 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { validateAgentApiKey } from '@/lib/auth/agent-auth';
 import { ChangeProposalService } from '@/services/change-proposals';
-import {
-  ZeroDropSafeguardError,
-  normalizeCrawledBikeSnapshot,
-} from '@/services/diff-engine';
+import { ZeroDropSafeguardError } from '@/services/diff-engine';
 import { recordCrawlRun } from '@/services/crawl-runs';
 import {
   extractLearnedAgentConfig,
@@ -67,14 +64,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Normalize incoming bike snapshots defensively at API ingress (Postel's Law / ADR 0001)
-    const normalizedBikes = bikes.map(normalizeCrawledBikeSnapshot);
-
+    // Pass verbatim raw snapshot per ADR 0003 (diff engine handles defensive normalization internally)
     const result = await ChangeProposalService.createProposalFromCrawl({
       shopId,
       sourceUrl,
       agentRunId,
-      bikes: normalizedBikes,
+      bikes,
       shopUpdates,
     });
 
