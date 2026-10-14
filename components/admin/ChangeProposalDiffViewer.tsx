@@ -47,16 +47,32 @@ interface ChangeProposalDiffViewerProps {
   onApplySuccess?: () => void;
 }
 
+function getEngineCapacity(data: any): number | null {
+  const val = data?.engineCapacityCc ?? data?.engineCapacity ?? data?.engine_capacity_cc;
+  return val != null && !isNaN(Number(val)) ? Number(val) : null;
+}
+
+function getModelYear(data: any): number | null {
+  const val = data?.year ?? data?.modelYear ?? data?.model_year;
+  return val != null && !isNaN(Number(val)) ? Number(val) : null;
+}
+
+function getRateAmount(tier: any): number {
+  const val = tier?.ratePerDay ?? tier?.dailyRate ?? tier?.rate_per_day ?? tier?.daily_rate;
+  return val != null && !isNaN(Number(val)) ? Number(val) : 0;
+}
+
 export function ChangeProposalDiffViewer({
   proposal,
   items,
   onApplySuccess,
 }: ChangeProposalDiffViewerProps) {
   const actionableItems = items.filter((i) => i.action !== 'unchanged');
+  const pendingActionableItems = actionableItems.filter((i) => i.status === 'pending');
 
-  // All actionable items selected by default (binary approval workflow, ADR 0012)
+  // All pending actionable items selected by default (binary approval workflow, ADR 0012)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
-    new Set(actionableItems.filter((i) => i.status === 'pending').map((i) => i.id))
+    new Set(pendingActionableItems.map((i) => i.id))
   );
   const [isApplying, setIsApplying] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +89,7 @@ export function ChangeProposalDiffViewer({
   };
 
   const selectAll = () => {
-    setSelectedIds(new Set(actionableItems.map((i) => i.id)));
+    setSelectedIds(new Set(pendingActionableItems.map((i) => i.id)));
   };
 
   const deselectAll = () => {
@@ -174,7 +190,7 @@ export function ChangeProposalDiffViewer({
           <div className="flex flex-wrap items-center justify-between gap-4 mt-6 pt-4 border-t border-gray-200">
             <div className="flex items-center gap-2 text-sm">
               <span className="font-semibold text-gray-800">
-                {selectedIds.size} of {actionableItems.length} items selected
+                {selectedIds.size} of {pendingActionableItems.length} items selected
               </span>
               <span className="text-gray-300">|</span>
               <button
@@ -225,52 +241,52 @@ export function ChangeProposalDiffViewer({
             </h3>
           </div>
           <div className="divide-y divide-gray-100">
-            {addItems.map((item) => (
-              <div
-                key={item.id}
-                className="py-3 flex items-start gap-3 hover:bg-gray-50 px-2 rounded-lg transition-colors"
-              >
-                {!isCompleted && (
-                  <div className="pt-1">
-                    <Checkbox
-                      checked={selectedIds.has(item.id)}
-                      onChange={() => toggleItem(item.id)}
-                    />
-                  </div>
-                )}
-                <div className="flex-1 text-sm">
-                  <div className="font-semibold text-gray-900">
-                    {item.brand_name} {item.model_name}
-                  </div>
-                  <div className="text-xs text-gray-500 flex gap-4 mt-0.5">
-                    {(item.proposed_data?.year ?? item.proposed_data?.modelYear) && (
-                      <span>Year: {item.proposed_data.year ?? item.proposed_data.modelYear}</span>
-                    )}
-                    {(item.proposed_data?.engineCapacityCc ?? item.proposed_data?.engineCapacity) && (
-                      <span>Engine: {item.proposed_data.engineCapacityCc ?? item.proposed_data.engineCapacity}cc</span>
-                    )}
-                  </div>
-                  {item.proposed_data?.rates && (
-                    <div className="mt-1 flex gap-2 flex-wrap">
-                      {item.proposed_data.rates.map((r: any, idx: number) => {
-                        const symbol = getCurrencySymbol(r.currency || item.proposed_data.currency || 'THB');
-                        const rateAmount = r.ratePerDay ?? r.dailyRate ?? r.rate_per_day ?? r.daily_rate;
-                        const min = r.minDays ?? r.min_days ?? 1;
-                        const max = r.maxDays ?? r.max_days;
-                        return (
-                          <span
-                            key={idx}
-                            className="inline-flex text-xs bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200"
-                          >
-                            {min}{max ? `-${max}` : '+'} days: {symbol}{rateAmount}/day
-                          </span>
-                        );
-                      })}
+            {addItems.map((item) => {
+              const year = getModelYear(item.proposed_data);
+              const engineCc = getEngineCapacity(item.proposed_data);
+              return (
+                <div
+                  key={item.id}
+                  className="py-3 flex items-start gap-3 hover:bg-gray-50 px-2 rounded-lg transition-colors"
+                >
+                  {!isCompleted && (
+                    <div className="pt-1">
+                      <Checkbox
+                        checked={selectedIds.has(item.id)}
+                        onChange={() => toggleItem(item.id)}
+                      />
                     </div>
                   )}
+                  <div className="flex-1 text-sm">
+                    <div className="font-semibold text-gray-900">
+                      {item.brand_name} {item.model_name}
+                    </div>
+                    <div className="text-xs text-gray-500 flex gap-4 mt-0.5">
+                      {year != null && <span>Year: {year}</span>}
+                      {engineCc != null && <span>Engine: {engineCc}cc</span>}
+                    </div>
+                    {item.proposed_data?.rates && (
+                      <div className="mt-1 flex gap-2 flex-wrap">
+                        {item.proposed_data.rates.map((r: any, idx: number) => {
+                          const symbol = getCurrencySymbol(r.currency || item.proposed_data.currency || 'THB');
+                          const rateAmount = getRateAmount(r);
+                          const min = r.minDays ?? r.min_days ?? 1;
+                          const max = r.maxDays ?? r.max_days;
+                          return (
+                            <span
+                              key={idx}
+                              className="inline-flex text-xs bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200"
+                            >
+                              {min}{max ? `-${max}` : '+'} days: {symbol}{rateAmount}/day
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Card>
       )}
@@ -285,73 +301,73 @@ export function ChangeProposalDiffViewer({
             </h3>
           </div>
           <div className="divide-y divide-gray-100">
-            {updateItems.map((item) => (
-              <div
-                key={item.id}
-                className="py-3 flex items-start gap-3 hover:bg-gray-50 px-2 rounded-lg transition-colors"
-              >
-                {!isCompleted && (
-                  <div className="pt-1">
-                    <Checkbox
-                      checked={selectedIds.has(item.id)}
-                      onChange={() => toggleItem(item.id)}
-                    />
-                  </div>
-                )}
-                <div className="flex-1 text-sm">
-                  <div className="font-semibold text-gray-900">
-                    {item.brand_name} {item.model_name}
-                  </div>
-                  <div className="text-xs text-gray-500 flex gap-4 mt-0.5">
-                    {(item.proposed_data?.year ?? item.proposed_data?.modelYear) && (
-                      <span>Year: {item.proposed_data.year ?? item.proposed_data.modelYear}</span>
-                    )}
-                    {(item.proposed_data?.engineCapacityCc ?? item.proposed_data?.engineCapacity) && (
-                      <span>Engine: {item.proposed_data.engineCapacityCc ?? item.proposed_data.engineCapacity}cc</span>
-                    )}
-                  </div>
-                  {item.diff_summary && (
-                    <div className="mt-2 space-y-1 text-xs">
-                      {item.diff_summary.rates && (
-                        <div className="bg-blue-50 p-2 rounded border border-blue-200 text-blue-900">
-                          <span className="font-medium">Rates updated:</span> New rate schedule proposed.
-                        </div>
-                      )}
-                      {item.diff_summary.year && (
-                        <div className="text-gray-600">
-                          Year: <span className="line-through text-red-500">{item.diff_summary.year.old}</span> →{' '}
-                          <span className="text-emerald-600 font-medium">{item.diff_summary.year.new}</span>
-                        </div>
-                      )}
-                      {item.diff_summary.engine_capacity_cc && (
-                        <div className="text-gray-600">
-                          Engine: <span className="line-through text-red-500">{item.diff_summary.engine_capacity_cc.old}cc</span> →{' '}
-                          <span className="text-emerald-600 font-medium">{item.diff_summary.engine_capacity_cc.new}cc</span>
-                        </div>
-                      )}
+            {updateItems.map((item) => {
+              const year = getModelYear(item.proposed_data);
+              const engineCc = getEngineCapacity(item.proposed_data);
+              return (
+                <div
+                  key={item.id}
+                  className="py-3 flex items-start gap-3 hover:bg-gray-50 px-2 rounded-lg transition-colors"
+                >
+                  {!isCompleted && (
+                    <div className="pt-1">
+                      <Checkbox
+                        checked={selectedIds.has(item.id)}
+                        onChange={() => toggleItem(item.id)}
+                      />
                     </div>
                   )}
-                  {item.proposed_data?.rates && (
-                    <div className="mt-1 flex gap-2 flex-wrap">
-                      {item.proposed_data.rates.map((r: any, idx: number) => {
-                        const symbol = getCurrencySymbol(r.currency || item.proposed_data.currency || 'THB');
-                        const rateAmount = r.ratePerDay ?? r.dailyRate ?? r.rate_per_day ?? r.daily_rate;
-                        const min = r.minDays ?? r.min_days ?? 1;
-                        const max = r.maxDays ?? r.max_days;
-                        return (
-                          <span
-                            key={idx}
-                            className="inline-flex text-xs bg-blue-50 text-blue-800 px-2 py-0.5 rounded border border-blue-200"
-                          >
-                            {min}{max ? `-${max}` : '+'} days: {symbol}{rateAmount}/day
-                          </span>
-                        );
-                      })}
+                  <div className="flex-1 text-sm">
+                    <div className="font-semibold text-gray-900">
+                      {item.brand_name} {item.model_name}
                     </div>
-                  )}
+                    <div className="text-xs text-gray-500 flex gap-4 mt-0.5">
+                      {year != null && <span>Year: {year}</span>}
+                      {engineCc != null && <span>Engine: {engineCc}cc</span>}
+                    </div>
+                    {item.diff_summary && (
+                      <div className="mt-2 space-y-1 text-xs">
+                        {item.diff_summary.rates && (
+                          <div className="bg-blue-50 p-2 rounded border border-blue-200 text-blue-900">
+                            <span className="font-medium">Rates updated:</span> New rate schedule proposed.
+                          </div>
+                        )}
+                        {item.diff_summary.year && (
+                          <div className="text-gray-600">
+                            Year: <span className="line-through text-red-500">{item.diff_summary.year.old}</span> →{' '}
+                            <span className="text-emerald-600 font-medium">{item.diff_summary.year.new}</span>
+                          </div>
+                        )}
+                        {item.diff_summary.engine_capacity_cc && (
+                          <div className="text-gray-600">
+                            Engine: <span className="line-through text-red-500">{item.diff_summary.engine_capacity_cc.old}cc</span> →{' '}
+                            <span className="text-emerald-600 font-medium">{item.diff_summary.engine_capacity_cc.new}cc</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {item.proposed_data?.rates && (
+                      <div className="mt-1 flex gap-2 flex-wrap">
+                        {item.proposed_data.rates.map((r: any, idx: number) => {
+                          const symbol = getCurrencySymbol(r.currency || item.proposed_data.currency || 'THB');
+                          const rateAmount = getRateAmount(r);
+                          const min = r.minDays ?? r.min_days ?? 1;
+                          const max = r.maxDays ?? r.max_days;
+                          return (
+                            <span
+                              key={idx}
+                              className="inline-flex text-xs bg-blue-50 text-blue-800 px-2 py-0.5 rounded border border-blue-200"
+                            >
+                              {min}{max ? `-${max}` : '+'} days: {symbol}{rateAmount}/day
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Card>
       )}
@@ -481,43 +497,41 @@ export function ChangeProposalDiffViewer({
             These motorcycles were observed on the shop website with identical rates and specifications as the database.
           </p>
           <div className="divide-y divide-gray-100">
-            {unchangedItems.map((item) => (
-              <div key={item.id} className="py-2.5 flex items-start gap-3 px-2">
-                <div className="flex-1 text-sm">
-                  <div className="font-medium text-gray-900">
-                    {item.brand_name} {item.model_name}
-                  </div>
-                  <div className="text-xs text-gray-500 flex gap-4 mt-0.5">
-                    {(item.proposed_data?.year ?? item.proposed_data?.modelYear) && (
-                      <span>Year: {item.proposed_data.year ?? item.proposed_data.modelYear}</span>
-                    )}
-                    {(item.proposed_data?.engineCapacityCc ?? item.proposed_data?.engineCapacity) && (
-                      <span>
-                        Engine: {item.proposed_data.engineCapacityCc ?? item.proposed_data.engineCapacity}cc
-                      </span>
-                    )}
-                  </div>
-                  {item.proposed_data?.rates && (
-                    <div className="mt-1 flex gap-2 flex-wrap">
-                      {item.proposed_data.rates.map((r: any, idx: number) => {
-                        const symbol = getCurrencySymbol(r.currency || item.proposed_data.currency || 'THB');
-                        const rateAmount = r.ratePerDay ?? r.dailyRate ?? r.rate_per_day ?? r.daily_rate;
-                        const min = r.minDays ?? r.min_days ?? 1;
-                        const max = r.maxDays ?? r.max_days;
-                        return (
-                          <span
-                            key={idx}
-                            className="inline-flex text-xs bg-gray-50 text-gray-700 px-2 py-0.5 rounded border border-gray-200"
-                          >
-                            {min}{max ? `-${max}` : '+'} days: {symbol}{rateAmount}/day
-                          </span>
-                        );
-                      })}
+            {unchangedItems.map((item) => {
+              const year = getModelYear(item.proposed_data);
+              const engineCc = getEngineCapacity(item.proposed_data);
+              return (
+                <div key={item.id} className="py-2.5 flex items-start gap-3 px-2">
+                  <div className="flex-1 text-sm">
+                    <div className="font-medium text-gray-900">
+                      {item.brand_name} {item.model_name}
                     </div>
-                  )}
+                    <div className="text-xs text-gray-500 flex gap-4 mt-0.5">
+                      {year != null && <span>Year: {year}</span>}
+                      {engineCc != null && <span>Engine: {engineCc}cc</span>}
+                    </div>
+                    {item.proposed_data?.rates && (
+                      <div className="mt-1 flex gap-2 flex-wrap">
+                        {item.proposed_data.rates.map((r: any, idx: number) => {
+                          const symbol = getCurrencySymbol(r.currency || item.proposed_data.currency || 'THB');
+                          const rateAmount = getRateAmount(r);
+                          const min = r.minDays ?? r.min_days ?? 1;
+                          const max = r.maxDays ?? r.max_days;
+                          return (
+                            <span
+                              key={idx}
+                              className="inline-flex text-xs bg-gray-50 text-gray-700 px-2 py-0.5 rounded border border-gray-200"
+                            >
+                              {min}{max ? `-${max}` : '+'} days: {symbol}{rateAmount}/day
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Card>
       )}

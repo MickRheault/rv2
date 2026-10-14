@@ -33,7 +33,6 @@ export interface CrawledBikeSnapshot {
   deposit?: number | null;
   inclusions?: string[];
   conditions?: Array<{ type: string; value: string }>;
-  [key: string]: any;
 }
 
 export interface ExistingRateTier {
@@ -160,16 +159,9 @@ function ratesDiffer(oldRates: ExistingRateTier[] = [], newRates: CrawledRateTie
   for (let i = 0; i < oldRates.length; i++) {
     const o = oldRates[i];
     const n = newRates[i];
-    const oMin = Number(o.min_days);
-    const nMin = Number(n.minDays ?? (n as any).min_days ?? 1);
-    if (oMin !== nMin) return true;
-
-    const oMax = o.max_days !== undefined && o.max_days !== null ? Number(o.max_days) : null;
-    const nMax = (n.maxDays !== undefined ? n.maxDays : (n as any).max_days) ?? null;
-    if (oMax !== (nMax !== null ? Number(nMax) : null)) return true;
-
-    const nRate = Number(n.ratePerDay ?? (n as any).dailyRate ?? (n as any).rate_per_day ?? 0);
-    if (Number(o.rate_per_day) !== nRate) return true;
+    if (Number(o.min_days) !== Number(n.minDays)) return true;
+    if ((o.max_days ?? null) !== (n.maxDays ?? null)) return true;
+    if (Number(o.rate_per_day) !== Number(n.ratePerDay)) return true;
   }
   return false;
 }
