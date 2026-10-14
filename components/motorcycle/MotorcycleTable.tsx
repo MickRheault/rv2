@@ -126,12 +126,17 @@ export default function MotorcycleTable({
                 <div className="md:hidden flex gap-2">
                     <select
                         className="text-sm bg-white border border-gray-200 rounded px-2 py-1.5 w-full font-medium text-gray-700"
-                        value={sortConfig ? `${sortConfig.key}-${sortConfig.direction}` : 'bike-asc'}
+                        value={sortConfig ? `${sortConfig.key}-${sortConfig.direction}` : preserveInitialOrder ? '' : 'bike-asc'}
                         onChange={(e) => {
+                            if (!e.target.value) {
+                                setSortConfig(null)
+                                return
+                            }
                             const [key, direction] = e.target.value.split('-') as [SortKey, SortDirection]
                             setSortConfig({ key, direction })
                         }}
                     >
+                        {preserveInitialOrder && <option value="">Default Sort</option>}
                         <option value="bike-asc">Bike (A-Z)</option>
                         <option value="price-asc">Price (Low to High)</option>
                         <option value="price-desc">Price (High to Low)</option>

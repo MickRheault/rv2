@@ -117,7 +117,7 @@ export default function SearchPageContent({
       return deriveFilterOptionsFromMotorcycles(locationSearch.locationMotorcycles)
     }
     if (
-      hasLocationFilter(locationSearch.filters) &&
+      (hasLocationFilter(locationSearch.filters) || Boolean(locationSearch.filters.locationQuery)) &&
       locationSearch.hasSearched &&
       !locationSearch.isLoading
     ) {
