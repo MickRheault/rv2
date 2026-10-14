@@ -1,0 +1,3 @@
+# GPG-Encrypted GitHub Artifact Backups via IPv4 Session Pooler
+
+Automated daily database backups run via GitHub Actions on the public `MickRheault/rv2` repository at zero cost. Because GitHub Action Artifacts in a public repository are downloadable by any authenticated GitHub user, and because Supabase Free Tier direct database endpoints are IPv6-only while GitHub Actions Ubuntu runners are IPv4-only, backups connect through the Supabase Supavisor IPv4 Session Pooler (port `5432`) and encrypt the compressed `public` + `auth` dump using AES-256 symmetric GPG (`BACKUP_PASSPHRASE`) before uploading with a 7-day rolling retention policy.
