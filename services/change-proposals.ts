@@ -37,6 +37,8 @@ export function validateGeodataImmutability(proposedData: Record<string, any>) {
 
 /**
  * Inserts rental rate tiers for a motorcycle, using provided fallback currency.
+ * Defensively supports crawler and MCP aliases:
+ * ratePerDay / dailyRate / rate_per_day, minDays / min_days, maxDays / max_days
  */
 export async function insertRateTiers(
   supabase: any,
@@ -45,13 +47,21 @@ export async function insertRateTiers(
   defaultCurrency?: string
 ) {
   const currency = defaultCurrency || rates[0]?.currency || 'THB';
-  const rateTiers = rates.map((r: any) => ({
-    motorcycle_id: motorcycleId,
-    min_days: r.minDays,
-    max_days: r.maxDays || null,
-    rate_per_day: r.ratePerDay,
-    currency: r.currency || currency,
-  }));
+  const rateTiers = rates.map((r: any) => {
+    const rawMin = r?.minDays ?? r?.min_days;
+    const minDays = rawMin !== undefined && rawMin !== null ? Number(rawMin) : 1;
+    const rawMax = r?.maxDays !== undefined ? r?.maxDays : r?.max_days;
+    const maxDays = rawMax !== undefined && rawMax !== null ? Number(rawMax) : null;
+    const rawRate = r?.ratePerDay ?? r?.dailyRate ?? r?.rate_per_day ?? r?.daily_rate;
+    const ratePerDay = rawRate !== undefined && rawRate !== null ? Number(rawRate) : 0;
+    return {
+      motorcycle_id: motorcycleId,
+      min_days: isNaN(minDays) ? 1 : minDays,
+      max_days: maxDays !== null && !isNaN(maxDays) ? maxDays : null,
+      rate_per_day: isNaN(ratePerDay) ? 0 : ratePerDay,
+      currency: r?.currency || currency,
+    };
+  });
   return (supabase.from('rental_rate_tiers') as any).insert(rateTiers);
 }
 
@@ -368,16 +378,25 @@ export class ChangeProposalService {
           }
 
           // Insert motorcycle
+          const rawYear = proposed.year ?? proposed.modelYear ?? proposed.model_year;
+          const year = rawYear !== undefined && rawYear !== null ? Number(rawYear) : null;
+
+          const rawCc = proposed.engineCapacityCc ?? proposed.engineCapacity ?? proposed.engine_capacity_cc;
+          const engineCapacityCc = rawCc !== undefined && rawCc !== null ? Number(rawCc) : null;
+
+          const primaryRate = proposed.rates?.[0]?.ratePerDay ?? proposed.rates?.[0]?.dailyRate ?? proposed.rates?.[0]?.rate_per_day ?? proposed.rates?.[0]?.daily_rate;
+          const rentalRatePerDay = primaryRate !== undefined && primaryRate !== null ? Number(primaryRate) : null;
+
           const { data: newBike, error: bikeError } = await (supabase
             .from('motorcycle_rentals') as any)
             .insert({
               shop_id: proposal.shop_id,
               brand_id: brandId,
               model: item.model_name || 'Motorcycle',
-              year: proposed.year || null,
-              engine_capacity_cc: proposed.engineCapacityCc || null,
+              year: year !== null && !isNaN(year) ? year : null,
+              engine_capacity_cc: engineCapacityCc !== null && !isNaN(engineCapacityCc) ? engineCapacityCc : null,
               availability_status: 'available',
-              rental_rate_per_day: proposed.rates?.[0]?.ratePerDay || null,
+              rental_rate_per_day: rentalRatePerDay !== null && !isNaN(rentalRatePerDay) ? rentalRatePerDay : null,
               rental_rate_currency: proposed.currency || proposed.rates?.[0]?.currency || 'THB',
               source_url: proposed.sourceUrl || null,
             })
@@ -398,14 +417,24 @@ export class ChangeProposalService {
         } else if (item.action === 'update' && item.entity_id) {
           // Update specifications
           const updatePayload: Record<string, any> = {};
-          if (proposed.year !== undefined) updatePayload.year = proposed.year;
-          if (proposed.engineCapacityCc !== undefined) {
-            updatePayload.engine_capacity_cc = proposed.engineCapacityCc;
+          const proposedYear = proposed.year ?? proposed.modelYear ?? proposed.model_year;
+          if (proposedYear !== undefined && proposedYear !== null) {
+            const parsedYear = Number(proposedYear);
+            if (!isNaN(parsedYear)) updatePayload.year = parsedYear;
           }
-          if (proposed.rates?.[0]?.ratePerDay !== undefined) {
-            updatePayload.rental_rate_per_day = proposed.rates[0].ratePerDay;
-            if (proposed.currency || proposed.rates[0].currency) {
-              updatePayload.rental_rate_currency = proposed.currency || proposed.rates[0].currency;
+          const proposedCc = proposed.engineCapacityCc ?? proposed.engineCapacity ?? proposed.engine_capacity_cc;
+          if (proposedCc !== undefined && proposedCc !== null) {
+            const parsedCc = Number(proposedCc);
+            if (!isNaN(parsedCc)) updatePayload.engine_capacity_cc = parsedCc;
+          }
+          const primaryRate = proposed.rates?.[0]?.ratePerDay ?? proposed.rates?.[0]?.dailyRate ?? proposed.rates?.[0]?.rate_per_day ?? proposed.rates?.[0]?.daily_rate;
+          if (primaryRate !== undefined && primaryRate !== null) {
+            const parsedRate = Number(primaryRate);
+            if (!isNaN(parsedRate)) {
+              updatePayload.rental_rate_per_day = parsedRate;
+              if (proposed.currency || proposed.rates[0]?.currency) {
+                updatePayload.rental_rate_currency = proposed.currency || proposed.rates[0]?.currency;
+              }
             }
           }
 

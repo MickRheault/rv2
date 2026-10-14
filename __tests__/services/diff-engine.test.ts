@@ -4,6 +4,7 @@
 
 import {
   computeShopInventoryDiff,
+  normalizeCrawledBikeSnapshot,
   ZeroDropSafeguardError,
   type CrawledBikeSnapshot,
   type ExistingBikeRecord,
@@ -257,6 +258,108 @@ describe('Diff Engine', () => {
     expect(shopItem?.diff_summary?.website).toEqual({
       old: 'https://old.example.com',
       new: 'https://new.example.com',
+    });
+  });
+
+  describe('normalizeCrawledBikeSnapshot & Crawler Aliases (Postel\'s Law)', () => {
+    it('normalizes dailyRate to ratePerDay, engineCapacity to engineCapacityCc, and modelYear to year', () => {
+      const rawBike = {
+        brand: 'Honda',
+        modelName: 'ADV 160',
+        engineCapacity: 157,
+        modelYear: 2024,
+        rates: [
+          {
+            minDays: 1,
+            dailyRate: 600,
+            currency: 'THB',
+          },
+        ],
+      };
+
+      const normalized = normalizeCrawledBikeSnapshot(rawBike);
+      expect(normalized.brand).toBe('Honda');
+      expect(normalized.modelName).toBe('ADV 160');
+      expect(normalized.engineCapacityCc).toBe(157);
+      expect(normalized.year).toBe(2024);
+      expect(normalized.rates).toEqual([
+        {
+          minDays: 1,
+          maxDays: null,
+          ratePerDay: 600,
+          currency: 'THB',
+        },
+      ]);
+    });
+
+    it('correctly compares existing inventory against crawler payload containing dailyRate without producing NaN', () => {
+      const existingBikes: ExistingBikeRecord[] = [
+        {
+          id: 'bike-adv-160',
+          brand_name: 'Honda',
+          model_name: 'ADV 160',
+          engine_capacity_cc: 157,
+          availability_status: 'available',
+          rates: [
+            {
+              min_days: 1,
+              max_days: null,
+              rate_per_day: 600,
+            },
+          ],
+        },
+      ];
+
+      // Hermes crawl payload with dailyRate and engineCapacity
+      const crawledPayload: any[] = [
+        {
+          brand: 'Honda',
+          modelName: 'ADV 160',
+          engineCapacity: 157,
+          rates: [
+            {
+              minDays: 1,
+              dailyRate: 600,
+              currency: 'THB',
+            },
+          ],
+        },
+        {
+          brand: 'Honda',
+          modelName: 'Click 125',
+          engineCapacity: 124,
+          rates: [
+            {
+              minDays: 1,
+              dailyRate: 350,
+              currency: 'THB',
+            },
+          ],
+        },
+      ];
+
+      const diff = computeShopInventoryDiff(existingBikes, crawledPayload);
+
+      // Honda ADV 160 should be recognized as UNCHANGED (rates and engine match)
+      const adv160 = diff.items.find((i) => i.model_name === 'ADV 160');
+      expect(adv160).toBeDefined();
+      expect(adv160?.action).toBe('unchanged');
+      expect(adv160?.proposed_data.rates[0].ratePerDay).toBe(600);
+      expect(adv160?.proposed_data.engineCapacityCc).toBe(157);
+
+      // Honda Click 125 is a new addition
+      const click125 = diff.items.find((i) => i.model_name === 'Click 125');
+      expect(click125).toBeDefined();
+      expect(click125?.action).toBe('add');
+      expect(click125?.proposed_data.rates[0].ratePerDay).toBe(350);
+      expect(click125?.proposed_data.engineCapacityCc).toBe(124);
+
+      expect(diff.summaryCounts).toEqual({
+        add: 1,
+        update: 0,
+        delist: 0,
+        unchanged: 1,
+      });
     });
   });
 });

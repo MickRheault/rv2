@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Pass verbatim raw snapshot per ADR 0003 (diff engine handles defensive normalization internally)
     const result = await ChangeProposalService.createProposalFromCrawl({
       shopId,
       sourceUrl,

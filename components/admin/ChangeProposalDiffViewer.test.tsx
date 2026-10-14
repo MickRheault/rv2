@@ -107,4 +107,100 @@ describe('ChangeProposalDiffViewer', () => {
       expect(onApplySuccess).toHaveBeenCalled();
     });
   });
+
+  it('renders prices and engine capacity properly when proposed data uses dailyRate and engineCapacity aliases', () => {
+    const aliasItems: DiffViewerItem[] = [
+      {
+        id: 'item-hermes-1',
+        proposal_id: 'prop-1',
+        entity_type: 'motorcycle',
+        action: 'add',
+        entity_id: null,
+        brand_name: 'Honda',
+        model_name: 'ADV 160',
+        original_data: null,
+        proposed_data: {
+          brand: 'Honda',
+          modelName: 'ADV 160',
+          engineCapacity: 157, // alias without Cc
+          rates: [
+            {
+              minDays: 1,
+              dailyRate: 600, // alias instead of ratePerDay
+              currency: 'THB',
+            },
+          ],
+        },
+        diff_summary: null,
+        status: 'pending',
+      },
+    ];
+
+    render(<ChangeProposalDiffViewer proposal={mockProposal} items={aliasItems} />);
+
+    // Should render bike title
+    expect(screen.getByText('Honda ADV 160')).toBeInTheDocument();
+    // Should render engine capacity with cc suffix
+    expect(screen.getByText(/Engine: 157cc/i)).toBeInTheDocument();
+    // Should render formatted price verbatim with currency symbol
+    expect(screen.getByText(/1\+ days: ฿600\/day/i)).toBeInTheDocument();
+  });
+
+  it('renders confirmed unchanged inventory section and excludes unchanged items from Select All', () => {
+    const mixedItems: DiffViewerItem[] = [
+      {
+        id: 'item-add-1',
+        proposal_id: 'prop-1',
+        entity_type: 'motorcycle',
+        action: 'add',
+        entity_id: null,
+        brand_name: 'Honda',
+        model_name: 'Click 160',
+        original_data: null,
+        proposed_data: {
+          engineCapacityCc: 160,
+          rates: [{ minDays: 1, ratePerDay: 450 }],
+        },
+        diff_summary: null,
+        status: 'pending',
+      },
+      {
+        id: 'item-unchanged-1',
+        proposal_id: 'prop-1',
+        entity_type: 'motorcycle',
+        action: 'unchanged',
+        entity_id: 'bike-existing-1',
+        brand_name: 'Yamaha',
+        model_name: 'Grand Filano',
+        original_data: {
+          rates: [{ min_days: 1, rate_per_day: 350 }],
+        },
+        proposed_data: {
+          engineCapacity: 125,
+          rates: [{ minDays: 1, dailyRate: 350, currency: 'THB' }],
+        },
+        diff_summary: null,
+        status: 'applied',
+      },
+    ];
+
+    render(<ChangeProposalDiffViewer proposal={mockProposal} items={mixedItems} />);
+
+    // Unchanged section header
+    expect(screen.getByText(/Confirmed Unchanged Inventory \(1\)/i)).toBeInTheDocument();
+    expect(screen.getByText('Yamaha Grand Filano')).toBeInTheDocument();
+    expect(screen.getByText(/1\+ days: ฿350\/day/i)).toBeInTheDocument();
+
+    // Toolbar count should only show 1 actionable item
+    expect(screen.getByText(/1 of 1 items selected/i)).toBeInTheDocument();
+
+    // Deselect All then Select All
+    const deselectBtn = screen.getByRole('button', { name: /^Deselect All$/i });
+    fireEvent.click(deselectBtn);
+    expect(screen.getByText(/0 of 1 items selected/i)).toBeInTheDocument();
+
+    const selectAllBtn = screen.getByRole('button', { name: /^Select All$/i });
+    fireEvent.click(selectAllBtn);
+    expect(screen.getByText(/1 of 1 items selected/i)).toBeInTheDocument();
+  });
 });
