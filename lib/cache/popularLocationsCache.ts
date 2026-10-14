@@ -56,10 +56,6 @@ export function readCachedPopularLocationsEntry(): CachedStorageEntry<LocationSe
   )
 }
 
-export function readCachedPopularLocations(): LocationSearchResult[] | undefined {
-  return readCachedPopularLocationsEntry()?.data
-}
-
 export function writeCachedPopularLocations(data: LocationSearchResult[]): void {
   writeStorageEntry(POPULAR_LOCATIONS_STORAGE_KEY, data)
 }

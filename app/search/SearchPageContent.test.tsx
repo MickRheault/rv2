@@ -50,13 +50,7 @@ jest.mock('@/components/motorcycle/MotorcycleTable', () => {
 
 // Mock motorcycleService
 jest.mock('@/services/motorcycles', () => ({
-  hasLocationFilter: (filters?: any) =>
-    Boolean(
-      filters?.countryCode ||
-        filters?.provinceId ||
-        filters?.cityId ||
-        filters?.locationQuery
-    ),
+  hasLocationFilter: jest.requireActual('@/services/motorcycles').hasLocationFilter,
   motorcycleService: {
     getFilterOptions: jest.fn(() =>
       Promise.resolve({
