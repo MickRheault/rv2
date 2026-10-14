@@ -100,6 +100,31 @@ function renderRateTiers(
   );
 }
 
+function renderPolicyList(title: string, added: string[] = [], removed: string[] = []) {
+  if (added.length === 0 && removed.length === 0) return null;
+  return (
+    <div className="mt-2.5 pt-2 border-t border-gray-100 space-y-1">
+      <span className="font-semibold text-gray-900 block mb-1">{title}:</span>
+      {added.map((text: string, idx: number) => (
+        <div key={`add-${idx}`} className="flex items-center gap-1.5 text-emerald-700 font-medium">
+          <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1 rounded uppercase tracking-wider">
+            + Added
+          </span>
+          <span>{text}</span>
+        </div>
+      ))}
+      {removed.map((text: string, idx: number) => (
+        <div key={`rem-${idx}`} className="flex items-center gap-1.5 text-red-600 line-through">
+          <span className="bg-red-100 text-red-800 text-[10px] font-bold px-1 rounded uppercase tracking-wider no-underline">
+            - Removed
+          </span>
+          <span>{text}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function renderRateTiersDiff(
   ratesDiff: any,
   originalRates?: any[],
@@ -121,13 +146,24 @@ function renderRateTiersDiff(
               const delta = tier.delta ?? (tier.newRate - tier.oldRate);
               const percentage = tier.percentage ?? (tier.oldRate > 0 ? (delta / tier.oldRate) * 100 : 0);
               const isIncrease = delta >= 0;
+              const hasDurationChange = tier.oldMaxDays !== undefined && tier.oldMaxDays !== tier.maxDays;
+              const oldDuration = `${tier.minDays}${tier.oldMaxDays ? `-${tier.oldMaxDays}` : '+'} days`;
 
               return (
                 <div
                   key={idx}
                   className="flex items-center gap-2 text-xs bg-gray-50 border border-gray-200 rounded-lg p-2"
                 >
-                  <span className="font-medium text-gray-700 min-w-[75px]">{duration}:</span>
+                  <span className="font-medium text-gray-700 min-w-[75px]">
+                    {hasDurationChange ? (
+                      <>
+                        <span className="line-through text-red-500 mr-1">{oldDuration}</span>
+                        <span className="text-gray-400">→</span> {duration}:
+                      </>
+                    ) : (
+                      `${duration}:`
+                    )}
+                  </span>
                   <span className="line-through text-red-500 font-medium">
                     {symbol}{tier.oldRate}
                   </span>
@@ -137,7 +173,7 @@ function renderRateTiersDiff(
                   </span>
                   <span
                     className={`ml-auto text-[11px] px-1.5 py-0.5 rounded font-semibold ${
-                      isIncrease ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                      isIncrease ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'
                     }`}
                   >
                     {isIncrease ? `+${symbol}${delta}` : `-${symbol}${Math.abs(delta)}`} (
@@ -551,7 +587,7 @@ export function ChangeProposalDiffViewer({
                     <span className="font-semibold text-gray-900">
                       {item.brand_name} {item.model_name}
                     </span>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-red-100 text-red-800">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-red-100 text-red-800 line-through">
                       - Delisted / Unavailable
                     </span>
                   </div>
@@ -626,40 +662,18 @@ export function ChangeProposalDiffViewer({
                           </span>
                         </div>
                       )}
-                      {item.diff_summary.inclusions && (
-                        <div className="mt-2.5 pt-2 border-t border-gray-100 space-y-1">
-                          <span className="font-semibold text-gray-900 block mb-1">Rental Inclusions:</span>
-                          {item.diff_summary.inclusions.added?.map((inc: string, idx: number) => (
-                            <div key={`inc-add-${idx}`} className="flex items-center gap-1.5 text-emerald-700 font-medium">
-                              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1 rounded uppercase tracking-wider">+ Added</span>
-                              <span>{inc}</span>
-                            </div>
-                          ))}
-                          {item.diff_summary.inclusions.removed?.map((inc: string, idx: number) => (
-                            <div key={`inc-rem-${idx}`} className="flex items-center gap-1.5 text-red-600 line-through">
-                              <span className="bg-red-100 text-red-800 text-[10px] font-bold px-1 rounded uppercase tracking-wider no-underline">- Removed</span>
-                              <span>{inc}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {item.diff_summary.conditions && (
-                        <div className="mt-2.5 pt-2 border-t border-gray-100 space-y-1">
-                          <span className="font-semibold text-gray-900 block mb-1">Rental Conditions:</span>
-                          {item.diff_summary.conditions.added?.map((cond: string, idx: number) => (
-                            <div key={`cond-add-${idx}`} className="flex items-center gap-1.5 text-emerald-700 font-medium">
-                              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1 rounded uppercase tracking-wider">+ Added</span>
-                              <span>{cond}</span>
-                            </div>
-                          ))}
-                          {item.diff_summary.conditions.removed?.map((cond: string, idx: number) => (
-                            <div key={`cond-rem-${idx}`} className="flex items-center gap-1.5 text-red-600 line-through">
-                              <span className="bg-red-100 text-red-800 text-[10px] font-bold px-1 rounded uppercase tracking-wider no-underline">- Removed</span>
-                              <span>{cond}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      {item.diff_summary.inclusions &&
+                        renderPolicyList(
+                          'Rental Inclusions',
+                          item.diff_summary.inclusions.added,
+                          item.diff_summary.inclusions.removed
+                        )}
+                      {item.diff_summary.conditions &&
+                        renderPolicyList(
+                          'Rental Conditions',
+                          item.diff_summary.conditions.added,
+                          item.diff_summary.conditions.removed
+                        )}
                     </div>
                   )}
                 </div>

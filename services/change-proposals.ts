@@ -75,78 +75,53 @@ export function isActionableProposalAction(
   return action !== 'unchanged';
 }
 
-export function inferConditionTypeName(text: string): string {
-  const lower = text.toLowerCase();
-  if (lower.includes('deposit')) return 'Security Deposit';
-  if (lower.includes('licence') || lower.includes('license') || lower.includes('permit')) return 'Driver License';
-  if (lower.includes('age') || lower.includes('years old')) return 'Minimum Age';
-  if (lower.includes('fuel') || lower.includes('gas')) return 'Fuel Policy';
-  if (lower.includes('insurance') || lower.includes('coverage')) return 'Insurance Policy';
-  if (lower.includes('mileage') || lower.includes('kilometer') || lower.includes('km limit') || lower.includes('mileage limits')) return 'Mileage Policy';
-  if (lower.includes('helmet')) return 'Helmet Policy';
-  if (lower.includes('driver') || lower.includes('operator')) return 'Driver Requirements';
-  if (lower.includes('campaign') || lower.includes('discount') || lower.includes('promo')) return 'Promotion Policy';
-  if (lower.includes('cancellation') || lower.includes('cancel')) return 'Cancellation Policy';
-  if (lower.includes('payment') || lower.includes('cash') || lower.includes('card')) return 'Payment Policy';
-
-  const cleaned = text.split(/[:;.,-]/)[0].trim();
-  if (cleaned.length >= 3 && cleaned.length <= 40) {
-    return cleaned;
-  }
-  return text.slice(0, 40).trim() || 'General Policy';
-}
-
 export async function resolveConditionTypeId(
   supabase: any,
   shopId: string,
   conditionText: string,
   assignedTypeIds: Set<string>
 ): Promise<string | null> {
-  const baseName = inferConditionTypeName(conditionText);
-  let candidateName = baseName;
-  let counter = 1;
+  const lower = conditionText.toLowerCase();
 
-  while (counter <= 50) {
-    const { data: existingType } = await (supabase.from('condition_types') as any)
-      .select('id, name')
-      .eq('name', candidateName)
-      .maybeSingle();
+  // 1. Fetch condition types from database (read-only per ADR 0011)
+  const { data: allTypes } = await (supabase.from('condition_types') as any)
+    .select('id, name')
+    .limit(100);
 
-    let candidateId = existingType?.id;
-    if (!candidateId) {
-      const { data: newType, error: insertError } = await (supabase.from('condition_types') as any)
-        .insert({ name: candidateName, description: `Rental condition: ${candidateName}` })
-        .select('id')
-        .single();
+  if (!allTypes || allTypes.length === 0) {
+    return null;
+  }
 
-      if (insertError) {
-        const { data: retryType } = await (supabase.from('condition_types') as any)
-          .select('id')
-          .eq('name', candidateName)
-          .maybeSingle();
-        candidateId = retryType?.id;
-      } else {
-        candidateId = newType?.id;
-      }
-    }
+  // 2. Exclude types already assigned in this batch
+  const availableTypes = allTypes.filter((t: any) => !assignedTypeIds.has(t.id));
+  if (availableTypes.length === 0) {
+    return null;
+  }
 
-    if (candidateId) {
-      if (!assignedTypeIds.has(candidateId)) {
-        const { data: existingShopCondition } = await (supabase.from('rental_shop_conditions') as any)
-          .select('id')
-          .eq('shop_id', shopId)
-          .eq('condition_type_id', candidateId)
-          .maybeSingle();
+  // 3. Exclude types already in DB for this shop to preserve unique(shop_id, condition_type_id)
+  const { data: existingShopConditions } = await (supabase.from('rental_shop_conditions') as any)
+    .select('condition_type_id')
+    .eq('shop_id', shopId);
 
-        if (!existingShopCondition) {
-          assignedTypeIds.add(candidateId);
-          return candidateId;
-        }
-      }
-    }
+  const existingShopTypeIds = new Set(
+    (existingShopConditions || []).map((c: any) => c.condition_type_id)
+  );
 
-    counter++;
-    candidateName = `${baseName} (${counter})`;
+  const usableTypes = availableTypes.filter((t: any) => !existingShopTypeIds.has(t.id));
+  if (usableTypes.length === 0) {
+    return null;
+  }
+
+  // 4. Try semantic match against available usable types
+  const matched = usableTypes.find((t: any) => {
+    const typeName = t.name.toLowerCase();
+    return lower.includes(typeName) || typeName.includes(lower.slice(0, 20));
+  });
+
+  const selected = matched || usableTypes[0];
+  if (selected) {
+    assignedTypeIds.add(selected.id);
+    return selected.id;
   }
 
   return null;

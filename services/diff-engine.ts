@@ -63,8 +63,6 @@ export interface RateTierComparison {
   currency?: string;
 }
 
-export type RateTierDiffItem = RateTierComparison;
-
 export interface CrawledShopProfile {
   business_description?: string | null;
   phone?: string | null;
@@ -194,46 +192,46 @@ export function computeRateTiersDiff(
 
   // 1. Match by minDays
   for (let i = newRemaining.length - 1; i >= 0; i--) {
-    const n = newRemaining[i];
-    const oldIdx = oldRemaining.findIndex((o) => Number(o.min_days) === Number(n.minDays));
+    const newTier = newRemaining[i];
+    const oldIdx = oldRemaining.findIndex((oldTier) => Number(oldTier.min_days) === Number(newTier.minDays));
     if (oldIdx !== -1) {
-      const o = oldRemaining[oldIdx];
-      const oldRate = Number(o.rate_per_day);
-      const newRate = Number(n.ratePerDay);
-      const oldMax = o.max_days != null ? Number(o.max_days) : null;
-      const newMax = n.maxDays != null ? Number(n.maxDays) : null;
+      const oldTier = oldRemaining[oldIdx];
+      const oldRate = Number(oldTier.rate_per_day);
+      const newRate = Number(newTier.ratePerDay);
+      const oldMax = oldTier.max_days != null ? Number(oldTier.max_days) : null;
+      const newMax = newTier.maxDays != null ? Number(newTier.maxDays) : null;
 
       if (oldRate !== newRate) {
         const delta = newRate - oldRate;
         const percentage = oldRate > 0 ? (delta / oldRate) * 100 : 0;
         diffs.push({
           status: 'modified',
-          minDays: Number(n.minDays),
+          minDays: Number(newTier.minDays),
           maxDays: newMax,
           oldMaxDays: oldMax,
           oldRate,
           newRate,
           delta,
           percentage,
-          currency: n.currency,
+          currency: newTier.currency,
         });
       } else if (oldMax !== newMax) {
         diffs.push({
           status: 'duration_modified',
-          minDays: Number(n.minDays),
+          minDays: Number(newTier.minDays),
           maxDays: newMax,
           oldMaxDays: oldMax,
           oldRate,
           newRate,
-          currency: n.currency,
+          currency: newTier.currency,
         });
       } else {
         diffs.push({
           status: 'unchanged',
-          minDays: Number(n.minDays),
+          minDays: Number(newTier.minDays),
           maxDays: newMax,
           newRate,
-          currency: n.currency,
+          currency: newTier.currency,
         });
       }
       oldRemaining.splice(oldIdx, 1);
@@ -242,23 +240,23 @@ export function computeRateTiersDiff(
   }
 
   // 2. Added tiers
-  for (const n of newRemaining) {
+  for (const newTier of newRemaining) {
     diffs.push({
       status: 'added',
-      minDays: Number(n.minDays),
-      maxDays: n.maxDays != null ? Number(n.maxDays) : null,
-      newRate: Number(n.ratePerDay),
-      currency: n.currency,
+      minDays: Number(newTier.minDays),
+      maxDays: newTier.maxDays != null ? Number(newTier.maxDays) : null,
+      newRate: Number(newTier.ratePerDay),
+      currency: newTier.currency,
     });
   }
 
   // 3. Removed tiers
-  for (const o of oldRemaining) {
+  for (const oldTier of oldRemaining) {
     diffs.push({
       status: 'removed',
-      minDays: Number(o.min_days),
-      maxDays: o.max_days != null ? Number(o.max_days) : null,
-      oldRate: Number(o.rate_per_day),
+      minDays: Number(oldTier.min_days),
+      maxDays: oldTier.max_days != null ? Number(oldTier.max_days) : null,
+      oldRate: Number(oldTier.rate_per_day),
     });
   }
 
@@ -272,6 +270,14 @@ function toOriginalMotorcycleSnapshot(bike: ExistingBikeRecord) {
     rates: bike.rates || [],
     availability_status: bike.availability_status || 'available',
   };
+}
+
+export function computeStringListDiff(oldList: string[] = [], newList: string[] = []) {
+  const oldSet = new Set(oldList.map((s) => s.trim().toLowerCase()));
+  const newSet = new Set(newList.map((s) => s.trim().toLowerCase()));
+  const added = newList.filter((s) => s.trim() && !oldSet.has(s.trim().toLowerCase()));
+  const removed = oldList.filter((s) => s.trim() && !newSet.has(s.trim().toLowerCase()));
+  return { added, removed };
 }
 
 export function computeShopInventoryDiff(
@@ -440,16 +446,14 @@ export function computeShopInventoryDiff(
 
     // Inclusions diff
     if (Array.isArray(crawledShop.inclusions)) {
-      const existingIncls = new Set((existingShop.inclusions || []).map((s) => s.trim().toLowerCase()));
-      const crawledIncls = new Set(crawledShop.inclusions.map((s) => String(s).trim().toLowerCase()));
-
-      const added = crawledShop.inclusions.filter((s) => !existingIncls.has(String(s).trim().toLowerCase()));
-      const removed = (existingShop.inclusions || []).filter((s) => !crawledIncls.has(s.trim().toLowerCase()));
+      const oldIncls = existingShop.inclusions || [];
+      const newIncls = crawledShop.inclusions.map(String);
+      const { added, removed } = computeStringListDiff(oldIncls, newIncls);
 
       if (added.length > 0 || removed.length > 0) {
         shopDiff.inclusions = {
-          old: existingShop.inclusions || [],
-          new: crawledShop.inclusions,
+          old: oldIncls,
+          new: newIncls,
           added,
           removed,
         };
@@ -458,23 +462,18 @@ export function computeShopInventoryDiff(
 
     // Conditions diff
     if (Array.isArray(crawledShop.conditions)) {
-      const existingCondStrings = (existingShop.conditions || []).map((c) =>
+      const oldConds = (existingShop.conditions || []).map((c) =>
         typeof c === 'string' ? c : (c as any).value || (c as any).condition_value || ''
       );
-      const existingCondSet = new Set(existingCondStrings.map((s) => s.trim().toLowerCase()));
-
-      const crawledCondStrings = crawledShop.conditions.map((c) =>
+      const newConds = crawledShop.conditions.map((c) =>
         typeof c === 'string' ? c : (c as any).value || (c as any).condition_value || ''
       );
-      const crawledCondSet = new Set(crawledCondStrings.map((s) => s.trim().toLowerCase()));
-
-      const added = crawledCondStrings.filter((s) => s.trim() && !existingCondSet.has(s.trim().toLowerCase()));
-      const removed = existingCondStrings.filter((s) => s.trim() && !crawledCondSet.has(s.trim().toLowerCase()));
+      const { added, removed } = computeStringListDiff(oldConds, newConds);
 
       if (added.length > 0 || removed.length > 0) {
         shopDiff.conditions = {
-          old: existingCondStrings,
-          new: crawledCondStrings,
+          old: oldConds,
+          new: newConds,
           added,
           removed,
         };
@@ -487,7 +486,7 @@ export function computeShopInventoryDiff(
         action: 'update',
         entity_id: existingShop.id || null,
         brand_name: 'Shop Profile',
-        model_name: 'General Information & Policies',
+        model_name: 'General Information',
         original_data: {
           business_description: existingShop.business_description,
           phone: existingShop.phone,

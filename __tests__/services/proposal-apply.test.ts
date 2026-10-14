@@ -879,34 +879,21 @@ describe('Change Proposal Application & Geodata Protection', () => {
           if (table === 'condition_types') {
             return {
               select: jest.fn().mockReturnValue({
-                eq: jest.fn().mockImplementation((_col, val) => ({
-                  maybeSingle: jest.fn().mockResolvedValue({
-                    data: { id: `type-${String(val).toLowerCase().replace(/[^a-z0-9]/g, '-')}-uuid`, name: val },
-                    error: null,
-                  }),
-                })),
-                limit: jest.fn().mockReturnValue({
-                  maybeSingle: jest.fn().mockResolvedValue({ data: { id: 'type-general-uuid', name: 'General Policy' }, error: null }),
+                limit: jest.fn().mockResolvedValue({
+                  data: [
+                    { id: 'type-license-uuid', name: 'Driver License' },
+                    { id: 'type-deposit-uuid', name: 'Security Deposit' },
+                    { id: 'type-general-uuid', name: 'General Policy' },
+                  ],
+                  error: null,
                 }),
               }),
-              insert: jest.fn().mockImplementation((row) => ({
-                select: jest.fn().mockReturnValue({
-                  single: jest.fn().mockResolvedValue({
-                    data: { id: `type-${String(row.name).toLowerCase().replace(/[^a-z0-9]/g, '-')}-uuid`, name: row.name },
-                    error: null,
-                  }),
-                }),
-              })),
             };
           }
           if (table === 'rental_shop_conditions') {
             return {
               select: jest.fn().mockReturnValue({
-                eq: jest.fn().mockReturnValue({
-                  eq: jest.fn().mockReturnValue({
-                    maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
-                  }),
-                }),
+                eq: jest.fn().mockResolvedValue({ data: [], error: null }),
               }),
               insert: jest.fn().mockImplementation((rows) => {
                 insertedConditions.push(...rows);
@@ -954,7 +941,7 @@ describe('Change Proposal Application & Geodata Protection', () => {
       expect(insertedConditions).toHaveLength(1);
       expect(insertedConditions[0]).toEqual({
         shop_id: 'shop-uuid-1',
-        condition_type_id: 'type-driver-license-uuid',
+        condition_type_id: 'type-license-uuid',
         condition_value: 'Valid driving license required',
       });
       expect(deletedConditions).toContain('Old condition');
@@ -1037,37 +1024,27 @@ describe('Change Proposal Application & Geodata Protection', () => {
           if (table === 'condition_types') {
             return {
               select: jest.fn().mockReturnValue({
-                eq: jest.fn().mockImplementation((_col, val) => ({
-                  maybeSingle: jest.fn().mockResolvedValue({
-                    data: { id: `type-${String(val).toLowerCase().replace(/[^a-z0-9]/g, '-')}-uuid`, name: val },
-                    error: null,
-                  }),
-                })),
-                limit: jest.fn().mockReturnValue({
-                  maybeSingle: jest.fn().mockResolvedValue({ data: { id: 'type-general-uuid', name: 'General Policy' }, error: null }),
+                limit: jest.fn().mockResolvedValue({
+                  data: [
+                    { id: 'type-license-uuid', name: 'Driver License' },
+                    { id: 'type-permit-uuid', name: 'Driving Permit' },
+                    { id: 'type-deposit-uuid', name: 'Security Deposit' },
+                    { id: 'type-general-uuid', name: 'General Policy' },
+                  ],
+                  error: null,
                 }),
               }),
-              insert: jest.fn().mockImplementation((row) => ({
-                select: jest.fn().mockReturnValue({
-                  single: jest.fn().mockResolvedValue({
-                    data: { id: `type-${String(row.name).toLowerCase().replace(/[^a-z0-9]/g, '-')}-uuid`, name: row.name },
-                    error: null,
-                  }),
-                }),
-              })),
             };
           }
           if (table === 'rental_shop_conditions') {
             return {
               select: jest.fn().mockReturnValue({
-                eq: jest.fn().mockImplementation((_col1, _val1) => ({
-                  eq: jest.fn().mockImplementation((_col2, val2) => ({
-                    maybeSingle: jest.fn().mockImplementation(() => {
-                      const exists = assignedIdsInDb.has(val2);
-                      return Promise.resolve({ data: exists ? { id: 'existing' } : null, error: null });
-                    }),
-                  })),
-                })),
+                eq: jest.fn().mockImplementation((_col, _val) =>
+                  Promise.resolve({
+                    data: Array.from(assignedIdsInDb).map((id) => ({ condition_type_id: id })),
+                    error: null,
+                  })
+                ),
               }),
               insert: jest.fn().mockImplementation((rows) => {
                 for (const row of rows) {
