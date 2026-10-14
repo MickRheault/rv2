@@ -246,6 +246,106 @@ describe('Change Proposal Application & Geodata Protection', () => {
       // Rejection should only apply to item-add-1, NOT item-unchanged-1
       expect(updateProposalItemsMock).toHaveBeenCalledWith({ status: 'rejected' });
       expect(rejectedInMock).toHaveBeenCalledWith('id', ['item-add-1']);
+
+      // Proposal status should resolve to 'rejected' when zero mutable items are approved
+      expect(updateProposalsMock).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'rejected' })
+      );
+    });
+
+    it('sets proposal status to partially_applied when some but not all mutable items are approved', async () => {
+      const proposalData = {
+        id: 'prop-3',
+        shop_id: 'shop-1',
+        status: 'pending',
+      };
+
+      const itemsData = [
+        {
+          id: 'item-unchanged-1',
+          proposal_id: 'prop-3',
+          entity_type: 'motorcycle',
+          action: 'unchanged',
+          entity_id: 'bike-unchanged-uuid',
+          brand_name: 'Honda',
+          model_name: 'Click 125i',
+          proposed_data: { year: 2023 },
+          status: 'applied',
+        },
+        {
+          id: 'item-update-1',
+          proposal_id: 'prop-3',
+          entity_type: 'motorcycle',
+          action: 'update',
+          entity_id: 'bike-update-uuid',
+          brand_name: 'Honda',
+          model_name: 'Click 125i',
+          proposed_data: { year: 2024 },
+          status: 'pending',
+        },
+        {
+          id: 'item-delist-1',
+          proposal_id: 'prop-3',
+          entity_type: 'motorcycle',
+          action: 'delist',
+          entity_id: 'bike-delist-uuid',
+          brand_name: 'Yamaha',
+          model_name: 'NMAX 155',
+          proposed_data: { availability_status: 'unavailable' },
+          status: 'pending',
+        },
+      ];
+
+      const updateRentalMock = jest.fn().mockReturnValue({
+        eq: jest.fn().mockResolvedValue({ error: null }),
+      });
+      const updateProposalItemsMock = jest.fn().mockReturnValue({
+        eq: jest.fn().mockResolvedValue({ error: null }),
+        in: jest.fn().mockResolvedValue({ error: null }),
+      });
+      const updateProposalsMock = jest.fn().mockReturnValue({
+        eq: jest.fn().mockResolvedValue({ error: null }),
+      });
+
+      const mockSupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({ data: proposalData, error: null }),
+                }),
+              }),
+              update: updateProposalsMock,
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ data: itemsData, error: null }),
+              }),
+              update: updateProposalItemsMock,
+            };
+          }
+          if (table === 'motorcycle_rentals') {
+            return {
+              update: updateRentalMock,
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      // Caller approves 1 of 2 mutable items
+      const result = await ChangeProposalService.apply('prop-3', ['item-update-1']);
+
+      expect(result.success).toBe(true);
+      expect(result.appliedCount).toBe(1);
+      expect(updateProposalsMock).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'partially_applied' })
+      );
     });
   });
 
@@ -363,6 +463,83 @@ describe('Change Proposal Application & Geodata Protection', () => {
       expect(addedItem).toBeDefined();
       expect(addedItem.status).toBe('pending');
       expect(addedItem.model_name).toBe('Forza 350');
+
+      getExistingInventorySpy.mockRestore();
+    });
+
+    it('stages proposal with status: "applied" when all observed inventory is unchanged', async () => {
+      const existingInventory = [
+        {
+          id: 'bike-existing-1',
+          brand_name: 'Honda',
+          model_name: 'Click 125i',
+          year: 2023,
+          engine_capacity_cc: 125,
+          availability_status: 'available',
+          rates: [{ min_days: 1, max_days: 6, rate_per_day: 250 }],
+        },
+      ];
+
+      const getExistingInventorySpy = jest
+        .spyOn(ChangeProposalService, 'getExistingShopInventory')
+        .mockResolvedValue(existingInventory as any);
+
+      let stagedProposal: any = null;
+
+      const mockSupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'rental_shops') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+                }),
+              }),
+            };
+          }
+          if (table === 'change_proposals') {
+            return {
+              insert: jest.fn((payload) => {
+                stagedProposal = payload;
+                return {
+                  select: jest.fn().mockReturnValue({
+                    single: jest.fn().mockResolvedValue({
+                      data: { id: 'prop-unchanged-all', ...payload },
+                      error: null,
+                    }),
+                  }),
+                };
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              insert: jest.fn().mockResolvedValue({ error: null }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      const crawlSnapshot = {
+        shopId: 'shop-uuid-1',
+        sourceUrl: 'https://example.com/rates',
+        bikes: [
+          {
+            brand: 'Honda',
+            modelName: 'Click 125i',
+            year: 2023,
+            rates: [{ minDays: 1, maxDays: 6, ratePerDay: 250 }],
+          },
+        ],
+      };
+
+      const result = await ChangeProposalService.createProposalFromCrawl(crawlSnapshot);
+
+      expect(result.proposal.status).toBe('applied');
+      expect(stagedProposal.status).toBe('applied');
 
       getExistingInventorySpy.mockRestore();
     });

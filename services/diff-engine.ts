@@ -173,8 +173,8 @@ export function computeShopInventoryDiff(
         };
       }
 
-      if (crawled.rates && ratesDiffer(existing.rates, crawled.rates)) {
-        diffSummary.rates = { old: existing.rates, new: crawled.rates };
+      if (ratesDiffer(existing.rates, crawled.rates || [])) {
+        diffSummary.rates = { old: existing.rates, new: crawled.rates || [] };
       }
 
       if (Object.keys(diffSummary).length > 0) {
