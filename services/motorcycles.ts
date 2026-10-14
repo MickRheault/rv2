@@ -304,10 +304,14 @@ function applyActiveShopStatusFilterSync(query: any, activeStatusIds: number[]):
   return query.eq('rental_shops.id', 'impossible-id-that-will-never-match')
 }
 
-async function applyLocationAndActiveShopFilters(
+// IMPORTANT: Must remain synchronous! Supabase PostgrestFilterBuilder is a thenable (.then),
+// so returning it from an async function causes Promise resolution to execute the query
+// prematurely and resolve to { data, error }, breaking subsequent .order()/.range() calls.
+function applyLocationAndActiveShopFiltersSync(
   query: any,
-  filters: LocationFilterScope
-): Promise<any> {
+  filters: LocationFilterScope,
+  activeStatusIds: number[]
+): any {
   const { cityId, provinceId, countryCode } = filters
   if (cityId) {
     query = query.eq('rental_shops.city_id', cityId)
@@ -317,7 +321,6 @@ async function applyLocationAndActiveShopFilters(
     query = query.eq('rental_shops.cities.provinces.country_code', countryCode)
   }
 
-  const activeStatusIds = await getActiveBusinessStatusIdsForMotorcycles()
   return applyActiveShopStatusFilterSync(query, activeStatusIds)
 }
 
@@ -407,7 +410,12 @@ export const motorcycleService = {
         )
       `)
 
-    query = await applyLocationAndActiveShopFilters(query, { cityId, provinceId, countryCode })
+    const activeStatusIds = await getActiveBusinessStatusIdsForMotorcycles()
+    query = applyLocationAndActiveShopFiltersSync(
+      query,
+      { cityId, provinceId, countryCode },
+      activeStatusIds
+    )
 
     if (hasUnresolvedLocationQuery && locationQuery) {
       query = query.ilike('rental_shops.cities.name', `%${locationQuery}%`)
@@ -484,8 +492,13 @@ export const motorcycleService = {
         )
       `, { count: 'exact' })
 
-    // Apply location and active shop status filters
-    query = await applyLocationAndActiveShopFilters(query, { cityId, provinceId, countryCode })
+    // Apply location and active shop status filters synchronously
+    const activeStatusIds = await getActiveBusinessStatusIdsForMotorcycles()
+    query = applyLocationAndActiveShopFiltersSync(
+      query,
+      { cityId, provinceId, countryCode },
+      activeStatusIds
+    )
 
     // Apply motorcycle filters
     if (brandId) {

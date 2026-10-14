@@ -294,4 +294,83 @@ describe('Search Location N+1 Elimination (#113)', () => {
     popSpy.mockRestore()
     filterSpy.mockRestore()
   })
+
+  it('does not prematurely await the thenable PostgrestFilterBuilder before .order() and .range() in getSearchTableMotorcycles and getMotorcycles', async () => {
+    const { motorcycleService } = require('@/services/motorcycles')
+
+    // Real @supabase/postgrest-js builders are thenables (.then is defined on every builder step).
+    // Returning a builder from an async helper causes JS Promise resolution to unwrap .then()
+    // into { data, error }, causing subsequent .order() calls to throw "query.order is not a function".
+    const createThenableBuilder = (resolvedValue: any) => {
+      const calls: string[] = []
+      const builder: any = {
+        select: jest.fn(() => {
+          calls.push('select')
+          return builder
+        }),
+        eq: jest.fn(() => {
+          calls.push('eq')
+          return builder
+        }),
+        in: jest.fn(() => {
+          calls.push('in')
+          return builder
+        }),
+        ilike: jest.fn(() => {
+          calls.push('ilike')
+          return builder
+        }),
+        order: jest.fn(() => {
+          calls.push('order')
+          return builder
+        }),
+        range: jest.fn(() => {
+          calls.push('range')
+          return builder
+        }),
+        then: (onfulfilled?: any, onrejected?: any) => {
+          calls.push('then')
+          return Promise.resolve(resolvedValue).then(onfulfilled, onrejected)
+        },
+      }
+      return { builder, calls }
+    }
+
+    const statusQuery = createThenableBuilder({ data: [{ id: 1 }], error: null })
+    const tableQuery = createThenableBuilder({
+      data: [{ id: 'm-1', model: 'Click 125' }],
+      error: null,
+      count: 1,
+    })
+    const paginatedQuery = createThenableBuilder({
+      data: [{ id: 'm-2', model: 'PCX 160' }],
+      error: null,
+      count: 1,
+    })
+
+    let motorcycleCallCount = 0
+    ;(supabase.from as jest.Mock).mockImplementation((table: string) => {
+      if (table === 'business_statuses') return statusQuery.builder
+      if (table === 'motorcycle_rentals') {
+        motorcycleCallCount += 1
+        return motorcycleCallCount === 1 ? tableQuery.builder : paginatedQuery.builder
+      }
+      throw new Error(`Unexpected table: ${table}`)
+    })
+
+    const tableRes = await motorcycleService.getSearchTableMotorcycles({
+      cityId: 'city-bangkok',
+      limit: 500,
+    })
+    expect(tableRes.motorcycles).toHaveLength(1)
+    expect(tableQuery.calls).toEqual(['select', 'eq', 'in', 'order', 'range', 'then'])
+
+    const paginatedRes = await motorcycleService.getMotorcycles({
+      cityId: 'city-bangkok',
+      limit: 20,
+      offset: 0,
+    })
+    expect(paginatedRes.motorcycles).toHaveLength(1)
+    expect(paginatedQuery.calls).toEqual(['select', 'eq', 'in', 'order', 'range', 'then'])
+  })
 })
