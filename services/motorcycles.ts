@@ -76,6 +76,12 @@ export interface SearchFilters {
   offset?: number
 }
 
+export type LocationFilterScope = Pick<SearchFilters, 'cityId' | 'provinceId' | 'countryCode'>
+
+export function hasLocationFilter(filters?: LocationFilterScope): boolean {
+  return Boolean(filters?.cityId || filters?.provinceId || filters?.countryCode)
+}
+
 export interface FilterOptions {
   brands: Array<{ id: string; name: string; count: number }>
   categories: Array<{ id: string; name: string; description: string | null; count: number }>
@@ -952,8 +958,7 @@ export const motorcycleService = {
 
   // Get structured filter options with counts based on current filters
   async getFilterOptions(currentFilters?: Pick<SearchFilters, 'cityId' | 'provinceId' | 'countryCode' | 'brandId' | 'categoryId' | 'model'>): Promise<FilterOptions> {
-    const hasLocationFilter = Boolean(currentFilters?.cityId || currentFilters?.provinceId || currentFilters?.countryCode)
-    const locationSelect = hasLocationFilter
+    const locationSelect = hasLocationFilter(currentFilters)
       ? `,
         rental_shops!inner (
           city_id,
@@ -1064,11 +1069,10 @@ export const motorcycleService = {
         modelCounts[key].count++
       }
 
-      // Count features from projected feature_id (or nested features.id fallback)
+      // Count features from projected feature_id
       motorcycleFeatures.forEach((mf: any) => {
-        const featureId = mf?.feature_id || mf?.features?.id
-        if (featureId) {
-          featureCounts[featureId] = (featureCounts[featureId] || 0) + 1
+        if (mf?.feature_id) {
+          featureCounts[mf.feature_id] = (featureCounts[mf.feature_id] || 0) + 1
         }
       })
     })

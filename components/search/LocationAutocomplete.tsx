@@ -14,7 +14,7 @@ import { Input, Spinner, Card } from '@/components/ui'
 import { searchService, LocationSearchResult } from '@/services/search'
 import {
   POPULAR_LOCATIONS_TTL_MS,
-  readCachedPopularLocations,
+  readCachedPopularLocationsEntry,
   writeCachedPopularLocations
 } from '@/lib/cache/popularLocationsCache'
 
@@ -51,11 +51,13 @@ export default function LocationAutocomplete({
   // Close dropdown when clicking outside
   useClickOutside(containerRef, () => setIsOpen(false))
 
-  // Resolve initial popular locations from server props or client localStorage TTL cache
-  const resolvedInitialPopular = useMemo(
-    () => (initialPopularLocations?.length ? initialPopularLocations : readCachedPopularLocations()),
-    [initialPopularLocations]
-  )
+  // Resolve initial popular locations and timestamp from server props or client localStorage TTL cache
+  const resolvedInitialEntry = useMemo(() => {
+    if (initialPopularLocations?.length) {
+      return { data: initialPopularLocations, timestamp: Date.now() }
+    }
+    return readCachedPopularLocationsEntry()
+  }, [initialPopularLocations])
 
   useEffect(() => {
     if (initialPopularLocations?.length) {
@@ -80,17 +82,20 @@ export default function LocationAutocomplete({
       writeCachedPopularLocations(results)
       return results
     },
-    initialData: resolvedInitialPopular,
+    initialData: resolvedInitialEntry?.data,
+    initialDataUpdatedAt: resolvedInitialEntry?.timestamp,
     enabled: showPopularLocations,
     staleTime: POPULAR_LOCATIONS_TTL_MS,
     gcTime: 60 * 60 * 1000,
     refetchOnWindowFocus: false
   })
 
-  // Update local query only when controlled value prop changes externally
+  // Update local query when value prop changes
   useEffect(() => {
-    setQuery(value)
-  }, [value])
+    if (value !== query) {
+      setQuery(value)
+    }
+  }, [value, query])
 
   // Handle input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -173,7 +178,6 @@ export default function LocationAutocomplete({
   // Render location item
   const renderLocationItem = (location: LocationSearchResult, index: number) => (
     <button
-      type="button"
       key={`${location.type}-${location.id}`}
       onClick={() => handleLocationSelect(location)}
       className={clsx(
@@ -222,7 +226,6 @@ export default function LocationAutocomplete({
         {/* Clear button */}
         {query && (
           <button
-            type="button"
             onClick={handleClear}
             className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors"
             aria-label="Clear search"

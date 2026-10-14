@@ -5,7 +5,7 @@ import { SupabaseClient } from '@supabase/supabase-js'
 const typedSupabase = supabase as unknown as SupabaseClient<Database>
 import { motorcycleService, SearchFilters as MotorcycleFilters } from './motorcycles'
 import { shopService, ShopSearchFilters, ShopWithDetails } from './shops'
-import { locationService, CITY_WITH_COUNTS_SELECT, aggregateCityCounts, CityWithLocation } from './locations'
+import { locationService, CITY_WITH_COUNTS_SELECT, toCityWithCounts, CityWithLocation } from './locations'
 import { PremiumUtilsService } from './premium-listings'
 import { PremiumTier, PremiumFeatureConfig } from '@/types/premium-listings'
 
@@ -26,23 +26,20 @@ export interface LocationSearchResult {
 }
 
 function mapCityToLocationSearchResult(
-  city: CityWithLocation & { shopCount?: number; motorcycleCount?: number; rental_shops?: any[] }
+  city: CityWithLocation & { fullName?: string; shopCount?: number; motorcycleCount?: number; rental_shops?: any[] }
 ): LocationSearchResult {
-  const counts =
-    typeof city.shopCount === 'number' && typeof city.motorcycleCount === 'number'
-      ? { shopCount: city.shopCount, motorcycleCount: city.motorcycleCount }
-      : aggregateCityCounts(city)
+  const enriched = toCityWithCounts(city)
 
   return {
     type: 'city',
-    id: city.id,
-    name: city.name,
-    fullName: `${city.name}, ${city.provinces?.countries?.name || ''}`,
-    country: city.provinces?.countries || undefined,
-    province: city.provinces || undefined,
-    city,
-    shopCount: counts.shopCount,
-    motorcycleCount: counts.motorcycleCount
+    id: enriched.id,
+    name: enriched.name,
+    fullName: enriched.fullName,
+    country: enriched.provinces?.countries || undefined,
+    province: enriched.provinces || undefined,
+    city: enriched,
+    shopCount: enriched.shopCount,
+    motorcycleCount: enriched.motorcycleCount
   }
 }
 
@@ -237,20 +234,12 @@ export const searchService = {
         shops: sortedShops
       }
     } else {
-      // When only showing motorcycles, return empty shop results but get count
-      const countResults = await shopService.getShopsWithCounts({
-        ...resolvedLocationFilters,
-        query: otherFilters.query,
-        sortBy: otherFilters.sortBy === 'rating_desc' ? 'rating_desc' : 'newest',
-        limit: 1,
-        offset: 0
-      })
-      shopResults = { shops: [], total: countResults.total }
+      // When only showing motorcycles, skip shop queries
+      shopResults = { shops: [], total: 0 }
     }
 
-
-    // Get location suggestions if locationQuery was provided
-    const locationSuggestions = locationQuery
+    // Get location suggestions only when showing all content types and locationQuery was provided
+    const locationSuggestions = contentType === 'all' && locationQuery
       ? await this.searchLocations(locationQuery, 5)
       : []
 

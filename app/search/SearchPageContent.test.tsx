@@ -50,6 +50,13 @@ jest.mock('@/components/motorcycle/MotorcycleTable', () => {
 
 // Mock motorcycleService
 jest.mock('@/services/motorcycles', () => ({
+  hasLocationFilter: (filters?: any) =>
+    Boolean(
+      filters?.countryCode ||
+        filters?.provinceId ||
+        filters?.cityId ||
+        filters?.locationQuery
+    ),
   motorcycleService: {
     getFilterOptions: jest.fn(() =>
       Promise.resolve({
@@ -69,6 +76,7 @@ const mockSetQuery = jest.fn()
 const mockSelectLocation = jest.fn()
 const mockSearch = jest.fn()
 const mockClearSearch = jest.fn()
+let lastLocationSearchConfig: any = null
 
 let mockCurrentFilters: any = {}
 let mockResults: any = {
@@ -80,18 +88,21 @@ let mockIsLoading = false
 let mockHasSearched = true
 
 jest.mock('@/hooks/useLocationSearch', () => ({
-  useLocationSearch: (config: any) => ({
-    filters: mockCurrentFilters,
-    results: mockResults,
-    isLoading: mockIsLoading,
-    hasSearched: mockHasSearched,
-    query: '',
-    setQuery: mockSetQuery,
-    setFilters: mockSetFilters,
-    selectLocation: mockSelectLocation,
-    search: mockSearch,
-    clearSearch: mockClearSearch,
-  }),
+  useLocationSearch: (config: any) => {
+    lastLocationSearchConfig = config
+    return {
+      filters: mockCurrentFilters,
+      results: mockResults,
+      isLoading: mockIsLoading,
+      hasSearched: mockHasSearched,
+      query: '',
+      setQuery: mockSetQuery,
+      setFilters: mockSetFilters,
+      selectLocation: mockSelectLocation,
+      search: mockSearch,
+      clearSearch: mockClearSearch,
+    }
+  },
 }))
 
 function renderWithClient(ui: React.ReactElement) {
@@ -112,6 +123,8 @@ function renderWithClient(ui: React.ReactElement) {
 describe('SearchPageContent Top-Aligned Layout', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    window.localStorage.clear()
+    lastLocationSearchConfig = null
     mockSearchParams = new URLSearchParams()
     mockCurrentFilters = {}
     mockResults = {
@@ -123,11 +136,15 @@ describe('SearchPageContent Top-Aligned Layout', () => {
     mockHasSearched = true
   })
 
-  it('renders title and subtitle', () => {
+  it('renders title and subtitle and configures useLocationSearch with contentType: motorcycles (#114)', () => {
     renderWithClient(<SearchPageContent />)
 
     expect(screen.getByRole('heading', { name: 'Find Your Ride' })).toBeInTheDocument()
     expect(screen.getByText('Discover available motorcycles for rent')).toBeInTheDocument()
+    expect(lastLocationSearchConfig?.defaultFilters).toEqual({
+      limit: 20,
+      contentType: 'motorcycles',
+    })
   })
 
   it('initializes filters and triggers search from URL search params (including secondary filters)', () => {

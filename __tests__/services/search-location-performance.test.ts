@@ -156,4 +156,60 @@ describe('Search Location N+1 Elimination (#113)', () => {
       motorcycleCount: 17,
     })
   })
+
+  it('skips shopService.getShopsWithCounts and searchLocations when contentType is motorcycles (#114)', async () => {
+    const { motorcycleService } = require('@/services/motorcycles')
+    const { shopService } = require('@/services/shops')
+
+    const getMotorcyclesSpy = jest
+      .spyOn(motorcycleService, 'getMotorcycles')
+      .mockResolvedValue({ motorcycles: [{ id: 'm-1' }] as any, total: 1 })
+    const getShopsSpy = jest
+      .spyOn(shopService, 'getShopsWithCounts')
+      .mockResolvedValue({ shops: [], total: 0 })
+    const searchLocationsSpy = jest
+      .spyOn(searchService, 'searchLocations')
+      .mockResolvedValue([])
+
+    const result = await searchService.searchByLocation({
+      cityId: 'city-bangkok',
+      locationQuery: 'Bangkok',
+      contentType: 'motorcycles',
+      limit: 20,
+    })
+
+    expect(getMotorcyclesSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cityId: 'city-bangkok',
+        limit: 20,
+      })
+    )
+    expect(getShopsSpy).not.toHaveBeenCalled()
+    expect(searchLocationsSpy).not.toHaveBeenCalled()
+    expect(result.shops).toEqual({ shops: [], total: 0 })
+    expect(result.totalResults).toBe(1)
+
+    getMotorcyclesSpy.mockRestore()
+    getShopsSpy.mockRestore()
+    searchLocationsSpy.mockRestore()
+  })
+
+  it('configures ISR revalidate = 3600 on app/search/page.tsx and handles rejected prefetches gracefully (#115)', async () => {
+    const searchPageModule = require('@/app/search/page')
+    expect(searchPageModule.revalidate).toBe(3600)
+
+    const { motorcycleService } = require('@/services/motorcycles')
+    const popSpy = jest
+      .spyOn(searchService, 'getPopularSearchLocations')
+      .mockRejectedValue(new Error('network failure'))
+    const filterSpy = jest
+      .spyOn(motorcycleService, 'getFilterOptions')
+      .mockRejectedValue(new Error('db timeout'))
+
+    const element = await searchPageModule.default()
+    expect(element).toBeDefined()
+
+    popSpy.mockRestore()
+    filterSpy.mockRestore()
+  })
 })

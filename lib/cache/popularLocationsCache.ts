@@ -1,41 +1,78 @@
 import { LocationSearchResult } from '@/services/search'
+import { FilterOptions } from '@/services/motorcycles'
 
 export const POPULAR_LOCATIONS_STORAGE_KEY = 'rv2:popular-locations:v1'
 export const POPULAR_LOCATIONS_TTL_MS = 30 * 60 * 1000 // 30 minutes
 
-interface CachedPopularLocationsPayload {
+export const FILTER_OPTIONS_STORAGE_KEY = 'rv2:filter-options:v1'
+export const FILTER_OPTIONS_TTL_MS = 5 * 60 * 1000 // 5 minutes
+
+export interface CachedStorageEntry<T> {
   timestamp: number
-  data: LocationSearchResult[]
+  data: T
 }
 
-export function readCachedPopularLocations(): LocationSearchResult[] | undefined {
+function readStorageEntry<T>(
+  key: string,
+  ttlMs: number,
+  isValidData: (data: unknown) => data is T
+): CachedStorageEntry<T> | undefined {
   if (typeof window === 'undefined') return undefined
   try {
-    const raw = window.localStorage.getItem(POPULAR_LOCATIONS_STORAGE_KEY)
+    const raw = window.localStorage.getItem(key)
     if (!raw) return undefined
-    const parsed = JSON.parse(raw) as CachedPopularLocationsPayload
-    if (!parsed || typeof parsed.timestamp !== 'number' || !Array.isArray(parsed.data)) {
+    const parsed = JSON.parse(raw) as CachedStorageEntry<unknown>
+    if (!parsed || typeof parsed.timestamp !== 'number' || !isValidData(parsed.data)) {
       return undefined
     }
-    if (Date.now() - parsed.timestamp > POPULAR_LOCATIONS_TTL_MS) {
-      window.localStorage.removeItem(POPULAR_LOCATIONS_STORAGE_KEY)
+    if (Date.now() - parsed.timestamp > ttlMs) {
+      window.localStorage.removeItem(key)
       return undefined
     }
-    return parsed.data
+    return { timestamp: parsed.timestamp, data: parsed.data }
   } catch {
     return undefined
   }
 }
 
-export function writeCachedPopularLocations(data: LocationSearchResult[]): void {
+function writeStorageEntry<T>(key: string, data: T): void {
   if (typeof window === 'undefined') return
   try {
-    const payload: CachedPopularLocationsPayload = {
+    const payload: CachedStorageEntry<T> = {
       timestamp: Date.now(),
       data
     }
-    window.localStorage.setItem(POPULAR_LOCATIONS_STORAGE_KEY, JSON.stringify(payload))
+    window.localStorage.setItem(key, JSON.stringify(payload))
   } catch {
     // Ignore storage quota or private mode errors
   }
+}
+
+export function readCachedPopularLocationsEntry(): CachedStorageEntry<LocationSearchResult[]> | undefined {
+  return readStorageEntry(
+    POPULAR_LOCATIONS_STORAGE_KEY,
+    POPULAR_LOCATIONS_TTL_MS,
+    (data): data is LocationSearchResult[] => Array.isArray(data)
+  )
+}
+
+export function readCachedPopularLocations(): LocationSearchResult[] | undefined {
+  return readCachedPopularLocationsEntry()?.data
+}
+
+export function writeCachedPopularLocations(data: LocationSearchResult[]): void {
+  writeStorageEntry(POPULAR_LOCATIONS_STORAGE_KEY, data)
+}
+
+export function readCachedFilterOptionsEntry(): CachedStorageEntry<FilterOptions> | undefined {
+  return readStorageEntry(
+    FILTER_OPTIONS_STORAGE_KEY,
+    FILTER_OPTIONS_TTL_MS,
+    (data): data is FilterOptions =>
+      Boolean(data && typeof data === 'object' && Array.isArray((data as FilterOptions).brands))
+  )
+}
+
+export function writeCachedFilterOptions(data: FilterOptions): void {
+  writeStorageEntry(FILTER_OPTIONS_STORAGE_KEY, data)
 }

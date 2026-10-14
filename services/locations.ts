@@ -22,23 +22,23 @@ export interface CityWithLocation extends City {
   }) | null
 }
 
+export interface CityWithCounts extends CityWithLocation {
+  fullName: string
+  shopCount: number
+  motorcycleCount: number
+}
+
 export const CITY_WITH_COUNTS_SELECT = `
   id,
   name,
   province_id,
-  created_at,
-  updated_at,
   provinces (
     id,
     name,
     country_code,
-    created_at,
-    updated_at,
     countries (
       code,
-      name,
-      created_at,
-      updated_at
+      name
     )
   ),
   rental_shops (
@@ -47,14 +47,25 @@ export const CITY_WITH_COUNTS_SELECT = `
   )
 `
 
-export function aggregateCityCounts(city: any): { shopCount: number; motorcycleCount: number } {
+function countShopMotorcycles(shop: any): number {
+  const counts = shop?.motorcycle_rentals
+  return Array.isArray(counts) && counts[0]?.count ? counts[0].count : 0
+}
+
+export function toCityWithCounts(city: any): CityWithCounts {
   const shops = Array.isArray(city?.rental_shops) ? city.rental_shops : []
-  const shopCount = shops.length
-  const motorcycleCount = shops.reduce(
-    (sum: number, shop: any) => sum + (shop?.motorcycle_rentals?.[0]?.count || 0),
-    0
-  )
-  return { shopCount, motorcycleCount }
+  const shopCount = typeof city?.shopCount === 'number' ? city.shopCount : shops.length
+  const motorcycleCount =
+    typeof city?.motorcycleCount === 'number'
+      ? city.motorcycleCount
+      : shops.reduce((sum: number, shop: any) => sum + countShopMotorcycles(shop), 0)
+  const countryName = city?.provinces?.countries?.name || ''
+  return {
+    ...(city as CityWithLocation),
+    fullName: `${city.name}, ${countryName}`,
+    shopCount,
+    motorcycleCount
+  }
 }
 
 export const locationService = {
@@ -354,12 +365,9 @@ export const locationService = {
 
     // Count shops and motorcycles per city and sort by popularity
     const citiesWithCounts = ((data as any[]) || [])
-      .map((city: any) => ({
-        ...(city as CityWithLocation),
-        ...aggregateCityCounts(city)
-      }))
-      .filter((city: any) => city.shopCount > 0)
-      .sort((a: any, b: any) => b.shopCount - a.shopCount)
+      .map((city: any) => toCityWithCounts(city))
+      .filter((city: CityWithCounts) => city.shopCount > 0)
+      .sort((a: CityWithCounts, b: CityWithCounts) => b.shopCount - a.shopCount)
       .slice(0, limit)
 
     return citiesWithCounts

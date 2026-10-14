@@ -66,7 +66,7 @@ describe('motorcycleService.getFilterOptions', () => {
         brands: { id: 'b-honda', name: 'Honda' },
         categories: { id: 'c-scooter', name: 'Scooter', description: 'Easy commuting' },
         motorcycle_features: [
-          { features: { id: 'f-1', name: 'ABS', description: 'Anti-lock braking' } },
+          { feature_id: 'f-1' },
         ],
         rental_shops: {
           city_id: 'city-1',

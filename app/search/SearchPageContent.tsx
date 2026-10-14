@@ -5,7 +5,12 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { useLocationSearch } from '@/hooks/useLocationSearch'
 import { LocationSearchResult, LocationBasedSearchFilters } from '@/services/search'
-import { motorcycleService, FilterOptions } from '@/services/motorcycles'
+import { motorcycleService, FilterOptions, hasLocationFilter } from '@/services/motorcycles'
+import {
+  FILTER_OPTIONS_TTL_MS,
+  readCachedFilterOptionsEntry,
+  writeCachedFilterOptions
+} from '@/lib/cache/popularLocationsCache'
 import MotorcycleTable from '@/components/motorcycle/MotorcycleTable'
 import { LocationAutocomplete } from '@/components/search'
 import { Button } from '@/components/ui'
@@ -95,13 +100,23 @@ export default function SearchPageContent({
     }
   })
 
-  const hasActiveLocationFilter = Boolean(
-    locationSearch.filters.cityId ||
-    locationSearch.filters.provinceId ||
-    locationSearch.filters.countryCode
-  )
+  const hasActiveLocation = hasLocationFilter(locationSearch.filters)
 
-  // Load filter options based on active location filter with React Query caching
+  const resolvedInitialFilterEntry = useMemo(() => {
+    if (hasActiveLocation) return undefined
+    if (initialFilterOptions) {
+      return { data: initialFilterOptions, timestamp: Date.now() }
+    }
+    return readCachedFilterOptionsEntry()
+  }, [hasActiveLocation, initialFilterOptions])
+
+  useEffect(() => {
+    if (initialFilterOptions) {
+      writeCachedFilterOptions(initialFilterOptions)
+    }
+  }, [initialFilterOptions])
+
+  // Load filter options based on active location filter with React Query and localStorage caching
   const {
     data: filterOptions,
     isLoading: loadingFilterOptions,
@@ -114,14 +129,20 @@ export default function SearchPageContent({
       locationSearch.filters.provinceId,
       locationSearch.filters.countryCode
     ],
-    queryFn: () =>
-      motorcycleService.getFilterOptions({
+    queryFn: async () => {
+      const options = await motorcycleService.getFilterOptions({
         cityId: locationSearch.filters.cityId,
         provinceId: locationSearch.filters.provinceId,
         countryCode: locationSearch.filters.countryCode
-      }),
-    initialData: hasActiveLocationFilter ? undefined : initialFilterOptions,
-    staleTime: 5 * 60 * 1000,
+      })
+      if (!hasActiveLocation) {
+        writeCachedFilterOptions(options)
+      }
+      return options
+    },
+    initialData: resolvedInitialFilterEntry?.data,
+    initialDataUpdatedAt: resolvedInitialFilterEntry?.timestamp,
+    staleTime: FILTER_OPTIONS_TTL_MS,
     refetchOnWindowFocus: false
   })
 

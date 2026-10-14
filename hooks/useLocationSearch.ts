@@ -7,8 +7,6 @@ export interface UseLocationSearchOptions {
   debounceMs?: number
   minQueryLength?: number
   enableAutoSearch?: boolean
-  enableSuggestions?: boolean
-  enablePopularLocations?: boolean
   defaultFilters?: Partial<LocationBasedSearchFilters>
 }
 
@@ -57,8 +55,6 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
     debounceMs = 300,
     minQueryLength = 2,
     enableAutoSearch = true,
-    enableSuggestions = false,
-    enablePopularLocations = false,
     defaultFilters = {}
   } = options
 
@@ -90,16 +86,25 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
   const {
     data: results,
     isLoading: isSearchLoading,
-    error: searchError,
-    refetch: executeSearch
+    error: searchError
   } = useQuery({
     queryKey: ['location-search', filters],
     queryFn: async () => {
+      console.log('🔍 React Query executing search with filters:', filters)
       try {
-        return await searchService.searchByLocation(filters)
+        const searchResults = await searchService.searchByLocation(filters)
+        console.log('✅ Search completed successfully:', {
+          totalResults: searchResults.totalResults,
+          motorcycles: searchResults.motorcycles.total,
+          shops: searchResults.shops.total,
+          shopOffset: filters.offset
+        })
+        return searchResults
       } catch (error: any) {
+        console.error('❌ Search failed:', error)
         // If we get a range not satisfiable error, retry with offset 0
         if (error?.code === 'PGRST103' || error?.message?.includes('Requested range not satisfiable')) {
+          console.warn('Pagination offset out of range, resetting to first page')
           const resetFilters = { ...filters, offset: 0 }
           setFiltersState(resetFilters)
           return await searchService.searchByLocation(resetFilters)
@@ -110,24 +115,8 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
     enabled: hasSearched || (enableAutoSearch && hasActiveCriteria) // Keep enabled once searched or when auto-search conditions are met
   })
 
-  // Location suggestions query (for autocomplete, opt-in when not using LocationAutocomplete)
-  const {
-    data: locationSuggestions = [],
-    isLoading: isSuggestionsLoading
-  } = useQuery({
-    queryKey: ['location-suggestions', query],
-    queryFn: () => searchService.searchLocations(query, 10),
-    enabled: enableSuggestions && query.length >= minQueryLength,
-    staleTime: 5 * 60 * 1000 // 5 minutes
-  })
-
-  // Popular locations query (opt-in when not using LocationAutocomplete)
-  const { data: popularLocations = [] } = useQuery({
-    queryKey: ['popular-locations'],
-    queryFn: () => searchService.getPopularSearchLocations(10),
-    enabled: enablePopularLocations,
-    staleTime: 30 * 60 * 1000 // 30 minutes
-  })
+  const locationSuggestions: LocationSearchResult[] = []
+  const popularLocations: LocationSearchResult[] = []
 
   // Mark search active when auto-search criteria are met (React Query handles the fetch via queryKey)
   const debouncedSearch = useMemo(() => {
@@ -203,11 +192,10 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
     })
   }, [results])
 
-  // Manual search function
+  // Manual search function (React Query executes via enabled + ['location-search', filters])
   const search = useCallback(() => {
-    executeSearch()
     setHasSearched(true)
-  }, [executeSearch])
+  }, [])
 
   // Clear search function
   const clearSearch = useCallback(() => {
@@ -278,13 +266,8 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
     
     console.log('Setting new offset:', newOffset, 'for page:', validPage)
     setFilters({ offset: newOffset })
-    
-    // Trigger search after updating offset
-    setTimeout(() => {
-      console.log('Executing search with new offset')
-      executeSearch()
-    }, 0)
-  }, [filters.limit, filters.offset, results?.totalResults, setFilters, executeSearch])
+    setHasSearched(true)
+  }, [filters.limit, filters.offset, results?.totalResults, setFilters])
 
   const nextPage = useCallback(() => {
     const currentPage = Math.floor((filters.offset || 0) / (filters.limit || 5)) + 1
@@ -303,12 +286,8 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
 
   const setPageSize = useCallback((limit: number) => {
     setFilters({ limit, offset: 0 }) // Reset to first page when changing page size
-    
-    // Trigger search after updating page size
-    setTimeout(() => {
-      executeSearch()
-    }, 0)
-  }, [setFilters, executeSearch])
+    setHasSearched(true)
+  }, [setFilters])
 
   // Pagination info
   const paginationInfo = useMemo(() => {
@@ -336,7 +315,7 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
     // Search state
     query,
     filters,
-    isSearching: isSearchLoading || isSuggestionsLoading,
+    isSearching: isSearchLoading,
     
     // Results
     results: results || null,
@@ -373,13 +352,14 @@ export function useLocationAutocomplete(initialQuery = '') {
   const { data: suggestions = [], isLoading } = useQuery({
     queryKey: ['location-autocomplete', query],
     queryFn: () => searchService.searchLocations(query, 8),
-    enabled: query.length >= 2,
+    enabled: isOpen && query.length >= 2,
     staleTime: 5 * 60 * 1000
   })
 
   const { data: popularLocations = [] } = useQuery({
     queryKey: ['popular-locations-autocomplete'],
-    queryFn: () => searchService.getPopularSearchLocations(1000),
+    queryFn: () => searchService.getPopularSearchLocations(6),
+    enabled: isOpen,
     staleTime: 30 * 60 * 1000
   })
 
