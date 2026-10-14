@@ -115,6 +115,27 @@ export const searchService = {
       ...otherFilters
     } = filters
 
+    const contentType = otherFilters.contentType || 'all'
+
+    if (contentType === 'motorcycles') {
+      const tableLimit = Math.max(1, Math.min(500, otherFilters.limit || 500))
+      const motorcycleResults = await motorcycleService.getSearchTableMotorcycles({
+        cityId,
+        provinceId,
+        countryCode,
+        locationQuery,
+        query: otherFilters.query,
+        limit: tableLimit
+      })
+
+      return {
+        motorcycles: motorcycleResults,
+        shops: { shops: [], total: 0 },
+        locations: [],
+        totalResults: motorcycleResults.total
+      }
+    }
+
     let resolvedLocationFilters: Pick<MotorcycleFilters, 'cityId' | 'provinceId' | 'countryCode'> = {}
 
     // If locationQuery is provided, resolve it to specific location IDs
@@ -157,20 +178,19 @@ export const searchService = {
     // Validate pagination parameters
     const limit = Math.max(1, Math.min(100, otherFilters.limit || 20))
     const offset = Math.max(0, otherFilters.offset || 0)
-    const contentType = otherFilters.contentType || 'all'
 
     // Search based on content type to avoid pagination conflicts
     let motorcycleResults: Awaited<ReturnType<typeof motorcycleService.getMotorcycles>>
     let shopResults: { shops: (ShopWithDetails & { premium?: PremiumFeatureConfig })[], total: number }
 
-    if (contentType === 'motorcycles' || contentType === 'all') {
+    if (contentType === 'all') {
       motorcycleResults = await motorcycleService.getMotorcycles({
         ...otherFilters,
         brandId: resolvedBrandId,
         categoryId: resolvedCategoryId,
         ...resolvedLocationFilters,
-        limit: contentType === 'motorcycles' ? limit : 1000, // Get all for counts when showing 'all'
-        offset: contentType === 'motorcycles' ? offset : 0
+        limit: 1000, // Get all for counts when showing 'all'
+        offset: 0
       })
     } else {
       // When only showing shops, return empty motorcycle results but get count

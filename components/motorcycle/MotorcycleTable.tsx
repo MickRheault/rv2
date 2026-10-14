@@ -19,18 +19,29 @@ interface MotorcycleTableProps {
     motorcycles: any[]
     title?: string
     showShopColumn?: boolean
+    preserveInitialOrder?: boolean
 }
 
 type SortKey = 'bike' | 'shop' | 'type' | 'cc' | 'price'
 type SortDirection = 'asc' | 'desc'
 
-export default function MotorcycleTable({ motorcycles, title, showShopColumn = false }: MotorcycleTableProps) {
+export default function MotorcycleTable({
+    motorcycles,
+    title,
+    showShopColumn = false,
+    preserveInitialOrder = false
+}: MotorcycleTableProps) {
     const router = useRouter()
     const [isExpanded, setIsExpanded] = useState(false)
-    const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection }>({
-        key: 'bike',
-        direction: 'asc'
-    })
+    const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection } | null>(
+        preserveInitialOrder ? null : { key: 'bike', direction: 'asc' }
+    )
+
+    React.useEffect(() => {
+        if (preserveInitialOrder) {
+            setSortConfig(null)
+        }
+    }, [motorcycles, preserveInitialOrder])
 
     // Helper to get best rate for sorting
     const getBestRateValue = (motorcycle: any) => {
@@ -46,6 +57,7 @@ export default function MotorcycleTable({ motorcycles, title, showShopColumn = f
     // Sort motorcycles based on sortConfig
     const sortedMotorcycles = useMemo(() => {
         if (!motorcycles) return []
+        if (!sortConfig) return motorcycles
         return [...motorcycles].sort((a, b) => {
             let valA: any = ''
             let valB: any = ''
@@ -83,14 +95,14 @@ export default function MotorcycleTable({ motorcycles, title, showShopColumn = f
 
     const requestSort = (key: SortKey) => {
         let direction: SortDirection = 'asc'
-        if (sortConfig.key === key && sortConfig.direction === 'asc') {
+        if (sortConfig?.key === key && sortConfig.direction === 'asc') {
             direction = 'desc'
         }
         setSortConfig({ key, direction })
     }
 
     const SortIndicator = ({ columnKey }: { columnKey: SortKey }) => {
-        if (sortConfig.key !== columnKey) return <ChevronUpDownIcon className="w-3 h-3 ml-1 text-gray-300" />
+        if (sortConfig?.key !== columnKey) return <ChevronUpDownIcon className="w-3 h-3 ml-1 text-gray-300" />
         return sortConfig.direction === 'asc'
             ? <ChevronUpIcon className="w-3 h-3 ml-1 text-blue-500" />
             : <ChevronDownIcon className="w-3 h-3 ml-1 text-blue-500" />
@@ -114,12 +126,17 @@ export default function MotorcycleTable({ motorcycles, title, showShopColumn = f
                 <div className="md:hidden flex gap-2">
                     <select
                         className="text-sm bg-white border border-gray-200 rounded px-2 py-1.5 w-full font-medium text-gray-700"
-                        value={`${sortConfig.key}-${sortConfig.direction}`}
+                        value={sortConfig ? `${sortConfig.key}-${sortConfig.direction}` : preserveInitialOrder ? '' : 'bike-asc'}
                         onChange={(e) => {
+                            if (!e.target.value) {
+                                setSortConfig(null)
+                                return
+                            }
                             const [key, direction] = e.target.value.split('-') as [SortKey, SortDirection]
                             setSortConfig({ key, direction })
                         }}
                     >
+                        {preserveInitialOrder && <option value="">Default Sort</option>}
                         <option value="bike-asc">Bike (A-Z)</option>
                         <option value="price-asc">Price (Low to High)</option>
                         <option value="price-desc">Price (High to Low)</option>

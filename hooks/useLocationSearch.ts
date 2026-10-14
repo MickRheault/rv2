@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { searchService, LocationBasedSearchFilters, LocationSearchResult } from '@/services/search'
+import { filterAndSortMotorcycles, MotorcycleWithDetails } from '@/services/motorcycles'
 import { debounce } from '@/lib/utils'
 
 export interface UseLocationSearchOptions {
@@ -18,6 +19,7 @@ export interface LocationSearchState {
   
   // Results
   results: Awaited<ReturnType<typeof searchService.searchByLocation>> | null
+  locationMotorcycles: MotorcycleWithDetails[]
   locationSuggestions: LocationSearchResult[]
   popularLocations: LocationSearchResult[]
   
@@ -82,22 +84,46 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
     filters.maxEngineCapacity !== undefined
   )
 
-  // Main search query
+  const isMotorcycleOnly = filters.contentType === 'motorcycles'
+
+  const motorcycleLocationQueryFilters = useMemo<LocationBasedSearchFilters>(
+    () => ({
+      cityId: filters.cityId,
+      provinceId: filters.provinceId,
+      countryCode: filters.countryCode,
+      locationQuery: filters.locationQuery,
+      query: filters.query,
+      contentType: 'motorcycles',
+      limit: 500,
+      offset: 0
+    }),
+    [
+      filters.cityId,
+      filters.provinceId,
+      filters.countryCode,
+      filters.locationQuery,
+      filters.query
+    ]
+  )
+
+  const activeQueryFilters = isMotorcycleOnly ? motorcycleLocationQueryFilters : filters
+
+  // Main search query (for motorcycle-only mode, network fetch is keyed only by location/query scope)
   const {
-    data: results,
+    data: rawResults,
     isLoading: isSearchLoading,
     error: searchError
   } = useQuery({
-    queryKey: ['location-search', filters],
+    queryKey: ['location-search', activeQueryFilters],
     queryFn: async () => {
-      console.log('🔍 React Query executing search with filters:', filters)
+      console.log('🔍 React Query executing search with filters:', activeQueryFilters)
       try {
-        const searchResults = await searchService.searchByLocation(filters)
+        const searchResults = await searchService.searchByLocation(activeQueryFilters)
         console.log('✅ Search completed successfully:', {
           totalResults: searchResults.totalResults,
           motorcycles: searchResults.motorcycles.total,
           shops: searchResults.shops.total,
-          shopOffset: filters.offset
+          shopOffset: activeQueryFilters.offset
         })
         return searchResults
       } catch (error: any) {
@@ -105,15 +131,41 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
         // If we get a range not satisfiable error, retry with offset 0
         if (error?.code === 'PGRST103' || error?.message?.includes('Requested range not satisfiable')) {
           console.warn('Pagination offset out of range, resetting to first page')
-          const resetFilters = { ...filters, offset: 0 }
-          setFiltersState(resetFilters)
+          const resetFilters = { ...activeQueryFilters, offset: 0 }
+          setFiltersState(prev => ({ ...prev, offset: 0 }))
           return await searchService.searchByLocation(resetFilters)
         }
         throw error
       }
     },
-    enabled: hasSearched || (enableAutoSearch && hasActiveCriteria) // Keep enabled once searched or when auto-search conditions are met
+    enabled: hasSearched || (enableAutoSearch && hasActiveCriteria), // Keep enabled once searched or when auto-search conditions are met
+    staleTime: isMotorcycleOnly ? 5 * 60 * 1000 : undefined,
+    refetchOnWindowFocus: isMotorcycleOnly ? false : undefined
   })
+
+  const locationMotorcycles = useMemo<MotorcycleWithDetails[]>(
+    () => rawResults?.motorcycles.motorcycles ?? [],
+    [rawResults]
+  )
+
+  const results = useMemo(() => {
+    if (!rawResults) return null
+    if (!isMotorcycleOnly) return rawResults
+
+    const filteredMotorcycles = filterAndSortMotorcycles(
+      rawResults.motorcycles.motorcycles,
+      filters
+    )
+
+    return {
+      ...rawResults,
+      motorcycles: {
+        motorcycles: filteredMotorcycles,
+        total: filteredMotorcycles.length
+      },
+      totalResults: filteredMotorcycles.length
+    }
+  }, [rawResults, isMotorcycleOnly, filters])
 
   const locationSuggestions: LocationSearchResult[] = []
   const popularLocations: LocationSearchResult[] = []
@@ -237,7 +289,10 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
       offset: 0 // Reset pagination
     })
     setQuery(location.fullName)
-  }, [setFilters])
+    if (isMotorcycleOnly) {
+      setHasSearched(true)
+    }
+  }, [setFilters, isMotorcycleOnly])
 
   // Update query and location filters
   const setQueryWithLocation = useCallback((newQuery: string) => {
@@ -319,6 +374,7 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
     
     // Results
     results: results || null,
+    locationMotorcycles,
     locationSuggestions,
     popularLocations,
     

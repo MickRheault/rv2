@@ -2,12 +2,15 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useQuery } from '@tanstack/react-query'
 import { useLocationSearch } from '@/hooks/useLocationSearch'
 import { LocationSearchResult, LocationBasedSearchFilters } from '@/services/search'
-import { motorcycleService, FilterOptions, hasLocationFilter } from '@/services/motorcycles'
 import {
-  FILTER_OPTIONS_TTL_MS,
+  FilterOptions,
+  DerivedFilterOptions,
+  deriveFilterOptionsFromMotorcycles,
+  hasLocationFilter
+} from '@/services/motorcycles'
+import {
   readCachedFilterOptionsEntry,
   writeCachedFilterOptions
 } from '@/lib/cache/popularLocationsCache'
@@ -23,15 +26,6 @@ const SORT_OPTIONS: { value: SortByType; label: string }[] = [
   { value: 'price_desc', label: 'Price: High to Low' },
   { value: 'rating_desc', label: 'Highest Rated' },
 ]
-
-function FilterSkeleton() {
-  return (
-    <div
-      data-testid="search-filters-skeleton"
-      className="h-10 bg-gray-100 rounded animate-pulse"
-    />
-  )
-}
 
 interface RangeFilterInputProps {
   label: string
@@ -80,6 +74,12 @@ export interface SearchPageContentProps {
   initialFilterOptions?: FilterOptions
 }
 
+const EMPTY_FILTER_OPTIONS: DerivedFilterOptions = {
+  brands: [],
+  categories: [],
+  models: []
+}
+
 export default function SearchPageContent({
   initialPopularLocations,
   initialFilterOptions
@@ -100,15 +100,10 @@ export default function SearchPageContent({
     }
   })
 
-  const hasActiveLocation = hasLocationFilter(locationSearch.filters)
-
-  const resolvedInitialFilterEntry = useMemo(() => {
-    if (hasActiveLocation) return undefined
-    if (initialFilterOptions) {
-      return { data: initialFilterOptions, timestamp: Date.now() }
-    }
-    return readCachedFilterOptionsEntry()
-  }, [hasActiveLocation, initialFilterOptions])
+  const cachedFilterOptions = useMemo(() => {
+    if (initialFilterOptions) return initialFilterOptions
+    return readCachedFilterOptionsEntry()?.data
+  }, [initialFilterOptions])
 
   useEffect(() => {
     if (initialFilterOptions) {
@@ -116,35 +111,33 @@ export default function SearchPageContent({
     }
   }, [initialFilterOptions])
 
-  // Load filter options based on active location filter with React Query and localStorage caching
-  const {
-    data: filterOptions,
-    isLoading: loadingFilterOptions,
-    isError: errorFilterOptions,
-    refetch: refetchFilterOptions
-  } = useQuery({
-    queryKey: [
-      'filter-options',
-      locationSearch.filters.cityId,
-      locationSearch.filters.provinceId,
-      locationSearch.filters.countryCode
-    ],
-    queryFn: async () => {
-      const options = await motorcycleService.getFilterOptions({
-        cityId: locationSearch.filters.cityId,
-        provinceId: locationSearch.filters.provinceId,
-        countryCode: locationSearch.filters.countryCode
-      })
-      if (!hasActiveLocation) {
-        writeCachedFilterOptions(options)
-      }
-      return options
-    },
-    initialData: resolvedInitialFilterEntry?.data,
-    initialDataUpdatedAt: resolvedInitialFilterEntry?.timestamp,
-    staleTime: FILTER_OPTIONS_TTL_MS,
-    refetchOnWindowFocus: false
-  })
+  // Derive Brand, Category, and Model options in-memory from loaded location motorcycles (zero network requests)
+  const filterOptions = useMemo<DerivedFilterOptions>(() => {
+    if (Array.isArray(locationSearch.locationMotorcycles) && locationSearch.locationMotorcycles.length > 0) {
+      return deriveFilterOptionsFromMotorcycles(locationSearch.locationMotorcycles)
+    }
+    if (
+      (hasLocationFilter(locationSearch.filters) || Boolean(locationSearch.filters.locationQuery)) &&
+      locationSearch.hasSearched &&
+      !locationSearch.isLoading
+    ) {
+      return EMPTY_FILTER_OPTIONS
+    }
+    if (cachedFilterOptions) {
+      return cachedFilterOptions
+    }
+    if (locationSearch.results?.motorcycles?.motorcycles?.length) {
+      return deriveFilterOptionsFromMotorcycles(locationSearch.results.motorcycles.motorcycles)
+    }
+    return EMPTY_FILTER_OPTIONS
+  }, [
+    locationSearch.locationMotorcycles,
+    locationSearch.filters,
+    locationSearch.hasSearched,
+    locationSearch.isLoading,
+    locationSearch.results,
+    cachedFilterOptions
+  ])
 
   // Memoize models filtered by selected brand
   const availableModels = useMemo(() => {
@@ -344,111 +337,77 @@ export default function SearchPageContent({
             </div>
           </div>
 
-          {/* Filter Options Error Recovery */}
-          {errorFilterOptions && (
-            <div
-              data-testid="search-filters-error"
-              className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-center justify-between text-sm text-red-700"
-            >
-              <span>Failed to load filter options.</span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => refetchFilterOptions()}
-                className="text-xs"
-              >
-                Retry
-              </Button>
-            </div>
-          )}
-
           {/* ROW 2: Primary Filters */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             {/* Brand Filter */}
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-700">Brand</label>
-              {loadingFilterOptions && !filterOptions ? (
-                <FilterSkeleton />
-              ) : (
-                <select
-                  value={locationSearch.filters.brandId || ''}
-                  onChange={(e) =>
-                    locationSearch.setFilters({ brandId: e.target.value || undefined, model: undefined })
-                  }
-                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">All Brands</option>
-                  {filterOptions?.brands.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name} ({b.count})
-                    </option>
-                  ))}
-                </select>
-              )}
+              <select
+                value={locationSearch.filters.brandId || ''}
+                onChange={(e) =>
+                  locationSearch.setFilters({ brandId: e.target.value || undefined, model: undefined })
+                }
+                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">All Brands</option>
+                {filterOptions.brands.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name} ({b.count})
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Category Filter */}
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-700">Category</label>
-              {loadingFilterOptions && !filterOptions ? (
-                <FilterSkeleton />
-              ) : (
-                <select
-                  value={locationSearch.filters.categoryId || ''}
-                  onChange={(e) =>
-                    locationSearch.setFilters({ categoryId: e.target.value || undefined })
-                  }
-                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">All Categories</option>
-                  {filterOptions?.categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} ({c.count})
-                    </option>
-                  ))}
-                </select>
-              )}
+              <select
+                value={locationSearch.filters.categoryId || ''}
+                onChange={(e) =>
+                  locationSearch.setFilters({ categoryId: e.target.value || undefined })
+                }
+                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">All Categories</option>
+                {filterOptions.categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({c.count})
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Model Filter */}
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-700">Model</label>
-              {loadingFilterOptions && !filterOptions ? (
-                <FilterSkeleton />
-              ) : (
-                <select
-                  value={locationSearch.filters.model || ''}
-                  onChange={(e) => locationSearch.setFilters({ model: e.target.value || undefined })}
-                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">All Models</option>
-                  {availableModels.map((m, i) => (
-                    <option key={`${m.model}-${i}`} value={m.model}>
-                      {m.model} ({m.count})
-                    </option>
-                  ))}
-                </select>
-              )}
+              <select
+                value={locationSearch.filters.model || ''}
+                onChange={(e) => locationSearch.setFilters({ model: e.target.value || undefined })}
+                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">All Models</option>
+                {availableModels.map((m, i) => (
+                  <option key={`${m.model}-${i}`} value={m.model}>
+                    {m.model} ({m.count})
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Sort By */}
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-700">Sort By</label>
-              {loadingFilterOptions && !filterOptions ? (
-                <FilterSkeleton />
-              ) : (
-                <select
-                  value={locationSearch.filters.sortBy || 'newest'}
-                  onChange={(e) => locationSearch.setFilters({ sortBy: e.target.value as SortByType })}
-                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                >
-                  {SORT_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              )}
+              <select
+                value={locationSearch.filters.sortBy || 'newest'}
+                onChange={(e) => locationSearch.setFilters({ sortBy: e.target.value as SortByType })}
+                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+              >
+                {SORT_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -495,6 +454,7 @@ export default function SearchPageContent({
                 motorcycles={locationSearch.results.motorcycles.motorcycles}
                 title={`Found ${locationSearch.results.motorcycles.total} Motorcycles${locationSearch.filters.locationQuery ? ` in ${locationSearch.filters.locationQuery}` : ''}`}
                 showShopColumn={true}
+                preserveInitialOrder={true}
               />
             </div>
           ) : (
