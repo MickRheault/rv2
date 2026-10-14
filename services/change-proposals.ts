@@ -55,6 +55,16 @@ export async function insertRateTiers(
   return (supabase.from('rental_rate_tiers') as any).insert(rateTiers);
 }
 
+/**
+ * Determines whether a Change Proposal action is an actionable mutation
+ * requiring review (add, update, delist) rather than an unchanged informational record.
+ */
+export function isActionableProposalAction(
+  action: 'add' | 'update' | 'delist' | 'unchanged' | string
+): boolean {
+  return action !== 'unchanged';
+}
+
 export interface CreateProposalInput {
   shopId: string;
   sourceUrl: string;
@@ -133,7 +143,11 @@ export class ChangeProposalService {
       input.shopUpdates
     );
 
-    // 3. Insert parent proposal record
+    // 3. Determine if proposal has actionable mutation items or is purely confirmed unchanged inventory
+    const hasMutableItems = diff.items.some((item) => isActionableProposalAction(item.action));
+    const initialProposalStatus = hasMutableItems ? 'pending' : 'applied';
+
+    // 4. Insert parent proposal record
     const { data: proposal, error: proposalError } = await (supabase
       .from('change_proposals') as any)
       .insert({
@@ -144,7 +158,7 @@ export class ChangeProposalService {
           bikes: input.bikes,
           shopUpdates: input.shopUpdates || null,
         },
-        status: 'pending',
+        status: initialProposalStatus,
         summary_counts: diff.summaryCounts,
       })
       .select()
@@ -154,7 +168,7 @@ export class ChangeProposalService {
       throw new Error(`Failed to stage change proposal: ${proposalError.message}`);
     }
 
-    // 4. Insert child diff items
+    // 5. Insert child diff items
     if (diff.items.length > 0) {
       const itemsToInsert = diff.items.map((item) => ({
         proposal_id: proposal.id,
@@ -166,7 +180,7 @@ export class ChangeProposalService {
         original_data: item.original_data || null,
         proposed_data: item.proposed_data,
         diff_summary: item.diff_summary || null,
-        status: 'pending' as const,
+        status: (isActionableProposalAction(item.action) ? 'pending' : 'applied') as 'applied' | 'pending',
       }));
 
       const { error: itemsError } = await (supabase
@@ -317,7 +331,9 @@ export class ChangeProposalService {
     }
 
     const approvedSet = new Set(approvedItemIds);
-    const approvedItems = allItems.filter((i) => approvedSet.has(i.id));
+    // Partition actionable mutation items from unchanged informational items
+    const mutableItems = allItems.filter((i) => isActionableProposalAction(i.action));
+    const approvedItems = mutableItems.filter((i) => approvedSet.has(i.id));
 
     // 3. Validate geodata immutability across all approved items
     for (const item of approvedItems) {
@@ -449,8 +465,8 @@ export class ChangeProposalService {
         .eq('id', item.id);
     }
 
-    // 5. Mark non-approved items as rejected
-    const unapprovedItems = allItems.filter((i) => !approvedSet.has(i.id));
+    // 5. Mark non-approved mutable items as rejected (leave unchanged items as applied)
+    const unapprovedItems = mutableItems.filter((i) => !approvedSet.has(i.id));
     if (unapprovedItems.length > 0) {
       await (supabase
         .from('change_proposal_items') as any)
@@ -458,9 +474,15 @@ export class ChangeProposalService {
         .in('id', unapprovedItems.map((i) => i.id));
     }
 
-    // 6. Update proposal status
-    const isFullApproval = approvedItems.length === allItems.length;
-    const finalStatus = isFullApproval ? 'applied' : 'partially_applied';
+    // 6. Update proposal status based on mutable items
+    let finalStatus: 'applied' | 'partially_applied' | 'rejected';
+    if (mutableItems.length === 0 || approvedItems.length === mutableItems.length) {
+      finalStatus = 'applied';
+    } else if (approvedItems.length === 0) {
+      finalStatus = 'rejected';
+    } else {
+      finalStatus = 'partially_applied';
+    }
 
     await (supabase
       .from('change_proposals') as any)

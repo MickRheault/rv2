@@ -162,7 +162,7 @@ export type Database = {
       }
       change_proposal_items: {
         Row: {
-          action: 'add' | 'update' | 'delist'
+          action: 'add' | 'update' | 'delist' | 'unchanged'
           brand_name: string | null
           created_at: string
           diff_summary: Json | null
@@ -176,7 +176,7 @@ export type Database = {
           status: 'pending' | 'approved' | 'rejected' | 'applied'
         }
         Insert: {
-          action: 'add' | 'update' | 'delist'
+          action: 'add' | 'update' | 'delist' | 'unchanged'
           brand_name?: string | null
           created_at?: string
           diff_summary?: Json | null
@@ -190,7 +190,7 @@ export type Database = {
           status?: 'pending' | 'approved' | 'rejected' | 'applied'
         }
         Update: {
-          action?: 'add' | 'update' | 'delist'
+          action?: 'add' | 'update' | 'delist' | 'unchanged'
           brand_name?: string | null
           created_at?: string
           diff_summary?: Json | null

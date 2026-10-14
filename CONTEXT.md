@@ -9,7 +9,7 @@ A staged set of proposed additions, updates, or removals to a rental shop's inve
 _Avoid_: Scrape proposal, crawl diff, patch request
 
 **Change Proposal Item**:
-An individual proposed action (create, update, delist) targeting a specific motorcycle listing, rate, condition, or shop property within a Change Proposal.
+An individual inventory record or proposed action (create, update, delist, or unchanged confirmed inventory) targeting a specific motorcycle listing, rate, condition, or shop property within a Change Proposal.
 _Avoid_: Diff item, patch row, mutation entry
 
 **Shop Agent Config**:

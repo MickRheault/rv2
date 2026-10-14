@@ -96,4 +96,28 @@ describe('POST /api/admin/change-proposals/[id]/apply', () => {
     const body = await response.json();
     expect(body.error).toMatch(/Forbidden geodata mutation/i);
   });
+
+  it('forwards approvedItemIds including unchanged items to ChangeProposalService.apply', async () => {
+    (ChangeProposalService.apply as jest.Mock).mockResolvedValue({
+      success: true,
+      appliedCount: 1,
+      status: 'applied',
+    });
+
+    const request = new NextRequest(
+      'http://localhost:3000/api/admin/change-proposals/prop-1/apply',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ approvedItemIds: ['item-update-1', 'item-unchanged-1'] }),
+      }
+    );
+
+    const response = await POST(request, { params: Promise.resolve({ id: 'prop-1' }) });
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.success).toBe(true);
+    expect(body.appliedCount).toBe(1);
+    expect(ChangeProposalService.apply).toHaveBeenCalledWith('prop-1', ['item-update-1', 'item-unchanged-1']);
+  });
 });

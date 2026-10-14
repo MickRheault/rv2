@@ -91,8 +91,12 @@ describe('POST /api/agent/change-proposals', () => {
     (ChangeProposalService.createProposalFromCrawl as jest.Mock).mockResolvedValue({
       proposal: { id: 'prop-123', status: 'pending' },
       diff: {
-        items: [{ action: 'add', model_name: 'PCX' }],
-        summaryCounts: { add: 1, update: 0, delist: 0 },
+        items: [
+          { action: 'add', model_name: 'PCX' },
+          { action: 'unchanged', model_name: 'Click 125i' },
+          { action: 'unchanged', model_name: 'NMAX 155' },
+        ],
+        summaryCounts: { add: 1, update: 0, delist: 0, unchanged: 2 },
       },
     });
 
@@ -114,7 +118,8 @@ describe('POST /api/agent/change-proposals', () => {
     const body = await response.json();
     expect(body.success).toBe(true);
     expect(body.proposalId).toBe('prop-123');
-    expect(body.summaryCounts).toEqual({ add: 1, update: 0, delist: 0 });
+    expect(body.summaryCounts).toEqual({ add: 1, update: 0, delist: 0, unchanged: 2 });
+    expect(body.itemsCount).toBe(3);
     expect(recordCrawlRun).toHaveBeenCalledWith({
       shopId: 'shop-123',
       status: 'success',

@@ -31,7 +31,7 @@ describe('Diff Engine', () => {
     },
   ];
 
-  it('detects new bike additions', () => {
+  it('detects new bike additions while preserving unchanged bikes', () => {
     const crawledBikes: CrawledBikeSnapshot[] = [
       ...existingActiveBikes.map(b => ({
         brand: b.brand_name,
@@ -50,11 +50,15 @@ describe('Diff Engine', () => {
 
     const diff = computeShopInventoryDiff(existingActiveBikes, crawledBikes);
 
-    expect(diff.items).toHaveLength(1);
-    expect(diff.items[0].action).toBe('add');
-    expect(diff.items[0].model_name).toBe('Forza 350');
-    expect(diff.items[0].brand_name).toBe('Honda');
-    expect(diff.summaryCounts).toEqual({ add: 1, update: 0, delist: 0 });
+    expect(diff.items).toHaveLength(3);
+    const added = diff.items.find(i => i.action === 'add');
+    expect(added).toBeDefined();
+    expect(added?.model_name).toBe('Forza 350');
+    expect(added?.brand_name).toBe('Honda');
+
+    const unchanged = diff.items.filter(i => i.action === 'unchanged');
+    expect(unchanged).toHaveLength(2);
+    expect(diff.summaryCounts).toEqual({ add: 1, update: 0, delist: 0, unchanged: 2 });
   });
 
   it('detects rate and spec updates on existing bikes using canonical matching', () => {
@@ -77,11 +81,18 @@ describe('Diff Engine', () => {
 
     const diff = computeShopInventoryDiff(existingActiveBikes, crawledBikes);
 
-    expect(diff.items).toHaveLength(1);
-    expect(diff.items[0].action).toBe('update');
-    expect(diff.items[0].entity_id).toBe('bike-uuid-1');
-    expect(diff.items[0].diff_summary).toBeDefined();
-    expect(diff.summaryCounts).toEqual({ add: 0, update: 1, delist: 0 });
+    expect(diff.items).toHaveLength(2);
+    const updated = diff.items.find(i => i.action === 'update');
+    expect(updated).toBeDefined();
+    expect(updated?.entity_id).toBe('bike-uuid-1');
+    expect(updated?.diff_summary).toBeDefined();
+
+    const unchanged = diff.items.find(i => i.action === 'unchanged');
+    expect(unchanged).toBeDefined();
+    expect(unchanged?.entity_id).toBe('bike-uuid-2');
+    expect(unchanged?.diff_summary).toBeNull();
+
+    expect(diff.summaryCounts).toEqual({ add: 0, update: 1, delist: 0, unchanged: 1 });
   });
 
   it('detects missing inventory and flags as soft-delist (availability_status = unavailable)', () => {
@@ -98,12 +109,96 @@ describe('Diff Engine', () => {
 
     const diff = computeShopInventoryDiff(existingActiveBikes, crawledBikes);
 
+    expect(diff.items).toHaveLength(2);
+    const delisted = diff.items.find(i => i.action === 'delist');
+    expect(delisted).toBeDefined();
+    expect(delisted?.entity_id).toBe('bike-uuid-2');
+    expect(delisted?.model_name).toBe('NMAX 155');
+    expect(delisted?.proposed_data).toEqual({ availability_status: 'unavailable' });
+
+    const unchanged = diff.items.find(i => i.action === 'unchanged');
+    expect(unchanged).toBeDefined();
+    expect(unchanged?.entity_id).toBe('bike-uuid-1');
+
+    expect(diff.summaryCounts).toEqual({ add: 0, update: 0, delist: 1, unchanged: 1 });
+  });
+
+  it('emits unchanged action with fully populated original_data and proposed_data for matching bikes', () => {
+    const crawledBikes: CrawledBikeSnapshot[] = [
+      {
+        brand: 'Honda',
+        modelName: 'Click 125i',
+        year: 2023,
+        engineCapacityCc: 125,
+        rates: [{ minDays: 1, maxDays: 6, ratePerDay: 250 }],
+      },
+    ];
+
+    const diff = computeShopInventoryDiff([existingActiveBikes[0]], crawledBikes);
+
     expect(diff.items).toHaveLength(1);
-    expect(diff.items[0].action).toBe('delist');
-    expect(diff.items[0].entity_id).toBe('bike-uuid-2');
-    expect(diff.items[0].model_name).toBe('NMAX 155');
-    expect(diff.items[0].proposed_data).toEqual({ availability_status: 'unavailable' });
-    expect(diff.summaryCounts).toEqual({ add: 0, update: 0, delist: 1 });
+    const item = diff.items[0];
+    expect(item.action).toBe('unchanged');
+    expect(item.entity_id).toBe('bike-uuid-1');
+    expect(item.brand_name).toBe('Honda');
+    expect(item.model_name).toBe('Click 125i');
+    expect(item.diff_summary).toBeNull();
+
+    // Verify complete original_data snapshot
+    expect(item.original_data).toEqual({
+      year: 2023,
+      engine_capacity_cc: 125,
+      availability_status: 'available',
+      rates: [{ min_days: 1, max_days: 6, rate_per_day: 250 }],
+    });
+
+    // Verify proposed_data snapshot includes availability_status
+    expect(item.proposed_data).toEqual({
+      ...crawledBikes[0],
+      availability_status: 'available',
+    });
+
+    expect(diff.summaryCounts).toEqual({
+      add: 0,
+      update: 0,
+      delist: 0,
+      unchanged: 1,
+    });
+  });
+
+  it('detects specification update when existing record had null attributes', () => {
+    const bikeWithNullYear: ExistingBikeRecord = {
+      id: 'bike-null-year',
+      brand_name: 'Honda',
+      model_name: 'Wave 110i',
+      year: null,
+      engine_capacity_cc: null,
+      availability_status: 'available',
+      rates: [{ min_days: 1, max_days: 6, rate_per_day: 180 }],
+    };
+
+    const crawledWave: CrawledBikeSnapshot = {
+      brand: 'Honda',
+      modelName: 'Wave 110i',
+      year: 2024,
+      engineCapacityCc: 110,
+      rates: [{ minDays: 1, maxDays: 6, ratePerDay: 180 }],
+    };
+
+    const diff = computeShopInventoryDiff([bikeWithNullYear], [crawledWave]);
+
+    expect(diff.items).toHaveLength(1);
+    expect(diff.items[0].action).toBe('update');
+    expect(diff.items[0].diff_summary).toEqual({
+      year: { old: null, new: 2024 },
+      engine_capacity_cc: { old: null, new: 110 },
+    });
+    expect(diff.summaryCounts).toEqual({
+      add: 0,
+      update: 1,
+      delist: 0,
+      unchanged: 0,
+    });
   });
 
   it('triggers zero-drop safeguard and throws when crawl yields 0 bikes for shop with active inventory', () => {
@@ -120,7 +215,7 @@ describe('Diff Engine', () => {
 
     const diff = computeShopInventoryDiff(emptyExisting, emptyCrawl);
     expect(diff.items).toHaveLength(0);
-    expect(diff.summaryCounts).toEqual({ add: 0, update: 0, delist: 0 });
+    expect(diff.summaryCounts).toEqual({ add: 0, update: 0, delist: 0, unchanged: 0 });
   });
 
   it('detects shop profile modifications (description, phone, website)', () => {
