@@ -13,7 +13,7 @@ import {
 import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid'
 import { Card, Badge, PremiumBadge } from '@/components/ui'
 import { MotorcycleWithDetails } from '@/services/motorcycles'
-import { formatCurrency, formatEngineCapacity } from '@/lib/utils'
+import { formatCurrency, formatEngineCapacity, formatMotorcycleYear } from '@/lib/utils'
 
 interface MotorcycleCardProps {
   motorcycle: MotorcycleWithDetails
@@ -41,6 +41,7 @@ export default function MotorcycleCard({
   const shop = motorcycle.rental_shops
   const brand = motorcycle.brands
   const category = motorcycle.categories
+  const formattedYear = formatMotorcycleYear(motorcycle.year, (motorcycle as any).year_to)
   
   // Get location string
   const location = shop?.cities 
@@ -104,9 +105,9 @@ export default function MotorcycleCard({
               <h3 className="font-semibold text-gray-900 line-clamp-1 text-sm">
                 {brand?.name} {motorcycle.model}
               </h3>
-              {motorcycle.year && (
+              {formattedYear && (
                 <p className="text-xs text-gray-500">
-                  {motorcycle.year} Model
+                  {formattedYear} Model
                 </p>
               )}
             </div>
@@ -156,10 +157,10 @@ export default function MotorcycleCard({
                 </div>
               )}
               
-              {motorcycle.year && (
+              {formattedYear && (
                 <div className="flex items-center space-x-1">
                   <CalendarIcon className="w-3 h-3" />
-                  <span>{motorcycle.year}</span>
+                  <span>{formattedYear}</span>
                 </div>
               )}
             </div>

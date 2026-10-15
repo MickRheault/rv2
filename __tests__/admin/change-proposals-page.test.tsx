@@ -381,6 +381,95 @@ describe('ChangeProposalsPage', () => {
       expect(mockPush).toHaveBeenCalledWith('/admin/change-proposals');
     });
   });
+
+  it('renders formatted Model Year Range subtitles and unified diff_summary.year transitions in ChangeProposalDiffViewer (#138)', async () => {
+    const { ChangeProposalDiffViewer } = await import(
+      '@/components/admin/ChangeProposalDiffViewer'
+    );
+
+    render(
+      <ChangeProposalDiffViewer
+        proposal={{
+          id: 'prop-gen-1',
+          shop_id: 'shop-1',
+          source_url: 'https://example.com/rates',
+          status: 'pending',
+          created_at: '2026-10-15T12:00:00Z',
+          rental_shops: {
+            provider_name: 'Chiang Mai Moto',
+            slug: 'chiang-mai-moto',
+          },
+        }}
+        items={[
+          {
+            id: 'item-add-gen',
+            proposal_id: 'prop-gen-1',
+            entity_type: 'motorcycle',
+            action: 'add',
+            entity_id: null,
+            brand_name: 'Honda',
+            model_name: 'Click 125',
+            original_data: null,
+            proposed_data: {
+              year: 2021,
+              year_to: 2024,
+              engineCapacityCc: 125,
+              rates: [{ minDays: 1, ratePerDay: 250, currency: 'THB' }],
+            },
+            diff_summary: null,
+            status: 'pending',
+          },
+          {
+            id: 'item-update-gen',
+            proposal_id: 'prop-gen-1',
+            entity_type: 'motorcycle',
+            action: 'update',
+            entity_id: 'bike-1',
+            brand_name: 'Honda',
+            model_name: 'CB500X',
+            original_data: { year: 2020, year_to: null },
+            proposed_data: {
+              year: 2015,
+              year_to: 2020,
+              engineCapacityCc: 471,
+              rates: [{ minDays: 1, ratePerDay: 800, currency: 'THB' }],
+            },
+            diff_summary: {
+              year: { old: '2020', new: '2015-2020' },
+            },
+            status: 'pending',
+          },
+          {
+            id: 'item-unchanged-gen',
+            proposal_id: 'prop-gen-1',
+            entity_type: 'motorcycle',
+            action: 'unchanged',
+            entity_id: 'bike-2',
+            brand_name: 'Yamaha',
+            model_name: 'NMAX 155',
+            original_data: { year: 2018, year_to: 2022 },
+            proposed_data: {
+              year: 2018,
+              year_to: 2022,
+              engineCapacityCc: 155,
+              rates: [{ minDays: 1, ratePerDay: 350, currency: 'THB' }],
+            },
+            diff_summary: null,
+            status: 'applied',
+          },
+        ]}
+      />
+    );
+
+    expect(screen.getByText('Year: 2021-2024')).toBeInTheDocument();
+    expect(screen.getByText('Year: 2015-2020')).toBeInTheDocument();
+    expect(screen.getByText('2020')).toBeInTheDocument();
+    expect(screen.getByText('2015-2020')).toBeInTheDocument();
+
+    // Expand unchanged inventory and verify formatted year range
+    fireEvent.click(screen.getByRole('button', { name: /Confirmed Unchanged Inventory/i }));
+    expect(screen.getByText('Year: 2018-2022')).toBeInTheDocument();
+  });
 });
 
 

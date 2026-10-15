@@ -164,6 +164,7 @@ export default async function ShopPage({ params }: ShopPageProps) {
         model: motorcycle.model || undefined,
         brand: motorcycle.brands?.name || undefined,
         year: motorcycle.year || undefined,
+        year_to: (motorcycle as any).year_to || undefined,
         category: motorcycle.categories?.name || undefined,
         description: `${motorcycle.brands?.name || ''} ${motorcycle.model || ''} motorcycle rental at ${shop.provider_name}`.trim(),
         engineSize: motorcycle.engine_capacity_cc || undefined,

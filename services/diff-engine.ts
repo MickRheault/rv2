@@ -8,6 +8,8 @@
  * - Verbatim Pricing Source of Truth (ADR 0010)
  */
 
+import { formatMotorcycleYear, normalizeMotorcycleYearRange } from '@/lib/utils';
+
 export class ZeroDropSafeguardError extends Error {
   constructor(message = 'Zero-drop safeguard triggered: Crawl returned 0 bikes for shop with active inventory. Staging aborted to protect catalog.') {
     super(message);
@@ -26,6 +28,7 @@ export interface CrawledBikeSnapshot {
   brand: string;
   modelName: string;
   year?: number | null;
+  year_to?: number | null;
   engineCapacityCc?: number | null;
   category?: string | null;
   transmission?: string | null;
@@ -46,6 +49,7 @@ export interface ExistingBikeRecord {
   brand_name: string;
   model_name: string;
   year?: number | null;
+  year_to?: number | null;
   engine_capacity_cc?: number | null;
   availability_status?: string | null;
   rates: ExistingRateTier[];
@@ -199,21 +203,14 @@ export function normalizeCrawledBikeSnapshot(rawBike: any): CrawledBikeSnapshot 
       : null;
   const engineCapacityCc = rawEngine !== null && !isNaN(Number(rawEngine)) ? Number(rawEngine) : null;
 
-  const rawYear =
-    rawBike.year !== undefined && rawBike.year !== null
-      ? rawBike.year
-      : rawBike.modelYear !== undefined && rawBike.modelYear !== null
-      ? rawBike.modelYear
-      : rawBike.model_year !== undefined && rawBike.model_year !== null
-      ? rawBike.model_year
-      : null;
-  const year = rawYear !== null && !isNaN(Number(rawYear)) ? Number(rawYear) : null;
+  const { year, year_to } = normalizeMotorcycleYearRange(rawBike);
 
   return {
     ...rawBike,
     brand: String(rawBike.brand || '').trim(),
     modelName: String(rawBike.modelName || rawBike.model_name || rawBike.model || '').trim(),
     year,
+    year_to,
     engineCapacityCc,
     rates,
   };
@@ -315,6 +312,7 @@ export function computeRateTiersDiff(
 function toOriginalMotorcycleSnapshot(bike: ExistingBikeRecord) {
   return {
     year: bike.year ?? null,
+    year_to: bike.year_to ?? null,
     engine_capacity_cc: bike.engine_capacity_cc ?? null,
     rates: bike.rates || [],
     availability_status: bike.availability_status || 'available',
@@ -327,6 +325,81 @@ export function computeStringListDiff(oldList: string[] = [], newList: string[] 
   const added = newList.filter((s) => s.trim() && !oldSet.has(s.trim().toLowerCase()));
   const removed = oldList.filter((s) => s.trim() && !newSet.has(s.trim().toLowerCase()));
   return { added, removed };
+}
+
+export interface CanonicalModelDescriptor {
+  brand: string;
+  model: string;
+  engineCapacityCc?: number | null;
+}
+
+export function canonicalModelsMatch(
+  a: CanonicalModelDescriptor,
+  b: CanonicalModelDescriptor,
+  mode: 'primary' | 'composite' | 'any' = 'any'
+): boolean {
+  const aPrimary = canonicalKey(a.brand, a.model);
+  const bPrimary = canonicalKey(b.brand, b.model);
+  if (mode === 'primary') {
+    return aPrimary === bPrimary;
+  }
+  if (mode === 'any' && aPrimary === bPrimary) {
+    return true;
+  }
+  const aComposite = compositeCanonicalKey(a.brand, a.model, a.engineCapacityCc);
+  const bComposite = compositeCanonicalKey(b.brand, b.model, b.engineCapacityCc);
+  if (aComposite !== null && aComposite === bPrimary) return true;
+  if (bComposite !== null && bComposite === aPrimary) return true;
+  if (aComposite !== null && bComposite !== null && aComposite === bComposite) return true;
+  return false;
+}
+
+function getCandidateExistingBikesForModel(
+  crawled: CrawledBikeSnapshot,
+  unmatchedExisting: ExistingBikeRecord[]
+): ExistingBikeRecord[] {
+  const crawledDesc: CanonicalModelDescriptor = {
+    brand: crawled.brand,
+    model: crawled.modelName,
+    engineCapacityCc: crawled.engineCapacityCc,
+  };
+  const primaryMatches = unmatchedExisting.filter((bike) =>
+    canonicalModelsMatch(
+      crawledDesc,
+      {
+        brand: bike.brand_name,
+        model: bike.model_name,
+        engineCapacityCc: bike.engine_capacity_cc,
+      },
+      'primary'
+    )
+  );
+  if (primaryMatches.length > 0) {
+    return primaryMatches;
+  }
+
+  return unmatchedExisting.filter((bike) =>
+    canonicalModelsMatch(
+      crawledDesc,
+      {
+        brand: bike.brand_name,
+        model: bike.model_name,
+        engineCapacityCc: bike.engine_capacity_cc,
+      },
+      'composite'
+    )
+  );
+}
+
+function crawledBikesShareCanonicalModel(
+  a: CrawledBikeSnapshot,
+  b: CrawledBikeSnapshot
+): boolean {
+  return canonicalModelsMatch(
+    { brand: a.brand, model: a.modelName, engineCapacityCc: a.engineCapacityCc },
+    { brand: b.brand, model: b.modelName, engineCapacityCc: b.engineCapacityCc },
+    'any'
+  );
 }
 
 export function computeShopInventoryDiff(
@@ -344,48 +417,59 @@ export function computeShopInventoryDiff(
   const normalizedCrawledShop = normalizeCrawledShopProfile(crawledShop);
 
   const items: ProposedDiffItem[] = [];
-  const existingMap = new Map<string, ExistingBikeRecord>();
 
-  const existingBikeIdentity = (bike: ExistingBikeRecord) =>
-    bike.id || canonicalKey(bike.brand_name, bike.model_name);
+  const matchedExistingSet = new Set<ExistingBikeRecord>();
+  const matchedByCrawledIndex = new Map<number, ExistingBikeRecord>();
 
-  for (const bike of existingBikes) {
-    existingMap.set(canonicalKey(bike.brand_name, bike.model_name), bike);
-  }
+  // Pass 1 (ADR 0014): Exact Canonical Model + Model Year Range Match
+  for (let cIdx = 0; cIdx < normalizedCrawledBikes.length; cIdx++) {
+    const crawled = normalizedCrawledBikes[cIdx];
+    const unmatchedExisting = existingBikes.filter((b) => !matchedExistingSet.has(b));
+    const candidates = getCandidateExistingBikesForModel(crawled, unmatchedExisting);
 
-  // Register secondary composite keys (model + engine_capacity_cc) when model omits displacement
-  for (const bike of existingBikes) {
-    const compositeKey = compositeCanonicalKey(
-      bike.brand_name,
-      bike.model_name,
-      bike.engine_capacity_cc
-    );
-    if (compositeKey && !existingMap.has(compositeKey)) {
-      existingMap.set(compositeKey, bike);
+    const crawledYear = crawled.year ?? null;
+    const crawledYearTo = crawled.year_to ?? null;
+
+    const exactYearMatch = candidates.find((b) => {
+      const existingRange = normalizeMotorcycleYearRange({
+        year: b.year,
+        year_to: b.year_to,
+      });
+      return existingRange.year === crawledYear && existingRange.year_to === crawledYearTo;
+    });
+
+    if (exactYearMatch) {
+      matchedByCrawledIndex.set(cIdx, exactYearMatch);
+      matchedExistingSet.add(exactYearMatch);
     }
   }
 
-  const observedExistingIdentities = new Set<string>();
+  // Pass 2 (ADR 0014): Unambiguous Model-Only Fallback
+  for (let cIdx = 0; cIdx < normalizedCrawledBikes.length; cIdx++) {
+    if (matchedByCrawledIndex.has(cIdx)) continue;
+    const crawled = normalizedCrawledBikes[cIdx];
+    const unmatchedExisting = existingBikes.filter((b) => !matchedExistingSet.has(b));
+    const candidates = getCandidateExistingBikesForModel(crawled, unmatchedExisting);
 
-  // 2. Evaluate Additions and Updates
-  for (const crawled of normalizedCrawledBikes) {
-    const primaryKey = canonicalKey(crawled.brand, crawled.modelName);
-    let existing = existingMap.get(primaryKey);
-
-    if (!existing) {
-      const compositeKey = compositeCanonicalKey(
-        crawled.brand,
-        crawled.modelName,
-        crawled.engineCapacityCc
+    if (candidates.length === 1) {
+      const candidate = candidates[0];
+      const unmatchedCrawledSiblings = normalizedCrawledBikes.filter(
+        (other, otherIdx) =>
+          !matchedByCrawledIndex.has(otherIdx) &&
+          crawledBikesShareCanonicalModel(crawled, other)
       );
-      if (compositeKey) {
-        existing = existingMap.get(compositeKey);
+
+      if (unmatchedCrawledSiblings.length === 1) {
+        matchedByCrawledIndex.set(cIdx, candidate);
+        matchedExistingSet.add(candidate);
       }
     }
+  }
 
-    if (existing && observedExistingIdentities.has(existingBikeIdentity(existing))) {
-      existing = undefined;
-    }
+  // 2. Evaluate Additions and Updates in deterministic crawled order
+  for (let cIdx = 0; cIdx < normalizedCrawledBikes.length; cIdx++) {
+    const crawled = normalizedCrawledBikes[cIdx];
+    const existing = matchedByCrawledIndex.get(cIdx);
 
     if (!existing) {
       // New motorcycle discovered
@@ -402,17 +486,28 @@ export function computeShopInventoryDiff(
         },
       });
     } else {
-      observedExistingIdentities.add(existingBikeIdentity(existing));
-
       // Check for specification or pricing modifications
       const diffSummary: Record<string, { old: any; new: any; [key: string]: any }> = {};
 
+      const oldRange = normalizeMotorcycleYearRange({
+        year: existing.year,
+        year_to: existing.year_to,
+      });
+      const newYear = crawled.year ?? null;
+      const newYearTo = crawled.year_to ?? null;
+
       if (
-        crawled.year !== undefined &&
-        crawled.year !== null &&
-        crawled.year !== (existing.year ?? null)
+        newYear !== null &&
+        (newYear !== oldRange.year || newYearTo !== oldRange.year_to)
       ) {
-        diffSummary.year = { old: existing.year ?? null, new: crawled.year };
+        if (oldRange.year_to !== null || newYearTo !== null) {
+          diffSummary.year = {
+            old: formatMotorcycleYear(oldRange.year, oldRange.year_to),
+            new: formatMotorcycleYear(newYear, newYearTo)!,
+          };
+        } else {
+          diffSummary.year = { old: oldRange.year, new: newYear };
+        }
       }
 
       if (
@@ -465,7 +560,7 @@ export function computeShopInventoryDiff(
 
   // 3. Evaluate Missing Inventory -> Soft Delist (ADR 0005)
   for (const bike of existingBikes) {
-    if (!observedExistingIdentities.has(existingBikeIdentity(bike))) {
+    if (!matchedExistingSet.has(bike)) {
       items.push({
         entity_type: 'motorcycle',
         action: 'delist',

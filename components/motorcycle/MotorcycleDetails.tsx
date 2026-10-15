@@ -19,6 +19,7 @@ import { Card, CardHeader, CardTitle, CardContent, Badge, Button } from '@/compo
 import { FlagButton } from '@/components/common/FlagButton'
 import { MotorcycleWithDetails } from '@/services/motorcycles'
 import { getShopUrl } from '@/lib/utils/urls'
+import { formatMotorcycleYear } from '@/lib/utils'
 import SameModelWidget from '@/components/motorcycle/SameModelWidget'
 
 interface MotorcycleDetailsProps {
@@ -48,6 +49,7 @@ export default function MotorcycleDetails({
     specifications_details,
     conditions_details
   } = motorcycle
+  const formattedYear = formatMotorcycleYear(year, (motorcycle as any).year_to)
 
   const formatCurrency = (amount: number | null, currency: string | null) => {
     if (!amount || !currency) return 'Price on request'
@@ -124,17 +126,21 @@ export default function MotorcycleDetails({
             </h1>
           </div>
           <div className="flex items-center gap-2 text-gray-600">
-            <CalendarIcon className="w-4 h-4" />
-            <span>{year}</span>
+            {formattedYear && (
+              <div className="flex items-center space-x-1">
+                <CalendarIcon className="w-4 h-4" />
+                <span>{formattedYear}</span>
+              </div>
+            )}
             {categories && (
               <>
-                <span>•</span>
+                {formattedYear && <span>•</span>}
                 <span>{categories.name}</span>
               </>
             )}
             {engine_capacity_cc && (
               <>
-                <span>•</span>
+                {(formattedYear || categories) && <span>•</span>}
                 <span>{engine_capacity_cc}cc</span>
               </>
             )}

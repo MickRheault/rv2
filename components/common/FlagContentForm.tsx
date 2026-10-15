@@ -15,6 +15,7 @@ import {
   validateFlaggedContent 
 } from '@/types/flagged-content';
 import { FlaggedContentService, FlaggedContentUtils } from '@/services/flagged-content';
+import { formatMotorcycleYear } from '@/lib/utils';
 
 interface FlagContentFormProps {
   contentType: ContentType;
@@ -71,6 +72,13 @@ export const FlagContentForm: React.FC<FlagContentFormProps> = ({
       ];
       
       motorcycleFields.forEach(field => {
+        if (field === 'year') {
+          const formattedYear = formatMotorcycleYear(data.year, data.year_to);
+          if (formattedYear !== null) {
+            filtered.year = formattedYear;
+          }
+          return;
+        }
         if (data[field] !== null && data[field] !== undefined) {
           filtered[field] = data[field];
         }
@@ -182,6 +190,7 @@ export const FlagContentForm: React.FC<FlagContentFormProps> = ({
     
     // Determine input type based on field name and value
     const getInputType = () => {
+      if (fieldName === 'year') return 'text';
       if (fieldName.includes('email')) return 'email';
       if (fieldName.includes('phone')) return 'tel';
       if (fieldName.includes('url') || fieldName.includes('website')) return 'url';
@@ -191,6 +200,10 @@ export const FlagContentForm: React.FC<FlagContentFormProps> = ({
 
     const isTextArea = fieldName.includes('description') || fieldName.includes('notes') || fieldName.includes('reason');
     const inputType = getInputType();
+    const placeholder =
+      fieldName === 'year'
+        ? 'Enter year (e.g. 2023 or 2015-2020)'
+        : `Enter ${displayName.toLowerCase()}`;
 
     return (
       <div key={fieldName} className="space-y-2">
@@ -203,7 +216,7 @@ export const FlagContentForm: React.FC<FlagContentFormProps> = ({
           <Textarea
             value={editableFields[fieldName] || ''}
             onChange={(e) => handleFieldChange(fieldName, e.target.value)}
-            placeholder={`Enter ${displayName.toLowerCase()}`}
+            placeholder={placeholder}
             rows={3}
             className="w-full"
           />
@@ -212,7 +225,7 @@ export const FlagContentForm: React.FC<FlagContentFormProps> = ({
             type={inputType}
             value={editableFields[fieldName] || ''}
             onChange={(e) => handleFieldChange(fieldName, e.target.value)}
-            placeholder={`Enter ${displayName.toLowerCase()}`}
+            placeholder={placeholder}
             className="w-full"
           />
         )}

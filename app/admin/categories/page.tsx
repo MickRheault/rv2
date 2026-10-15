@@ -20,6 +20,7 @@ import {
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { Database } from '@/lib/supabase/database.types';
+import { formatMotorcycleYear } from '@/lib/utils';
 
 type CategoryInsert = Database['public']['Tables']['categories']['Insert'];
 
@@ -864,11 +865,15 @@ function CategoriesAdminContent() {
                 </h5>
                 <div className="bg-gray-50 rounded-lg p-3 max-h-60 overflow-y-auto">
                   <div className="space-y-2">
-                    {reassignmentData.impactAnalysis.sampleMotorcycles.map((motorcycle: any) => (
+                    {reassignmentData.impactAnalysis.sampleMotorcycles.map((motorcycle: any) => {
+                      const formattedYear = formatMotorcycleYear(motorcycle);
+                      return (
                       <div key={motorcycle.id} className="flex justify-between items-center text-sm bg-white p-2 rounded">
                         <div>
                           <span className="font-medium">{motorcycle.brands?.name} {motorcycle.model}</span>
-                          {motorcycle.year && <span className="text-gray-500"> ({motorcycle.year})</span>}
+                          {formattedYear && (
+                            <span className="text-gray-500"> ({formattedYear})</span>
+                          )}
                         </div>
                         <div className="text-right text-gray-600">
                           <div>{motorcycle.rental_shops?.provider_name}</div>
@@ -879,7 +884,8 @@ function CategoriesAdminContent() {
                           )}
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                   {reassignmentData.impactAnalysis.totalMotorcycles > reassignmentData.impactAnalysis.sampleMotorcycles.length && (
                     <div className="text-center text-sm text-gray-500 mt-2">
@@ -1051,17 +1057,22 @@ function CategoriesAdminContent() {
                 </h5>
                 <div className="bg-gray-50 rounded-lg p-3 max-h-48 overflow-y-auto">
                   <div className="space-y-2">
-                    {reassignmentData.impactAnalysis.sampleMotorcycles.map((motorcycle: any) => (
+                    {reassignmentData.impactAnalysis.sampleMotorcycles.map((motorcycle: any) => {
+                      const formattedYear = formatMotorcycleYear(motorcycle);
+                      return (
                       <div key={motorcycle.id} className="flex justify-between items-center text-sm bg-white p-2 rounded">
                         <div>
                           <span className="font-medium">{motorcycle.brands?.name} {motorcycle.model}</span>
-                          {motorcycle.year && <span className="text-gray-500"> ({motorcycle.year})</span>}
+                          {formattedYear && (
+                            <span className="text-gray-500"> ({formattedYear})</span>
+                          )}
                         </div>
                         <div className="text-right text-gray-600">
                           <div>{motorcycle.rental_shops?.provider_name}</div>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                   {reassignmentData.impactAnalysis.totalMotorcycles > reassignmentData.impactAnalysis.sampleMotorcycles.length && (
                     <div className="text-center text-sm text-gray-500 mt-2">

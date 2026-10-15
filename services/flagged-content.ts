@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase/client';
 import { Json } from '@/lib/supabase/database.types';
+import { normalizeMotorcycleYearRange } from '@/lib/utils';
 import {
   FlaggedContent,
   FlaggedContentWithChanges,
@@ -131,6 +132,56 @@ export class FlaggedContentService {
     }
 
     return data;
+  }
+
+  // Apply motorcycle field changes with Model Year Range normalization
+  static async applyMotorcycleChanges(
+    motorcycleId: string,
+    proposedChanges: Record<string, any>
+  ): Promise<void> {
+    const updateData: Record<string, any> = {};
+    const directFields = [
+      'model',
+      'engine_capacity_cc',
+      'rental_rate_per_day',
+      'rental_rate_currency',
+      'availability_status',
+      'brand_id',
+      'category_id',
+      'shop_id',
+      'source_url',
+      'specifications_details',
+      'conditions_details',
+    ];
+
+    for (const field of directFields) {
+      if (proposedChanges[field] !== undefined) {
+        updateData[field] = proposedChanges[field];
+      }
+    }
+
+    if (
+      proposedChanges.year !== undefined ||
+      proposedChanges.year_to !== undefined ||
+      proposedChanges.yearTo !== undefined
+    ) {
+      const normalizedYear = normalizeMotorcycleYearRange(proposedChanges);
+      updateData.year = normalizedYear.year;
+      updateData.year_to = normalizedYear.year_to;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return;
+    }
+
+    const { error } = await (supabase.from('motorcycle_rentals') as any)
+      .update(updateData)
+      .eq('id', motorcycleId);
+
+    if (error) {
+      console.error('Error applying motorcycle changes:', error);
+      throw new Error(`Failed to apply motorcycle changes: ${error.message}`);
+    }
   }
 
   // Apply flagged content changes (admin only)

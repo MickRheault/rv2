@@ -13,6 +13,7 @@ import { requireAuth } from '@/lib/api/middleware';
 import { rateLimit, getRateLimitHeaders } from '@/lib/api/rate-limit';
 import { motorcycleService } from '@/services/motorcycles';
 import { updateMotorcycleRateTiers } from '@/services/rental-rate-tiers';
+import { parseAndValidateMotorcycleYearPayload } from '@/lib/utils';
 
 /**
  * GET /api/v1/motorcycles
@@ -103,7 +104,7 @@ export async function POST(request: NextRequest) {
 
     try {
         const body = await request.json();
-        const { rental_rate_tiers, ...motorcycleData } = body;
+        const { rental_rate_tiers, yearTo, ...motorcycleData } = body;
 
         // Validate required fields
         if (!motorcycleData.model) {
@@ -111,6 +112,19 @@ export async function POST(request: NextRequest) {
         }
         if (!motorcycleData.shop_id) {
             return errors.badRequest('Shop ID is required');
+        }
+
+        const yearValidation = parseAndValidateMotorcycleYearPayload({
+            year: motorcycleData.year,
+            year_to: motorcycleData.year_to,
+            yearTo,
+        });
+        if (!yearValidation.valid) {
+            return errors.badRequest(yearValidation.error);
+        }
+        if (yearValidation.hasYearUpdate) {
+            motorcycleData.year = yearValidation.year;
+            motorcycleData.year_to = yearValidation.year_to;
         }
 
         const motorcycle = await motorcycleService.createMotorcycle(motorcycleData);

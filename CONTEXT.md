@@ -24,6 +24,10 @@ _Avoid_: Crawl rank, overdue priority
 The official manufacturer designation for a motorcycle model as curated in RideVault.
 _Avoid_: Scraped model title, listing alias, informal nickname
 
+**Model Year Range**:
+The inclusive span of production years (`year` to `year_to`, or a single `year`) that defines a distinct generation or fleet pricing tier of a motorcycle listing at a rental shop.
+_Avoid_: Generation string, year suffix in model name, open-ended year
+
 **Recovery Snapshot**:
 A full, self-contained SQL dump of the `public` and `auth` database schemas and data, compressed and GPG-encrypted for point-in-time disaster recovery.
 _Avoid_: Partial dump, unencrypted export, table CSV

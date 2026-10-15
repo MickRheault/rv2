@@ -8,6 +8,7 @@ import { requireAuth } from '@/lib/api/middleware';
 import { rateLimit, getRateLimitHeaders } from '@/lib/api/rate-limit';
 import { motorcycleService } from '@/services/motorcycles';
 import { updateMotorcycleRateTiers } from '@/services/rental-rate-tiers';
+import { parseAndValidateMotorcycleYearPayload } from '@/lib/utils';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -83,7 +84,31 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         }
 
         const body = await request.json();
-        const { rental_rate_tiers, ...motorcycleData } = body;
+        const { rental_rate_tiers, yearTo, ...motorcycleData } = body;
+        const rawYearTo = motorcycleData.year_to !== undefined ? motorcycleData.year_to : yearTo;
+
+        let existingYear: number | null | undefined;
+        if (motorcycleData.year === undefined && rawYearTo !== undefined) {
+            const existingMotorcycle = await motorcycleService.getMotorcycleById(id);
+            existingYear = existingMotorcycle?.year ?? null;
+        }
+
+        const yearValidation = parseAndValidateMotorcycleYearPayload(
+            {
+                year: motorcycleData.year,
+                year_to: motorcycleData.year_to,
+                yearTo,
+            },
+            existingYear
+        );
+        if (!yearValidation.valid) {
+            return errors.badRequest(yearValidation.error);
+        }
+        if (yearValidation.hasYearUpdate) {
+            motorcycleData.year = yearValidation.year;
+            motorcycleData.year_to = yearValidation.year_to;
+        }
+
         const motorcycle = await motorcycleService.updateMotorcycle(id, motorcycleData);
 
         // Update rate tiers if provided
@@ -108,6 +133,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         }
         return errors.internal('Failed to update motorcycle');
     }
+}
+
+/**
+ * PATCH /api/v1/motorcycles/[id]
+ * Partially update a motorcycle (admin only)
+ */
+export async function PATCH(request: NextRequest, context: RouteParams) {
+    return PUT(request, context);
 }
 
 /**
