@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { getShopUrl } from '@/lib/utils/urls';
 import {
   computeShopInventoryDiff,
   normalizeCrawledShopProfile,
@@ -7,6 +8,7 @@ import {
   type DiffResult,
 } from './diff-engine';
 import { TaskSchedulerService } from './task-scheduler';
+
 
 export class GeodataImmutabilityError extends Error {
   constructor(field: string) {
@@ -134,6 +136,26 @@ export interface CreateProposalInput {
   agentRunId?: string | null;
   bikes: CrawledBikeSnapshot[];
   shopUpdates?: Record<string, any> | null;
+}
+
+const SHOP_WITH_LOCATION_SELECT = `
+  rental_shops!inner (
+    id,
+    provider_name,
+    slug,
+    cities (
+      name,
+      provinces (
+        countries (
+          name
+        )
+      )
+    )
+  )
+`;
+
+function resolveProposalShopUrl(shop: any): string | undefined {
+  return shop?.slug ? getShopUrl(shop) : undefined;
 }
 
 export class ChangeProposalService {
@@ -324,11 +346,7 @@ export class ChangeProposalService {
         summary_counts,
         created_at,
         reviewed_at,
-        rental_shops!inner (
-          id,
-          provider_name,
-          slug
-        )
+        ${SHOP_WITH_LOCATION_SELECT}
       `,
         { count: 'exact' }
       )
@@ -351,6 +369,7 @@ export class ChangeProposalService {
         shopId: row.shop_id,
         shopName: row.rental_shops?.provider_name,
         shopSlug: row.rental_shops?.slug,
+        shopUrl: resolveProposalShopUrl(row.rental_shops),
         agentRunId: row.agent_run_id,
         sourceUrl: row.source_url,
         status: row.status,
@@ -372,11 +391,7 @@ export class ChangeProposalService {
       .from('change_proposals')
       .select(`
         *,
-        rental_shops!inner (
-          id,
-          provider_name,
-          slug
-        )
+        ${SHOP_WITH_LOCATION_SELECT}
       `)
       .eq('id', proposalId)
       .single();
@@ -396,7 +411,10 @@ export class ChangeProposalService {
     }
 
     return {
-      proposal,
+      proposal: {
+        ...proposal,
+        shop_url: resolveProposalShopUrl((proposal as any).rental_shops),
+      },
       items: items || [],
     };
   }
@@ -419,7 +437,11 @@ export class ChangeProposalService {
       throw new Error(`Proposal not found: ${propError?.message || proposalId}`);
     }
 
-    if (proposal.status === 'applied' || proposal.status === 'rejected') {
+    if (
+      proposal.status === 'applied' ||
+      proposal.status === 'partially_applied' ||
+      proposal.status === 'rejected'
+    ) {
       throw new Error(`Cannot apply proposal with status '${proposal.status}'`);
     }
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, use } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Card, Spinner, Alert } from '@/components/ui';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import {
@@ -15,6 +16,7 @@ export default function ProposalReviewPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const router = useRouter();
   const resolvedParams = use(params);
   const proposalId = resolvedParams.id;
 
@@ -72,6 +74,7 @@ export default function ProposalReviewPage({
           proposal={proposal}
           items={items}
           onApplySuccess={loadData}
+          onRejectSuccess={() => router.push('/admin/change-proposals')}
         />
       ) : (
         <Card>
@@ -81,3 +84,4 @@ export default function ProposalReviewPage({
     </div>
   );
 }
+

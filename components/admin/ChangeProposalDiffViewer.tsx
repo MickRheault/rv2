@@ -11,8 +11,11 @@ import {
   MinusCircleIcon,
   BuildingOfficeIcon,
   CheckCircleIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
 } from '@heroicons/react/24/outline';
 import { getCurrencySymbol } from '@/lib/utils';
+import { getShopUrl } from '@/lib/utils/urls';
 
 export interface DiffViewerItem {
   id: string;
@@ -32,12 +35,21 @@ export interface DiffViewerProposal {
   id: string;
   shop_id: string;
   source_url: string;
+  shop_url?: string;
   status: string;
   created_at: string;
   applied_at?: string | null;
   rental_shops?: {
     provider_name: string;
     slug?: string;
+    cities?: {
+      name?: string;
+      provinces?: {
+        countries?: {
+          name?: string;
+        };
+      };
+    };
   };
 }
 
@@ -45,7 +57,9 @@ interface ChangeProposalDiffViewerProps {
   proposal: DiffViewerProposal;
   items: DiffViewerItem[];
   onApplySuccess?: () => void;
+  onRejectSuccess?: () => void;
 }
+
 
 function getEngineCapacity(data: any): number | null {
   const val = data?.engineCapacityCc ?? data?.engineCapacity ?? data?.engine_capacity_cc;
@@ -269,10 +283,35 @@ function renderRateTiersDiff(
   );
 }
 
+export async function submitProposalDecision(
+  proposalId: string,
+  approvedItemIds: string[]
+): Promise<{ appliedCount: number; status: string }> {
+  const res = await fetch(`/api/admin/change-proposals/${proposalId}/apply`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ approvedItemIds }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(
+      data.error ||
+        (approvedItemIds.length === 0
+          ? 'Failed to reject proposal.'
+          : 'Failed to apply selected changes.')
+    );
+  }
+
+  return data;
+}
+
 export function ChangeProposalDiffViewer({
   proposal,
   items,
   onApplySuccess,
+  onRejectSuccess,
 }: ChangeProposalDiffViewerProps) {
   const actionableItems = items.filter((i) => i.action !== 'unchanged');
   const pendingActionableItems = actionableItems.filter((i) => i.status === 'pending');
@@ -282,6 +321,8 @@ export function ChangeProposalDiffViewer({
     new Set(pendingActionableItems.map((i) => i.id))
   );
   const [isApplying, setIsApplying] = useState(false);
+  const [isRejecting, setIsRejecting] = useState(false);
+  const [isUnchangedExpanded, setIsUnchangedExpanded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -314,20 +355,7 @@ export function ChangeProposalDiffViewer({
     setSuccessMessage(null);
 
     try {
-      const res = await fetch(`/api/admin/change-proposals/${proposal.id}/apply`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          approvedItemIds: Array.from(selectedIds),
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to apply selected changes.');
-      }
-
+      const data = await submitProposalDecision(proposal.id, Array.from(selectedIds));
       setSuccessMessage(
         `Successfully applied ${data.appliedCount} mutation(s). Status: ${data.status}`
       );
@@ -342,13 +370,39 @@ export function ChangeProposalDiffViewer({
     }
   };
 
+  const handleReject = async () => {
+    setIsRejecting(true);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      await submitProposalDecision(proposal.id, []);
+      if (onRejectSuccess) {
+        onRejectSuccess();
+      } else if (onApplySuccess) {
+        onApplySuccess();
+      }
+    } catch (err: any) {
+      console.error('Error rejecting proposal:', err);
+      setError(err.message || 'Error rejecting proposal');
+    } finally {
+      setIsRejecting(false);
+    }
+  };
+
   const addItems = items.filter((i) => i.action === 'add' && i.entity_type === 'motorcycle');
   const updateItems = items.filter((i) => i.action === 'update' && i.entity_type === 'motorcycle');
   const delistItems = items.filter((i) => i.action === 'delist' && i.entity_type === 'motorcycle');
   const unchangedItems = items.filter((i) => i.action === 'unchanged' && i.entity_type === 'motorcycle');
   const shopItems = items.filter((i) => i.entity_type === 'rental_shop');
 
-  const isCompleted = proposal.status === 'applied' || proposal.status === 'rejected';
+  const isCompleted =
+    proposal.status === 'applied' ||
+    proposal.status === 'partially_applied' ||
+    proposal.status === 'rejected';
+  const gmrShopUrl =
+    proposal.shop_url ||
+    (proposal.rental_shops?.slug ? getShopUrl(proposal.rental_shops) : undefined);
 
   return (
     <div className="space-y-6">
@@ -359,7 +413,7 @@ export function ChangeProposalDiffViewer({
             <h2 className="text-xl font-bold text-gray-900">
               {proposal.rental_shops?.provider_name || 'Rental Shop'}
             </h2>
-            <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
+            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 mt-1">
               <span>Crawl Date: {new Date(proposal.created_at).toLocaleString()}</span>
               <span>•</span>
               <a
@@ -371,6 +425,20 @@ export function ChangeProposalDiffViewer({
                 {proposal.source_url}
                 <ArrowTopRightOnSquareIcon className="w-3.5 h-3.5" />
               </a>
+              {gmrShopUrl && (
+                <>
+                  <span>•</span>
+                  <a
+                    href={gmrShopUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-emerald-700 hover:text-emerald-900 font-medium flex items-center gap-1"
+                  >
+                    View on GMR
+                    <ArrowTopRightOnSquareIcon className="w-3.5 h-3.5" />
+                  </a>
+                </>
+              )}
             </div>
           </div>
 
@@ -417,20 +485,40 @@ export function ChangeProposalDiffViewer({
               </button>
             </div>
 
-            <Button
-              onClick={handleApply}
-              disabled={isApplying || selectedIds.size === 0}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
-            >
-              {isApplying ? (
-                <>
-                  <Spinner size="sm" className="mr-2" />
-                  Applying Changes...
-                </>
-              ) : (
-                `Approve & Apply Selected (${selectedIds.size})`
-              )}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={handleReject}
+                disabled={isApplying || isRejecting}
+                className="border-red-300 text-red-700 hover:bg-red-50"
+              >
+                {isRejecting ? (
+                  <>
+                    <Spinner size="sm" className="mr-2" />
+                    Rejecting...
+                  </>
+                ) : (
+                  <>
+                    <XMarkIcon className="w-4 h-4 mr-1.5" />
+                    Reject Proposal
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={handleApply}
+                disabled={isApplying || isRejecting || selectedIds.size === 0}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                {isApplying ? (
+                  <>
+                    <Spinner size="sm" className="mr-2" />
+                    Applying Changes...
+                  </>
+                ) : (
+                  `Approve & Apply Selected (${selectedIds.size})`
+                )}
+              </Button>
+            </div>
           </div>
         )}
       </Card>
@@ -686,37 +774,58 @@ export function ChangeProposalDiffViewer({
       {/* 5. Confirmed Unchanged Fleet Section */}
       {unchangedItems.length > 0 && (
         <Card>
-          <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-100">
-            <CheckCircleIcon className="w-5 h-5 text-gray-500" />
-            <h3 className="text-base font-semibold text-gray-900">
-              Confirmed Unchanged Inventory ({unchangedItems.length})
-            </h3>
-          </div>
-          <p className="text-xs text-gray-500 mb-3">
-            These motorcycles were observed on the shop website with identical rates and specifications as the database.
-          </p>
-          <div className="divide-y divide-gray-100">
-            {unchangedItems.map((item) => {
-              const year = getModelYear(item.proposed_data);
-              const engineCc = getEngineCapacity(item.proposed_data);
-              return (
-                <div key={item.id} className="py-2.5 flex items-start gap-3 px-2">
-                  <div className="flex-1 text-sm">
-                    <div className="font-medium text-gray-900">
-                      {item.brand_name} {item.model_name}
+          <button
+            type="button"
+            aria-expanded={isUnchangedExpanded}
+            onClick={() => setIsUnchangedExpanded((prev) => !prev)}
+            className="w-full flex items-center justify-between text-left"
+          >
+            <div className="flex items-center gap-2">
+              <CheckCircleIcon className="w-5 h-5 text-gray-500" />
+              <h3 className="text-base font-semibold text-gray-900">
+                Confirmed Unchanged Inventory ({unchangedItems.length})
+              </h3>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-700">
+              <span>{isUnchangedExpanded ? 'Hide' : 'Show'}</span>
+              {isUnchangedExpanded ? (
+                <ChevronDownIcon className="w-4 h-4" />
+              ) : (
+                <ChevronRightIcon className="w-4 h-4" />
+              )}
+            </div>
+          </button>
+
+          {isUnchangedExpanded && (
+            <div className="mt-3 pt-3 border-t border-gray-100">
+              <p className="text-xs text-gray-500 mb-3">
+                These motorcycles were observed on the shop website with identical rates and specifications as the database.
+              </p>
+              <div className="divide-y divide-gray-100">
+                {unchangedItems.map((item) => {
+                  const year = getModelYear(item.proposed_data);
+                  const engineCc = getEngineCapacity(item.proposed_data);
+                  return (
+                    <div key={item.id} className="py-2.5 flex items-start gap-3 px-2">
+                      <div className="flex-1 text-sm">
+                        <div className="font-medium text-gray-900">
+                          {item.brand_name} {item.model_name}
+                        </div>
+                        <div className="text-xs text-gray-500 flex gap-4 mt-0.5">
+                          {year != null && <span>Year: {year}</span>}
+                          {engineCc != null && <span>Engine: {engineCc}cc</span>}
+                        </div>
+                        {renderRateTiers(item.proposed_data?.rates, item.proposed_data?.currency, 'gray')}
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-500 flex gap-4 mt-0.5">
-                      {year != null && <span>Year: {year}</span>}
-                      {engineCc != null && <span>Engine: {engineCc}cc</span>}
-                    </div>
-                    {renderRateTiers(item.proposed_data?.rates, item.proposed_data?.currency, 'gray')}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </Card>
       )}
     </div>
   );
 }
+
