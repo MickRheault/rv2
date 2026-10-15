@@ -1081,5 +1081,290 @@ describe('Change Proposal Application & Geodata Protection', () => {
       const uniqueTypeIds = new Set(typeIds);
       expect(uniqueTypeIds.size).toBe(3);
     });
+
+    it('rolls back (deletes) the newly inserted parent change_proposals row when inserting change_proposal_items fails', async () => {
+      const getExistingInventorySpy = jest
+        .spyOn(ChangeProposalService, 'getExistingShopInventory')
+        .mockResolvedValue([
+          {
+            id: 'bike-pcx-1',
+            brand_name: 'Honda',
+            model_name: 'PCX',
+            year: null,
+            engine_capacity_cc: 150,
+            availability_status: 'available',
+            rates: [{ min_days: 1, max_days: null, rate_per_day: 15 }],
+          },
+        ] as any);
+
+      const deletedProposalIds: string[] = [];
+
+      const mockSupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'rental_shops') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+                }),
+              }),
+            };
+          }
+          if (table === 'rental_shop_inclusions' || table === 'rental_shop_conditions') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ data: [], error: null }),
+              }),
+            };
+          }
+          if (table === 'change_proposals') {
+            return {
+              insert: jest.fn((payload) => ({
+                select: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({
+                    data: { id: 'prop-orphan-candidate', ...payload },
+                    error: null,
+                  }),
+                }),
+              })),
+              delete: jest.fn().mockReturnValue({
+                eq: jest.fn((col: string, val: string) => {
+                  if (col === 'id') {
+                    deletedProposalIds.push(val);
+                  }
+                  return {
+                    eq: jest.fn().mockReturnThis(),
+                    neq: jest.fn().mockResolvedValue({ error: null }),
+                    then: (resolve: any) => resolve({ error: null }),
+                  };
+                }),
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              insert: jest.fn().mockResolvedValue({
+                error: { message: 'invalid input value for enum proposal_action: "unchanged"' },
+              }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      await expect(
+        ChangeProposalService.createProposalFromCrawl({
+          shopId: '2b97f3dc-b0af-42b0-bb3a-68d286d94ef3',
+          sourceUrl: 'https://wescooterrentalsiemreap.com/',
+          agentRunId: 'hermes-we-scooter-20261014T180742Z-be3924d7',
+          bikes: [
+            {
+              brand: 'Honda',
+              modelName: 'PCX',
+              rates: [{ minDays: 1, ratePerDay: 15, currency: 'USD' }],
+            },
+          ],
+        })
+      ).rejects.toThrow('Failed to stage change proposal items: invalid input value for enum proposal_action: "unchanged"');
+
+      // Parent row must be rolled back so no orphaned 0-item proposal remains
+      expect(deletedProposalIds).toContain('prop-orphan-candidate');
+
+      getExistingInventorySpy.mockRestore();
+    });
+
+    it('replaces existing pending Change Proposals for the same (shopId, agentRunId) when staging succeeds', async () => {
+      const getExistingInventorySpy = jest
+        .spyOn(ChangeProposalService, 'getExistingShopInventory')
+        .mockResolvedValue([
+          {
+            id: 'bike-click-1',
+            brand_name: 'Honda',
+            model_name: 'Click',
+            year: null,
+            engine_capacity_cc: 125,
+            availability_status: 'available',
+            rates: [{ min_days: 1, max_days: null, rate_per_day: 10 }],
+          },
+        ] as any);
+
+      const deleteFilters: Array<Record<string, any>> = [];
+
+      const createDeleteChain = () => {
+        const filters: Record<string, any> = {};
+        const chain: any = {
+          eq: jest.fn((col: string, val: any) => {
+            filters[col] = val;
+            return chain;
+          }),
+          neq: jest.fn((col: string, val: any) => {
+            filters[`neq_${col}`] = val;
+            return chain;
+          }),
+          then: (resolve: any) => {
+            deleteFilters.push(filters);
+            return resolve({ error: null });
+          },
+        };
+        return chain;
+      };
+
+      const mockSupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'rental_shops') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+                }),
+              }),
+            };
+          }
+          if (table === 'rental_shop_inclusions' || table === 'rental_shop_conditions') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ data: [], error: null }),
+              }),
+            };
+          }
+          if (table === 'change_proposals') {
+            return {
+              insert: jest.fn((payload) => ({
+                select: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({
+                    data: { id: 'prop-new-11usd', ...payload },
+                    error: null,
+                  }),
+                }),
+              })),
+              delete: jest.fn(() => createDeleteChain()),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              insert: jest.fn().mockResolvedValue({ error: null }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      const result = await ChangeProposalService.createProposalFromCrawl({
+        shopId: '2b97f3dc-b0af-42b0-bb3a-68d286d94ef3',
+        sourceUrl: 'https://wescooterrentalsiemreap.com/',
+        agentRunId: 'hermes-we-scooter-20261014T180742Z-be3924d7',
+        bikes: [
+          {
+            brand: 'Honda',
+            modelName: 'Click 125',
+            engineCapacityCc: 125,
+            rates: [{ minDays: 1, ratePerDay: 11, currency: 'USD' }],
+          },
+        ],
+      });
+
+      expect(result.proposal.id).toBe('prop-new-11usd');
+      expect(result.diff.summaryCounts).toEqual({
+        add: 0,
+        update: 1,
+        delist: 0,
+        unchanged: 0,
+      });
+
+      // Verify any prior pending proposal with the same (shop_id, agent_run_id) was superseded/deleted
+      expect(deleteFilters).toContainEqual({
+        shop_id: '2b97f3dc-b0af-42b0-bb3a-68d286d94ef3',
+        agent_run_id: 'hermes-we-scooter-20261014T180742Z-be3924d7',
+        status: 'pending',
+        neq_id: 'prop-new-11usd',
+      });
+
+      getExistingInventorySpy.mockRestore();
+    });
+
+    it('persists camelCase businessDescription in proposed_data to rental_shops.business_description when applying a shop update', async () => {
+      const proposalData = {
+        id: 'prop-shop-camel',
+        shop_id: 'shop-uuid-camel',
+        status: 'pending',
+      };
+
+      const itemsData = [
+        {
+          id: 'item-shop-camel-1',
+          proposal_id: 'prop-shop-camel',
+          entity_type: 'rental_shop',
+          action: 'update',
+          entity_id: 'shop-uuid-camel',
+          brand_name: 'Shop Profile',
+          model_name: 'General Information',
+          proposed_data: {
+            businessDescription: 'Family-run scooter rental in Siem Reap.',
+          },
+          diff_summary: {
+            business_description: {
+              old: null,
+              new: 'Family-run scooter rental in Siem Reap.',
+            },
+          },
+          status: 'pending',
+        },
+      ];
+
+      let updatedShopPayload: Record<string, any> | null = null;
+
+      const mockSupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({ data: proposalData, error: null }),
+                }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ data: itemsData, error: null }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'rental_shops') {
+            return {
+              update: jest.fn((payload: Record<string, any>) => {
+                updatedShopPayload = payload;
+                return {
+                  eq: jest.fn().mockResolvedValue({ error: null }),
+                };
+              }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      const result = await ChangeProposalService.apply('prop-shop-camel', ['item-shop-camel-1']);
+
+      expect(result.success).toBe(true);
+      expect(result.appliedCount).toBe(1);
+      expect(updatedShopPayload).toEqual({
+        business_description: 'Family-run scooter rental in Siem Reap.',
+      });
+    });
   });
 });
+

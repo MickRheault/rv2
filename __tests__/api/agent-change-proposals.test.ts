@@ -193,4 +193,33 @@ describe('POST /api/agent/change-proposals', () => {
       }
     );
   });
+
+  it('returns 500 with error details and does not record a success crawl run when item staging fails and rolls back', async () => {
+    (ChangeProposalService.createProposalFromCrawl as jest.Mock).mockRejectedValue(
+      new Error('Failed to stage change proposal items: invalid input value for enum proposal_action: "unchanged"')
+    );
+
+    const request = new NextRequest('http://localhost:3000/api/agent/change-proposals', {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer secret-agent-key',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        shopId: '2b97f3dc-b0af-42b0-bb3a-68d286d94ef3',
+        sourceUrl: 'https://wescooterrentalsiemreap.com/',
+        agentRunId: 'hermes-we-scooter-20261014T180742Z-be3924d7',
+        bikes: [{ brand: 'Honda', modelName: 'PCX', rates: [{ minDays: 1, dailyRate: 15, currency: 'USD' }] }],
+      }),
+    });
+
+    const response = await POST(request);
+    expect(response.status).toBe(500);
+    const body = await response.json();
+    expect(body).toEqual({
+      error: 'Internal server error staging proposal',
+      details: 'Failed to stage change proposal items: invalid input value for enum proposal_action: "unchanged"',
+    });
+    expect(recordCrawlRun).not.toHaveBeenCalled();
+  });
 });
