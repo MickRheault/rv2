@@ -1488,6 +1488,188 @@ describe('Change Proposal Application & Geodata Protection', () => {
         "Cannot apply proposal with status 'partially_applied'"
       );
     });
+
+    it('loads year_to in getExistingShopInventory and persists year and year_to on add and update in apply (#138)', async () => {
+      let selectedColumns = '';
+      const mockInventoryRows = [
+        {
+          id: 'bike-gen-1',
+          model: 'Click 125',
+          year: 2015,
+          year_to: 2020,
+          engine_capacity_cc: 125,
+          availability_status: 'available',
+          brands: { name: 'Honda' },
+          rental_rate_tiers: [{ min_days: 1, max_days: null, rate_per_day: 200 }],
+        },
+      ];
+
+      const mockInventorySupabase = {
+        from: jest.fn(() => ({
+          select: jest.fn((cols: string) => {
+            selectedColumns = cols;
+            return {
+              eq: jest.fn(() => ({
+                or: jest.fn().mockResolvedValue({ data: mockInventoryRows, error: null }),
+              })),
+            };
+          }),
+        })),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockInventorySupabase);
+
+      const inventory = await ChangeProposalService.getExistingShopInventory('shop-1');
+      expect(selectedColumns).toContain('year_to');
+      expect(inventory).toEqual([
+        {
+          id: 'bike-gen-1',
+          brand_name: 'Honda',
+          model_name: 'Click 125',
+          year: 2015,
+          year_to: 2020,
+          engine_capacity_cc: 125,
+          availability_status: 'available',
+          rates: [{ min_days: 1, max_days: null, rate_per_day: 200 }],
+        },
+      ]);
+
+      // Now test ChangeProposalService.apply for add (with range) and update (range -> single year)
+      const proposalData = {
+        id: 'prop-year-range',
+        shop_id: 'shop-1',
+        status: 'pending',
+      };
+
+      const itemsData = [
+        {
+          id: 'item-add-range',
+          proposal_id: 'prop-year-range',
+          entity_type: 'motorcycle',
+          action: 'add',
+          entity_id: null,
+          brand_name: 'Honda',
+          model_name: 'Click 125',
+          proposed_data: {
+            brand: 'Honda',
+            modelName: 'Click 125',
+            year: 2015,
+            year_to: 2020,
+            engineCapacityCc: 125,
+            rates: [{ minDays: 1, ratePerDay: 200, currency: 'THB' }],
+          },
+          status: 'pending',
+        },
+        {
+          id: 'item-update-single-year',
+          proposal_id: 'prop-year-range',
+          entity_type: 'motorcycle',
+          action: 'update',
+          entity_id: 'bike-existing-range',
+          brand_name: 'Honda',
+          model_name: 'CB500X',
+          proposed_data: {
+            brand: 'Honda',
+            modelName: 'CB500X',
+            year: 2023,
+            year_to: null,
+            rates: [{ minDays: 1, ratePerDay: 800, currency: 'THB' }],
+          },
+          status: 'pending',
+        },
+      ];
+
+      const insertedMotorcycles: any[] = [];
+      const updatedMotorcycles: Array<{ id: string; payload: any }> = [];
+
+      const mockApplySupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({ data: proposalData, error: null }),
+                }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ data: itemsData, error: null }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+                in: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'brands') {
+            return {
+              select: jest.fn().mockReturnValue({
+                ilike: jest.fn().mockReturnValue({
+                  maybeSingle: jest.fn().mockResolvedValue({ data: { id: 'brand-honda' }, error: null }),
+                }),
+              }),
+            };
+          }
+          if (table === 'motorcycle_rentals') {
+            return {
+              insert: jest.fn((payload) => {
+                insertedMotorcycles.push(payload);
+                return {
+                  select: jest.fn().mockReturnValue({
+                    single: jest.fn().mockResolvedValue({ data: { id: 'bike-new-gen' }, error: null }),
+                  }),
+                };
+              }),
+              update: jest.fn((payload) => ({
+                eq: jest.fn((_col: string, id: string) => {
+                  updatedMotorcycles.push({ id, payload });
+                  return Promise.resolve({ error: null });
+                }),
+              })),
+            };
+          }
+          if (table === 'rental_rate_tiers') {
+            return {
+              delete: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+              insert: jest.fn().mockResolvedValue({ error: null }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockApplySupabase);
+
+      const applyRes = await ChangeProposalService.apply('prop-year-range', [
+        'item-add-range',
+        'item-update-single-year',
+      ]);
+
+      expect(applyRes.success).toBe(true);
+      expect(insertedMotorcycles).toHaveLength(1);
+      expect(insertedMotorcycles[0]).toMatchObject({
+        model: 'Click 125',
+        year: 2015,
+        year_to: 2020,
+      });
+
+      expect(updatedMotorcycles).toHaveLength(1);
+      expect(updatedMotorcycles[0]).toEqual({
+        id: 'bike-existing-range',
+        payload: expect.objectContaining({
+          year: 2023,
+          year_to: null,
+        }),
+      });
+    });
   });
 });
 

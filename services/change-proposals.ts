@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { normalizeMotorcycleYearRange } from '@/lib/utils';
 import { getShopUrl } from '@/lib/utils/urls';
 import {
   computeShopInventoryDiff,
@@ -171,6 +172,7 @@ export class ChangeProposalService {
         id,
         model,
         year,
+        year_to,
         engine_capacity_cc,
         availability_status,
         brands!inner (
@@ -194,6 +196,7 @@ export class ChangeProposalService {
       brand_name: b.brands?.name || 'Unknown',
       model_name: b.model,
       year: b.year,
+      year_to: b.year_to ?? null,
       engine_capacity_cc: b.engine_capacity_cc,
       availability_status: b.availability_status,
       rates: (b.rental_rate_tiers || []).map((r: any) => ({
@@ -493,8 +496,7 @@ export class ChangeProposalService {
           }
 
           // Insert motorcycle
-          const rawYear = proposed.year ?? proposed.modelYear ?? proposed.model_year;
-          const year = rawYear !== undefined && rawYear !== null ? Number(rawYear) : null;
+          const { year, year_to } = normalizeMotorcycleYearRange(proposed);
 
           const rawCc = proposed.engineCapacityCc ?? proposed.engineCapacity ?? proposed.engine_capacity_cc;
           const engineCapacityCc = rawCc !== undefined && rawCc !== null ? Number(rawCc) : null;
@@ -508,7 +510,8 @@ export class ChangeProposalService {
               shop_id: proposal.shop_id,
               brand_id: brandId,
               model: item.model_name || 'Motorcycle',
-              year: year !== null && !isNaN(year) ? year : null,
+              year,
+              year_to,
               engine_capacity_cc: engineCapacityCc !== null && !isNaN(engineCapacityCc) ? engineCapacityCc : null,
               availability_status: 'available',
               rental_rate_per_day: rentalRatePerDay !== null && !isNaN(rentalRatePerDay) ? rentalRatePerDay : null,
@@ -532,10 +535,11 @@ export class ChangeProposalService {
         } else if (item.action === 'update' && item.entity_id) {
           // Update specifications
           const updatePayload: Record<string, any> = {};
-          const proposedYear = proposed.year ?? proposed.modelYear ?? proposed.model_year;
-          if (proposedYear !== undefined && proposedYear !== null) {
-            const parsedYear = Number(proposedYear);
-            if (!isNaN(parsedYear)) updatePayload.year = parsedYear;
+          const { year: normalizedYear, year_to: normalizedYearTo } =
+            normalizeMotorcycleYearRange(proposed);
+          if (normalizedYear !== null) {
+            updatePayload.year = normalizedYear;
+            updatePayload.year_to = normalizedYearTo;
           }
           const proposedCc = proposed.engineCapacityCc ?? proposed.engineCapacity ?? proposed.engine_capacity_cc;
           if (proposedCc !== undefined && proposedCc !== null) {

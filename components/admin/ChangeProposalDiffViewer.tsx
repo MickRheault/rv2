@@ -14,7 +14,7 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
 } from '@heroicons/react/24/outline';
-import { getCurrencySymbol } from '@/lib/utils';
+import { formatMotorcycleYear, getCurrencySymbol } from '@/lib/utils';
 import { getShopUrl } from '@/lib/utils/urls';
 
 export interface DiffViewerItem {
@@ -66,9 +66,11 @@ function getEngineCapacity(data: any): number | null {
   return val != null && !isNaN(Number(val)) ? Number(val) : null;
 }
 
-function getModelYear(data: any): number | null {
-  const val = data?.year ?? data?.modelYear ?? data?.model_year;
-  return val != null && !isNaN(Number(val)) ? Number(val) : null;
+function getModelYear(data: any): string | null {
+  const year =
+    data?.year ?? data?.year_from ?? data?.yearFrom ?? data?.modelYear ?? data?.model_year;
+  const yearTo = data?.year_to ?? data?.yearTo;
+  return formatMotorcycleYear(year, yearTo);
 }
 
 function getRateAmount(tier: any): number {
