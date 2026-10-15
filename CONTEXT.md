@@ -24,7 +24,19 @@ _Avoid_: Crawl rank, overdue priority
 The official manufacturer designation for a motorcycle model as curated in RideVault.
 _Avoid_: Scraped model title, listing alias, informal nickname
 
+**Model Year Range**:
+The inclusive span of production years (`year` to `year_to`, or a single `year`) that defines a distinct generation or fleet pricing tier of a motorcycle listing at a rental shop.
+_Avoid_: Generation string, year suffix in model name, open-ended year
+
 **Recovery Snapshot**:
 A full, self-contained SQL dump of the `public` and `auth` database schemas and data, compressed and GPG-encrypted for point-in-time disaster recovery.
 _Avoid_: Partial dump, unencrypted export, table CSV
+
+**Source Offer Identity**:
+The stable external identity of a shop's motorcycle rental offer—anchored by an explicit target motorcycle record ID, the offer's canonical source page URL, or a verified historical source URL alias—used to match incoming crawl snapshots to existing listings even when editable attributes (brand, model spelling, model year, or rates) are corrected.
+_Avoid_: Brand-model primary key, URL guess, title-only identity
+
+**Identity Review**:
+An explicit review state on a Change Proposal Item indicating that an incoming motorcycle snapshot matches multiple existing shop listings or forms a likely replacement pair with an unmatched existing listing, requiring an administrator to choose between updating a specific existing motorcycle, creating a genuinely new listing, or merging duplicate listings into a surviving record before the proposal can be applied.
+_Avoid_: Silent first-match fallback, unlinked delist-and-add pair
 
