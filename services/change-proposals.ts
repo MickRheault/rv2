@@ -1,6 +1,7 @@
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import {
   computeShopInventoryDiff,
+  normalizeCrawledShopProfile,
   type CrawledBikeSnapshot,
   type ExistingBikeRecord,
   type DiffResult,
@@ -558,21 +559,16 @@ export class ChangeProposalService {
           appliedCount++;
         }
       } else if (item.entity_type === 'rental_shop') {
+        const normalizedShop = normalizeCrawledShopProfile(proposed) || {};
         const allowedUpdates: Record<string, any> = {};
-        const desc =
-          proposed.business_description !== undefined
-            ? proposed.business_description
-            : proposed.businessDescription !== undefined
-            ? proposed.businessDescription
-            : proposed.description;
-        if (desc !== undefined) {
-          allowedUpdates.business_description = desc;
+        if (normalizedShop.business_description !== undefined) {
+          allowedUpdates.business_description = normalizedShop.business_description;
         }
-        if (proposed.phone !== undefined) {
-          allowedUpdates.phone = proposed.phone;
+        if (normalizedShop.phone !== undefined) {
+          allowedUpdates.phone = normalizedShop.phone;
         }
-        if (proposed.website !== undefined) {
-          allowedUpdates.website = proposed.website;
+        if (normalizedShop.website !== undefined) {
+          allowedUpdates.website = normalizedShop.website;
         }
 
         if (Object.keys(allowedUpdates).length > 0) {

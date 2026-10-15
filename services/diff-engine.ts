@@ -116,6 +116,22 @@ function canonicalKey(brand: string, modelName: string): string {
   return `${brand.trim().toLowerCase()}:${normalizeModelToken(modelName)}`;
 }
 
+function compositeCanonicalKey(
+  brand: string,
+  modelName: string,
+  engineCapacityCc?: number | null
+): string | null {
+  if (engineCapacityCc == null || engineCapacityCc <= 0) {
+    return null;
+  }
+  const normalizedModel = normalizeModelToken(modelName);
+  const ccPattern = new RegExp(`\\b${engineCapacityCc}\\b`);
+  if (ccPattern.test(normalizedModel)) {
+    return null;
+  }
+  return canonicalKey(brand, `${modelName} ${engineCapacityCc}`);
+}
+
 export function normalizeCrawledShopProfile(
   rawShop?: CrawledShopProfile | Record<string, any> | null
 ): CrawledShopProfile | null {
@@ -128,6 +144,8 @@ export function normalizeCrawledShopProfile(
       ? rawShop.business_description
       : rawShop.businessDescription !== undefined
       ? rawShop.businessDescription
+      : (rawShop as any).description !== undefined
+      ? (rawShop as any).description
       : undefined;
 
   return {
@@ -337,18 +355,13 @@ export function computeShopInventoryDiff(
 
   // Register secondary composite keys (model + engine_capacity_cc) when model omits displacement
   for (const bike of existingBikes) {
-    if (bike.engine_capacity_cc != null && bike.engine_capacity_cc > 0) {
-      const normalizedModel = normalizeModelToken(bike.model_name);
-      const ccPattern = new RegExp(`\\b${bike.engine_capacity_cc}\\b`);
-      if (!ccPattern.test(normalizedModel)) {
-        const compositeKey = canonicalKey(
-          bike.brand_name,
-          `${bike.model_name} ${bike.engine_capacity_cc}`
-        );
-        if (!existingMap.has(compositeKey)) {
-          existingMap.set(compositeKey, bike);
-        }
-      }
+    const compositeKey = compositeCanonicalKey(
+      bike.brand_name,
+      bike.model_name,
+      bike.engine_capacity_cc
+    );
+    if (compositeKey && !existingMap.has(compositeKey)) {
+      existingMap.set(compositeKey, bike);
     }
   }
 
@@ -359,18 +372,13 @@ export function computeShopInventoryDiff(
     const primaryKey = canonicalKey(crawled.brand, crawled.modelName);
     let existing = existingMap.get(primaryKey);
 
-    if (
-      !existing &&
-      crawled.engineCapacityCc != null &&
-      crawled.engineCapacityCc > 0
-    ) {
-      const normalizedCrawledModel = normalizeModelToken(crawled.modelName);
-      const ccPattern = new RegExp(`\\b${crawled.engineCapacityCc}\\b`);
-      if (!ccPattern.test(normalizedCrawledModel)) {
-        const compositeKey = canonicalKey(
-          crawled.brand,
-          `${crawled.modelName} ${crawled.engineCapacityCc}`
-        );
+    if (!existing) {
+      const compositeKey = compositeCanonicalKey(
+        crawled.brand,
+        crawled.modelName,
+        crawled.engineCapacityCc
+      );
+      if (compositeKey) {
         existing = existingMap.get(compositeKey);
       }
     }

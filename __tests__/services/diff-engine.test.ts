@@ -641,6 +641,40 @@ describe('Diff Engine', () => {
         unchanged: 3,
       });
     });
+
+    it('symmetrically matches a bare crawled model name with explicit engineCapacity against a displacement-suffixed existing listing', () => {
+      const existingBikes: ExistingBikeRecord[] = [
+        {
+          id: 'bike-pcx-150',
+          brand_name: 'Honda',
+          model_name: 'PCX 150',
+          year: null,
+          engine_capacity_cc: 150,
+          availability_status: 'available',
+          rates: [{ min_days: 1, max_days: null, rate_per_day: 15 }],
+        },
+      ];
+
+      const crawledBikes: any[] = [
+        {
+          brand: 'Honda',
+          modelName: 'PCX',
+          engineCapacity: 150,
+          rates: [{ minDays: 1, dailyRate: 15, currency: 'USD' }],
+        },
+      ];
+
+      const diff = computeShopInventoryDiff(existingBikes, crawledBikes);
+      expect(diff.items).toHaveLength(1);
+      expect(diff.items[0].entity_id).toBe('bike-pcx-150');
+      expect(diff.items[0].action).toBe('unchanged');
+      expect(diff.summaryCounts).toEqual({
+        add: 0,
+        update: 0,
+        delist: 0,
+        unchanged: 1,
+      });
+    });
   });
 });
 

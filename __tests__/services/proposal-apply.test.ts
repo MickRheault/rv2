@@ -1285,6 +1285,86 @@ describe('Change Proposal Application & Geodata Protection', () => {
 
       getExistingInventorySpy.mockRestore();
     });
+
+    it('persists camelCase businessDescription in proposed_data to rental_shops.business_description when applying a shop update', async () => {
+      const proposalData = {
+        id: 'prop-shop-camel',
+        shop_id: 'shop-uuid-camel',
+        status: 'pending',
+      };
+
+      const itemsData = [
+        {
+          id: 'item-shop-camel-1',
+          proposal_id: 'prop-shop-camel',
+          entity_type: 'rental_shop',
+          action: 'update',
+          entity_id: 'shop-uuid-camel',
+          brand_name: 'Shop Profile',
+          model_name: 'General Information',
+          proposed_data: {
+            businessDescription: 'Family-run scooter rental in Siem Reap.',
+          },
+          diff_summary: {
+            business_description: {
+              old: null,
+              new: 'Family-run scooter rental in Siem Reap.',
+            },
+          },
+          status: 'pending',
+        },
+      ];
+
+      let updatedShopPayload: Record<string, any> | null = null;
+
+      const mockSupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({ data: proposalData, error: null }),
+                }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ data: itemsData, error: null }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'rental_shops') {
+            return {
+              update: jest.fn((payload: Record<string, any>) => {
+                updatedShopPayload = payload;
+                return {
+                  eq: jest.fn().mockResolvedValue({ error: null }),
+                };
+              }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      const result = await ChangeProposalService.apply('prop-shop-camel', ['item-shop-camel-1']);
+
+      expect(result.success).toBe(true);
+      expect(result.appliedCount).toBe(1);
+      expect(updatedShopPayload).toEqual({
+        business_description: 'Family-run scooter rental in Siem Reap.',
+      });
+    });
   });
 });
 
