@@ -2,6 +2,7 @@
 import React from 'react';
 import { SITE_CONFIG } from './config';
 import { getShopUrl } from '@/lib/utils/urls';
+import { formatMotorcycleYear } from '@/lib/utils';
 
 // Organization schema for the company
 export function generateOrganizationSchema() {
@@ -50,7 +51,9 @@ export function generateMotorcycleSchema(motorcycle: {
   id: string;
   model?: string;
   brand?: string;
-  year?: number;
+  year?: number | string | null;
+  year_to?: number | null;
+  yearTo?: number | null;
   category?: string;
   description?: string;
   pricePerDay?: number;
@@ -68,6 +71,8 @@ export function generateMotorcycleSchema(motorcycle: {
     model,
     brand,
     year,
+    year_to,
+    yearTo,
     category,
     description,
     pricePerDay,
@@ -81,7 +86,8 @@ export function generateMotorcycleSchema(motorcycle: {
     availability = true
   } = motorcycle;
 
-  const name = `${year || ''} ${brand || ''} ${model || ''}`.trim();
+  const formattedYear = formatMotorcycleYear(year, year_to ?? yearTo);
+  const name = `${formattedYear || ''} ${brand || ''} ${model || ''}`.trim();
   
   return {
     '@context': 'https://schema.org',
@@ -118,10 +124,10 @@ export function generateMotorcycleSchema(motorcycle: {
       },
     } : {}),
     additionalProperty: [
-      year && {
+      formattedYear && {
         '@type': 'PropertyValue',
         name: 'Year',
-        value: year.toString(),
+        value: formattedYear,
       },
       engineSize && {
         '@type': 'PropertyValue',
@@ -404,7 +410,9 @@ export function generateVehicleSchema(motorcycle: {
   id: string;
   model?: string;
   brand?: string;
-  year?: number;
+  year?: number | string | null;
+  year_to?: number | null;
+  yearTo?: number | null;
   engineSize?: number;
   fuelType?: string;
   transmission?: string;
@@ -414,9 +422,10 @@ export function generateVehicleSchema(motorcycle: {
   features?: string[];
   specifications?: Record<string, any>;
 }) {
-  const { id, model, brand, year, engineSize, fuelType, transmission, category, description, image, features, specifications } = motorcycle;
+  const { id, model, brand, year, year_to, yearTo, engineSize, fuelType, transmission, category, description, image, features, specifications } = motorcycle;
   
-  const vehicleName = `${year || ''} ${brand || ''} ${model || ''}`.trim();
+  const formattedYear = formatMotorcycleYear(year, year_to ?? yearTo);
+  const vehicleName = `${formattedYear || ''} ${brand || ''} ${model || ''}`.trim();
   
   return {
     '@context': 'https://schema.org',
@@ -429,7 +438,7 @@ export function generateVehicleSchema(motorcycle: {
       name: brand,
     } : undefined,
     model,
-    vehicleModelDate: year,
+    vehicleModelDate: formattedYear || undefined,
     vehicleConfiguration: category,
     vehicleEngine: engineSize ? {
       '@type': 'EngineSpecification',
@@ -588,7 +597,9 @@ export function generateEnhancedMotorcycleSchema(motorcycle: {
   id: string;
   model?: string;
   brand?: string;
-  year?: number;
+  year?: number | string | null;
+  year_to?: number | null;
+  yearTo?: number | null;
   engineSize?: number;
   category?: string;
   description?: string;

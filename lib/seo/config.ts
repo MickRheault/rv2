@@ -1,5 +1,6 @@
 // SEO configuration and utilities for Global Moto Rentals
 import { Metadata } from 'next';
+import { formatMotorcycleYear } from '@/lib/utils';
 
 export interface SEOConfig {
   title: string;
@@ -222,13 +223,16 @@ export function generateMotorcycleSEO(motorcycle: {
   location?: string;
   pricePerDay?: number;
   currency?: string;
-  year?: number;
+  year?: number | string | null;
+  year_to?: number | null;
+  yearTo?: number | null;
   category?: string;
   image?: string;
 }): SEOConfig {
-  const { model, brand, location, pricePerDay, currency, year, category, image } = motorcycle;
+  const { model, brand, location, pricePerDay, currency, year, year_to, yearTo, category, image } = motorcycle;
+  const formattedYear = formatMotorcycleYear(year, year_to ?? yearTo);
   
-  const bikeName = `${year || ''} ${brand || ''} ${model || ''}`.trim() || 'Motorcycle';
+  const bikeName = `${formattedYear || ''} ${brand || ''} ${model || ''}`.trim() || 'Motorcycle';
   const locationText = location ? ` in ${location}` : '';
   
   // Format price with correct currency

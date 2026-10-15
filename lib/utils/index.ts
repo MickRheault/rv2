@@ -196,7 +196,169 @@ export function formatEngineCapacity(capacity: number | null): string {
   // If capacity is 1000 or more, show as liters with one decimal place
   const liters = capacity / 1000
   return `${liters.toFixed(1)}L`
-} 
+}
+
+function parseSingleYearValue(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') {
+    return null
+  }
+  if (typeof value === 'number') {
+    return Number.isFinite(value) && value > 0 ? Math.trunc(value) : null
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (!/^\d+$/.test(trimmed)) {
+      return null
+    }
+    const parsed = Number(trimmed)
+    return Number.isFinite(parsed) && parsed > 0 ? Math.trunc(parsed) : null
+  }
+  return null
+}
+
+function parseYearRangeString(value: string): { year: number | null; year_to: number | null } | null {
+  const match = value.trim().match(/^(\d{4})\s*[-–—]\s*(\d{4})$/)
+  if (!match) {
+    return null
+  }
+  const start = Number(match[1])
+  const end = Number(match[2])
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) {
+    return { year: null, year_to: null }
+  }
+  return {
+    year: start,
+    year_to: end > start ? end : null,
+  }
+}
+
+/**
+ * Validates whether a (year, yearTo) pair is a legal Model Year Range.
+ * Returns false if yearTo is provided when year is null/undefined, or if yearTo < year.
+ */
+export function isValidMotorcycleYearRange(
+  year?: number | null,
+  yearTo?: number | null
+): boolean {
+  if (year !== null && year !== undefined && (!Number.isFinite(Number(year)) || Number(year) <= 0)) {
+    return false
+  }
+  if (yearTo !== null && yearTo !== undefined) {
+    if (year === null || year === undefined) {
+      return false
+    }
+    if (!Number.isFinite(Number(yearTo)) || Number(yearTo) < Number(year)) {
+      return false
+    }
+  }
+  return true
+}
+
+/**
+ * Normalizes a motorcycle Model Year Range from primitive values (e.g. 2023, "2015-2020")
+ * or objects with year/year_to/yearFrom/yearTo/modelYear/model_year fields.
+ * Equal bounds (year_to === year) are normalized to year_to: null.
+ */
+export function normalizeMotorcycleYearRange(input: unknown): {
+  year: number | null
+  year_to: number | null
+} {
+  if (input === null || input === undefined || input === '') {
+    return { year: null, year_to: null }
+  }
+
+  if (typeof input === 'number') {
+    return { year: parseSingleYearValue(input), year_to: null }
+  }
+
+  if (typeof input === 'string') {
+    const rangeParsed = parseYearRangeString(input)
+    if (rangeParsed) {
+      return rangeParsed
+    }
+    return { year: parseSingleYearValue(input), year_to: null }
+  }
+
+  if (typeof input === 'object') {
+    const obj = input as Record<string, unknown>
+    const rawStart =
+      obj.year !== undefined && obj.year !== null
+        ? obj.year
+        : obj.year_from !== undefined && obj.year_from !== null
+        ? obj.year_from
+        : obj.yearFrom !== undefined && obj.yearFrom !== null
+        ? obj.yearFrom
+        : obj.modelYear !== undefined && obj.modelYear !== null
+        ? obj.modelYear
+        : obj.model_year !== undefined && obj.model_year !== null
+        ? obj.model_year
+        : null
+
+    const rawEnd =
+      obj.year_to !== undefined && obj.year_to !== null
+        ? obj.year_to
+        : obj.yearTo !== undefined && obj.yearTo !== null
+        ? obj.yearTo
+        : null
+
+    let year: number | null = null
+    let yearTo: number | null = null
+
+    if (typeof rawStart === 'string') {
+      const rangeParsed = parseYearRangeString(rawStart)
+      if (rangeParsed) {
+        year = rangeParsed.year
+        yearTo = rangeParsed.year_to
+      } else {
+        year = parseSingleYearValue(rawStart)
+      }
+    } else {
+      year = parseSingleYearValue(rawStart)
+    }
+
+    if (rawEnd !== null && rawEnd !== '') {
+      yearTo = parseSingleYearValue(rawEnd)
+    }
+
+    if (year === null) {
+      return { year: null, year_to: null }
+    }
+
+    if (yearTo === null || yearTo <= year) {
+      return { year, year_to: null }
+    }
+
+    return { year, year_to: yearTo }
+  }
+
+  return { year: null, year_to: null }
+}
+
+/**
+ * Formats a motorcycle's Model Year Range for display:
+ * - "2015-2020" when year and yearTo form a range (yearTo > year)
+ * - "2023" when only a single year is present (or yearTo === year)
+ * - null when year is unset
+ */
+export function formatMotorcycleYear(
+  year?: number | string | null,
+  yearTo?: number | string | null
+): string | null {
+  const normalized =
+    typeof year === 'string' && (yearTo === undefined || yearTo === null || yearTo === '')
+      ? normalizeMotorcycleYearRange(year)
+      : normalizeMotorcycleYearRange({ year, year_to: yearTo })
+
+  if (normalized.year === null) {
+    return null
+  }
+
+  if (normalized.year_to !== null && normalized.year_to > normalized.year) {
+    return `${normalized.year}-${normalized.year_to}`
+  }
+
+  return `${normalized.year}`
+}
 
 // Premium Listing Utilities
 export type PremiumType = 'gold' | 'platinum' | 'featured'

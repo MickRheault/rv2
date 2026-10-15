@@ -44,6 +44,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
                 pricePerDay: (motorcycle as any).rental_rate_per_day || undefined,
                 currency: (motorcycle as any).rental_rate_currency || undefined,
                 year: (motorcycle as any).year || undefined,
+                year_to: (motorcycle as any).year_to || undefined,
                 category: (motorcycle as any).categories?.name || undefined,
                 image: (motorcycle as any).motorcycle_images?.[0]?.images?.url || undefined,
             })
@@ -145,6 +146,7 @@ async function renderMotorcycleDetails(id: string) {
             model: (motorcycle as any).model || undefined,
             brand: (motorcycle as any).brands?.name || undefined,
             year: (motorcycle as any).year || undefined,
+            year_to: (motorcycle as any).year_to || undefined,
             category: (motorcycle as any).categories?.name || undefined,
             description: `${(motorcycle as any).brands?.name || ''} ${(motorcycle as any).model || ''} motorcycle rental`.trim(),
             image: (motorcycle as any).motorcycle_images?.[0]?.images?.url || undefined,
