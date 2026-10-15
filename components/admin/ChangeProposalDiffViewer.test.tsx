@@ -479,5 +479,18 @@ describe('ChangeProposalDiffViewer', () => {
 
     expect(onRejectSuccess).toHaveBeenCalledTimes(1);
   });
+
+  it('hides action toolbar and Reject Proposal button when proposal status is partially_applied', () => {
+    const partiallyAppliedProposal: DiffViewerProposal = {
+      ...mockProposal,
+      status: 'partially_applied',
+    };
+
+    render(<ChangeProposalDiffViewer proposal={partiallyAppliedProposal} items={mockItems} />);
+
+    expect(screen.queryByRole('button', { name: /Reject Proposal/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Approve & Apply Selected/i })).not.toBeInTheDocument();
+  });
 });
+
 

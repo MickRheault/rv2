@@ -138,6 +138,26 @@ export interface CreateProposalInput {
   shopUpdates?: Record<string, any> | null;
 }
 
+const SHOP_WITH_LOCATION_SELECT = `
+  rental_shops!inner (
+    id,
+    provider_name,
+    slug,
+    cities (
+      name,
+      provinces (
+        countries (
+          name
+        )
+      )
+    )
+  )
+`;
+
+function resolveProposalShopUrl(shop: any): string | undefined {
+  return shop?.slug ? getShopUrl(shop) : undefined;
+}
+
 export class ChangeProposalService {
   /**
    * Fetches active motorcycles for a shop with current rate tiers.
@@ -326,19 +346,7 @@ export class ChangeProposalService {
         summary_counts,
         created_at,
         reviewed_at,
-        rental_shops!inner (
-          id,
-          provider_name,
-          slug,
-          cities (
-            name,
-            provinces (
-              countries (
-                name
-              )
-            )
-          )
-        )
+        ${SHOP_WITH_LOCATION_SELECT}
       `,
         { count: 'exact' }
       )
@@ -361,7 +369,7 @@ export class ChangeProposalService {
         shopId: row.shop_id,
         shopName: row.rental_shops?.provider_name,
         shopSlug: row.rental_shops?.slug,
-        shopUrl: row.rental_shops?.slug ? getShopUrl(row.rental_shops) : undefined,
+        shopUrl: resolveProposalShopUrl(row.rental_shops),
         agentRunId: row.agent_run_id,
         sourceUrl: row.source_url,
         status: row.status,
@@ -383,19 +391,7 @@ export class ChangeProposalService {
       .from('change_proposals')
       .select(`
         *,
-        rental_shops!inner (
-          id,
-          provider_name,
-          slug,
-          cities (
-            name,
-            provinces (
-              countries (
-                name
-              )
-            )
-          )
-        )
+        ${SHOP_WITH_LOCATION_SELECT}
       `)
       .eq('id', proposalId)
       .single();
@@ -414,18 +410,14 @@ export class ChangeProposalService {
       throw new Error(`Failed to load proposal items: ${itemsError.message}`);
     }
 
-    const shopData = (proposal as any).rental_shops;
-    const shopUrl = shopData?.slug ? getShopUrl(shopData) : undefined;
-
     return {
       proposal: {
         ...proposal,
-        shop_url: shopUrl,
+        shop_url: resolveProposalShopUrl((proposal as any).rental_shops),
       },
       items: items || [],
     };
   }
-
 
   /**
    * Applies approved mutation items to live database records.
@@ -445,7 +437,11 @@ export class ChangeProposalService {
       throw new Error(`Proposal not found: ${propError?.message || proposalId}`);
     }
 
-    if (proposal.status === 'applied' || proposal.status === 'rejected') {
+    if (
+      proposal.status === 'applied' ||
+      proposal.status === 'partially_applied' ||
+      proposal.status === 'rejected'
+    ) {
       throw new Error(`Cannot apply proposal with status '${proposal.status}'`);
     }
 

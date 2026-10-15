@@ -15,7 +15,7 @@ Streamline the Change Proposal review experience with three targeted improvement
    - Clicking "Reject" marks the Change Proposal as `rejected` and marks all pending actionable Change Proposal Items as `rejected` without modifying live inventory.
    - On the list page, the row updates in place (or reloads the filtered list); on the detail page, rejecting immediately redirects the administrator back to the Change Proposals list page.
 2. **"View on GMR" Public Shop Link**:
-   - Enrich Change Proposal queries with the shop's canonical location hierarchy (city and country) so each Change Proposal includes its canonical public GMR shop path (`/{country}/{city}/shop/{slug}`).
+   - Enrich Change Proposal queries with the shop's canonical location hierarchy (city and country) so each Change Proposal includes its canonical public GMR shop path (`/shop/{country}/{city}/{slug}`).
    - Display a "View on GMR" external link (opening in a new tab) alongside the external source website link in both the Change Proposals list table and the Change Proposal detail header.
 3. **Collapsed-by-Default "Confirmed Unchanged Inventory" Accordion**:
    - Convert the "Confirmed Unchanged Inventory" section on the Change Proposal detail page into an interactive accordion/toggle that is collapsed by default.

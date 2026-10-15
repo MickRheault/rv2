@@ -1467,7 +1467,29 @@ describe('Change Proposal Application & Geodata Protection', () => {
       const res = await ChangeProposalService.getProposalById('prop-1');
       expect((res.proposal as any).shop_url).toBe('/shop/cambodia/siem-reap/we-scooter-rental-siem-reap');
     });
+
+    it('rejects ChangeProposalService.apply when proposal status is already partially_applied', async () => {
+      const mockSupabase = {
+        from: jest.fn(() => ({
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              single: jest.fn().mockResolvedValue({
+                data: { id: 'prop-partial', shop_id: 'shop-1', status: 'partially_applied' },
+                error: null,
+              }),
+            }),
+          }),
+        })),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      await expect(ChangeProposalService.apply('prop-partial', [])).rejects.toThrow(
+        "Cannot apply proposal with status 'partially_applied'"
+      );
+    });
   });
 });
+
 
 

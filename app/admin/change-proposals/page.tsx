@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Card, Button, Badge, Spinner, Alert, Select, Modal } from '@/components/ui';
 import { shopService } from '@/services/shops';
+import { submitProposalDecision } from '@/components/admin/ChangeProposalDiffViewer';
 import {
   ArrowLeftIcon,
   ArrowPathIcon,
@@ -125,15 +126,7 @@ export default function ChangeProposalsPage() {
     setProposalError(null);
 
     try {
-      const res = await fetch(`/api/admin/change-proposals/${proposalId}/apply`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ approvedItemIds: [] }),
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        throw new Error(json.error || `Failed to reject proposal (status: ${res.status})`);
-      }
+      await submitProposalDecision(proposalId, []);
       await fetchProposals();
     } catch (err: any) {
       console.error('Error rejecting proposal:', err);

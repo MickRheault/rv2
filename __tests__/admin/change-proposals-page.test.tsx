@@ -1,10 +1,18 @@
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import ChangeProposalsPage from '@/app/admin/change-proposals/page';
+import ProposalReviewPage from '@/app/admin/change-proposals/[id]/page';
 
 // Mock global fetch
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
+
+const mockPush = jest.fn();
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: mockPush,
+  }),
+}));
 
 jest.mock('@/services/shops', () => ({
   shopService: {
@@ -310,5 +318,69 @@ describe('ChangeProposalsPage', () => {
       );
     });
   });
+
+  it('redirects to /admin/change-proposals when Reject Proposal is clicked on ProposalReviewPage', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        proposal: {
+          id: 'prop-detail-1',
+          shop_id: 'shop-1',
+          source_url: 'https://wescooterrentalsiemreap.com/',
+          shop_url: '/shop/cambodia/siem-reap/we-scooter-rental-siem-reap',
+          status: 'pending',
+          created_at: '2026-10-15T12:00:00Z',
+          rental_shops: {
+            provider_name: 'We Scooter Rental Siem Reap',
+            slug: 'we-scooter-rental-siem-reap',
+          },
+        },
+        items: [
+          {
+            id: 'item-1',
+            proposal_id: 'prop-detail-1',
+            entity_type: 'motorcycle',
+            action: 'add',
+            entity_id: null,
+            brand_name: 'Honda',
+            model_name: 'Click 125',
+            original_data: null,
+            proposed_data: { rates: [{ minDays: 1, ratePerDay: 11, currency: 'USD' }] },
+            diff_summary: null,
+            status: 'pending',
+          },
+        ],
+      }),
+    });
+
+    await React.act(async () => {
+      render(
+        <React.Suspense fallback={<div>Loading...</div>}>
+          <ProposalReviewPage params={Promise.resolve({ id: 'prop-detail-1' })} />
+        </React.Suspense>
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('We Scooter Rental Siem Reap')).toBeInTheDocument();
+    });
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        appliedCount: 0,
+        status: 'rejected',
+      }),
+    });
+
+    const rejectBtn = screen.getByRole('button', { name: /Reject Proposal/i });
+    fireEvent.click(rejectBtn);
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/admin/change-proposals');
+    });
+  });
 });
+
 

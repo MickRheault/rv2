@@ -283,6 +283,30 @@ function renderRateTiersDiff(
   );
 }
 
+export async function submitProposalDecision(
+  proposalId: string,
+  approvedItemIds: string[]
+): Promise<{ appliedCount: number; status: string }> {
+  const res = await fetch(`/api/admin/change-proposals/${proposalId}/apply`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ approvedItemIds }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(
+      data.error ||
+        (approvedItemIds.length === 0
+          ? 'Failed to reject proposal.'
+          : 'Failed to apply selected changes.')
+    );
+  }
+
+  return data;
+}
+
 export function ChangeProposalDiffViewer({
   proposal,
   items,
@@ -331,20 +355,7 @@ export function ChangeProposalDiffViewer({
     setSuccessMessage(null);
 
     try {
-      const res = await fetch(`/api/admin/change-proposals/${proposal.id}/apply`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          approvedItemIds: Array.from(selectedIds),
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to apply selected changes.');
-      }
-
+      const data = await submitProposalDecision(proposal.id, Array.from(selectedIds));
       setSuccessMessage(
         `Successfully applied ${data.appliedCount} mutation(s). Status: ${data.status}`
       );
@@ -365,20 +376,7 @@ export function ChangeProposalDiffViewer({
     setSuccessMessage(null);
 
     try {
-      const res = await fetch(`/api/admin/change-proposals/${proposal.id}/apply`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          approvedItemIds: [],
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to reject proposal.');
-      }
-
+      await submitProposalDecision(proposal.id, []);
       if (onRejectSuccess) {
         onRejectSuccess();
       } else if (onApplySuccess) {
@@ -398,7 +396,10 @@ export function ChangeProposalDiffViewer({
   const unchangedItems = items.filter((i) => i.action === 'unchanged' && i.entity_type === 'motorcycle');
   const shopItems = items.filter((i) => i.entity_type === 'rental_shop');
 
-  const isCompleted = proposal.status === 'applied' || proposal.status === 'rejected';
+  const isCompleted =
+    proposal.status === 'applied' ||
+    proposal.status === 'partially_applied' ||
+    proposal.status === 'rejected';
   const gmrShopUrl =
     proposal.shop_url ||
     (proposal.rental_shops?.slug ? getShopUrl(proposal.rental_shops) : undefined);
