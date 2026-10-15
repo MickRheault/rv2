@@ -149,6 +149,7 @@ describe('Diff Engine', () => {
     // Verify complete original_data snapshot
     expect(item.original_data).toEqual({
       year: 2023,
+      year_to: null,
       engine_capacity_cc: 125,
       availability_status: 'available',
       rates: [{ min_days: 1, max_days: 6, rate_per_day: 250 }],
@@ -157,6 +158,7 @@ describe('Diff Engine', () => {
     // Verify proposed_data snapshot includes availability_status
     expect(item.proposed_data).toEqual({
       ...crawledBikes[0],
+      year_to: null,
       availability_status: 'available',
     });
 
@@ -670,6 +672,236 @@ describe('Diff Engine', () => {
       expect(diff.items[0].action).toBe('unchanged');
       expect(diff.summaryCounts).toEqual({
         add: 0,
+        update: 0,
+        delist: 0,
+        unchanged: 1,
+      });
+    });
+  });
+
+  describe('Model Year Range Normalization & Two-Pass Generation Matching (#138)', () => {
+    it('normalizes explicit year/year_to, yearFrom/yearTo, and "YYYY-YYYY" / "YYYY–YYYY" range strings in normalizeCrawledBikeSnapshot', () => {
+      expect(
+        normalizeCrawledBikeSnapshot({
+          brand: 'Honda',
+          modelName: 'Click 125',
+          year: '2015-2020',
+          rates: [{ minDays: 1, ratePerDay: 200 }],
+        })
+      ).toMatchObject({
+        brand: 'Honda',
+        modelName: 'Click 125',
+        year: 2015,
+        year_to: 2020,
+      });
+
+      expect(
+        normalizeCrawledBikeSnapshot({
+          brand: 'Honda',
+          modelName: 'Click 125',
+          year: '2021–2024',
+          rates: [{ minDays: 1, ratePerDay: 250 }],
+        })
+      ).toMatchObject({
+        brand: 'Honda',
+        modelName: 'Click 125',
+        year: 2021,
+        year_to: 2024,
+      });
+
+      expect(
+        normalizeCrawledBikeSnapshot({
+          brand: 'Honda',
+          modelName: 'CB500X',
+          yearFrom: 2019,
+          yearTo: 2022,
+          rates: [{ minDays: 1, ratePerDay: 800 }],
+        })
+      ).toMatchObject({
+        brand: 'Honda',
+        modelName: 'CB500X',
+        year: 2019,
+        year_to: 2022,
+      });
+
+      expect(
+        normalizeCrawledBikeSnapshot({
+          brand: 'Yamaha',
+          modelName: 'NMAX 155',
+          year_from: 2023,
+          year_to: 2023,
+          rates: [{ minDays: 1, ratePerDay: 400 }],
+        })
+      ).toMatchObject({
+        brand: 'Yamaha',
+        modelName: 'NMAX 155',
+        year: 2023,
+        year_to: null,
+      });
+    });
+
+    it('matches multi-generation tiers of the same canonical model in Pass 1 without cross-overwriting or false delisting', () => {
+      const existingGenerations: ExistingBikeRecord[] = [
+        {
+          id: 'click-gen-1',
+          brand_name: 'Honda',
+          model_name: 'Click 125',
+          year: 2015,
+          year_to: 2020,
+          engine_capacity_cc: 125,
+          availability_status: 'available',
+          rates: [{ min_days: 1, max_days: null, rate_per_day: 200 }],
+        },
+        {
+          id: 'click-gen-2',
+          brand_name: 'Honda',
+          model_name: 'Click 125',
+          year: 2021,
+          year_to: 2024,
+          engine_capacity_cc: 125,
+          availability_status: 'available',
+          rates: [{ min_days: 1, max_days: null, rate_per_day: 250 }],
+        },
+      ];
+
+      // Crawl returns generations in reverse order with a rate update on gen 2
+      const crawledGenerations: any[] = [
+        {
+          brand: 'Honda',
+          modelName: 'Click 125',
+          year: '2021-2024',
+          engineCapacityCc: 125,
+          rates: [{ minDays: 1, ratePerDay: 270, currency: 'THB' }],
+        },
+        {
+          brand: 'Honda',
+          modelName: 'Click 125',
+          year: 2015,
+          year_to: 2020,
+          engineCapacityCc: 125,
+          rates: [{ minDays: 1, ratePerDay: 200, currency: 'THB' }],
+        },
+      ];
+
+      const diff = computeShopInventoryDiff(existingGenerations, crawledGenerations);
+
+      expect(diff.items).toHaveLength(2);
+      const gen2Item = diff.items.find((i) => i.entity_id === 'click-gen-2');
+      const gen1Item = diff.items.find((i) => i.entity_id === 'click-gen-1');
+
+      expect(gen2Item).toBeDefined();
+      expect(gen2Item?.action).toBe('update');
+      expect(gen2Item?.diff_summary?.year).toBeUndefined();
+      expect(gen2Item?.diff_summary?.rates?.tiersDiff?.[0]).toMatchObject({
+        status: 'modified',
+        oldRate: 250,
+        newRate: 270,
+      });
+
+      expect(gen1Item).toBeDefined();
+      expect(gen1Item?.action).toBe('unchanged');
+      expect(gen1Item?.original_data).toMatchObject({
+        year: 2015,
+        year_to: 2020,
+      });
+
+      expect(diff.summaryCounts).toEqual({
+        add: 0,
+        update: 1,
+        delist: 0,
+        unchanged: 1,
+      });
+    });
+
+    it('falls back to unambiguous model-only matching in Pass 2 and emits formatted diff_summary.year when a single listing updates to a range', () => {
+      const existingSingle: ExistingBikeRecord[] = [
+        {
+          id: 'cb500x-1',
+          brand_name: 'Honda',
+          model_name: 'CB500X',
+          year: 2020,
+          year_to: null,
+          engine_capacity_cc: 471,
+          availability_status: 'available',
+          rates: [{ min_days: 1, max_days: null, rate_per_day: 800 }],
+        },
+      ];
+
+      const crawledRange: any[] = [
+        {
+          brand: 'Honda',
+          modelName: 'CB500X',
+          year: '2015-2020',
+          engineCapacityCc: 471,
+          rates: [{ minDays: 1, ratePerDay: 800, currency: 'THB' }],
+        },
+      ];
+
+      const diff = computeShopInventoryDiff(existingSingle, crawledRange);
+
+      expect(diff.items).toHaveLength(1);
+      expect(diff.items[0].entity_id).toBe('cb500x-1');
+      expect(diff.items[0].action).toBe('update');
+      expect(diff.items[0].diff_summary?.year).toEqual({
+        old: '2020',
+        new: '2015-2020',
+      });
+      expect(diff.summaryCounts).toEqual({
+        add: 0,
+        update: 1,
+        delist: 0,
+        unchanged: 0,
+      });
+    });
+
+    it('matches existing generation tier in Pass 1 and stages newly introduced second generation tier as add', () => {
+      const existingOneTier: ExistingBikeRecord[] = [
+        {
+          id: 'click-gen-1',
+          brand_name: 'Honda',
+          model_name: 'Click 125',
+          year: 2015,
+          year_to: 2020,
+          engine_capacity_cc: 125,
+          availability_status: 'available',
+          rates: [{ min_days: 1, max_days: null, rate_per_day: 200 }],
+        },
+      ];
+
+      // Crawl lists new 2021-2024 tier first, followed by existing 2015-2020 tier
+      const crawledTwoTiers: any[] = [
+        {
+          brand: 'Honda',
+          modelName: 'Click 125',
+          year: '2021-2024',
+          engineCapacityCc: 125,
+          rates: [{ minDays: 1, ratePerDay: 250, currency: 'THB' }],
+        },
+        {
+          brand: 'Honda',
+          modelName: 'Click 125',
+          year: '2015-2020',
+          engineCapacityCc: 125,
+          rates: [{ minDays: 1, ratePerDay: 200, currency: 'THB' }],
+        },
+      ];
+
+      const diff = computeShopInventoryDiff(existingOneTier, crawledTwoTiers);
+
+      expect(diff.items).toHaveLength(2);
+      const addedTier = diff.items.find((i) => i.action === 'add');
+      const matchedTier = diff.items.find((i) => i.action === 'unchanged');
+
+      expect(addedTier).toBeDefined();
+      expect(addedTier?.proposed_data).toMatchObject({
+        year: 2021,
+        year_to: 2024,
+      });
+
+      expect(matchedTier).toBeDefined();
+      expect(matchedTier?.entity_id).toBe('click-gen-1');
+      expect(diff.summaryCounts).toEqual({
+        add: 1,
         update: 0,
         delist: 0,
         unchanged: 1,
