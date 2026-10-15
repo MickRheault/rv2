@@ -2,7 +2,7 @@
 import React from 'react';
 import { SITE_CONFIG } from './config';
 import { getShopUrl } from '@/lib/utils/urls';
-import { formatMotorcycleYear } from '@/lib/utils';
+import { formatMotorcycleYear, type MotorcycleYearRangeInput } from '@/lib/utils';
 
 // Organization schema for the company
 export function generateOrganizationSchema() {
@@ -47,32 +47,28 @@ export function generateWebsiteSchema() {
 }
 
 // Motorcycle product schema
-export function generateMotorcycleSchema(motorcycle: {
-  id: string;
-  model?: string;
-  brand?: string;
-  year?: number | string | null;
-  year_to?: number | null;
-  yearTo?: number | null;
-  category?: string;
-  description?: string;
-  pricePerDay?: number;
-  currency?: string;
-  image?: string;
-  location?: string;
-  features?: string[];
-  fuelType?: string;
-  engineSize?: number;
-  transmission?: string;
-  availability?: boolean;
-}) {
+export function generateMotorcycleSchema(
+  motorcycle: MotorcycleYearRangeInput & {
+    id: string;
+    model?: string;
+    brand?: string;
+    category?: string;
+    description?: string;
+    pricePerDay?: number;
+    currency?: string;
+    image?: string;
+    location?: string;
+    features?: string[];
+    fuelType?: string;
+    engineSize?: number;
+    transmission?: string;
+    availability?: boolean;
+  }
+) {
   const {
     id,
     model,
     brand,
-    year,
-    year_to,
-    yearTo,
     category,
     description,
     pricePerDay,
@@ -86,7 +82,7 @@ export function generateMotorcycleSchema(motorcycle: {
     availability = true
   } = motorcycle;
 
-  const formattedYear = formatMotorcycleYear(year, year_to ?? yearTo);
+  const formattedYear = formatMotorcycleYear(motorcycle);
   const name = `${formattedYear || ''} ${brand || ''} ${model || ''}`.trim();
   
   return {
@@ -406,25 +402,24 @@ export function generateHowToSchema(guide: {
 }
 
 // Enhanced Vehicle schema for motorcycles
-export function generateVehicleSchema(motorcycle: {
-  id: string;
-  model?: string;
-  brand?: string;
-  year?: number | string | null;
-  year_to?: number | null;
-  yearTo?: number | null;
-  engineSize?: number;
-  fuelType?: string;
-  transmission?: string;
-  category?: string;
-  description?: string;
-  image?: string;
-  features?: string[];
-  specifications?: Record<string, any>;
-}) {
-  const { id, model, brand, year, year_to, yearTo, engineSize, fuelType, transmission, category, description, image, features, specifications } = motorcycle;
+export function generateVehicleSchema(
+  motorcycle: MotorcycleYearRangeInput & {
+    id: string;
+    model?: string;
+    brand?: string;
+    engineSize?: number;
+    fuelType?: string;
+    transmission?: string;
+    category?: string;
+    description?: string;
+    image?: string;
+    features?: string[];
+    specifications?: Record<string, any>;
+  }
+) {
+  const { id, model, brand, engineSize, fuelType, transmission, category, description, image, features, specifications } = motorcycle;
   
-  const formattedYear = formatMotorcycleYear(year, year_to ?? yearTo);
+  const formattedYear = formatMotorcycleYear(motorcycle);
   const vehicleName = `${formattedYear || ''} ${brand || ''} ${model || ''}`.trim();
   
   return {
@@ -593,36 +588,35 @@ export function generateRentalServiceSchema(serviceData: {
 }
 
 // Enhanced motorcycle schema combining all elements
-export function generateEnhancedMotorcycleSchema(motorcycle: {
-  id: string;
-  model?: string;
-  brand?: string;
-  year?: number | string | null;
-  year_to?: number | null;
-  yearTo?: number | null;
-  engineSize?: number;
-  category?: string;
-  description?: string;
-  image?: string;
-  features?: string[];
-  rentalRates?: Array<{
-    rateText?: string;
-    minDays: number;
-    maxDays?: number;
-    ratePerDay?: number;
-    currency?: string;
-  }>;
-  insuranceDetails?: Array<{
-    typeName: string;
-    isIncluded: boolean;
-    costPerDay?: number;
-    currency?: string;
-    deductible?: number;
-    notes?: string;
-  }>;
-  specifications?: Record<string, any>;
-  availability?: boolean;
-}) {
+export function generateEnhancedMotorcycleSchema(
+  motorcycle: MotorcycleYearRangeInput & {
+    id: string;
+    model?: string;
+    brand?: string;
+    engineSize?: number;
+    category?: string;
+    description?: string;
+    image?: string;
+    features?: string[];
+    rentalRates?: Array<{
+      rateText?: string;
+      minDays: number;
+      maxDays?: number;
+      ratePerDay?: number;
+      currency?: string;
+    }>;
+    insuranceDetails?: Array<{
+      typeName: string;
+      isIncluded: boolean;
+      costPerDay?: number;
+      currency?: string;
+      deductible?: number;
+      notes?: string;
+    }>;
+    specifications?: Record<string, any>;
+    availability?: boolean;
+  }
+) {
   const baseVehicleSchema = generateVehicleSchema(motorcycle);
   const pricingSchemas = motorcycle.rentalRates ? generatePricingSchema(motorcycle.rentalRates) : [];
   

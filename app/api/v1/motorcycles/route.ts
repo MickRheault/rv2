@@ -13,7 +13,7 @@ import { requireAuth } from '@/lib/api/middleware';
 import { rateLimit, getRateLimitHeaders } from '@/lib/api/rate-limit';
 import { motorcycleService } from '@/services/motorcycles';
 import { updateMotorcycleRateTiers } from '@/services/rental-rate-tiers';
-import { isValidMotorcycleYearRange, normalizeMotorcycleYearRange } from '@/lib/utils';
+import { parseAndValidateMotorcycleYearPayload } from '@/lib/utils';
 
 /**
  * GET /api/v1/motorcycles
@@ -114,29 +114,17 @@ export async function POST(request: NextRequest) {
             return errors.badRequest('Shop ID is required');
         }
 
-        const rawYearTo = motorcycleData.year_to !== undefined ? motorcycleData.year_to : yearTo;
-        if (motorcycleData.year !== undefined || rawYearTo !== undefined) {
-            const parsedYear =
-                motorcycleData.year === null || motorcycleData.year === undefined || motorcycleData.year === ''
-                    ? null
-                    : Number(motorcycleData.year);
-            const parsedYearTo =
-                rawYearTo === null || rawYearTo === undefined || rawYearTo === ''
-                    ? null
-                    : Number(rawYearTo);
-
-            if (!isValidMotorcycleYearRange(parsedYear, parsedYearTo)) {
-                return errors.badRequest(
-                    'Invalid model year range: year_to must be greater than or equal to year, and year is required when year_to is provided'
-                );
-            }
-
-            const normalized = normalizeMotorcycleYearRange({
-                year: parsedYear,
-                year_to: parsedYearTo,
-            });
-            motorcycleData.year = normalized.year;
-            motorcycleData.year_to = normalized.year_to;
+        const yearValidation = parseAndValidateMotorcycleYearPayload({
+            year: motorcycleData.year,
+            year_to: motorcycleData.year_to,
+            yearTo,
+        });
+        if (!yearValidation.valid) {
+            return errors.badRequest(yearValidation.error);
+        }
+        if (yearValidation.hasYearUpdate) {
+            motorcycleData.year = yearValidation.year;
+            motorcycleData.year_to = yearValidation.year_to;
         }
 
         const motorcycle = await motorcycleService.createMotorcycle(motorcycleData);

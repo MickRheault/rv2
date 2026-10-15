@@ -33,6 +33,13 @@ describe('Model Year Range Formatting & Normalization (#137)', () => {
       expect(formatMotorcycleYear('', null)).toBeNull();
       expect(formatMotorcycleYear(null, 2020)).toBeNull();
     });
+
+    it('accepts a MotorcycleYearRangeInput object directly', () => {
+      expect(formatMotorcycleYear({ year: 2015, year_to: 2020 })).toBe('2015-2020');
+      expect(formatMotorcycleYear({ year: 2015, yearTo: 2020 })).toBe('2015-2020');
+      expect(formatMotorcycleYear({ year: 2023, year_to: null })).toBe('2023');
+      expect(formatMotorcycleYear({ year: null, year_to: null })).toBeNull();
+    });
   });
 
   describe('normalizeMotorcycleYearRange', () => {

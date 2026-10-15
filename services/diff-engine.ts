@@ -327,51 +327,76 @@ export function computeStringListDiff(oldList: string[] = [], newList: string[] 
   return { added, removed };
 }
 
+export function canonicalModelsMatch(
+  brandA: string,
+  modelA: string,
+  ccA: number | null | undefined,
+  brandB: string,
+  modelB: string,
+  ccB: number | null | undefined,
+  mode: 'primary' | 'composite' | 'any' = 'any'
+): boolean {
+  const aPrimary = canonicalKey(brandA, modelA);
+  const bPrimary = canonicalKey(brandB, modelB);
+  if (mode === 'primary') {
+    return aPrimary === bPrimary;
+  }
+  if (mode === 'any' && aPrimary === bPrimary) {
+    return true;
+  }
+  const aComposite = compositeCanonicalKey(brandA, modelA, ccA);
+  const bComposite = compositeCanonicalKey(brandB, modelB, ccB);
+  if (aComposite !== null && aComposite === bPrimary) return true;
+  if (bComposite !== null && bComposite === aPrimary) return true;
+  if (aComposite !== null && bComposite !== null && aComposite === bComposite) return true;
+  return false;
+}
+
 function getCandidateExistingBikesForModel(
   crawled: CrawledBikeSnapshot,
   unmatchedExisting: ExistingBikeRecord[]
 ): ExistingBikeRecord[] {
-  const cPrimary = canonicalKey(crawled.brand, crawled.modelName);
-  const cComposite = compositeCanonicalKey(
-    crawled.brand,
-    crawled.modelName,
-    crawled.engineCapacityCc
-  );
-
-  const primaryMatches = unmatchedExisting.filter(
-    (bike) => canonicalKey(bike.brand_name, bike.model_name) === cPrimary
+  const primaryMatches = unmatchedExisting.filter((bike) =>
+    canonicalModelsMatch(
+      crawled.brand,
+      crawled.modelName,
+      crawled.engineCapacityCc,
+      bike.brand_name,
+      bike.model_name,
+      bike.engine_capacity_cc,
+      'primary'
+    )
   );
   if (primaryMatches.length > 0) {
     return primaryMatches;
   }
 
-  return unmatchedExisting.filter((bike) => {
-    const ePrimary = canonicalKey(bike.brand_name, bike.model_name);
-    const eComposite = compositeCanonicalKey(
+  return unmatchedExisting.filter((bike) =>
+    canonicalModelsMatch(
+      crawled.brand,
+      crawled.modelName,
+      crawled.engineCapacityCc,
       bike.brand_name,
       bike.model_name,
-      bike.engine_capacity_cc
-    );
-    if (eComposite !== null && eComposite === cPrimary) return true;
-    if (cComposite !== null && cComposite === ePrimary) return true;
-    if (eComposite !== null && cComposite !== null && eComposite === cComposite) return true;
-    return false;
-  });
+      bike.engine_capacity_cc,
+      'composite'
+    )
+  );
 }
 
 function crawledBikesShareCanonicalModel(
   a: CrawledBikeSnapshot,
   b: CrawledBikeSnapshot
 ): boolean {
-  const aPrimary = canonicalKey(a.brand, a.modelName);
-  const bPrimary = canonicalKey(b.brand, b.modelName);
-  if (aPrimary === bPrimary) return true;
-  const aComposite = compositeCanonicalKey(a.brand, a.modelName, a.engineCapacityCc);
-  const bComposite = compositeCanonicalKey(b.brand, b.modelName, b.engineCapacityCc);
-  if (aComposite !== null && aComposite === bPrimary) return true;
-  if (bComposite !== null && bComposite === aPrimary) return true;
-  if (aComposite !== null && bComposite !== null && aComposite === bComposite) return true;
-  return false;
+  return canonicalModelsMatch(
+    a.brand,
+    a.modelName,
+    a.engineCapacityCc,
+    b.brand,
+    b.modelName,
+    b.engineCapacityCc,
+    'any'
+  );
 }
 
 export function computeShopInventoryDiff(
@@ -430,15 +455,8 @@ export function computeShopInventoryDiff(
           !matchedByCrawledIndex.has(otherIdx) &&
           crawledBikesShareCanonicalModel(crawled, other)
       );
-      const candidateRange = normalizeMotorcycleYearRange({
-        year: candidate.year,
-        year_to: candidate.year_to,
-      });
 
-      if (
-        unmatchedCrawledSiblings.length === 1 ||
-        (candidateRange.year === null && candidateRange.year_to === null)
-      ) {
+      if (unmatchedCrawledSiblings.length === 1) {
         matchedByCrawledIndex.set(cIdx, candidate);
         matchedExistingSet.add(candidate);
       }

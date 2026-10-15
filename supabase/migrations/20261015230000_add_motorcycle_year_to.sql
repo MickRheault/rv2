@@ -83,4 +83,112 @@ $$ LANGUAGE plpgsql;
 
 GRANT EXECUTE ON FUNCTION get_entities_by_freshness(freshness_content_type, freshness_status, INTEGER, INTEGER) TO authenticated;
 
+ALTER FUNCTION public.get_entities_by_freshness(public.freshness_content_type, public.freshness_status, integer, integer) SET search_path = public, extensions;
+
 COMMENT ON FUNCTION get_entities_by_freshness(freshness_content_type, freshness_status, INTEGER, INTEGER) IS 'Returns paginated list of entities filtered by content type and freshness status with Model Year Range formatting';
+
+-- Update apply_flagged_content_changes to normalize motorcycle Model Year Ranges ("2015-2020" or single year) into year and year_to
+CREATE OR REPLACE FUNCTION apply_flagged_content_changes(flagged_content_id UUID, admin_id UUID)
+RETURNS BOOLEAN AS $$
+DECLARE
+  flag_record RECORD;
+  update_query TEXT;
+  field_name TEXT;
+  field_value TEXT;
+  table_name TEXT;
+  range_matches TEXT[];
+  parsed_start INTEGER;
+  parsed_end INTEGER;
+  success BOOLEAN DEFAULT false;
+BEGIN
+  -- Get the flagged content record
+  SELECT * INTO flag_record FROM flagged_content
+  WHERE id = flagged_content_id AND status = 'approved';
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Flagged content not found or not approved';
+  END IF;
+
+  -- Determine target table based on content type
+  table_name := CASE flag_record.content_type
+    WHEN 'motorcycle' THEN 'motorcycle_rentals'
+    WHEN 'rental_shop' THEN 'rental_shops'
+    ELSE NULL
+  END;
+
+  IF table_name IS NULL THEN
+    RAISE EXCEPTION 'Unsupported content type: %', flag_record.content_type;
+  END IF;
+
+  -- Build dynamic update query for top-level fields
+  update_query := 'UPDATE ' || table_name || ' SET ';
+
+  -- Add each field from proposed_data
+  FOR field_name IN SELECT jsonb_object_keys(flag_record.proposed_data)
+  LOOP
+    field_value := flag_record.proposed_data ->> field_name;
+
+    -- Skip certain fields that shouldn't be directly updated
+    IF field_name NOT IN ('id', 'created_at', 'updated_at') THEN
+      IF flag_record.content_type = 'motorcycle' AND field_name = 'year' THEN
+        IF field_value IS NULL OR btrim(field_value) = '' THEN
+          update_query := update_query || 'year = NULL, ';
+          IF NOT (flag_record.proposed_data ? 'year_to') THEN
+            update_query := update_query || 'year_to = NULL, ';
+          END IF;
+        ELSIF btrim(field_value) ~ '^\d{4}\s*[-–—]\s*\d{4}$' THEN
+          range_matches := regexp_match(btrim(field_value), '^(\d{4})\s*[-–—]\s*(\d{4})$');
+          parsed_start := range_matches[1]::INTEGER;
+          parsed_end := range_matches[2]::INTEGER;
+          update_query := update_query || 'year = ' || parsed_start || ', ';
+          IF NOT (flag_record.proposed_data ? 'year_to') THEN
+            IF parsed_end > parsed_start THEN
+              update_query := update_query || 'year_to = ' || parsed_end || ', ';
+            ELSE
+              update_query := update_query || 'year_to = NULL, ';
+            END IF;
+          END IF;
+        ELSE
+          update_query := update_query || 'year = ' || quote_literal(btrim(field_value)) || ', ';
+          IF NOT (flag_record.proposed_data ? 'year_to') THEN
+            update_query := update_query || 'year_to = NULL, ';
+          END IF;
+        END IF;
+      ELSIF field_value IS NULL THEN
+        update_query := update_query || field_name || ' = NULL, ';
+      ELSE
+        update_query := update_query || field_name || ' = ' || quote_literal(field_value) || ', ';
+      END IF;
+    END IF;
+  END LOOP;
+
+  -- Remove trailing comma and add WHERE clause
+  update_query := rtrim(update_query, ', ');
+  update_query := update_query || ', updated_at = NOW()';
+  update_query := update_query || ' WHERE id = ' || quote_literal(flag_record.entity_id);
+
+  -- Execute the update
+  EXECUTE update_query;
+
+  -- Update the flagged content status
+  UPDATE flagged_content
+  SET
+    status = 'applied',
+    applied_by_admin_id = admin_id,
+    applied_at = NOW()
+  WHERE id = flagged_content_id;
+
+  success := true;
+  RETURN success;
+
+EXCEPTION
+  WHEN OTHERS THEN
+    RAISE WARNING 'Error applying flagged content changes: %', SQLERRM;
+    RETURN false;
+END;
+$$ LANGUAGE plpgsql;
+
+GRANT EXECUTE ON FUNCTION apply_flagged_content_changes(UUID, UUID) TO authenticated;
+
+ALTER FUNCTION public.apply_flagged_content_changes(uuid, uuid) SET search_path = public, extensions;
+

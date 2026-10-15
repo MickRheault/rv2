@@ -907,6 +907,48 @@ describe('Diff Engine', () => {
         unchanged: 1,
       });
     });
+
+    it('does not arbitrarily pair in Pass 2 when multiple unmatched crawled generations compete for a single year=null existing bike', () => {
+      const existingNullYear: ExistingBikeRecord[] = [
+        {
+          id: 'click-null',
+          brand_name: 'Honda',
+          model_name: 'Click 125',
+          year: null,
+          year_to: null,
+          engine_capacity_cc: 125,
+          availability_status: 'available',
+          rates: [{ min_days: 1, max_days: null, rate_per_day: 200 }],
+        },
+      ];
+
+      const crawledTwoTiers: any[] = [
+        {
+          brand: 'Honda',
+          modelName: 'Click 125',
+          year: '2015-2020',
+          engineCapacityCc: 125,
+          rates: [{ minDays: 1, ratePerDay: 200, currency: 'THB' }],
+        },
+        {
+          brand: 'Honda',
+          modelName: 'Click 125',
+          year: '2021-2024',
+          engineCapacityCc: 125,
+          rates: [{ minDays: 1, ratePerDay: 250, currency: 'THB' }],
+        },
+      ];
+
+      const diff = computeShopInventoryDiff(existingNullYear, crawledTwoTiers);
+
+      expect(diff.summaryCounts).toEqual({
+        add: 2,
+        update: 0,
+        delist: 1,
+        unchanged: 0,
+      });
+    });
   });
 });
+
 

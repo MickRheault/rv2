@@ -210,6 +210,109 @@ describe('v1 Motorcycles REST API & OpenAPI Model Year Range Support (#139)', ()
       expect(badRes.status).toBe(400);
       expect(motorcycleService.updateMotorcycle).not.toHaveBeenCalled();
     });
+
+    it('clears year_to to null when updating a range listing with only a single year { year: 2022 }', async () => {
+      (motorcycleService.updateMotorcycle as jest.Mock).mockImplementation(async (id, data) => ({
+        id,
+        ...data,
+      }));
+
+      const putReq = new NextRequest('http://localhost:3000/api/v1/motorcycles/bike-1', {
+        method: 'PUT',
+        body: JSON.stringify({
+          year: 2022,
+        }),
+      });
+
+      const putRes = await motorcycleIdRoute.PUT(putReq, {
+        params: Promise.resolve({ id: 'bike-1' }),
+      });
+      expect(putRes.status).toBe(200);
+      expect(motorcycleService.updateMotorcycle).toHaveBeenCalledWith(
+        'bike-1',
+        expect.objectContaining({
+          year: 2022,
+          year_to: null,
+        })
+      );
+    });
+
+    it('validates PATCH with { year_to: 2020 } against the existing motorcycle year and rejects when existing year is > year_to or null', async () => {
+      (motorcycleService.updateMotorcycle as jest.Mock).mockImplementation(async (id, data) => ({
+        id,
+        ...data,
+      }));
+
+      // 1. Existing motorcycle has year: 2015 -> succeeds with year: 2015, year_to: 2020
+      (motorcycleService.getMotorcycleById as jest.Mock).mockResolvedValueOnce({
+        id: 'bike-1',
+        model: 'CB500X',
+        year: 2015,
+        year_to: null,
+      });
+
+      const validPatchReq = new NextRequest('http://localhost:3000/api/v1/motorcycles/bike-1', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          year_to: 2020,
+        }),
+      });
+
+      const validPatchRes = await motorcycleIdRoute.PATCH(validPatchReq, {
+        params: Promise.resolve({ id: 'bike-1' }),
+      });
+      expect(validPatchRes.status).toBe(200);
+      expect(motorcycleService.updateMotorcycle).toHaveBeenCalledWith(
+        'bike-1',
+        expect.objectContaining({
+          year: 2015,
+          year_to: 2020,
+        })
+      );
+
+      // 2. Existing motorcycle has year: 2022 -> returns 400
+      (motorcycleService.updateMotorcycle as jest.Mock).mockClear();
+      (motorcycleService.getMotorcycleById as jest.Mock).mockResolvedValueOnce({
+        id: 'bike-1',
+        model: 'CB500X',
+        year: 2022,
+        year_to: null,
+      });
+
+      const invertedPatchReq = new NextRequest('http://localhost:3000/api/v1/motorcycles/bike-1', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          year_to: 2020,
+        }),
+      });
+
+      const invertedPatchRes = await motorcycleIdRoute.PATCH(invertedPatchReq, {
+        params: Promise.resolve({ id: 'bike-1' }),
+      });
+      expect(invertedPatchRes.status).toBe(400);
+      expect(motorcycleService.updateMotorcycle).not.toHaveBeenCalled();
+
+      // 3. Existing motorcycle has year: null -> returns 400
+      (motorcycleService.getMotorcycleById as jest.Mock).mockResolvedValueOnce({
+        id: 'bike-1',
+        model: 'CB500X',
+        year: null,
+        year_to: null,
+      });
+
+      const nullYearPatchReq = new NextRequest('http://localhost:3000/api/v1/motorcycles/bike-1', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          year_to: 2020,
+        }),
+      });
+
+      const nullYearPatchRes = await motorcycleIdRoute.PATCH(nullYearPatchReq, {
+        params: Promise.resolve({ id: 'bike-1' }),
+      });
+      expect(nullYearPatchRes.status).toBe(400);
+      expect(motorcycleService.updateMotorcycle).not.toHaveBeenCalled();
+    });
   });
 
   describe('OpenAPI specification (public/openapi.json)', () => {

@@ -232,6 +232,16 @@ function parseYearRangeString(value: string): { year: number | null; year_to: nu
   }
 }
 
+export interface MotorcycleYearRangeInput {
+  year?: number | string | null
+  year_to?: number | string | null
+  yearTo?: number | string | null
+  year_from?: number | string | null
+  yearFrom?: number | string | null
+  modelYear?: number | string | null
+  model_year?: number | string | null
+}
+
 /**
  * Validates whether a (year, yearTo) pair is a legal Model Year Range.
  * Returns false if yearTo is provided when year is null/undefined, or if yearTo < year.
@@ -335,19 +345,90 @@ export function normalizeMotorcycleYearRange(input: unknown): {
 }
 
 /**
+ * Shared API payload parser and validator for motorcycle year/year_to fields.
+ * Supports POST, PUT, and PATCH payloads, including clearing year_to when updating
+ * to a single year and validating year_to-only partial updates against existingYear.
+ */
+export function parseAndValidateMotorcycleYearPayload(
+  payload: Record<string, any>,
+  existingYear?: number | null
+):
+  | { valid: true; hasYearUpdate: false }
+  | { valid: true; hasYearUpdate: true; year: number | null; year_to: number | null }
+  | { valid: false; error: string } {
+  const hasYear = payload.year !== undefined
+  const rawYearTo = payload.year_to !== undefined ? payload.year_to : payload.yearTo
+  const hasYearTo = rawYearTo !== undefined
+
+  if (!hasYear && !hasYearTo) {
+    return { valid: true, hasYearUpdate: false }
+  }
+
+  const invalidError =
+    'Invalid model year range: year_to must be greater than or equal to year, and year is required when year_to is provided'
+
+  // If year is passed as a range string (e.g. "2015-2020") with no explicit year_to
+  if (hasYear && typeof payload.year === 'string' && !hasYearTo) {
+    const rangeMatch = payload.year.trim().match(/^(\d{4})\s*[-–—]\s*(\d{4})$/)
+    if (rangeMatch) {
+      const start = Number(rangeMatch[1])
+      const end = Number(rangeMatch[2])
+      if (!isValidMotorcycleYearRange(start, end)) {
+        return { valid: false, error: invalidError }
+      }
+      const normalized = normalizeMotorcycleYearRange({ year: start, year_to: end })
+      return {
+        valid: true,
+        hasYearUpdate: true,
+        year: normalized.year,
+        year_to: normalized.year_to,
+      }
+    }
+  }
+
+  const effectiveRawYear = hasYear ? payload.year : existingYear
+  const parsedYear =
+    effectiveRawYear === null || effectiveRawYear === undefined || effectiveRawYear === ''
+      ? null
+      : Number(effectiveRawYear)
+  const parsedYearTo =
+    !hasYearTo || rawYearTo === null || rawYearTo === undefined || rawYearTo === ''
+      ? null
+      : Number(rawYearTo)
+
+  if (!isValidMotorcycleYearRange(parsedYear, parsedYearTo)) {
+    return { valid: false, error: invalidError }
+  }
+
+  const normalized = normalizeMotorcycleYearRange({
+    year: parsedYear,
+    year_to: parsedYearTo,
+  })
+
+  return {
+    valid: true,
+    hasYearUpdate: true,
+    year: normalized.year,
+    year_to: normalized.year_to,
+  }
+}
+
+/**
  * Formats a motorcycle's Model Year Range for display:
  * - "2015-2020" when year and yearTo form a range (yearTo > year)
  * - "2023" when only a single year is present (or yearTo === year)
  * - null when year is unset
  */
 export function formatMotorcycleYear(
-  year?: number | string | null,
+  yearOrRange?: number | string | MotorcycleYearRangeInput | null,
   yearTo?: number | string | null
 ): string | null {
   const normalized =
-    typeof year === 'string' && (yearTo === undefined || yearTo === null || yearTo === '')
-      ? normalizeMotorcycleYearRange(year)
-      : normalizeMotorcycleYearRange({ year, year_to: yearTo })
+    yearOrRange !== null && typeof yearOrRange === 'object'
+      ? normalizeMotorcycleYearRange(yearOrRange)
+      : typeof yearOrRange === 'string' && (yearTo === undefined || yearTo === null || yearTo === '')
+      ? normalizeMotorcycleYearRange(yearOrRange)
+      : normalizeMotorcycleYearRange({ year: yearOrRange, year_to: yearTo })
 
   if (normalized.year === null) {
     return null
