@@ -8,6 +8,7 @@ import { requireAuth } from '@/lib/api/middleware';
 import { rateLimit, getRateLimitHeaders } from '@/lib/api/rate-limit';
 import { motorcycleService } from '@/services/motorcycles';
 import { updateMotorcycleRateTiers } from '@/services/rental-rate-tiers';
+import { isValidMotorcycleYearRange, normalizeMotorcycleYearRange } from '@/lib/utils';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -83,7 +84,37 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         }
 
         const body = await request.json();
-        const { rental_rate_tiers, ...motorcycleData } = body;
+        const { rental_rate_tiers, yearTo, ...motorcycleData } = body;
+        const rawYearTo = motorcycleData.year_to !== undefined ? motorcycleData.year_to : yearTo;
+
+        if (motorcycleData.year !== undefined || rawYearTo !== undefined) {
+            const parsedYear =
+                motorcycleData.year === null || motorcycleData.year === undefined || motorcycleData.year === ''
+                    ? null
+                    : Number(motorcycleData.year);
+            const parsedYearTo =
+                rawYearTo === null || rawYearTo === undefined || rawYearTo === ''
+                    ? null
+                    : Number(rawYearTo);
+
+            if (!isValidMotorcycleYearRange(parsedYear, parsedYearTo)) {
+                return errors.badRequest(
+                    'Invalid model year range: year_to must be greater than or equal to year, and year is required when year_to is provided'
+                );
+            }
+
+            if (rawYearTo !== undefined) {
+                const normalized = normalizeMotorcycleYearRange({
+                    year: parsedYear,
+                    year_to: parsedYearTo,
+                });
+                if (motorcycleData.year !== undefined) {
+                    motorcycleData.year = normalized.year;
+                }
+                motorcycleData.year_to = normalized.year_to;
+            }
+        }
+
         const motorcycle = await motorcycleService.updateMotorcycle(id, motorcycleData);
 
         // Update rate tiers if provided
@@ -108,6 +139,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         }
         return errors.internal('Failed to update motorcycle');
     }
+}
+
+/**
+ * PATCH /api/v1/motorcycles/[id]
+ * Partially update a motorcycle (admin only)
+ */
+export async function PATCH(request: NextRequest, context: RouteParams) {
+    return PUT(request, context);
 }
 
 /**

@@ -151,6 +151,12 @@ const handler = createMcpHandler(
                     if (v !== undefined && v !== null) queryParams[k] = String(v);
                 }
                 const result = await apiGet('/motorcycles', apiKey, queryParams);
+                if (result && Array.isArray(result.data)) {
+                    result.data = result.data.map((m: any) => ({
+                        ...m,
+                        year_to: m.year_to ?? null,
+                    }));
+                }
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
             })
         );
@@ -167,6 +173,12 @@ const handler = createMcpHandler(
             withToolErrorHandling(async ({ id }, extra) => {
                 const apiKey = getApiKey(extra.authInfo);
                 const result = await apiGet(`/motorcycles/${id}`, apiKey);
+                if (result && result.data && typeof result.data === 'object') {
+                    result.data = {
+                        ...result.data,
+                        year_to: result.data.year_to ?? null,
+                    };
+                }
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
             })
         );
@@ -312,6 +324,7 @@ const handler = createMcpHandler(
                     engine_capacity: z.number().optional().describe('Engine capacity in CC'),
                     daily_rate: z.number().optional().describe('Daily rental rate'),
                     year: z.number().optional().describe('Model year'),
+                    year_to: z.number().optional().nullable().describe('End model year for a generation range (e.g. 2020 for 2015-2020)'),
                     rental_rate_currency: z.string().optional().describe('Currency code (e.g., "USD", "THB")'),
                     availability_status: z.string().optional().describe('Availability status'),
                     source_url: z.string().optional().describe('Source URL'),
@@ -394,6 +407,7 @@ const handler = createMcpHandler(
                     engine_capacity: z.number().optional().describe('Engine capacity in CC'),
                     daily_rate: z.number().optional().describe('Daily rental rate'),
                     year: z.number().optional().describe('Model year'),
+                    year_to: z.number().optional().nullable().describe('End model year for a generation range (e.g. 2020 for 2015-2020)'),
                     rental_rate_currency: z.string().optional().describe('Currency code (e.g., "USD", "THB")'),
                     availability_status: z.string().optional().describe('Availability status'),
                     source_url: z.string().optional().describe('Source URL'),

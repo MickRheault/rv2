@@ -20,6 +20,7 @@ import {
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { Database } from '@/lib/supabase/database.types';
+import { formatMotorcycleYear } from '@/lib/utils';
 
 type CategoryInsert = Database['public']['Tables']['categories']['Insert'];
 
@@ -868,7 +869,9 @@ function CategoriesAdminContent() {
                       <div key={motorcycle.id} className="flex justify-between items-center text-sm bg-white p-2 rounded">
                         <div>
                           <span className="font-medium">{motorcycle.brands?.name} {motorcycle.model}</span>
-                          {motorcycle.year && <span className="text-gray-500"> ({motorcycle.year})</span>}
+                          {formatMotorcycleYear(motorcycle.year, motorcycle.year_to) && (
+                            <span className="text-gray-500"> ({formatMotorcycleYear(motorcycle.year, motorcycle.year_to)})</span>
+                          )}
                         </div>
                         <div className="text-right text-gray-600">
                           <div>{motorcycle.rental_shops?.provider_name}</div>
@@ -1055,7 +1058,9 @@ function CategoriesAdminContent() {
                       <div key={motorcycle.id} className="flex justify-between items-center text-sm bg-white p-2 rounded">
                         <div>
                           <span className="font-medium">{motorcycle.brands?.name} {motorcycle.model}</span>
-                          {motorcycle.year && <span className="text-gray-500"> ({motorcycle.year})</span>}
+                          {formatMotorcycleYear(motorcycle.year, motorcycle.year_to) && (
+                            <span className="text-gray-500"> ({formatMotorcycleYear(motorcycle.year, motorcycle.year_to)})</span>
+                          )}
                         </div>
                         <div className="text-right text-gray-600">
                           <div>{motorcycle.rental_shops?.provider_name}</div>

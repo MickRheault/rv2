@@ -248,6 +248,7 @@ export const categoryService = {
         id,
         model,
         year,
+        year_to,
         brands!inner(name),
         rental_shops!inner(provider_name, slug),
         rental_rate_per_day,

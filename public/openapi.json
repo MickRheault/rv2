@@ -886,6 +886,11 @@
                     "year": {
                         "type": "integer"
                     },
+                    "year_to": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "End model year for multi-year generation ranges (inclusive)"
+                    },
                     "is_available": {
                         "type": "boolean"
                     },
@@ -919,6 +924,11 @@
                     },
                     "year": {
                         "type": "integer"
+                    },
+                    "year_to": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "End model year for multi-year generation ranges (inclusive)"
                     }
                 }
             },
@@ -939,6 +949,11 @@
                     },
                     "year": {
                         "type": "integer"
+                    },
+                    "year_to": {
+                        "type": "integer",
+                        "nullable": true,
+                        "description": "End model year for multi-year generation ranges (inclusive)"
                     },
                     "is_available": {
                         "type": "boolean"
