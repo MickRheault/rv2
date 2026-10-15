@@ -650,7 +650,10 @@ describe('Change Proposal Application & Geodata Protection', () => {
 
       const result = await ChangeProposalService.getProposalById('prop-retrieval-1');
 
-      expect(result.proposal).toEqual(proposalData);
+      expect(result.proposal).toEqual({
+        ...proposalData,
+        shop_url: '/shop/phuket-bike-rentals',
+      });
       expect(result.items).toHaveLength(2);
       expect(result.items[0].action).toBe('unchanged');
       expect((result.items[0].original_data as any).availability_status).toBe('available');
@@ -1365,6 +1368,106 @@ describe('Change Proposal Application & Geodata Protection', () => {
         business_description: 'Family-run scooter rental in Siem Reap.',
       });
     });
+
+    it('getProposals returns canonical GMR shopUrl constructed from shop slug, city, and country', async () => {
+      const mockRows = [
+        {
+          id: 'prop-1',
+          shop_id: 'shop-1',
+          agent_run_id: 'run-1',
+          source_url: 'https://wescooterrentalsiemreap.com/',
+          status: 'pending',
+          summary_counts: { add: 1, update: 0, delist: 0, unchanged: 7 },
+          created_at: '2026-10-15T00:00:00Z',
+          reviewed_at: null,
+          rental_shops: {
+            id: 'shop-1',
+            provider_name: 'We Scooter Rental Siem Reap',
+            slug: 'we-scooter-rental-siem-reap',
+            cities: {
+              name: 'Siem Reap',
+              provinces: {
+                countries: {
+                  name: 'Cambodia',
+                },
+              },
+            },
+          },
+        },
+      ];
+
+      const mockSupabase = {
+        from: jest.fn(() => ({
+          select: jest.fn().mockReturnValue({
+            order: jest.fn().mockReturnValue({
+              range: jest.fn().mockResolvedValue({
+                data: mockRows,
+                count: 1,
+                error: null,
+              }),
+            }),
+          }),
+        })),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      const res = await ChangeProposalService.getProposals({});
+      expect(res.proposals[0].shopUrl).toBe('/shop/cambodia/siem-reap/we-scooter-rental-siem-reap');
+    });
+
+    it('getProposalById returns canonical GMR shop_url on the proposal record', async () => {
+      const mockProposal = {
+        id: 'prop-1',
+        shop_id: 'shop-1',
+        source_url: 'https://wescooterrentalsiemreap.com/',
+        status: 'pending',
+        created_at: '2026-10-15T00:00:00Z',
+        rental_shops: {
+          id: 'shop-1',
+          provider_name: 'We Scooter Rental Siem Reap',
+          slug: 'we-scooter-rental-siem-reap',
+          cities: {
+            name: 'Siem Reap',
+            provinces: {
+              countries: {
+                name: 'Cambodia',
+              },
+            },
+          },
+        },
+      };
+
+      const mockSupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({ data: mockProposal, error: null }),
+                }),
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  order: jest.fn().mockResolvedValue({ data: [], error: null }),
+                }),
+              }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      const res = await ChangeProposalService.getProposalById('prop-1');
+      expect((res.proposal as any).shop_url).toBe('/shop/cambodia/siem-reap/we-scooter-rental-siem-reap');
+    });
   });
 });
+
 

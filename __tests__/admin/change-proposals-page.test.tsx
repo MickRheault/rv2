@@ -242,4 +242,73 @@ describe('ChangeProposalsPage', () => {
     expect(screen.queryByText('Crawl Attempt Details')).not.toBeInTheDocument();
     expect(screen.getAllByText('Connection timed out after 30000ms').length).toBe(1);
   });
+
+  it('renders a "View on GMR" public shop link and executes one-click Reject on a pending proposal row', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        proposals: [
+          {
+            id: 'prop-we-scooter',
+            shopId: '2b97f3dc-b0af-42b0-bb3a-68d286d94ef3',
+            shopName: 'We Scooter Rental Siem Reap',
+            shopSlug: 'we-scooter-rental-siem-reap',
+            shopUrl: '/shop/cambodia/siem-reap/we-scooter-rental-siem-reap',
+            sourceUrl: 'https://wescooterrentalsiemreap.com/',
+            status: 'pending',
+            summaryCounts: { add: 1, update: 1, delist: 0 },
+            createdAt: '2026-10-15T12:00:00Z',
+          },
+        ],
+        totalCount: 1,
+      }),
+    });
+
+    render(<ChangeProposalsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('We Scooter Rental Siem Reap')).toBeInTheDocument();
+    });
+
+    // Verify "View on GMR" link points to canonical shopUrl and opens in a new tab
+    const gmrLink = screen.getByRole('link', { name: /View on GMR/i });
+    expect(gmrLink).toHaveAttribute('href', '/shop/cambodia/siem-reap/we-scooter-rental-siem-reap');
+    expect(gmrLink).toHaveAttribute('target', '_blank');
+
+    // Mock POST /api/admin/change-proposals/prop-we-scooter/apply with approvedItemIds: []
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        appliedCount: 0,
+        status: 'rejected',
+      }),
+    });
+
+    // Mock refreshed proposals list after rejection
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        proposals: [],
+        totalCount: 0,
+      }),
+    });
+
+    const rejectBtn = screen.getByRole('button', { name: /Reject/i });
+    fireEvent.click(rejectBtn);
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/admin/change-proposals/prop-we-scooter/apply',
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ approvedItemIds: [] }),
+        })
+      );
+    });
+  });
 });
+

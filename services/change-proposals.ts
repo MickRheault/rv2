@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { getShopUrl } from '@/lib/utils/urls';
 import {
   computeShopInventoryDiff,
   normalizeCrawledShopProfile,
@@ -7,6 +8,7 @@ import {
   type DiffResult,
 } from './diff-engine';
 import { TaskSchedulerService } from './task-scheduler';
+
 
 export class GeodataImmutabilityError extends Error {
   constructor(field: string) {
@@ -327,7 +329,15 @@ export class ChangeProposalService {
         rental_shops!inner (
           id,
           provider_name,
-          slug
+          slug,
+          cities (
+            name,
+            provinces (
+              countries (
+                name
+              )
+            )
+          )
         )
       `,
         { count: 'exact' }
@@ -351,6 +361,7 @@ export class ChangeProposalService {
         shopId: row.shop_id,
         shopName: row.rental_shops?.provider_name,
         shopSlug: row.rental_shops?.slug,
+        shopUrl: row.rental_shops?.slug ? getShopUrl(row.rental_shops) : undefined,
         agentRunId: row.agent_run_id,
         sourceUrl: row.source_url,
         status: row.status,
@@ -375,7 +386,15 @@ export class ChangeProposalService {
         rental_shops!inner (
           id,
           provider_name,
-          slug
+          slug,
+          cities (
+            name,
+            provinces (
+              countries (
+                name
+              )
+            )
+          )
         )
       `)
       .eq('id', proposalId)
@@ -395,11 +414,18 @@ export class ChangeProposalService {
       throw new Error(`Failed to load proposal items: ${itemsError.message}`);
     }
 
+    const shopData = (proposal as any).rental_shops;
+    const shopUrl = shopData?.slug ? getShopUrl(shopData) : undefined;
+
     return {
-      proposal,
+      proposal: {
+        ...proposal,
+        shop_url: shopUrl,
+      },
       items: items || [],
     };
   }
+
 
   /**
    * Applies approved mutation items to live database records.

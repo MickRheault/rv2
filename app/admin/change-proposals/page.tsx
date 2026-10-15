@@ -9,6 +9,7 @@ import {
   ArrowPathIcon,
   ArrowTopRightOnSquareIcon,
   SparklesIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 
 interface ProposalSummaryItem {
@@ -16,6 +17,7 @@ interface ProposalSummaryItem {
   shopId: string;
   shopName: string;
   shopSlug?: string;
+  shopUrl?: string;
   agentRunId?: string | null;
   sourceUrl: string;
   status: 'pending' | 'reviewing' | 'applied' | 'partially_applied' | 'rejected';
@@ -68,6 +70,7 @@ export default function ChangeProposalsPage() {
   const [proposalTotalCount, setProposalTotalCount] = useState<number>(0);
   const [proposalStatusFilter, setProposalStatusFilter] = useState<string>('pending');
   const [loadingProposals, setLoadingProposals] = useState<boolean>(true);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [proposalError, setProposalError] = useState<string | null>(null);
 
   // Crawler logs state
@@ -116,6 +119,30 @@ export default function ChangeProposalsPage() {
       setLoadingProposals(false);
     }
   }, [proposalStatusFilter]);
+
+  const handleQuickReject = async (proposalId: string) => {
+    setRejectingId(proposalId);
+    setProposalError(null);
+
+    try {
+      const res = await fetch(`/api/admin/change-proposals/${proposalId}/apply`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ approvedItemIds: [] }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error || `Failed to reject proposal (status: ${res.status})`);
+      }
+      await fetchProposals();
+    } catch (err: any) {
+      console.error('Error rejecting proposal:', err);
+      setProposalError(err.message || 'Error rejecting proposal');
+    } finally {
+      setRejectingId(null);
+    }
+  };
+
 
   const fetchCrawlerRuns = useCallback(async () => {
     setLoadingCrawler(true);
@@ -325,67 +352,96 @@ export default function ChangeProposalsPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {proposals.map((prop) => (
-                      <tr key={prop.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4">
-                          <div className="font-semibold text-gray-900">{prop.shopName}</div>
-                          <a
-                            href={prop.sourceUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1 mt-0.5 truncate max-w-xs"
-                          >
-                            {prop.sourceUrl}
-                            <ArrowTopRightOnSquareIcon className="w-3 h-3 flex-shrink-0" />
-                          </a>
-                        </td>
-
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {new Date(prop.createdAt).toLocaleString(undefined, {
-                            dateStyle: 'medium',
-                            timeStyle: 'short',
-                          })}
-                        </td>
-
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {getProposalStatusBadge(prop.status)}
-                        </td>
-
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            {prop.summaryCounts.add > 0 && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800">
-                                +{prop.summaryCounts.add} new
-                              </span>
-                            )}
-                            {prop.summaryCounts.update > 0 && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                                ~{prop.summaryCounts.update} updated
-                              </span>
-                            )}
-                            {prop.summaryCounts.delist > 0 && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
-                                -{prop.summaryCounts.delist} delisted
-                              </span>
-                            )}
-                            {prop.summaryCounts.add === 0 &&
-                              prop.summaryCounts.update === 0 &&
-                              prop.summaryCounts.delist === 0 && (
-                                <span className="text-xs text-gray-400">No changes detected</span>
+                    {proposals.map((prop) => {
+                      const gmrUrl = prop.shopUrl || (prop.shopSlug ? `/shop/${prop.shopSlug}` : undefined);
+                      return (
+                        <tr key={prop.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="font-semibold text-gray-900">{prop.shopName}</div>
+                            <div className="flex flex-wrap items-center gap-3 mt-0.5">
+                              <a
+                                href={prop.sourceUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1 truncate max-w-xs"
+                              >
+                                {prop.sourceUrl}
+                                <ArrowTopRightOnSquareIcon className="w-3 h-3 flex-shrink-0" />
+                              </a>
+                              {gmrUrl && (
+                                <a
+                                  href={gmrUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-emerald-700 hover:text-emerald-900 font-medium flex items-center gap-1"
+                                >
+                                  View on GMR
+                                  <ArrowTopRightOnSquareIcon className="w-3 h-3 flex-shrink-0" />
+                                </a>
                               )}
-                          </div>
-                        </td>
+                            </div>
+                          </td>
 
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                          <Link
-                            href={`/admin/change-proposals/${prop.id}`}
-                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
-                          >
-                            Inspect Diff
-                          </Link>
-                        </td>
-                      </tr>
-                    ))}
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {new Date(prop.createdAt).toLocaleString(undefined, {
+                              dateStyle: 'medium',
+                              timeStyle: 'short',
+                            })}
+                          </td>
+
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {getProposalStatusBadge(prop.status)}
+                          </td>
+
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {prop.summaryCounts.add > 0 && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800">
+                                  +{prop.summaryCounts.add} new
+                                </span>
+                              )}
+                              {prop.summaryCounts.update > 0 && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                  ~{prop.summaryCounts.update} updated
+                                </span>
+                              )}
+                              {prop.summaryCounts.delist > 0 && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                                  -{prop.summaryCounts.delist} delisted
+                                </span>
+                              )}
+                              {prop.summaryCounts.add === 0 &&
+                                prop.summaryCounts.update === 0 &&
+                                prop.summaryCounts.delist === 0 && (
+                                  <span className="text-xs text-gray-400">No changes detected</span>
+                                )}
+                            </div>
+                          </td>
+
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                            <div className="inline-flex items-center gap-2">
+                              {prop.status === 'pending' && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleQuickReject(prop.id)}
+                                  disabled={rejectingId === prop.id}
+                                  className="inline-flex items-center px-2.5 py-1.5 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50 disabled:opacity-50"
+                                >
+                                  <XMarkIcon className="w-3.5 h-3.5 mr-1" />
+                                  {rejectingId === prop.id ? 'Rejecting...' : 'Reject'}
+                                </button>
+                              )}
+                              <Link
+                                href={`/admin/change-proposals/${prop.id}`}
+                                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
+                              >
+                                Inspect Diff
+                              </Link>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

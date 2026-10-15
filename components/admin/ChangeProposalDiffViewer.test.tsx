@@ -188,10 +188,23 @@ describe('ChangeProposalDiffViewer', () => {
 
     render(<ChangeProposalDiffViewer proposal={mockProposal} items={mixedItems} />);
 
-    // Unchanged section header
-    expect(screen.getByText(/Confirmed Unchanged Inventory \(1\)/i)).toBeInTheDocument();
+    // Unchanged section header is collapsed by default
+    const unchangedToggle = screen.getByRole('button', {
+      name: /Confirmed Unchanged Inventory \(1\)/i,
+    });
+    expect(unchangedToggle).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByText('Yamaha Grand Filano')).not.toBeInTheDocument();
+
+    // Expanding shows the unchanged inventory details
+    fireEvent.click(unchangedToggle);
+    expect(unchangedToggle).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByText('Yamaha Grand Filano')).toBeInTheDocument();
     expect(screen.getByText(/1\+ days: ฿350\/day/i)).toBeInTheDocument();
+
+    // Collapsing again hides the unchanged inventory details
+    fireEvent.click(unchangedToggle);
+    expect(unchangedToggle).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByText('Yamaha Grand Filano')).not.toBeInTheDocument();
 
     // Toolbar count should only show 1 actionable item
     expect(screen.getByText(/1 of 1 items selected/i)).toBeInTheDocument();
@@ -421,4 +434,50 @@ describe('ChangeProposalDiffViewer', () => {
     expect(screen.getByText('Free insurance')).toBeInTheDocument();
     expect(screen.getByText('Passport deposit')).toBeInTheDocument();
   });
+
+  it('renders the "View on GMR" public shop link in the header and executes one-click Reject Proposal', async () => {
+    const onRejectSuccess = jest.fn();
+    const proposalWithUrl: DiffViewerProposal = {
+      ...mockProposal,
+      shop_url: '/shop/cambodia/siem-reap/we-scooter-rental-siem-reap',
+    };
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        appliedCount: 0,
+        status: 'rejected',
+      }),
+    });
+
+    render(
+      <ChangeProposalDiffViewer
+        proposal={proposalWithUrl}
+        items={mockItems}
+        onRejectSuccess={onRejectSuccess}
+      />
+    );
+
+    const gmrLink = screen.getByRole('link', { name: /View on GMR/i });
+    expect(gmrLink).toHaveAttribute('href', '/shop/cambodia/siem-reap/we-scooter-rental-siem-reap');
+    expect(gmrLink).toHaveAttribute('target', '_blank');
+
+    const rejectBtn = screen.getByRole('button', { name: /Reject Proposal/i });
+    fireEvent.click(rejectBtn);
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/admin/change-proposals/prop-1/apply',
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ approvedItemIds: [] }),
+        })
+      );
+    });
+
+    expect(onRejectSuccess).toHaveBeenCalledTimes(1);
+  });
 });
+
