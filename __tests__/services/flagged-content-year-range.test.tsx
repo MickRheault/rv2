@@ -143,71 +143,16 @@ describe('FlagContentForm & FlaggedContentService Model Year Range Support (#139
   });
 
   describe('FlaggedContentService.applyFlaggedContentChanges', () => {
-    it('normalizes proposed_data.year range "2015-2020" and applies both year and year_to before invoking RPC', async () => {
-      const flaggedEqSingle = jest.fn().mockResolvedValue({
-        data: {
-          id: 'flag-1',
-          content_type: 'motorcycle',
-          entity_id: 'bike-1',
-          status: 'approved',
-          proposed_data: {
-            year: '2015-2020',
-            rental_rate_per_day: 250,
-          },
-        },
-        error: null,
-      });
-      const flaggedSelect = jest.fn().mockReturnValue({
-        eq: jest.fn().mockReturnValue({ single: flaggedEqSingle }),
-      });
-      const flaggedUpdateEq = jest.fn().mockResolvedValue({ data: null, error: null });
-      const flaggedUpdate = jest.fn().mockReturnValue({ eq: flaggedUpdateEq });
-
-      const bikeUpdateEq = jest.fn().mockResolvedValue({ data: null, error: null });
-      const bikeUpdate = jest.fn().mockReturnValue({ eq: bikeUpdateEq });
-
-      (supabase.from as jest.Mock).mockImplementation((table: string) => {
-        if (table === 'flagged_content') {
-          return {
-            select: flaggedSelect,
-            update: flaggedUpdate,
-          };
-        }
-        if (table === 'motorcycle_rentals') {
-          return {
-            update: bikeUpdate,
-          };
-        }
-        return {};
-      });
-
+    it('delegates to apply_flagged_content_changes RPC and updates SQL function in migration to normalize year and year_to', async () => {
       (supabase.rpc as jest.Mock).mockResolvedValue({ data: true, error: null });
 
       const result = await FlaggedContentService.applyFlaggedContentChanges('flag-1');
       expect(result).toBe(true);
-
-      expect(flaggedUpdate).toHaveBeenCalledWith({
-        proposed_data: expect.objectContaining({
-          year: 2015,
-          year_to: 2020,
-          rental_rate_per_day: 250,
-        }),
-      });
-      expect(bikeUpdate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          year: 2015,
-          year_to: 2020,
-          rental_rate_per_day: 250,
-        })
-      );
-      expect(bikeUpdateEq).toHaveBeenCalledWith('id', 'bike-1');
       expect(supabase.rpc).toHaveBeenCalledWith('apply_flagged_content_changes', {
         flagged_content_id: 'flag-1',
         admin_id: 'admin-1',
       });
-    });
 
-    it('updates apply_flagged_content_changes SQL function in migration to handle year ranges cleanly', () => {
       const fs = require('fs');
       const path = require('path');
       const migrationPath = path.join(
@@ -216,7 +161,8 @@ describe('FlagContentForm & FlaggedContentService Model Year Range Support (#139
       );
       const sql = fs.readFileSync(migrationPath, 'utf8');
       expect(sql).toMatch(/CREATE OR REPLACE FUNCTION apply_flagged_content_changes/i);
-      expect(sql).toMatch(/year_to/i);
+      expect(sql).toMatch(/parsed_end\s*=\s*parsed_start/i);
+      expect(sql).toMatch(/parsed_end\s*<\s*parsed_start/i);
     });
   });
 });

@@ -334,7 +334,11 @@ export function normalizeMotorcycleYearRange(input: unknown): {
       return { year: null, year_to: null }
     }
 
-    if (yearTo === null || yearTo <= year) {
+    if (yearTo !== null && yearTo < year) {
+      return { year: null, year_to: null }
+    }
+
+    if (yearTo === null || yearTo === year) {
       return { year, year_to: null }
     }
 
@@ -369,19 +373,16 @@ export function parseAndValidateMotorcycleYearPayload(
 
   // If year is passed as a range string (e.g. "2015-2020") with no explicit year_to
   if (hasYear && typeof payload.year === 'string' && !hasYearTo) {
-    const rangeMatch = payload.year.trim().match(/^(\d{4})\s*[-–—]\s*(\d{4})$/)
-    if (rangeMatch) {
-      const start = Number(rangeMatch[1])
-      const end = Number(rangeMatch[2])
-      if (!isValidMotorcycleYearRange(start, end)) {
+    const parsedRange = parseYearRangeString(payload.year)
+    if (parsedRange) {
+      if (parsedRange.year === null) {
         return { valid: false, error: invalidError }
       }
-      const normalized = normalizeMotorcycleYearRange({ year: start, year_to: end })
       return {
         valid: true,
         hasYearUpdate: true,
-        year: normalized.year,
-        year_to: normalized.year_to,
+        year: parsedRange.year,
+        year_to: parsedRange.year_to,
       }
     }
   }

@@ -67,10 +67,7 @@ function getEngineCapacity(data: any): number | null {
 }
 
 function getModelYear(data: any): string | null {
-  const year =
-    data?.year ?? data?.year_from ?? data?.yearFrom ?? data?.modelYear ?? data?.model_year;
-  const yearTo = data?.year_to ?? data?.yearTo;
-  return formatMotorcycleYear(year, yearTo);
+  return data && typeof data === 'object' ? formatMotorcycleYear(data) : null;
 }
 
 function getRateAmount(tier: any): number {

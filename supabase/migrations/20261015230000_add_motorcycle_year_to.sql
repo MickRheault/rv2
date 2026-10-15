@@ -130,30 +130,9 @@ BEGIN
 
     -- Skip certain fields that shouldn't be directly updated
     IF field_name NOT IN ('id', 'created_at', 'updated_at') THEN
-      IF flag_record.content_type = 'motorcycle' AND field_name = 'year' THEN
-        IF field_value IS NULL OR btrim(field_value) = '' THEN
-          update_query := update_query || 'year = NULL, ';
-          IF NOT (flag_record.proposed_data ? 'year_to') THEN
-            update_query := update_query || 'year_to = NULL, ';
-          END IF;
-        ELSIF btrim(field_value) ~ '^\d{4}\s*[-–—]\s*\d{4}$' THEN
-          range_matches := regexp_match(btrim(field_value), '^(\d{4})\s*[-–—]\s*(\d{4})$');
-          parsed_start := range_matches[1]::INTEGER;
-          parsed_end := range_matches[2]::INTEGER;
-          update_query := update_query || 'year = ' || parsed_start || ', ';
-          IF NOT (flag_record.proposed_data ? 'year_to') THEN
-            IF parsed_end > parsed_start THEN
-              update_query := update_query || 'year_to = ' || parsed_end || ', ';
-            ELSE
-              update_query := update_query || 'year_to = NULL, ';
-            END IF;
-          END IF;
-        ELSE
-          update_query := update_query || 'year = ' || quote_literal(btrim(field_value)) || ', ';
-          IF NOT (flag_record.proposed_data ? 'year_to') THEN
-            update_query := update_query || 'year_to = NULL, ';
-          END IF;
-        END IF;
+      IF flag_record.content_type = 'motorcycle' AND field_name IN ('year', 'year_to') THEN
+        -- Handled below as a normalized (year, year_to) pair
+        CONTINUE;
       ELSIF field_value IS NULL THEN
         update_query := update_query || field_name || ' = NULL, ';
       ELSE
@@ -161,6 +140,42 @@ BEGIN
       END IF;
     END IF;
   END LOOP;
+
+  IF flag_record.content_type = 'motorcycle' AND (flag_record.proposed_data ? 'year' OR flag_record.proposed_data ? 'year_to') THEN
+    parsed_start := NULL;
+    parsed_end := NULL;
+    field_value := flag_record.proposed_data ->> 'year';
+
+    IF field_value IS NOT NULL AND btrim(field_value) <> '' THEN
+      IF btrim(field_value) ~ '^\d{4}\s*[-–—]\s*\d{4}$' THEN
+        range_matches := regexp_match(btrim(field_value), '^(\d{4})\s*[-–—]\s*(\d{4})$');
+        parsed_start := range_matches[1]::INTEGER;
+        parsed_end := range_matches[2]::INTEGER;
+      ELSIF btrim(field_value) ~ '^\d+$' THEN
+        parsed_start := btrim(field_value)::INTEGER;
+      ELSE
+        RAISE EXCEPTION 'Invalid motorcycle year format: %', field_value;
+      END IF;
+    END IF;
+
+    IF flag_record.proposed_data ? 'year_to' THEN
+      field_value := flag_record.proposed_data ->> 'year_to';
+      IF field_value IS NOT NULL AND btrim(field_value) <> '' THEN
+        parsed_end := btrim(field_value)::INTEGER;
+      END IF;
+    END IF;
+
+    IF parsed_end IS NOT NULL AND (parsed_start IS NULL OR parsed_end < parsed_start) THEN
+      RAISE EXCEPTION 'Invalid motorcycle year range: year_to (%) < year (%)', parsed_end, parsed_start;
+    END IF;
+
+    IF parsed_end IS NOT NULL AND parsed_end = parsed_start THEN
+      parsed_end := NULL;
+    END IF;
+
+    update_query := update_query || 'year = ' || COALESCE(parsed_start::TEXT, 'NULL') || ', ';
+    update_query := update_query || 'year_to = ' || COALESCE(parsed_end::TEXT, 'NULL') || ', ';
+  END IF;
 
   -- Remove trailing comma and add WHERE clause
   update_query := rtrim(update_query, ', ');

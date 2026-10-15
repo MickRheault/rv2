@@ -77,10 +77,10 @@ describe('Model Year Range Formatting & Normalization (#137)', () => {
       });
     });
 
-    it('nulls out year_to when year_to < year or when year is null', () => {
+    it('nulls out invalid inverted ranges (year_to < year) or when year is null', () => {
       expect(normalizeMotorcycleYearRange('2020-2015')).toEqual({ year: null, year_to: null });
       expect(normalizeMotorcycleYearRange({ year: 2020, year_to: 2015 })).toEqual({
-        year: 2020,
+        year: null,
         year_to: null,
       });
       expect(normalizeMotorcycleYearRange({ year: null, year_to: 2020 })).toEqual({

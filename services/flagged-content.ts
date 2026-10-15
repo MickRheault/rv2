@@ -192,42 +192,6 @@ export class FlaggedContentService {
       throw new Error('User not authenticated');
     }
 
-    const flaggedQuery = (supabase.from as any)?.('flagged_content')?.select?.('*')?.eq?.('id', id)?.single?.();
-    const flaggedResult = flaggedQuery ? await flaggedQuery : null;
-    const flaggedRecord = flaggedResult?.data;
-
-    if (
-      flaggedRecord &&
-      flaggedRecord.content_type === 'motorcycle' &&
-      flaggedRecord.entity_id &&
-      flaggedRecord.proposed_data &&
-      typeof flaggedRecord.proposed_data === 'object'
-    ) {
-      const proposed = flaggedRecord.proposed_data as Record<string, any>;
-      if (
-        proposed.year !== undefined ||
-        proposed.year_to !== undefined ||
-        proposed.yearTo !== undefined
-      ) {
-        const normalizedYear = normalizeMotorcycleYearRange(proposed);
-        const normalizedProposedData: Record<string, any> = {
-          ...proposed,
-          year: normalizedYear.year,
-          year_to: normalizedYear.year_to,
-        };
-        delete normalizedProposedData.yearTo;
-
-        await (supabase.from('flagged_content') as any)
-          .update({ proposed_data: normalizedProposedData })
-          .eq('id', id);
-
-        await FlaggedContentService.applyMotorcycleChanges(
-          flaggedRecord.entity_id,
-          normalizedProposedData
-        );
-      }
-    }
-
     const { data, error } = await supabase
       .rpc('apply_flagged_content_changes', {
         flagged_content_id: id,
