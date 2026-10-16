@@ -35,6 +35,9 @@ export default function Header() {
               />
             </div>
             <span className="font-semibold text-gray-900 hidden sm:block">Global Moto Rentals</span>
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+              Beta
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
