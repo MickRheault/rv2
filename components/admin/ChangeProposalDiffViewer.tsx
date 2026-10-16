@@ -359,7 +359,9 @@ export function ChangeProposalDiffViewer({
     resolution: 'update_existing' | 'create_new' | 'merge_duplicates'
   ) => {
     const review = item.diff_summary?.identity_review;
-    const candidateIds: string[] = review?.candidateIds || [];
+    const candidateIds: string[] =
+      review?.candidateIds ||
+      (Array.isArray(review?.candidates) ? review.candidates.map((c: any) => c.id) : []);
     const targetId = selectedCandidateByItem[item.id] || candidateIds[0];
     const duplicateIds = candidateIds.filter((id) => id !== targetId);
 
@@ -606,7 +608,8 @@ export function ChangeProposalDiffViewer({
               const identityReview = item.diff_summary?.identity_review;
               const needsReview = identityReview?.needsReview === true;
               const candidates = identityReview?.candidates || [];
-              const candidateIds: string[] = identityReview?.candidateIds || [];
+              const candidateIds: string[] =
+                identityReview?.candidateIds || candidates.map((c: any) => c.id);
               const selectedCandidateId =
                 selectedCandidateByItem[item.id] || candidateIds[0] || '';
 
@@ -665,7 +668,7 @@ export function ChangeProposalDiffViewer({
                             >
                               {candidates.map((c: any) => (
                                 <option key={c.id} value={c.id}>
-                                  {c.brand} {c.model} ({c.year || 'N/A'}) — {c.id.slice(0, 8)}
+                                  {c.brand || c.brand_name} {c.model || c.model_name} ({c.year || 'N/A'}) — {c.id.slice(0, 8)}
                                 </option>
                               ))}
                             </select>
@@ -778,6 +781,18 @@ export function ChangeProposalDiffViewer({
                             <span className="text-emerald-600 font-semibold">{item.diff_summary.engine_capacity_cc.new}cc</span>
                           </div>
                         )}
+                        {item.diff_summary.source_url && (
+                          <div className="text-gray-600 flex items-center gap-1.5 flex-wrap">
+                            <span className="font-medium text-gray-800">Source URL:</span>{' '}
+                            <span className="line-through text-red-500 font-medium">
+                              {item.diff_summary.source_url.old || '(none)'}
+                            </span>{' '}
+                            →{' '}
+                            <span className="text-emerald-600 font-semibold">
+                              {item.diff_summary.source_url.new}
+                            </span>
+                          </div>
+                        )}
                         {item.diff_summary.rates ? (
                           renderRateTiersDiff(
                             item.diff_summary.rates,
@@ -825,13 +840,18 @@ export function ChangeProposalDiffViewer({
                   </div>
                 )}
                 <div className="flex-1 text-sm">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold text-gray-900">
                       {item.brand_name} {item.model_name}
                     </span>
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-red-100 text-red-800 line-through">
                       - Delisted / Unavailable
                     </span>
+                    {item.diff_summary?.identity_review?.needsReview === true && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+                        Needs Identity Review
+                      </span>
+                    )}
                   </div>
                   {renderRateTiers(item.original_data?.rates, item.original_data?.currency, 'red', true)}
                 </div>

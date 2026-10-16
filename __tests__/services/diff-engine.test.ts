@@ -828,6 +828,10 @@ describe('Diff Engine', () => {
       );
       expect(secondOffer?.action).toBe('update');
       expect(secondOffer?.diff_summary?.year).toEqual({ old: 2024, new: 2026 });
+      expect(secondOffer?.diff_summary?.source_url).toEqual({
+        old: 'https://siemreapscooterrental.com/index.php/bike-rental/yamaha-pg1-2026-125-cc-semi-automatic/',
+        new: 'https://siemreapscooterrental.com/index.php/bike-rental/yamaha-pg1-2024-125-cc-semi-automatic/',
+      });
 
       expect(diff.summaryCounts).toEqual({
         add: 0,
@@ -875,7 +879,7 @@ describe('Diff Engine', () => {
       });
     });
 
-    it('flags ambiguous matches as needing identity review instead of silently selecting the first match when multiple existing records match', () => {
+    it('flags ambiguous matches as needing identity review and withholds candidate records from automatic delist generation', () => {
       const existingBikes: ExistingBikeRecord[] = [
         {
           id: '9500f956-4eb1-403f-bd52-de60fe6818f7',
@@ -918,15 +922,21 @@ describe('Diff Engine', () => {
       expect(flaggedItem).toBeDefined();
       expect(flaggedItem?.entity_id).toBeNull();
       expect(flaggedItem?.diff_summary?.identity_review?.reason).toBe('ambiguous_candidates');
+      expect(flaggedItem?.diff_summary?.identity_review?.candidateIds).toEqual([
+        '9500f956-4eb1-403f-bd52-de60fe6818f7',
+        '74a83430-2e1c-47af-ae9b-fb788a01367a',
+      ]);
       expect(
         flaggedItem?.diff_summary?.identity_review?.candidates.map((c: any) => c.id)
       ).toEqual([
         '9500f956-4eb1-403f-bd52-de60fe6818f7',
         '74a83430-2e1c-47af-ae9b-fb788a01367a',
       ]);
+      // Candidate records are withheld from automatic delist generation until resolved
+      expect(diff.items.filter((i) => i.action === 'delist')).toHaveLength(0);
     });
 
-    it('detects likely replacement pairs (such as Honda QBIX -> Yamaha QBIX without explicit ID) and flags them for identity review', () => {
+    it('detects likely replacement pairs (such as Honda QBIX -> Yamaha QBIX without explicit ID) and flags both add and delist items for identity review', () => {
       const existingBikes: ExistingBikeRecord[] = [
         {
           id: '7d316bb8-4f40-459c-a7ad-bfc445d8c851',
@@ -956,18 +966,28 @@ describe('Diff Engine', () => {
       expect(addItem?.diff_summary?.identity_review).toEqual({
         needsReview: true,
         reason: 'likely_replacement',
+        candidateIds: ['7d316bb8-4f40-459c-a7ad-bfc445d8c851'],
         candidates: [
           {
             id: '7d316bb8-4f40-459c-a7ad-bfc445d8c851',
+            brand: 'Honda',
+            model: 'QBIX',
             brand_name: 'Honda',
             model_name: 'QBIX',
             year: 2022,
+            engineCapacityCc: null,
             engine_capacity_cc: null,
+            sourceUrl: 'https://siemreapscooterrental.com/index.php/bike-rental/honda-qbix-2022/',
             source_url: 'https://siemreapscooterrental.com/index.php/bike-rental/honda-qbix-2022/',
             rates: [{ min_days: 1, max_days: null, rate_per_day: 17 }],
           },
         ],
       });
+
+      const delistItem = diff.items.find((i) => i.action === 'delist');
+      expect(delistItem).toBeDefined();
+      expect(delistItem?.diff_summary?.identity_review?.needsReview).toBe(true);
+      expect(delistItem?.diff_summary?.identity_review?.reason).toBe('likely_replacement');
     });
   });
 });

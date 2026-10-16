@@ -2,6 +2,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { getShopUrl } from '@/lib/utils/urls';
 import {
   computeShopInventoryDiff,
+  normalizeCrawledBikeSnapshot,
   normalizeCrawledShopProfile,
   type CrawledBikeSnapshot,
   type ExistingBikeRecord,
@@ -510,22 +511,63 @@ export class ChangeProposalService {
           },
         },
       };
+
+      const candidateIdSet = new Set<string>(
+        Array.isArray(existingIdentityReview.candidateIds)
+          ? existingIdentityReview.candidateIds
+          : candidates.map((c: any) => c.id)
+      );
+
+      for (const other of allItems) {
+        const otherDiff = (other.diff_summary as Record<string, any>) || {};
+        if (
+          other.id !== targetItem.id &&
+          other.action === 'delist' &&
+          other.entity_id &&
+          candidateIdSet.has(other.entity_id) &&
+          otherDiff.identity_review?.needsReview === true
+        ) {
+          await (supabase.from('change_proposal_items') as any)
+            .update({
+              diff_summary: {
+                ...otherDiff,
+                identity_review: {
+                  ...otherDiff.identity_review,
+                  needsReview: false,
+                  resolution: 'create_new',
+                },
+              },
+            })
+            .eq('id', other.id);
+        }
+      }
     } else {
       if (!input.targetMotorcycleId) {
         throw new Error('targetMotorcycleId is required when resolving to an existing motorcycle.');
       }
 
-      let candidate = candidates.find((c) => c.id === input.targetMotorcycleId);
-      if (!candidate) {
+      let rawCandidate: any = candidates.find((c: any) => c.id === input.targetMotorcycleId);
+      if (!rawCandidate) {
         const shopBikes = await this.getExistingShopInventory(proposal.shop_id);
-        candidate = shopBikes.find((b) => b.id === input.targetMotorcycleId);
+        rawCandidate = shopBikes.find((b) => b.id === input.targetMotorcycleId);
       }
 
-      if (!candidate) {
+      if (!rawCandidate) {
         throw new Error(
           `Target motorcycle '${input.targetMotorcycleId}' not found in shop inventory.`
         );
       }
+
+      const candidate: ExistingBikeRecord = {
+        id: rawCandidate.id,
+        brand_name: rawCandidate.brand_name || rawCandidate.brand || 'Generic',
+        model_name: rawCandidate.model_name || rawCandidate.model || 'Motorcycle',
+        year: rawCandidate.year ?? null,
+        engine_capacity_cc:
+          rawCandidate.engine_capacity_cc ?? rawCandidate.engineCapacityCc ?? null,
+        source_url: rawCandidate.source_url ?? rawCandidate.sourceUrl ?? null,
+        rates: rawCandidate.rates || [],
+      };
 
       const proposedWithTarget = {
         ...(targetItem.proposed_data as Record<string, any>),
@@ -672,18 +714,16 @@ export class ChangeProposalService {
       const proposed = item.proposed_data as any;
 
       if (item.entity_type === 'motorcycle') {
+        const normalizedBike = normalizeCrawledBikeSnapshot((proposed || {}) as Record<string, any>);
+        const primaryTier = normalizedBike.rates?.[0];
+        const primaryRate =
+          primaryTier?.ratePerDay !== undefined && !isNaN(Number(primaryTier.ratePerDay))
+            ? Number(primaryTier.ratePerDay)
+            : null;
+        const primaryCurrency = proposed?.currency || primaryTier?.currency;
+
         if (item.action === 'add') {
           const brandId = await resolveOrCreateBrandId(supabase, item.brand_name || 'Generic');
-
-          // Insert motorcycle
-          const rawYear = proposed.year ?? proposed.modelYear ?? proposed.model_year;
-          const year = rawYear !== undefined && rawYear !== null ? Number(rawYear) : null;
-
-          const rawCc = proposed.engineCapacityCc ?? proposed.engineCapacity ?? proposed.engine_capacity_cc;
-          const engineCapacityCc = rawCc !== undefined && rawCc !== null ? Number(rawCc) : null;
-
-          const primaryRate = proposed.rates?.[0]?.ratePerDay ?? proposed.rates?.[0]?.dailyRate ?? proposed.rates?.[0]?.rate_per_day ?? proposed.rates?.[0]?.daily_rate;
-          const rentalRatePerDay = primaryRate !== undefined && primaryRate !== null ? Number(primaryRate) : null;
 
           const { data: newBike, error: bikeError } = await (supabase
             .from('motorcycle_rentals') as any)
@@ -691,12 +731,12 @@ export class ChangeProposalService {
               shop_id: proposal.shop_id,
               brand_id: brandId,
               model: item.model_name || 'Motorcycle',
-              year: year !== null && !isNaN(year) ? year : null,
-              engine_capacity_cc: engineCapacityCc !== null && !isNaN(engineCapacityCc) ? engineCapacityCc : null,
+              year: normalizedBike.year ?? null,
+              engine_capacity_cc: normalizedBike.engineCapacityCc ?? null,
               availability_status: 'available',
-              rental_rate_per_day: rentalRatePerDay !== null && !isNaN(rentalRatePerDay) ? rentalRatePerDay : null,
-              rental_rate_currency: proposed.currency || proposed.rates?.[0]?.currency || 'THB',
-              source_url: proposed.sourceUrl || proposed.source_url || null,
+              rental_rate_per_day: primaryRate,
+              rental_rate_currency: primaryCurrency || 'THB',
+              source_url: normalizedBike.sourceUrl || null,
             })
             .select('id')
             .single();
@@ -719,7 +759,7 @@ export class ChangeProposalService {
 
           if (itemDiffSummary.brand) {
             const targetBrandName =
-              itemDiffSummary.brand.new || item.brand_name || proposed.brand;
+              itemDiffSummary.brand.new || item.brand_name || normalizedBike.brand;
             const brandId = await resolveOrCreateBrandId(supabase, targetBrandName);
             if (brandId) {
               updatePayload.brand_id = brandId;
@@ -728,34 +768,29 @@ export class ChangeProposalService {
 
           if (itemDiffSummary.model) {
             const targetModelName =
-              itemDiffSummary.model.new || item.model_name || proposed.modelName;
+              itemDiffSummary.model.new || item.model_name || normalizedBike.modelName;
             if (targetModelName) {
               updatePayload.model = targetModelName;
             }
           }
 
-          const proposedYear = proposed.year ?? proposed.modelYear ?? proposed.model_year;
-          if (proposedYear !== undefined && proposedYear !== null) {
-            const parsedYear = Number(proposedYear);
-            if (!isNaN(parsedYear)) updatePayload.year = parsedYear;
+          if (normalizedBike.year !== undefined && normalizedBike.year !== null) {
+            updatePayload.year = normalizedBike.year;
           }
-          const proposedCc = proposed.engineCapacityCc ?? proposed.engineCapacity ?? proposed.engine_capacity_cc;
-          if (proposedCc !== undefined && proposedCc !== null) {
-            const parsedCc = Number(proposedCc);
-            if (!isNaN(parsedCc)) updatePayload.engine_capacity_cc = parsedCc;
+          if (
+            normalizedBike.engineCapacityCc !== undefined &&
+            normalizedBike.engineCapacityCc !== null
+          ) {
+            updatePayload.engine_capacity_cc = normalizedBike.engineCapacityCc;
           }
-          const primaryRate = proposed.rates?.[0]?.ratePerDay ?? proposed.rates?.[0]?.dailyRate ?? proposed.rates?.[0]?.rate_per_day ?? proposed.rates?.[0]?.daily_rate;
-          if (primaryRate !== undefined && primaryRate !== null) {
-            const parsedRate = Number(primaryRate);
-            if (!isNaN(parsedRate)) {
-              updatePayload.rental_rate_per_day = parsedRate;
-              if (proposed.currency || proposed.rates[0]?.currency) {
-                updatePayload.rental_rate_currency = proposed.currency || proposed.rates[0]?.currency;
-              }
+          if (primaryRate !== null) {
+            updatePayload.rental_rate_per_day = primaryRate;
+            if (primaryCurrency) {
+              updatePayload.rental_rate_currency = primaryCurrency;
             }
           }
 
-          const proposedSourceUrl = proposed.sourceUrl ?? proposed.source_url;
+          const proposedSourceUrl = normalizedBike.sourceUrl;
           const mergeDuplicateIds: string[] = Array.isArray(proposed.mergeDuplicateIds)
             ? proposed.mergeDuplicateIds.filter((id: string) => id && id !== item.entity_id)
             : [];
@@ -786,12 +821,18 @@ export class ChangeProposalService {
               }
             }
 
-            // Retire merged duplicate records and collect their source_url into surviving aliases
+            // Retire merged duplicate records in the same shop and collect their source_url into surviving aliases
             for (const dupId of mergeDuplicateIds) {
-              const { data: dupRental } = await (supabase.from('motorcycle_rentals') as any)
-                .select?.('id, source_url, specifications_details')
-                ?.eq?.('id', dupId)
-                ?.maybeSingle?.() || { data: null };
+              let dupSelect = (supabase.from('motorcycle_rentals') as any)
+                .select?.('id, shop_id, source_url, specifications_details')
+                ?.eq?.('id', dupId);
+              if (dupSelect && typeof dupSelect.eq === 'function') {
+                dupSelect = dupSelect.eq('shop_id', proposal.shop_id);
+              }
+              const { data: dupRental } = (await dupSelect?.maybeSingle?.()) || { data: null };
+              if (dupRental?.shop_id && dupRental.shop_id !== proposal.shop_id) {
+                continue;
+              }
 
               if (dupRental?.source_url) {
                 aliasSet.add(dupRental.source_url);
@@ -803,7 +844,7 @@ export class ChangeProposalService {
                   ? { ...dupRental.specifications_details }
                   : {};
 
-              await (supabase.from('motorcycle_rentals') as any)
+              const dupUpdate = (supabase.from('motorcycle_rentals') as any)
                 .update({
                   availability_status: 'unavailable',
                   specifications_details: {
@@ -812,6 +853,11 @@ export class ChangeProposalService {
                   },
                 })
                 .eq('id', dupId);
+              if (dupUpdate && typeof dupUpdate.eq === 'function') {
+                await dupUpdate.eq('shop_id', proposal.shop_id);
+              } else {
+                await dupUpdate;
+              }
             }
 
             if (aliasSet.size > 0) {
