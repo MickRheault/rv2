@@ -15,6 +15,13 @@ export class ZeroDropSafeguardError extends Error {
   }
 }
 
+export class ExistingMotorcycleValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ExistingMotorcycleValidationError';
+  }
+}
+
 export interface CrawledRateTier {
   minDays: number;
   maxDays?: number | null;
@@ -23,6 +30,8 @@ export interface CrawledRateTier {
 }
 
 export interface CrawledBikeSnapshot {
+  existingMotorcycleId?: string | null;
+  sourceUrl?: string | null;
   brand: string;
   modelName: string;
   year?: number | null;
@@ -48,6 +57,8 @@ export interface ExistingBikeRecord {
   year?: number | null;
   engine_capacity_cc?: number | null;
   availability_status?: string | null;
+  source_url?: string | null;
+  source_url_aliases?: string[] | null;
   rates: ExistingRateTier[];
 }
 
@@ -81,6 +92,26 @@ export interface ExistingShopProfile {
   conditions?: string[] | null;
 }
 
+export interface IdentityReviewCandidate {
+  id: string;
+  brand: string;
+  model: string;
+  year: number | null;
+  engineCapacityCc: number | null;
+  sourceUrl?: string | null;
+}
+
+export interface IdentityReviewMetadata {
+  needsReview: boolean;
+  reason?: 'ambiguous_candidates' | 'likely_replacement';
+  candidateIds?: string[];
+  candidates?: IdentityReviewCandidate[];
+  resolution?: 'update_existing' | 'create_new' | 'merge_duplicates';
+  resolvedTargetId?: string;
+  duplicateIds?: string[];
+  resolvedAt?: string;
+}
+
 export interface ProposedDiffItem {
   entity_type: 'motorcycle' | 'rental_shop';
   action: 'add' | 'update' | 'delist' | 'unchanged';
@@ -89,7 +120,7 @@ export interface ProposedDiffItem {
   model_name: string;
   original_data?: any;
   proposed_data: any;
-  diff_summary?: Record<string, { old: any; new: any; [key: string]: any }> | null;
+  diff_summary?: Record<string, any> | null;
 }
 
 export interface DiffResult {
@@ -102,14 +133,23 @@ export interface DiffResult {
   };
 }
 
-function normalizeModelToken(modelName: string): string {
+export function normalizeModelToken(modelName: string): string {
   return modelName
     .trim()
     .toLowerCase()
     .replace(/[-_]+/g, ' ')
     .replace(/\b(\d+)\s*cc\b/g, '$1')
+    .replace(/([a-z])(\d)/g, '$1 $2')
+    .replace(/(\d)([a-z])/g, '$1 $2')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+export function normalizeSourceUrl(url?: string | null): string | null {
+  if (!url || typeof url !== 'string') return null;
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+  return trimmed.replace(/\/+$/, '').toLowerCase();
 }
 
 function canonicalKey(brand: string, modelName: string): string {
@@ -209,8 +249,22 @@ export function normalizeCrawledBikeSnapshot(rawBike: any): CrawledBikeSnapshot 
       : null;
   const year = rawYear !== null && !isNaN(Number(rawYear)) ? Number(rawYear) : null;
 
+  const rawExistingId = rawBike.existingMotorcycleId ?? rawBike.existing_motorcycle_id;
+  const existingMotorcycleId =
+    typeof rawExistingId === 'string' && rawExistingId.trim().length > 0
+      ? rawExistingId.trim()
+      : null;
+
+  const rawSourceUrl = rawBike.sourceUrl ?? rawBike.source_url;
+  const sourceUrl =
+    typeof rawSourceUrl === 'string' && rawSourceUrl.trim().length > 0
+      ? rawSourceUrl.trim()
+      : null;
+
   return {
     ...rawBike,
+    ...(existingMotorcycleId ? { existingMotorcycleId } : {}),
+    ...(sourceUrl ? { sourceUrl } : {}),
     brand: String(rawBike.brand || '').trim(),
     modelName: String(rawBike.modelName || rawBike.model_name || rawBike.model || '').trim(),
     year,
@@ -318,6 +372,7 @@ function toOriginalMotorcycleSnapshot(bike: ExistingBikeRecord) {
     engine_capacity_cc: bike.engine_capacity_cc ?? null,
     rates: bike.rates || [],
     availability_status: bike.availability_status || 'available',
+    ...(bike.source_url !== undefined ? { source_url: bike.source_url } : {}),
   };
 }
 
@@ -343,52 +398,195 @@ export function computeShopInventoryDiff(
   const normalizedCrawledBikes = (crawledBikes || []).map(normalizeCrawledBikeSnapshot);
   const normalizedCrawledShop = normalizeCrawledShopProfile(crawledShop);
 
+  const existingById = new Map<string, ExistingBikeRecord>();
+  for (const bike of existingBikes) {
+    if (bike.id) {
+      existingById.set(bike.id, bike);
+    }
+  }
+
+  // Validate explicit existingMotorcycleId targets upfront
+  const targetedIds = new Set<string>();
+  for (const crawled of normalizedCrawledBikes) {
+    if (crawled.existingMotorcycleId) {
+      if (!existingById.has(crawled.existingMotorcycleId)) {
+        throw new ExistingMotorcycleValidationError(
+          `Invalid existingMotorcycleId '${crawled.existingMotorcycleId}': record does not exist in target shop inventory.`
+        );
+      }
+      if (targetedIds.has(crawled.existingMotorcycleId)) {
+        throw new ExistingMotorcycleValidationError(
+          `Conflicting existingMotorcycleId '${crawled.existingMotorcycleId}': targeted by more than one incoming bike.`
+        );
+      }
+      targetedIds.add(crawled.existingMotorcycleId);
+    }
+  }
+
   const items: ProposedDiffItem[] = [];
-  const existingMap = new Map<string, ExistingBikeRecord>();
 
   const existingBikeIdentity = (bike: ExistingBikeRecord) =>
     bike.id || canonicalKey(bike.brand_name, bike.model_name);
 
-  for (const bike of existingBikes) {
-    existingMap.set(canonicalKey(bike.brand_name, bike.model_name), bike);
-  }
+  const observedExistingIdentities = new Set<string>();
+  const matchedExistingByCrawledIdx = new Map<
+    number,
+    { existing: ExistingBikeRecord; tier: 'A' | 'B' | 'C' | 'D' }
+  >();
+  const ambiguousCandidatesByCrawledIdx = new Map<number, ExistingBikeRecord[]>();
 
-  // Register secondary composite keys (model + engine_capacity_cc) when model omits displacement
-  for (const bike of existingBikes) {
-    const compositeKey = compositeCanonicalKey(
+  const toIdentityReviewCandidate = (bike: ExistingBikeRecord) => ({
+    id: bike.id,
+    brand_name: bike.brand_name,
+    model_name: bike.model_name,
+    year: bike.year ?? null,
+    engine_capacity_cc: bike.engine_capacity_cc ?? null,
+    source_url: bike.source_url ?? null,
+    rates: bike.rates || [],
+  });
+
+  // Pass A: Explicit existingMotorcycleId
+  normalizedCrawledBikes.forEach((crawled, idx) => {
+    if (crawled.existingMotorcycleId) {
+      const existing = existingById.get(crawled.existingMotorcycleId);
+      if (existing) {
+        matchedExistingByCrawledIdx.set(idx, { existing, tier: 'A' });
+        observedExistingIdentities.add(existingBikeIdentity(existing));
+      }
+    }
+  });
+
+  // Pass B: Exact source_url match within the same shop
+  normalizedCrawledBikes.forEach((crawled, idx) => {
+    if (matchedExistingByCrawledIdx.has(idx)) return;
+    const normUrl = normalizeSourceUrl(crawled.sourceUrl);
+    if (!normUrl) return;
+
+    const candidates = existingBikes.filter(
+      (b) =>
+        !observedExistingIdentities.has(existingBikeIdentity(b)) &&
+        normalizeSourceUrl(b.source_url) === normUrl
+    );
+
+    if (candidates.length === 1) {
+      matchedExistingByCrawledIdx.set(idx, { existing: candidates[0], tier: 'B' });
+      observedExistingIdentities.add(existingBikeIdentity(candidates[0]));
+    } else if (candidates.length > 1) {
+      ambiguousCandidatesByCrawledIdx.set(idx, candidates);
+    }
+  });
+
+  // Pass C: Known source_url_aliases match within the same shop
+  normalizedCrawledBikes.forEach((crawled, idx) => {
+    if (matchedExistingByCrawledIdx.has(idx) || ambiguousCandidatesByCrawledIdx.has(idx)) return;
+    const normUrl = normalizeSourceUrl(crawled.sourceUrl);
+    if (!normUrl) return;
+
+    const candidates = existingBikes.filter((b) => {
+      if (observedExistingIdentities.has(existingBikeIdentity(b))) return false;
+      const aliases = Array.isArray(b.source_url_aliases) ? b.source_url_aliases : [];
+      return aliases.some((alias) => normalizeSourceUrl(alias) === normUrl);
+    });
+
+    if (candidates.length === 1) {
+      matchedExistingByCrawledIdx.set(idx, { existing: candidates[0], tier: 'C' });
+      observedExistingIdentities.add(existingBikeIdentity(candidates[0]));
+    } else if (candidates.length > 1) {
+      ambiguousCandidatesByCrawledIdx.set(idx, candidates);
+    }
+  });
+
+  // Pass D: Normalized model & composite displacement matching
+  const matchesBikeKey = (bike: ExistingBikeRecord, crawled: CrawledBikeSnapshot): boolean => {
+    const primaryCrawled = canonicalKey(crawled.brand, crawled.modelName);
+    const compositeCrawled = compositeCanonicalKey(
+      crawled.brand,
+      crawled.modelName,
+      crawled.engineCapacityCc
+    );
+    const primaryExisting = canonicalKey(bike.brand_name, bike.model_name);
+    const compositeExisting = compositeCanonicalKey(
       bike.brand_name,
       bike.model_name,
       bike.engine_capacity_cc
     );
-    if (compositeKey && !existingMap.has(compositeKey)) {
-      existingMap.set(compositeKey, bike);
-    }
-  }
 
-  const observedExistingIdentities = new Set<string>();
+    if (primaryCrawled === primaryExisting) return true;
+    if (compositeCrawled && compositeCrawled === primaryExisting) return true;
+    if (compositeExisting && primaryCrawled === compositeExisting) return true;
+    if (compositeCrawled && compositeExisting && compositeCrawled === compositeExisting) return true;
+    return false;
+  };
+
+  const matchesModelOnlyKey = (bike: ExistingBikeRecord, crawled: CrawledBikeSnapshot): boolean => {
+    const normCrawledModel = normalizeModelToken(crawled.modelName);
+    const normExistingModel = normalizeModelToken(bike.model_name);
+    if (normCrawledModel && normCrawledModel === normExistingModel) return true;
+
+    const compCrawledModel =
+      crawled.engineCapacityCc && crawled.engineCapacityCc > 0
+        ? normalizeModelToken(`${crawled.modelName} ${crawled.engineCapacityCc}`)
+        : null;
+    const compExistingModel =
+      bike.engine_capacity_cc && bike.engine_capacity_cc > 0
+        ? normalizeModelToken(`${bike.model_name} ${bike.engine_capacity_cc}`)
+        : null;
+
+    if (compCrawledModel && compCrawledModel === normExistingModel) return true;
+    if (compExistingModel && normCrawledModel === compExistingModel) return true;
+    return false;
+  };
+
+  normalizedCrawledBikes.forEach((crawled, idx) => {
+    if (matchedExistingByCrawledIdx.has(idx) || ambiguousCandidatesByCrawledIdx.has(idx)) return;
+
+    const candidates = existingBikes.filter(
+      (b) =>
+        !observedExistingIdentities.has(existingBikeIdentity(b)) &&
+        matchesBikeKey(b, crawled)
+    );
+
+    if (candidates.length === 1) {
+      matchedExistingByCrawledIdx.set(idx, { existing: candidates[0], tier: 'D' });
+      observedExistingIdentities.add(existingBikeIdentity(candidates[0]));
+    } else if (candidates.length > 1) {
+      ambiguousCandidatesByCrawledIdx.set(idx, candidates);
+    }
+  });
+
+  // Identify remaining unmatched existing records for replacement-pair detection
+  const unmatchedExistingBikes = existingBikes.filter(
+    (b) => !observedExistingIdentities.has(existingBikeIdentity(b))
+  );
 
   // 2. Evaluate Additions and Updates
-  for (const crawled of normalizedCrawledBikes) {
-    const primaryKey = canonicalKey(crawled.brand, crawled.modelName);
-    let existing = existingMap.get(primaryKey);
+  normalizedCrawledBikes.forEach((crawled, idx) => {
+    const match = matchedExistingByCrawledIdx.get(idx);
+    const existing = match?.existing;
+    const matchTier = match?.tier;
 
     if (!existing) {
-      const compositeKey = compositeCanonicalKey(
-        crawled.brand,
-        crawled.modelName,
-        crawled.engineCapacityCc
-      );
-      if (compositeKey) {
-        existing = existingMap.get(compositeKey);
-      }
-    }
+      const ambiguousCandidates = ambiguousCandidatesByCrawledIdx.get(idx);
+      const replacementCandidates = !ambiguousCandidates
+        ? unmatchedExistingBikes.filter((b) => matchesModelOnlyKey(b, crawled))
+        : [];
 
-    if (existing && observedExistingIdentities.has(existingBikeIdentity(existing))) {
-      existing = undefined;
-    }
+      const identityReview =
+        ambiguousCandidates && ambiguousCandidates.length > 0
+          ? {
+              needsReview: true,
+              reason: 'ambiguous_candidates',
+              candidates: ambiguousCandidates.map(toIdentityReviewCandidate),
+            }
+          : replacementCandidates.length > 0
+          ? {
+              needsReview: true,
+              reason: 'likely_replacement',
+              candidates: replacementCandidates.map(toIdentityReviewCandidate),
+            }
+          : undefined;
 
-    if (!existing) {
-      // New motorcycle discovered
+      // New motorcycle discovered (or flagged for identity review)
       items.push({
         entity_type: 'motorcycle',
         action: 'add',
@@ -399,13 +597,33 @@ export function computeShopInventoryDiff(
         diff_summary: {
           status: { old: null, new: 'new_listing' },
           rates: { old: null, new: crawled.rates || [] },
+          ...(identityReview ? { identity_review: identityReview } : {}),
         },
       });
     } else {
-      observedExistingIdentities.add(existingBikeIdentity(existing));
+      const matchedViaStrongIdentity = matchTier === 'A' || matchTier === 'B' || matchTier === 'C';
 
       // Check for specification or pricing modifications
       const diffSummary: Record<string, { old: any; new: any; [key: string]: any }> = {};
+
+      if (
+        matchedViaStrongIdentity &&
+        crawled.brand &&
+        crawled.brand.toLowerCase() !== existing.brand_name.trim().toLowerCase()
+      ) {
+        diffSummary.brand = { old: existing.brand_name, new: crawled.brand };
+      }
+
+      const modelChangedOnExplicitId =
+        matchTier === 'A' && crawled.modelName && crawled.modelName !== existing.model_name;
+      const modelChangedOnSourceUrl =
+        (matchTier === 'B' || matchTier === 'C') &&
+        crawled.modelName &&
+        normalizeModelToken(crawled.modelName) !== normalizeModelToken(existing.model_name);
+
+      if (modelChangedOnExplicitId || modelChangedOnSourceUrl) {
+        diffSummary.model = { old: existing.model_name, new: crawled.modelName };
+      }
 
       if (
         crawled.year !== undefined &&
@@ -434,13 +652,20 @@ export function computeShopInventoryDiff(
         };
       }
 
+      const resolvedBrandName =
+        matchedViaStrongIdentity && crawled.brand ? crawled.brand : existing.brand_name;
+      const resolvedModelName =
+        modelChangedOnExplicitId || modelChangedOnSourceUrl
+          ? crawled.modelName
+          : existing.model_name;
+
       if (Object.keys(diffSummary).length > 0) {
         items.push({
           entity_type: 'motorcycle',
           action: 'update',
           entity_id: existing.id,
-          brand_name: existing.brand_name,
-          model_name: existing.model_name,
+          brand_name: resolvedBrandName,
+          model_name: resolvedModelName,
           original_data: toOriginalMotorcycleSnapshot(existing),
           proposed_data: crawled,
           diff_summary: diffSummary,
@@ -450,8 +675,8 @@ export function computeShopInventoryDiff(
           entity_type: 'motorcycle',
           action: 'unchanged',
           entity_id: existing.id,
-          brand_name: existing.brand_name,
-          model_name: existing.model_name,
+          brand_name: resolvedBrandName,
+          model_name: resolvedModelName,
           original_data: toOriginalMotorcycleSnapshot(existing),
           proposed_data: {
             ...crawled,
@@ -461,7 +686,7 @@ export function computeShopInventoryDiff(
         });
       }
     }
-  }
+  });
 
   // 3. Evaluate Missing Inventory -> Soft Delist (ADR 0005)
   for (const bike of existingBikes) {

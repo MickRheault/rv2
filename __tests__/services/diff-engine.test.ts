@@ -7,6 +7,7 @@ import {
   normalizeCrawledBikeSnapshot,
   computeRateTiersDiff,
   ZeroDropSafeguardError,
+  ExistingMotorcycleValidationError,
   type CrawledBikeSnapshot,
   type ExistingBikeRecord,
 } from '@/services/diff-engine';
@@ -676,5 +677,301 @@ describe('Diff Engine', () => {
       });
     });
   });
+
+  describe('Motorcycle Identity Reconciliation (Priority A: Explicit existingMotorcycleId)', () => {
+    it('matches Honda QBIX -> Yamaha QBIX via explicit existingMotorcycleId as an in-place update preserving ID and recording brand diff', () => {
+      const existingBikes: ExistingBikeRecord[] = [
+        {
+          id: '7d316bb8-4f40-459c-a7ad-bfc445d8c851',
+          brand_name: 'Honda',
+          model_name: 'QBIX',
+          year: 2022,
+          engine_capacity_cc: null,
+          availability_status: 'available',
+          source_url: 'https://siemreapscooterrental.com/index.php/bike-rental/honda-qbix-2022/',
+          rates: [{ min_days: 1, max_days: null, rate_per_day: 17 }],
+        },
+      ];
+
+      const crawledBikes: any[] = [
+        {
+          existingMotorcycleId: '7d316bb8-4f40-459c-a7ad-bfc445d8c851',
+          brand: 'Yamaha',
+          modelName: 'QBIX',
+          modelYear: 2022,
+          rates: [{ minDays: 1, dailyRate: 12, currency: 'USD' }],
+        },
+      ];
+
+      const diff = computeShopInventoryDiff(existingBikes, crawledBikes);
+
+      expect(diff.items).toHaveLength(1);
+      expect(diff.items[0].action).toBe('update');
+      expect(diff.items[0].entity_id).toBe('7d316bb8-4f40-459c-a7ad-bfc445d8c851');
+      expect(diff.items[0].brand_name).toBe('Yamaha');
+      expect(diff.items[0].model_name).toBe('QBIX');
+      expect(diff.items[0].diff_summary?.brand).toEqual({ old: 'Honda', new: 'Yamaha' });
+      expect(diff.items[0].diff_summary?.rates?.tiersDiff?.[0]).toMatchObject({
+        status: 'modified',
+        oldRate: 17,
+        newRate: 12,
+      });
+      expect(diff.summaryCounts).toEqual({
+        add: 0,
+        update: 1,
+        delist: 0,
+        unchanged: 0,
+      });
+    });
+
+    it('rejects unknown or cross-shop existingMotorcycleId and duplicate target IDs with ExistingMotorcycleValidationError instead of falling back to add', () => {
+      const existingBikes: ExistingBikeRecord[] = [
+        {
+          id: '7d316bb8-4f40-459c-a7ad-bfc445d8c851',
+          brand_name: 'Honda',
+          model_name: 'QBIX',
+          year: 2022,
+          rates: [{ min_days: 1, max_days: null, rate_per_day: 17 }],
+        },
+      ];
+
+      // Unknown / cross-shop ID
+      expect(() =>
+        computeShopInventoryDiff(existingBikes, [
+          {
+            existingMotorcycleId: 'other-shop-bike-id',
+            brand: 'Yamaha',
+            modelName: 'QBIX',
+            rates: [{ minDays: 1, ratePerDay: 12 }],
+          },
+        ])
+      ).toThrow(ExistingMotorcycleValidationError);
+
+      // Duplicate target ID in same payload
+      expect(() =>
+        computeShopInventoryDiff(existingBikes, [
+          {
+            existingMotorcycleId: '7d316bb8-4f40-459c-a7ad-bfc445d8c851',
+            brand: 'Yamaha',
+            modelName: 'QBIX',
+            rates: [{ minDays: 1, ratePerDay: 12 }],
+          },
+          {
+            existingMotorcycleId: '7d316bb8-4f40-459c-a7ad-bfc445d8c851',
+            brand: 'Yamaha',
+            modelName: 'QBIX ABS',
+            rates: [{ minDays: 1, ratePerDay: 14 }],
+          },
+        ])
+      ).toThrow(ExistingMotorcycleValidationError);
+    });
+
+    it('reconciles two PG-1 records against their stored source_url and source_url_aliases (Priorities B & C), preserving separate variants and staging a year correction on the same source offer', () => {
+      const existingBikes: ExistingBikeRecord[] = [
+        {
+          id: '9500f956-4eb1-403f-bd52-de60fe6818f7',
+          brand_name: 'Yamaha',
+          model_name: 'PG-1',
+          year: 2024,
+          engine_capacity_cc: 125,
+          source_url:
+            'https://siemreapscooterrental.com/index.php/bike-rental/yamaha-pg-1-125-cc-semi-automatic-brand-new-2024-14-21-days/',
+          rates: [{ min_days: 1, max_days: null, rate_per_day: 21 }],
+        },
+        {
+          id: '74a83430-2e1c-47af-ae9b-fb788a01367a',
+          brand_name: 'Yamaha',
+          model_name: 'PG-1',
+          year: 2024,
+          engine_capacity_cc: 125,
+          source_url:
+            'https://siemreapscooterrental.com/index.php/bike-rental/yamaha-pg1-2026-125-cc-semi-automatic/',
+          source_url_aliases: [
+            'https://siemreapscooterrental.com/index.php/bike-rental/yamaha-pg1-2024-125-cc-semi-automatic/',
+          ],
+          rates: [{ min_days: 1, max_days: null, rate_per_day: 25 }],
+        },
+      ];
+
+      const crawledBikes: any[] = [
+        {
+          brand: 'Yamaha',
+          modelName: 'PG 1',
+          modelYear: 2024,
+          engineCapacity: 125,
+          sourceUrl:
+            'https://siemreapscooterrental.com/index.php/bike-rental/yamaha-pg-1-125-cc-semi-automatic-brand-new-2024-14-21-days',
+          rates: [{ minDays: 1, dailyRate: 21, currency: 'USD' }],
+        },
+        {
+          brand: 'Yamaha',
+          modelName: 'PG1',
+          modelYear: 2026,
+          engineCapacity: 125,
+          sourceUrl:
+            'https://siemreapscooterrental.com/index.php/bike-rental/yamaha-pg1-2024-125-cc-semi-automatic/',
+          rates: [{ minDays: 1, dailyRate: 25, currency: 'USD' }],
+        },
+      ];
+
+      const diff = computeShopInventoryDiff(existingBikes, crawledBikes);
+
+      expect(diff.items).toHaveLength(2);
+
+      const firstOffer = diff.items.find(
+        (i) => i.entity_id === '9500f956-4eb1-403f-bd52-de60fe6818f7'
+      );
+      expect(firstOffer?.action).toBe('unchanged');
+
+      const secondOffer = diff.items.find(
+        (i) => i.entity_id === '74a83430-2e1c-47af-ae9b-fb788a01367a'
+      );
+      expect(secondOffer?.action).toBe('update');
+      expect(secondOffer?.diff_summary?.year).toEqual({ old: 2024, new: 2026 });
+
+      expect(diff.summaryCounts).toEqual({
+        add: 0,
+        update: 1,
+        delist: 0,
+        unchanged: 1,
+      });
+    });
+
+    it('normalizes PG1 / PG 1 / PG-1 to the same token in Priority D matching while keeping the curated display model name authoritative', () => {
+      const existingBikes: ExistingBikeRecord[] = [
+        {
+          id: 'bike-pg1',
+          brand_name: 'Yamaha',
+          model_name: 'PG-1',
+          year: 2024,
+          engine_capacity_cc: 125,
+          rates: [{ min_days: 1, max_days: null, rate_per_day: 25 }],
+        },
+      ];
+
+      const crawledBikes: any[] = [
+        {
+          brand: 'Yamaha',
+          modelName: 'PG1',
+          modelYear: 2024,
+          engineCapacity: 125,
+          rates: [{ minDays: 1, dailyRate: 22, currency: 'USD' }],
+        },
+      ];
+
+      const diff = computeShopInventoryDiff(existingBikes, crawledBikes);
+
+      expect(diff.items).toHaveLength(1);
+      expect(diff.items[0].action).toBe('update');
+      expect(diff.items[0].entity_id).toBe('bike-pg1');
+      // Curated display model name 'PG-1' is preserved
+      expect(diff.items[0].model_name).toBe('PG-1');
+      expect(diff.items[0].diff_summary?.model).toBeUndefined();
+      expect(diff.summaryCounts).toEqual({
+        add: 0,
+        update: 1,
+        delist: 0,
+        unchanged: 0,
+      });
+    });
+
+    it('flags ambiguous matches as needing identity review instead of silently selecting the first match when multiple existing records match', () => {
+      const existingBikes: ExistingBikeRecord[] = [
+        {
+          id: '9500f956-4eb1-403f-bd52-de60fe6818f7',
+          brand_name: 'Yamaha',
+          model_name: 'PG-1',
+          year: 2024,
+          engine_capacity_cc: 125,
+          source_url:
+            'https://siemreapscooterrental.com/index.php/bike-rental/yamaha-pg-1-125-cc-semi-automatic-brand-new-2024-14-21-days/',
+          rates: [{ min_days: 1, max_days: null, rate_per_day: 21 }],
+        },
+        {
+          id: '74a83430-2e1c-47af-ae9b-fb788a01367a',
+          brand_name: 'Yamaha',
+          model_name: 'PG-1',
+          year: 2024,
+          engine_capacity_cc: 125,
+          source_url:
+            'https://siemreapscooterrental.com/index.php/bike-rental/yamaha-pg1-2024-125-cc-semi-automatic/',
+          rates: [{ min_days: 1, max_days: null, rate_per_day: 25 }],
+        },
+      ];
+
+      // Crawled without existingMotorcycleId or matching sourceUrl
+      const crawledBikes: any[] = [
+        {
+          brand: 'Yamaha',
+          modelName: 'PG-1',
+          modelYear: 2026,
+          engineCapacity: 125,
+          rates: [{ minDays: 1, dailyRate: 25, currency: 'USD' }],
+        },
+      ];
+
+      const diff = computeShopInventoryDiff(existingBikes, crawledBikes);
+
+      const flaggedItem = diff.items.find(
+        (i) => i.diff_summary?.identity_review?.needsReview === true
+      );
+      expect(flaggedItem).toBeDefined();
+      expect(flaggedItem?.entity_id).toBeNull();
+      expect(flaggedItem?.diff_summary?.identity_review?.reason).toBe('ambiguous_candidates');
+      expect(
+        flaggedItem?.diff_summary?.identity_review?.candidates.map((c: any) => c.id)
+      ).toEqual([
+        '9500f956-4eb1-403f-bd52-de60fe6818f7',
+        '74a83430-2e1c-47af-ae9b-fb788a01367a',
+      ]);
+    });
+
+    it('detects likely replacement pairs (such as Honda QBIX -> Yamaha QBIX without explicit ID) and flags them for identity review', () => {
+      const existingBikes: ExistingBikeRecord[] = [
+        {
+          id: '7d316bb8-4f40-459c-a7ad-bfc445d8c851',
+          brand_name: 'Honda',
+          model_name: 'QBIX',
+          year: 2022,
+          engine_capacity_cc: null,
+          source_url: 'https://siemreapscooterrental.com/index.php/bike-rental/honda-qbix-2022/',
+          rates: [{ min_days: 1, max_days: null, rate_per_day: 17 }],
+        },
+      ];
+
+      // Crawled as Yamaha QBIX without existingMotorcycleId or matching sourceUrl
+      const crawledBikes: any[] = [
+        {
+          brand: 'Yamaha',
+          modelName: 'QBIX',
+          modelYear: 2022,
+          rates: [{ minDays: 1, dailyRate: 12, currency: 'USD' }],
+        },
+      ];
+
+      const diff = computeShopInventoryDiff(existingBikes, crawledBikes);
+
+      const addItem = diff.items.find((i) => i.action === 'add');
+      expect(addItem).toBeDefined();
+      expect(addItem?.diff_summary?.identity_review).toEqual({
+        needsReview: true,
+        reason: 'likely_replacement',
+        candidates: [
+          {
+            id: '7d316bb8-4f40-459c-a7ad-bfc445d8c851',
+            brand_name: 'Honda',
+            model_name: 'QBIX',
+            year: 2022,
+            engine_capacity_cc: null,
+            source_url: 'https://siemreapscooterrental.com/index.php/bike-rental/honda-qbix-2022/',
+            rates: [{ min_days: 1, max_days: null, rate_per_day: 17 }],
+          },
+        ],
+      });
+    });
+  });
 });
+
+
+
 

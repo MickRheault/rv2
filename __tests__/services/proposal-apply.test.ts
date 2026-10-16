@@ -1489,7 +1489,477 @@ describe('Change Proposal Application & Geodata Protection', () => {
       );
     });
   });
+
+  describe('Motorcycle Identity Reconciliation, Resolution & SEO Preservation (#135)', () => {
+    it('updates brand_id, model, year, source_url, and rates in-place while preserving motorcycle ID when applying a brand/model correction update', async () => {
+      const proposalData = {
+        id: 'prop-qbix',
+        shop_id: 'abc85b6d-9b86-40fa-98a5-f3bc91b9a48c',
+        status: 'pending',
+      };
+
+      const itemsData = [
+        {
+          id: 'item-qbix-update',
+          proposal_id: 'prop-qbix',
+          entity_type: 'motorcycle',
+          action: 'update',
+          entity_id: '7d316bb8-4f40-459c-a7ad-bfc445d8c851',
+          brand_name: 'Yamaha',
+          model_name: 'QBIX',
+          original_data: {
+            year: 2022,
+            source_url: 'https://siemreapscooterrental.com/index.php/bike-rental/honda-qbix-2022/',
+            rates: [{ min_days: 1, max_days: null, rate_per_day: 17 }],
+          },
+          proposed_data: {
+            existingMotorcycleId: '7d316bb8-4f40-459c-a7ad-bfc445d8c851',
+            brand: 'Yamaha',
+            modelName: 'QBIX',
+            year: 2022,
+            sourceUrl: 'https://siemreapscooterrental.com/index.php/bike-rental/yamaha-qbix-2022/',
+            rates: [{ minDays: 1, ratePerDay: 12, currency: 'USD' }],
+          },
+          diff_summary: {
+            brand: { old: 'Honda', new: 'Yamaha' },
+            rates: {
+              old: [{ min_days: 1, max_days: null, rate_per_day: 17 }],
+              new: [{ minDays: 1, ratePerDay: 12, currency: 'USD' }],
+            },
+          },
+          status: 'pending',
+        },
+      ];
+
+      let updatedRentalPayload: any = null;
+      let updatedRentalId: string | null = null;
+
+      const mockSupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({ data: proposalData, error: null }),
+                }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ data: itemsData, error: null }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+                in: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'brands') {
+            return {
+              select: jest.fn().mockReturnValue({
+                ilike: jest.fn().mockReturnValue({
+                  maybeSingle: jest.fn().mockResolvedValue({
+                    data: { id: 'da4e4ea0-311e-4b3b-bbe4-a3692a74f5fd' },
+                    error: null,
+                  }),
+                }),
+              }),
+            };
+          }
+          if (table === 'motorcycle_rentals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  maybeSingle: jest.fn().mockResolvedValue({
+                    data: {
+                      id: '7d316bb8-4f40-459c-a7ad-bfc445d8c851',
+                      source_url:
+                        'https://siemreapscooterrental.com/index.php/bike-rental/honda-qbix-2022/',
+                      specifications_details: null,
+                    },
+                    error: null,
+                  }),
+                }),
+              }),
+              update: jest.fn((payload: any) => {
+                updatedRentalPayload = payload;
+                return {
+                  eq: jest.fn((col: string, val: string) => {
+                    updatedRentalId = val;
+                    return Promise.resolve({ error: null });
+                  }),
+                };
+              }),
+            };
+          }
+          if (table === 'rental_rate_tiers') {
+            return {
+              delete: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+              insert: jest.fn().mockResolvedValue({ error: null }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      const res = await ChangeProposalService.apply('prop-qbix', ['item-qbix-update']);
+
+      expect(res.success).toBe(true);
+      expect(res.appliedCount).toBe(1);
+      expect(updatedRentalId).toBe('7d316bb8-4f40-459c-a7ad-bfc445d8c851');
+      expect(updatedRentalPayload).toMatchObject({
+        brand_id: 'da4e4ea0-311e-4b3b-bbe4-a3692a74f5fd',
+        year: 2022,
+        rental_rate_per_day: 12,
+        rental_rate_currency: 'USD',
+        source_url: 'https://siemreapscooterrental.com/index.php/bike-rental/yamaha-qbix-2022/',
+        specifications_details: {
+          source_url_aliases: [
+            'https://siemreapscooterrental.com/index.php/bike-rental/honda-qbix-2022/',
+          ],
+        },
+      });
+    });
+
+    it('blocks applying an item that still has unresolved identity_review.needsReview === true', async () => {
+      const proposalData = {
+        id: 'prop-unresolved',
+        shop_id: 'shop-1',
+        status: 'pending',
+      };
+
+      const itemsData = [
+        {
+          id: 'item-ambiguous',
+          proposal_id: 'prop-unresolved',
+          entity_type: 'motorcycle',
+          action: 'add',
+          entity_id: null,
+          brand_name: 'Yamaha',
+          model_name: 'PG-1',
+          proposed_data: { brand: 'Yamaha', modelName: 'PG-1', rates: [] },
+          diff_summary: {
+            identity_review: {
+              needsReview: true,
+              reason: 'ambiguous_candidates',
+              candidates: [{ id: '9500f956-4eb1-403f-bd52-de60fe6818f7' }],
+            },
+          },
+          status: 'pending',
+        },
+      ];
+
+      const mockSupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({ data: proposalData, error: null }),
+                }),
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ data: itemsData, error: null }),
+              }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      await expect(
+        ChangeProposalService.apply('prop-unresolved', ['item-ambiguous'])
+      ).rejects.toThrow(/identity review/i);
+    });
+
+    it('resolves an identity_review item to update an existing motorcycle, recomputes the diff, and deletes the superseded delist item', async () => {
+      const proposalData = {
+        id: 'prop-resolve',
+        shop_id: 'abc85b6d-9b86-40fa-98a5-f3bc91b9a48c',
+        status: 'pending',
+      };
+
+      const itemsData = [
+        {
+          id: 'item-add-qbix',
+          proposal_id: 'prop-resolve',
+          entity_type: 'motorcycle',
+          action: 'add',
+          entity_id: null,
+          brand_name: 'Yamaha',
+          model_name: 'QBIX',
+          original_data: null,
+          proposed_data: {
+            brand: 'Yamaha',
+            modelName: 'QBIX',
+            year: 2022,
+            rates: [{ minDays: 1, ratePerDay: 12, currency: 'USD' }],
+          },
+          diff_summary: {
+            status: { old: null, new: 'new_listing' },
+            rates: { old: null, new: [{ minDays: 1, ratePerDay: 12, currency: 'USD' }] },
+            identity_review: {
+              needsReview: true,
+              reason: 'likely_replacement',
+              candidates: [
+                {
+                  id: '7d316bb8-4f40-459c-a7ad-bfc445d8c851',
+                  brand_name: 'Honda',
+                  model_name: 'QBIX',
+                  year: 2022,
+                  engine_capacity_cc: null,
+                  source_url:
+                    'https://siemreapscooterrental.com/index.php/bike-rental/honda-qbix-2022/',
+                  rates: [{ min_days: 1, max_days: null, rate_per_day: 17 }],
+                },
+              ],
+            },
+          },
+          status: 'pending',
+        },
+        {
+          id: 'item-delist-qbix',
+          proposal_id: 'prop-resolve',
+          entity_type: 'motorcycle',
+          action: 'delist',
+          entity_id: '7d316bb8-4f40-459c-a7ad-bfc445d8c851',
+          brand_name: 'Honda',
+          model_name: 'QBIX',
+          original_data: {
+            year: 2022,
+            rates: [{ min_days: 1, max_days: null, rate_per_day: 17 }],
+          },
+          proposed_data: { availability_status: 'unavailable' },
+          diff_summary: { availability_status: { old: 'available', new: 'unavailable' } },
+          status: 'pending',
+        },
+      ];
+
+      let updatedItemPayload: any = null;
+      let deletedItemIds: string[] = [];
+      let updatedSummaryCounts: any = null;
+
+      const mockSupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({ data: proposalData, error: null }),
+                }),
+              }),
+              update: jest.fn((payload: any) => {
+                updatedSummaryCounts = payload.summary_counts;
+                return {
+                  eq: jest.fn().mockResolvedValue({ error: null }),
+                };
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ data: itemsData, error: null }),
+              }),
+              update: jest.fn((payload: any) => {
+                updatedItemPayload = payload;
+                return {
+                  eq: jest.fn().mockResolvedValue({ error: null }),
+                };
+              }),
+              delete: jest.fn(() => ({
+                in: jest.fn((_col: string, ids: string[]) => {
+                  deletedItemIds = ids;
+                  return Promise.resolve({ error: null });
+                }),
+              })),
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      const resolved = await ChangeProposalService.resolveIdentityReview('prop-resolve', {
+        itemId: 'item-add-qbix',
+        resolution: 'update_existing',
+        targetMotorcycleId: '7d316bb8-4f40-459c-a7ad-bfc445d8c851',
+      });
+
+      expect(resolved.success).toBe(true);
+      expect(updatedItemPayload).toMatchObject({
+        action: 'update',
+        entity_id: '7d316bb8-4f40-459c-a7ad-bfc445d8c851',
+        brand_name: 'Yamaha',
+        model_name: 'QBIX',
+      });
+      expect(updatedItemPayload.diff_summary.brand).toEqual({ old: 'Honda', new: 'Yamaha' });
+      expect(updatedItemPayload.diff_summary.identity_review.needsReview).toBe(false);
+      expect(deletedItemIds).toEqual(['item-delist-qbix']);
+      expect(updatedSummaryCounts).toEqual({
+        add: 0,
+        update: 1,
+        delist: 0,
+        unchanged: 0,
+      });
+    });
+
+    it('retires merged duplicate records with merged_into_id and appends retired source_url to surviving source_url_aliases when applying a merge_duplicates update', async () => {
+      const proposalData = {
+        id: 'prop-merge',
+        shop_id: 'abc85b6d-9b86-40fa-98a5-f3bc91b9a48c',
+        status: 'pending',
+      };
+
+      const itemsData = [
+        {
+          id: 'item-merge-pg1',
+          proposal_id: 'prop-merge',
+          entity_type: 'motorcycle',
+          action: 'update',
+          entity_id: '9500f956-4eb1-403f-bd52-de60fe6818f7',
+          brand_name: 'Yamaha',
+          model_name: 'PG-1',
+          original_data: {
+            year: 2024,
+            source_url:
+              'https://siemreapscooterrental.com/index.php/bike-rental/yamaha-pg-1-125-cc-semi-automatic-brand-new-2024-14-21-days/',
+            rates: [{ min_days: 1, max_days: null, rate_per_day: 21 }],
+          },
+          proposed_data: {
+            existingMotorcycleId: '9500f956-4eb1-403f-bd52-de60fe6818f7',
+            mergeDuplicateIds: ['74a83430-2e1c-47af-ae9b-fb788a01367a'],
+            brand: 'Yamaha',
+            modelName: 'PG-1',
+            year: 2026,
+            rates: [{ minDays: 1, ratePerDay: 21, currency: 'USD' }],
+          },
+          diff_summary: {
+            year: { old: 2024, new: 2026 },
+            identity_review: {
+              needsReview: false,
+              resolution: 'merge_duplicates',
+              targetMotorcycleId: '9500f956-4eb1-403f-bd52-de60fe6818f7',
+              duplicateMotorcycleIds: ['74a83430-2e1c-47af-ae9b-fb788a01367a'],
+            },
+          },
+          status: 'pending',
+        },
+      ];
+
+      const rentalUpdatesById: Record<string, any> = {};
+
+      const mockSupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({ data: proposalData, error: null }),
+                }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ data: itemsData, error: null }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+                in: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'motorcycle_rentals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn((_col: string, id: string) => ({
+                  maybeSingle: jest.fn().mockResolvedValue({
+                    data:
+                      id === '9500f956-4eb1-403f-bd52-de60fe6818f7'
+                        ? {
+                            id,
+                            source_url:
+                              'https://siemreapscooterrental.com/index.php/bike-rental/yamaha-pg-1-125-cc-semi-automatic-brand-new-2024-14-21-days/',
+                            specifications_details: { raw_shop_model: 'PG 1' },
+                          }
+                        : {
+                            id,
+                            source_url:
+                              'https://siemreapscooterrental.com/index.php/bike-rental/yamaha-pg1-2024-125-cc-semi-automatic/',
+                            specifications_details: { raw_shop_model: 'PG1' },
+                          },
+                    error: null,
+                  }),
+                })),
+              }),
+              update: jest.fn((payload: any) => ({
+                eq: jest.fn((_col: string, id: string) => {
+                  rentalUpdatesById[id] = { ...(rentalUpdatesById[id] || {}), ...payload };
+                  return Promise.resolve({ error: null });
+                }),
+              })),
+            };
+          }
+          if (table === 'rental_rate_tiers') {
+            return {
+              delete: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+              insert: jest.fn().mockResolvedValue({ error: null }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      const res = await ChangeProposalService.apply('prop-merge', ['item-merge-pg1']);
+
+      expect(res.success).toBe(true);
+      // Duplicate record soft-retired with merged_into_id
+      expect(rentalUpdatesById['74a83430-2e1c-47af-ae9b-fb788a01367a']).toEqual({
+        availability_status: 'unavailable',
+        specifications_details: {
+          raw_shop_model: 'PG1',
+          merged_into_id: '9500f956-4eb1-403f-bd52-de60fe6818f7',
+        },
+      });
+      // Surviving record updated with retired source_url in source_url_aliases
+      expect(rentalUpdatesById['9500f956-4eb1-403f-bd52-de60fe6818f7']).toMatchObject({
+        year: 2026,
+        specifications_details: {
+          raw_shop_model: 'PG 1',
+          source_url_aliases: [
+            'https://siemreapscooterrental.com/index.php/bike-rental/yamaha-pg1-2024-125-cc-semi-automatic/',
+          ],
+        },
+      });
+    });
+  });
 });
+
 
 
 

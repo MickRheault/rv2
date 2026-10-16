@@ -158,6 +158,36 @@ function resolveProposalShopUrl(shop: any): string | undefined {
   return shop?.slug ? getShopUrl(shop) : undefined;
 }
 
+export interface ResolveIdentityReviewInput {
+  itemId: string;
+  resolution: 'update_existing' | 'create_new' | 'merge_duplicates';
+  targetMotorcycleId?: string;
+  duplicateMotorcycleIds?: string[];
+}
+
+async function resolveOrCreateBrandId(supabase: any, brandName?: string | null): Promise<string | null> {
+  const normalizedName = (brandName || '').trim();
+  if (!normalizedName) return null;
+
+  const { data: existingBrand } = await supabase
+    .from('brands')
+    .select('id')
+    .ilike('name', normalizedName)
+    .maybeSingle();
+
+  if (existingBrand?.id) {
+    return existingBrand.id;
+  }
+
+  const { data: newBrand } = await supabase
+    .from('brands')
+    .insert({ name: normalizedName })
+    .select('id')
+    .single();
+
+  return newBrand?.id || null;
+}
+
 export class ChangeProposalService {
   /**
    * Fetches active motorcycles for a shop with current rate tiers.
@@ -173,6 +203,8 @@ export class ChangeProposalService {
         year,
         engine_capacity_cc,
         availability_status,
+        source_url,
+        specifications_details,
         brands!inner (
           name
         ),
@@ -196,6 +228,10 @@ export class ChangeProposalService {
       year: b.year,
       engine_capacity_cc: b.engine_capacity_cc,
       availability_status: b.availability_status,
+      source_url: b.source_url ?? null,
+      source_url_aliases: Array.isArray(b.specifications_details?.source_url_aliases)
+        ? b.specifications_details.source_url_aliases
+        : [],
       rates: (b.rental_rate_tiers || []).map((r: any) => ({
         min_days: r.min_days,
         max_days: r.max_days,
@@ -420,6 +456,165 @@ export class ChangeProposalService {
   }
 
   /**
+   * Resolves an item flagged for Identity Review by updating a selected existing motorcycle,
+   * creating a genuinely new listing, or merging duplicate records into a surviving motorcycle.
+   */
+  static async resolveIdentityReview(
+    proposalId: string,
+    input: ResolveIdentityReviewInput
+  ) {
+    const supabase = getSupabaseAdmin();
+
+    const { data: proposal, error: propError } = await supabase
+      .from('change_proposals')
+      .select('id, shop_id, status')
+      .eq('id', proposalId)
+      .single();
+
+    if (propError || !proposal) {
+      throw new Error(`Proposal not found: ${propError?.message || proposalId}`);
+    }
+
+    const { data: allItems, error: itemsError } = await supabase
+      .from('change_proposal_items')
+      .select('*')
+      .eq('proposal_id', proposalId);
+
+    if (itemsError || !allItems) {
+      throw new Error(`Failed to load proposal items: ${itemsError?.message}`);
+    }
+
+    const targetItem = allItems.find((i: any) => i.id === input.itemId);
+    if (!targetItem) {
+      throw new Error(`Change Proposal Item not found: ${input.itemId}`);
+    }
+
+    const existingIdentityReview = (targetItem.diff_summary as any)?.identity_review || {};
+    const candidates: ExistingBikeRecord[] = Array.isArray(existingIdentityReview.candidates)
+      ? existingIdentityReview.candidates
+      : [];
+
+    let updatedItemFields: Record<string, any>;
+    const supersededItemIds: string[] = [];
+
+    if (input.resolution === 'create_new') {
+      updatedItemFields = {
+        action: 'add',
+        entity_id: null,
+        diff_summary: {
+          ...((targetItem.diff_summary as Record<string, any>) || {}),
+          identity_review: {
+            ...existingIdentityReview,
+            needsReview: false,
+            resolution: 'create_new',
+          },
+        },
+      };
+    } else {
+      if (!input.targetMotorcycleId) {
+        throw new Error('targetMotorcycleId is required when resolving to an existing motorcycle.');
+      }
+
+      let candidate = candidates.find((c) => c.id === input.targetMotorcycleId);
+      if (!candidate) {
+        const shopBikes = await this.getExistingShopInventory(proposal.shop_id);
+        candidate = shopBikes.find((b) => b.id === input.targetMotorcycleId);
+      }
+
+      if (!candidate) {
+        throw new Error(
+          `Target motorcycle '${input.targetMotorcycleId}' not found in shop inventory.`
+        );
+      }
+
+      const proposedWithTarget = {
+        ...(targetItem.proposed_data as Record<string, any>),
+        existingMotorcycleId: input.targetMotorcycleId,
+        ...(input.resolution === 'merge_duplicates' &&
+        Array.isArray(input.duplicateMotorcycleIds) &&
+        input.duplicateMotorcycleIds.length > 0
+          ? { mergeDuplicateIds: input.duplicateMotorcycleIds }
+          : {}),
+      };
+
+      const recomputedDiff = computeShopInventoryDiff([candidate], [proposedWithTarget as any]);
+      const recomputedItem = recomputedDiff.items[0];
+      const nextAction =
+        input.resolution === 'merge_duplicates' ? 'update' : recomputedItem.action;
+
+      updatedItemFields = {
+        action: nextAction,
+        entity_id: input.targetMotorcycleId,
+        brand_name: recomputedItem.brand_name,
+        model_name: recomputedItem.model_name,
+        original_data: recomputedItem.original_data,
+        proposed_data: proposedWithTarget,
+        diff_summary: {
+          ...(recomputedItem.diff_summary || {}),
+          identity_review: {
+            ...existingIdentityReview,
+            needsReview: false,
+            resolution: input.resolution,
+            targetMotorcycleId: input.targetMotorcycleId,
+            ...(input.duplicateMotorcycleIds?.length
+              ? { duplicateMotorcycleIds: input.duplicateMotorcycleIds }
+              : {}),
+          },
+        },
+        status: nextAction === 'unchanged' ? 'applied' : 'pending',
+      };
+
+      const retiredOrMatchedIds = new Set<string>([
+        input.targetMotorcycleId,
+        ...(input.duplicateMotorcycleIds || []),
+      ]);
+
+      for (const other of allItems) {
+        if (
+          other.id !== targetItem.id &&
+          other.action === 'delist' &&
+          other.entity_id &&
+          retiredOrMatchedIds.has(other.entity_id)
+        ) {
+          supersededItemIds.push(other.id);
+        }
+      }
+    }
+
+    await (supabase.from('change_proposal_items') as any)
+      .update(updatedItemFields)
+      .eq('id', targetItem.id);
+
+    if (supersededItemIds.length > 0) {
+      await (supabase.from('change_proposal_items') as any)
+        .delete()
+        .in('id', supersededItemIds);
+    }
+
+    const remainingItems = allItems
+      .filter((i: any) => !supersededItemIds.includes(i.id))
+      .map((i: any) => (i.id === targetItem.id ? { ...i, ...updatedItemFields } : i));
+
+    const summaryCounts = {
+      add: remainingItems.filter((i: any) => i.action === 'add').length,
+      update: remainingItems.filter((i: any) => i.action === 'update').length,
+      delist: remainingItems.filter((i: any) => i.action === 'delist').length,
+      unchanged: remainingItems.filter((i: any) => i.action === 'unchanged').length,
+    };
+
+    await (supabase.from('change_proposals') as any)
+      .update({ summary_counts: summaryCounts })
+      .eq('id', proposalId);
+
+    return {
+      success: true,
+      item: { ...targetItem, ...updatedItemFields },
+      removedItemIds: supersededItemIds,
+      summaryCounts,
+    };
+  }
+
+  /**
    * Applies approved mutation items to live database records.
    * Enforces geodata immutability and soft-delisting.
    */
@@ -460,9 +655,14 @@ export class ChangeProposalService {
     const mutableItems = allItems.filter((i) => isActionableProposalAction(i.action));
     const approvedItems = mutableItems.filter((i) => approvedSet.has(i.id));
 
-    // 3. Validate geodata immutability across all approved items
+    // 3. Validate geodata immutability and resolved Identity Review across all approved items
     for (const item of approvedItems) {
       validateGeodataImmutability(item.proposed_data as any);
+      if ((item.diff_summary as any)?.identity_review?.needsReview === true) {
+        throw new Error(
+          `Cannot apply Change Proposal Item '${item.brand_name || ''} ${item.model_name || ''}' with unresolved Identity Review.`
+        );
+      }
     }
 
     let appliedCount = 0;
@@ -473,24 +673,7 @@ export class ChangeProposalService {
 
       if (item.entity_type === 'motorcycle') {
         if (item.action === 'add') {
-          // Find or create brand
-          let brandId = null;
-          const { data: existingBrand } = await supabase
-            .from('brands')
-            .select('id')
-            .ilike('name', item.brand_name || '')
-            .maybeSingle();
-
-          if (existingBrand) {
-            brandId = existingBrand.id;
-          } else {
-            const { data: newBrand } = await supabase
-              .from('brands')
-              .insert({ name: item.brand_name || 'Generic' })
-              .select('id')
-              .single();
-            brandId = newBrand?.id;
-          }
+          const brandId = await resolveOrCreateBrandId(supabase, item.brand_name || 'Generic');
 
           // Insert motorcycle
           const rawYear = proposed.year ?? proposed.modelYear ?? proposed.model_year;
@@ -513,7 +696,7 @@ export class ChangeProposalService {
               availability_status: 'available',
               rental_rate_per_day: rentalRatePerDay !== null && !isNaN(rentalRatePerDay) ? rentalRatePerDay : null,
               rental_rate_currency: proposed.currency || proposed.rates?.[0]?.currency || 'THB',
-              source_url: proposed.sourceUrl || null,
+              source_url: proposed.sourceUrl || proposed.source_url || null,
             })
             .select('id')
             .single();
@@ -530,8 +713,27 @@ export class ChangeProposalService {
 
           appliedCount++;
         } else if (item.action === 'update' && item.entity_id) {
-          // Update specifications
+          // Update specifications while preserving motorcycle ID and public URL
           const updatePayload: Record<string, any> = {};
+          const itemDiffSummary = (item.diff_summary as Record<string, any>) || {};
+
+          if (itemDiffSummary.brand) {
+            const targetBrandName =
+              itemDiffSummary.brand.new || item.brand_name || proposed.brand;
+            const brandId = await resolveOrCreateBrandId(supabase, targetBrandName);
+            if (brandId) {
+              updatePayload.brand_id = brandId;
+            }
+          }
+
+          if (itemDiffSummary.model) {
+            const targetModelName =
+              itemDiffSummary.model.new || item.model_name || proposed.modelName;
+            if (targetModelName) {
+              updatePayload.model = targetModelName;
+            }
+          }
+
           const proposedYear = proposed.year ?? proposed.modelYear ?? proposed.model_year;
           if (proposedYear !== undefined && proposedYear !== null) {
             const parsedYear = Number(proposedYear);
@@ -550,6 +752,73 @@ export class ChangeProposalService {
               if (proposed.currency || proposed.rates[0]?.currency) {
                 updatePayload.rental_rate_currency = proposed.currency || proposed.rates[0]?.currency;
               }
+            }
+          }
+
+          const proposedSourceUrl = proposed.sourceUrl ?? proposed.source_url;
+          const mergeDuplicateIds: string[] = Array.isArray(proposed.mergeDuplicateIds)
+            ? proposed.mergeDuplicateIds.filter((id: string) => id && id !== item.entity_id)
+            : [];
+
+          if (proposedSourceUrl || mergeDuplicateIds.length > 0) {
+            const { data: currentRental } = await (supabase.from('motorcycle_rentals') as any)
+              .select?.('id, source_url, specifications_details')
+              ?.eq?.('id', item.entity_id)
+              ?.maybeSingle?.() || { data: null };
+
+            const existingSpecs =
+              currentRental?.specifications_details &&
+              typeof currentRental.specifications_details === 'object'
+                ? { ...currentRental.specifications_details }
+                : {};
+            const aliasSet = new Set<string>(
+              Array.isArray(existingSpecs.source_url_aliases)
+                ? existingSpecs.source_url_aliases
+                : []
+            );
+
+            if (proposedSourceUrl) {
+              updatePayload.source_url = proposedSourceUrl;
+              const prevSourceUrl =
+                currentRental?.source_url || (item.original_data as any)?.source_url;
+              if (prevSourceUrl && prevSourceUrl !== proposedSourceUrl) {
+                aliasSet.add(prevSourceUrl);
+              }
+            }
+
+            // Retire merged duplicate records and collect their source_url into surviving aliases
+            for (const dupId of mergeDuplicateIds) {
+              const { data: dupRental } = await (supabase.from('motorcycle_rentals') as any)
+                .select?.('id, source_url, specifications_details')
+                ?.eq?.('id', dupId)
+                ?.maybeSingle?.() || { data: null };
+
+              if (dupRental?.source_url) {
+                aliasSet.add(dupRental.source_url);
+              }
+
+              const dupSpecs =
+                dupRental?.specifications_details &&
+                typeof dupRental.specifications_details === 'object'
+                  ? { ...dupRental.specifications_details }
+                  : {};
+
+              await (supabase.from('motorcycle_rentals') as any)
+                .update({
+                  availability_status: 'unavailable',
+                  specifications_details: {
+                    ...dupSpecs,
+                    merged_into_id: item.entity_id,
+                  },
+                })
+                .eq('id', dupId);
+            }
+
+            if (aliasSet.size > 0) {
+              updatePayload.specifications_details = {
+                ...existingSpecs,
+                source_url_aliases: Array.from(aliasSet),
+              };
             }
           }
 
