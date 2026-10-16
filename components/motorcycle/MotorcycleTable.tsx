@@ -12,7 +12,7 @@ import {
     TableHead,
     TableCell
 } from '@/components/ui/Table'
-import { formatCurrency, cn } from '@/lib/utils'
+import { formatCurrency, formatMotorcycleYear, cn } from '@/lib/utils'
 import { Button } from '@/components/ui'
 
 interface MotorcycleTableProps {
@@ -199,6 +199,7 @@ export default function MotorcycleTable({
 
                             const bestRate = getBestRate()
                             const price = bestRate.amount ? formatCurrency(bestRate.amount, bestRate.currency || 'USD') : 'On request'
+                            const formattedYear = formatMotorcycleYear(motorcycle.year, motorcycle.year_to)
 
                             return (
                                 <TableRow
@@ -213,9 +214,9 @@ export default function MotorcycleTable({
                                                     const fullName = `${motorcycle.brands?.name || ''} ${motorcycle.model || ''}`.trim()
                                                     return fullName.length > 25 ? `${fullName.slice(0, 25)}...` : fullName
                                                 })()}
-                                                {motorcycle.year && (
+                                                {formattedYear && (
                                                     <span className="text-[10px] md:text-xs text-gray-500 ml-1 font-normal">
-                                                        ({motorcycle.year})
+                                                        ({formattedYear})
                                                     </span>
                                                 )}
                                             </span>
@@ -282,6 +283,7 @@ export default function MotorcycleTable({
 
                     const bestRate = getBestRate()
                     const price = bestRate.amount ? formatCurrency(bestRate.amount, bestRate.currency || 'USD') : 'On request'
+                    const formattedYear = formatMotorcycleYear(motorcycle.year, motorcycle.year_to)
 
                     return (
                         <div
@@ -293,9 +295,9 @@ export default function MotorcycleTable({
                             <div className="flex justify-between items-start mb-1">
                                 <h3 className="font-semibold text-gray-900 text-sm line-clamp-1 pr-2">
                                     {motorcycle.brands?.name} {motorcycle.model}
-                                    {motorcycle.year && (
+                                    {formattedYear && (
                                         <span className="text-[10px] font-normal text-gray-500 ml-1">
-                                            ({motorcycle.year})
+                                            ({formattedYear})
                                         </span>
                                     )}
                                 </h3>

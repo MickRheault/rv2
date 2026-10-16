@@ -19,6 +19,11 @@ import {
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { Database } from '@/lib/supabase/database.types';
+import {
+  formatMotorcycleYear,
+  isValidMotorcycleYearRange,
+  normalizeMotorcycleYearRange,
+} from '@/lib/utils';
 
 type MotorcycleInsert = Database['public']['Tables']['motorcycle_rentals']['Insert'];
 type MotorcycleUpdate = Database['public']['Tables']['motorcycle_rentals']['Update'];
@@ -57,7 +62,9 @@ function MotorcyclesAdminContent() {
   const [rateTiersMotorcycle, setRateTiersMotorcycle] = useState<MotorcycleWithDetails | null>(null);
   
   // Form data
-  const [formData, setFormData] = useState<Partial<MotorcycleInsert>>({});
+  const [formData, setFormData] = useState<Partial<MotorcycleInsert> & { year_to?: number | null }>({
+    year_to: null,
+  });
   const [formLoading, setFormLoading] = useState(false);
   
   // Pagination and filtering
@@ -141,13 +148,34 @@ function MotorcyclesAdminContent() {
       return;
     }
 
+    if (formData.year_to !== null && formData.year_to !== undefined) {
+      if (
+        formData.year === null ||
+        formData.year === undefined ||
+        !isValidMotorcycleYearRange(formData.year, formData.year_to)
+      ) {
+        setError('Year To must be greater than or equal to Year (and Year is required when Year To is set)');
+        return;
+      }
+    }
+
+    const normalizedYears = normalizeMotorcycleYearRange({
+      year: formData.year ?? null,
+      year_to: formData.year_to ?? null,
+    });
+    const submissionData = {
+      ...formData,
+      year: normalizedYears.year,
+      year_to: normalizedYears.year_to,
+    };
+
     try {
       setFormLoading(true);
       if (editingMotorcycle) {
-        await motorcycleService.updateMotorcycle(editingMotorcycle.id, formData);
+        await motorcycleService.updateMotorcycle(editingMotorcycle.id, submissionData as MotorcycleUpdate);
         setSuccess('Motorcycle updated successfully');
       } else {
-        await motorcycleService.createMotorcycle(formData as MotorcycleInsert);
+        await motorcycleService.createMotorcycle(submissionData as MotorcycleInsert);
         setSuccess('Motorcycle created successfully');
       }
       
@@ -194,7 +222,7 @@ function MotorcyclesAdminContent() {
 
   // Modal handlers
   const handleCreate = () => {
-    setFormData({});
+    setFormData({ year_to: null });
     setEditingMotorcycle(null);
     setShowCreateModal(true);
     setError(null);
@@ -207,6 +235,7 @@ function MotorcyclesAdminContent() {
       category_id: motorcycle.category_id,
       model: motorcycle.model,
       year: motorcycle.year,
+      year_to: (motorcycle as any).year_to ?? null,
       engine_capacity_cc: motorcycle.engine_capacity_cc,
       rental_rate_per_day: motorcycle.rental_rate_per_day,
       rental_rate_currency: motorcycle.rental_rate_currency,
@@ -226,7 +255,7 @@ function MotorcyclesAdminContent() {
     setShowCreateModal(false);
     setShowEditModal(false);
     setEditingMotorcycle(null);
-    setFormData({});
+    setFormData({ year_to: null });
     setError(null);
     setSuccess(null);
   };
@@ -501,7 +530,7 @@ function MotorcyclesAdminContent() {
                                 {motorcycle.brands?.name} {motorcycle.model}
                               </div>
                               <div className="text-sm text-gray-500">
-                                {motorcycle.categories?.name} • {motorcycle.year}
+                                {motorcycle.categories?.name} • {formatMotorcycleYear(motorcycle.year, (motorcycle as any).year_to)}
                               </div>
                             </div>
                           </td>
@@ -641,18 +670,34 @@ function MotorcyclesAdminContent() {
               />
             </div>
             
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Year
-              </label>
-              <Input
-                type="number"
-                value={formData.year || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, year: Number(e.target.value) || null }))}
-                placeholder="2023"
-                min="1900"
-                max="2030"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Year
+                </label>
+                <Input
+                  type="number"
+                  value={formData.year || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, year: Number(e.target.value) || null }))}
+                  placeholder="2023"
+                  min="1900"
+                  max="2030"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Year To (Optional)
+                </label>
+                <Input
+                  type="number"
+                  value={formData.year_to || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, year_to: Number(e.target.value) || null }))}
+                  placeholder="2024"
+                  min="1900"
+                  max="2030"
+                />
+              </div>
             </div>
             
             <div>

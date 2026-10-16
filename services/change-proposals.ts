@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { normalizeMotorcycleYearRange } from '@/lib/utils';
 import { getShopUrl } from '@/lib/utils/urls';
 import {
   computeShopInventoryDiff,
@@ -202,6 +203,7 @@ export class ChangeProposalService {
         id,
         model,
         year,
+        year_to,
         engine_capacity_cc,
         availability_status,
         source_url,
@@ -227,6 +229,7 @@ export class ChangeProposalService {
       brand_name: b.brands?.name || 'Unknown',
       model_name: b.model,
       year: b.year,
+      year_to: b.year_to ?? null,
       engine_capacity_cc: b.engine_capacity_cc,
       availability_status: b.availability_status,
       source_url: b.source_url ?? null,
@@ -563,6 +566,7 @@ export class ChangeProposalService {
         brand_name: rawCandidate.brand_name || rawCandidate.brand || 'Generic',
         model_name: rawCandidate.model_name || rawCandidate.model || 'Motorcycle',
         year: rawCandidate.year ?? null,
+        year_to: rawCandidate.year_to ?? null,
         engine_capacity_cc:
           rawCandidate.engine_capacity_cc ?? rawCandidate.engineCapacityCc ?? null,
         source_url: rawCandidate.source_url ?? rawCandidate.sourceUrl ?? null,
@@ -732,6 +736,7 @@ export class ChangeProposalService {
               brand_id: brandId,
               model: item.model_name || 'Motorcycle',
               year: normalizedBike.year ?? null,
+              year_to: normalizedBike.year_to ?? null,
               engine_capacity_cc: normalizedBike.engineCapacityCc ?? null,
               availability_status: 'available',
               rental_rate_per_day: primaryRate,
@@ -776,6 +781,7 @@ export class ChangeProposalService {
 
           if (normalizedBike.year !== undefined && normalizedBike.year !== null) {
             updatePayload.year = normalizedBike.year;
+            updatePayload.year_to = normalizedBike.year_to ?? null;
           }
           if (
             normalizedBike.engineCapacityCc !== undefined &&

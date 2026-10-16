@@ -12,13 +12,24 @@ export default function Home() {
       <section className="relative min-h-[600px] flex items-center justify-center overflow-hidden">
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
+          {/* Mobile Background Image */}
           <Image
-            src="https://images.unsplash.com/photo-1558980664-10e7170b5df9?q=80&w=1742&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+            src="/images/hero-home-mobile.jpg"
             alt="Motorcycle rider on scenic road"
             fill
             priority
             fetchPriority="high"
-            className="object-cover"
+            className="object-cover md:hidden"
+            sizes="100vw"
+          />
+          {/* Desktop Background Image */}
+          <Image
+            src="/images/hero-home.jpg"
+            alt="Motorcycle rider on scenic road"
+            fill
+            priority
+            fetchPriority="high"
+            className="hidden md:block object-cover"
             sizes="100vw"
           />
           {/* Overlay */}

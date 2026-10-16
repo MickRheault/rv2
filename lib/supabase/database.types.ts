@@ -720,6 +720,7 @@ export type Database = {
           specifications_details: Json | null
           updated_at: string
           year: number | null
+          year_to: number | null
         }
         Insert: {
           availability_status?: string | null
@@ -737,6 +738,7 @@ export type Database = {
           specifications_details?: Json | null
           updated_at?: string
           year?: number | null
+          year_to?: number | null
         }
         Update: {
           availability_status?: string | null
@@ -754,6 +756,7 @@ export type Database = {
           specifications_details?: Json | null
           updated_at?: string
           year?: number | null
+          year_to?: number | null
         }
         Relationships: [
           {

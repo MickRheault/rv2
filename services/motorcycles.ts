@@ -388,6 +388,7 @@ export const motorcycleService = {
         id,
         model,
         year,
+        year_to,
         brand_id,
         category_id,
         engine_capacity_cc,

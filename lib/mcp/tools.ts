@@ -198,6 +198,7 @@ export async function executeTool(
     try {
         switch (name) {
             // Motorcycles
+            case 'search_motorcycles':
             case 'list_motorcycles': {
                 // Resolve names to IDs/codes
                 let cityId: string | undefined;
@@ -265,6 +266,7 @@ export async function executeTool(
                             url: `/motorcycle/${m.id}`,
                             model: m.model,
                             year: m.year,
+                            year_to: (m as any).year_to ?? null,
                             brand: m.brands?.name,
                             category: m.categories?.name,
                             dailyRate,
@@ -284,7 +286,13 @@ export async function executeTool(
                 if (!motorcycle) {
                     return { success: false, error: 'Motorcycle not found' };
                 }
-                return { success: true, data: motorcycle };
+                return {
+                    success: true,
+                    data: {
+                        ...motorcycle,
+                        year_to: (motorcycle as any).year_to ?? null,
+                    },
+                };
             }
 
             // Shops
