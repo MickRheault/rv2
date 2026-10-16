@@ -5,7 +5,10 @@
 import { NextRequest } from 'next/server';
 import { POST } from '@/app/api/agent/change-proposals/route';
 import { ChangeProposalService } from '@/services/change-proposals';
-import { ZeroDropSafeguardError } from '@/services/diff-engine';
+import {
+  ZeroDropSafeguardError,
+  ExistingMotorcycleValidationError,
+} from '@/services/diff-engine';
 import { recordCrawlRun } from '@/services/crawl-runs';
 import { updateShopLearnedConfig } from '@/services/shop-agent-configs';
 
@@ -222,4 +225,42 @@ describe('POST /api/agent/change-proposals', () => {
     });
     expect(recordCrawlRun).not.toHaveBeenCalled();
   });
+
+  it('returns 400 when ExistingMotorcycleValidationError is thrown for invalid or duplicate existingMotorcycleId', async () => {
+    (ChangeProposalService.createProposalFromCrawl as jest.Mock).mockRejectedValue(
+      new ExistingMotorcycleValidationError(
+        "Invalid existingMotorcycleId 'other-shop-id': record does not exist in target shop inventory."
+      )
+    );
+
+    const request = new NextRequest('http://localhost:3000/api/agent/change-proposals', {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer secret-agent-key',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        shopId: 'abc85b6d-9b86-40fa-98a5-f3bc91b9a48c',
+        sourceUrl: 'https://siemreapscooterrental.com/',
+        bikes: [
+          {
+            existingMotorcycleId: 'other-shop-id',
+            brand: 'Yamaha',
+            modelName: 'QBIX',
+            rates: [{ minDays: 1, dailyRate: 12, currency: 'USD' }],
+          },
+        ],
+      }),
+    });
+
+    const response = await POST(request);
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body).toEqual({
+      error:
+        "Invalid existingMotorcycleId 'other-shop-id': record does not exist in target shop inventory.",
+    });
+    expect(recordCrawlRun).not.toHaveBeenCalled();
+  });
 });
+

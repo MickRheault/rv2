@@ -3,7 +3,10 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { validateAgentApiKey } from '@/lib/auth/agent-auth';
 import { ChangeProposalService } from '@/services/change-proposals';
-import { ZeroDropSafeguardError } from '@/services/diff-engine';
+import {
+  ZeroDropSafeguardError,
+  ExistingMotorcycleValidationError,
+} from '@/services/diff-engine';
 import { recordCrawlRun } from '@/services/crawl-runs';
 import {
   extractLearnedAgentConfig,
@@ -95,6 +98,13 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error: any) {
+    if (error instanceof ExistingMotorcycleValidationError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 }
+      );
+    }
+
     if (error instanceof ZeroDropSafeguardError) {
       return NextResponse.json(
         { error: error.message },

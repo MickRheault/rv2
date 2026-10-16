@@ -1,5 +1,5 @@
 import { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import { Suspense, cache } from 'react'
 import Link from 'next/link'
 import { ArrowLeftIcon } from '@heroicons/react/24/outline'
@@ -115,12 +115,24 @@ export default async function MotorcycleCatchAllPage({ params }: PageProps) {
 // --- Case 1 Logic: Motorcycle Details ---
 
 async function renderMotorcycleDetails(id: string) {
+    let motorcycle: any
     try {
-        const motorcycle = await getMotorcycleById(id)
+        motorcycle = await getMotorcycleById(id)
+    } catch (error) {
+        console.error('Error loading motorcycle:', error)
+        notFound()
+    }
 
-        if (!motorcycle) {
-            notFound()
-        }
+    if (!motorcycle) {
+        notFound()
+    }
+
+    const mergedIntoId = motorcycle.specifications_details?.merged_into_id
+    if (typeof mergedIntoId === 'string' && mergedIntoId.trim().length > 0 && mergedIntoId !== id) {
+        permanentRedirect(`/motorcycle/${mergedIntoId.trim()}`)
+    }
+
+    try {
 
         // Get count of same model motorcycles in the country
         let sameModelCount = 0

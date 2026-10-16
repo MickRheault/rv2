@@ -306,6 +306,28 @@ export async function submitProposalDecision(
   return data;
 }
 
+export async function resolveProposalIdentityReview(
+  proposalId: string,
+  payload: {
+    itemId: string;
+    resolution: 'update_existing' | 'create_new' | 'merge_duplicates';
+    targetMotorcycleId?: string;
+    duplicateMotorcycleIds?: string[];
+  }
+) {
+  const res = await fetch(`/api/admin/change-proposals/${proposalId}`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Failed to resolve identity review.');
+  }
+  return data;
+}
+
 export function ChangeProposalDiffViewer({
   proposal,
   items,
@@ -321,9 +343,48 @@ export function ChangeProposalDiffViewer({
   );
   const [isApplying, setIsApplying] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
+  const [resolvingItemId, setResolvingItemId] = useState<string | null>(null);
+  const [selectedCandidateByItem, setSelectedCandidateByItem] = useState<Record<string, string>>({});
   const [isUnchangedExpanded, setIsUnchangedExpanded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const hasUnresolvedIdentityReview = items.some(
+    (item) => selectedIds.has(item.id) && item.diff_summary?.identity_review?.needsReview === true
+  );
+
+  const handleResolveIdentity = async (
+    item: DiffViewerItem,
+    resolution: 'update_existing' | 'create_new' | 'merge_duplicates'
+  ) => {
+    const review = item.diff_summary?.identity_review;
+    const candidateIds: string[] =
+      review?.candidateIds ||
+      (Array.isArray(review?.candidates) ? review.candidates.map((c: any) => c.id) : []);
+    const targetId = selectedCandidateByItem[item.id] || candidateIds[0];
+    const duplicateIds = candidateIds.filter((id) => id !== targetId);
+
+    setResolvingItemId(item.id);
+    setError(null);
+    try {
+      await resolveProposalIdentityReview(proposal.id, {
+        itemId: item.id,
+        resolution,
+        targetMotorcycleId:
+          resolution === 'update_existing' || resolution === 'merge_duplicates'
+            ? targetId
+            : undefined,
+        duplicateMotorcycleIds: resolution === 'merge_duplicates' ? duplicateIds : undefined,
+      });
+      if (onApplySuccess) {
+        onApplySuccess();
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to resolve identity review');
+    } finally {
+      setResolvingItemId(null);
+    }
+  };
 
   const toggleItem = (id: string) => {
     const next = new Set(selectedIds);
@@ -505,7 +566,12 @@ export function ChangeProposalDiffViewer({
               </Button>
               <Button
                 onClick={handleApply}
-                disabled={isApplying || isRejecting || selectedIds.size === 0}
+                disabled={
+                  isApplying ||
+                  isRejecting ||
+                  selectedIds.size === 0 ||
+                  hasUnresolvedIdentityReview
+                }
                 className="bg-emerald-600 hover:bg-emerald-700 text-white"
               >
                 {isApplying ? (
@@ -538,6 +604,14 @@ export function ChangeProposalDiffViewer({
             {addItems.map((item) => {
               const year = getModelYear(item.proposed_data);
               const engineCc = getEngineCapacity(item.proposed_data);
+              const identityReview = item.diff_summary?.identity_review;
+              const needsReview = identityReview?.needsReview === true;
+              const candidates = identityReview?.candidates || [];
+              const candidateIds: string[] =
+                identityReview?.candidateIds || candidates.map((c: any) => c.id);
+              const selectedCandidateId =
+                selectedCandidateByItem[item.id] || candidateIds[0] || '';
+
               return (
                 <div
                   key={item.id}
@@ -552,19 +626,88 @@ export function ChangeProposalDiffViewer({
                     </div>
                   )}
                   <div className="flex-1 text-sm">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <div className="font-semibold text-gray-900">
                         {item.brand_name} {item.model_name}
                       </div>
                       <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800">
                         + New Bike
                       </span>
+                      {needsReview && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+                          Needs Identity Review
+                        </span>
+                      )}
                     </div>
                     <div className="text-xs text-gray-500 flex gap-4 mt-0.5">
                       {year != null && <span>Year: {year}</span>}
                       {engineCc != null && <span>Engine: {engineCc}cc</span>}
                     </div>
                     {renderRateTiers(item.proposed_data?.rates, item.proposed_data?.currency, 'emerald')}
+
+                    {needsReview && !isCompleted && (
+                      <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2 text-xs">
+                        <div className="font-semibold text-amber-900">
+                          {identityReview.reason === 'ambiguous_candidates'
+                            ? 'Multiple existing listings match this motorcycle. Choose how to reconcile identity:'
+                            : 'Potential replacement detected against an existing delisted motorcycle:'}
+                        </div>
+                        {candidates.length > 0 && (
+                          <div className="flex items-center gap-2">
+                            <label className="text-amber-800 font-medium">Target Record:</label>
+                            <select
+                              value={selectedCandidateId}
+                              onChange={(e) =>
+                                setSelectedCandidateByItem((prev) => ({
+                                  ...prev,
+                                  [item.id]: e.target.value,
+                                }))
+                              }
+                              className="border border-amber-300 rounded px-2 py-1 bg-white text-gray-800 text-xs"
+                            >
+                              {candidates.map((c: any) => (
+                                <option key={c.id} value={c.id}>
+                                  {c.brand || c.brand_name} {c.model || c.model_name} ({c.year || 'N/A'}) — {c.id.slice(0, 8)}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          {candidateIds.length > 0 && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={resolvingItemId === item.id}
+                              onClick={() => handleResolveIdentity(item, 'update_existing')}
+                              className="text-xs border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+                            >
+                              Update Existing Motorcycle
+                            </Button>
+                          )}
+                          {candidateIds.length > 1 && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={resolvingItemId === item.id}
+                              onClick={() => handleResolveIdentity(item, 'merge_duplicates')}
+                              className="text-xs border-amber-400 text-amber-900 hover:bg-amber-100"
+                            >
+                              Merge Duplicates into Surviving Record
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={resolvingItemId === item.id}
+                            onClick={() => handleResolveIdentity(item, 'create_new')}
+                            className="text-xs border-emerald-300 text-emerald-800 hover:bg-emerald-50"
+                          >
+                            Create New Listing
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -609,6 +752,20 @@ export function ChangeProposalDiffViewer({
                     </div>
                     {item.diff_summary && (
                       <div className="mt-2 space-y-2 text-xs">
+                        {item.diff_summary.brand && (
+                          <div className="text-gray-600 flex items-center gap-1.5">
+                            <span className="font-medium text-gray-800">Brand:</span>{' '}
+                            <span className="line-through text-red-500 font-medium">{item.diff_summary.brand.old}</span> →{' '}
+                            <span className="text-emerald-600 font-semibold">{item.diff_summary.brand.new}</span>
+                          </div>
+                        )}
+                        {item.diff_summary.model && (
+                          <div className="text-gray-600 flex items-center gap-1.5">
+                            <span className="font-medium text-gray-800">Model:</span>{' '}
+                            <span className="line-through text-red-500 font-medium">{item.diff_summary.model.old}</span> →{' '}
+                            <span className="text-emerald-600 font-semibold">{item.diff_summary.model.new}</span>
+                          </div>
+                        )}
                         {item.diff_summary.year && (
                           <div className="text-gray-600 flex items-center gap-1.5">
                             <span className="font-medium text-gray-800">Year:</span>{' '}
@@ -621,6 +778,18 @@ export function ChangeProposalDiffViewer({
                             <span className="font-medium text-gray-800">Engine:</span>{' '}
                             <span className="line-through text-red-500 font-medium">{item.diff_summary.engine_capacity_cc.old}cc</span> →{' '}
                             <span className="text-emerald-600 font-semibold">{item.diff_summary.engine_capacity_cc.new}cc</span>
+                          </div>
+                        )}
+                        {item.diff_summary.source_url && (
+                          <div className="text-gray-600 flex items-center gap-1.5 flex-wrap">
+                            <span className="font-medium text-gray-800">Source URL:</span>{' '}
+                            <span className="line-through text-red-500 font-medium">
+                              {item.diff_summary.source_url.old || '(none)'}
+                            </span>{' '}
+                            →{' '}
+                            <span className="text-emerald-600 font-semibold">
+                              {item.diff_summary.source_url.new}
+                            </span>
                           </div>
                         )}
                         {item.diff_summary.rates ? (
@@ -670,13 +839,18 @@ export function ChangeProposalDiffViewer({
                   </div>
                 )}
                 <div className="flex-1 text-sm">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold text-gray-900">
                       {item.brand_name} {item.model_name}
                     </span>
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-red-100 text-red-800 line-through">
                       - Delisted / Unavailable
                     </span>
+                    {item.diff_summary?.identity_review?.needsReview === true && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+                        Needs Identity Review
+                      </span>
+                    )}
                   </div>
                   {renderRateTiers(item.original_data?.rates, item.original_data?.currency, 'red', true)}
                 </div>
