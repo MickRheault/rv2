@@ -2,11 +2,11 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { validateAgentApiKey } from '@/lib/auth/agent-auth';
-import { ChangeProposalService } from '@/services/change-proposals';
 import {
-  ZeroDropSafeguardError,
-  ExistingMotorcycleValidationError,
-} from '@/services/diff-engine';
+  ChangeProposalService,
+  ProposalItemValidationError,
+  GeodataImmutabilityError,
+} from '@/services/change-proposals';
 import { recordCrawlRun } from '@/services/crawl-runs';
 import {
   extractLearnedAgentConfig,
@@ -16,9 +16,9 @@ import {
 /**
  * POST /api/agent/change-proposals
  * 
- * Ingestion endpoint for external crawler agents (Hermes) to submit
- * raw inventory crawl snapshots. Executes server-side diff calculation,
- * enforces zero-drop safeguard, and stages the batch proposal for admin review.
+ * Ingestion endpoint for external crawler agents to submit explicit,
+ * agent-computed Change Proposal Items (`add`, `update`, `delist`, `unchanged`) per ADR 0016.
+ * Validates item structure and geodata immutability and stages the batch proposal for admin review.
  * Also persists learned extraction hints and discovered fleet URLs for shop agent config memory.
  * 
  * Authenticated via Bearer AGENT_API_KEY.
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { shopId, sourceUrl, agentRunId, bikes, shopUpdates } = body;
+    const { shopId, sourceUrl, agentRunId, items } = body;
 
     if (!shopId || typeof shopId !== 'string') {
       return NextResponse.json(
@@ -50,14 +50,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!Array.isArray(bikes)) {
+    if (!Array.isArray(items)) {
       return NextResponse.json(
-        { error: 'bikes must be an array of crawled motorcycle snapshots.' },
+        { error: 'items must be an array of explicit Change Proposal Items.' },
         { status: 400 }
       );
     }
 
-    // Persist learned extraction hints and discovered fleet URL before diffing
+    // Persist learned extraction hints and discovered fleet URL before staging
     const learnedConfig = extractLearnedAgentConfig(body);
     if (learnedConfig) {
       try {
@@ -67,13 +67,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Pass verbatim raw snapshot per ADR 0003 (diff engine handles defensive normalization internally)
-    const result = await ChangeProposalService.createProposalFromCrawl({
+    const result = await ChangeProposalService.createProposalFromItems({
       shopId,
       sourceUrl,
       agentRunId,
-      bikes,
-      shopUpdates,
+      items,
     });
 
     try {
@@ -82,7 +80,7 @@ export async function POST(request: NextRequest) {
         status: 'success',
         proposalId: result.proposal.id,
         agentRunId: agentRunId || null,
-        metadata: { bikesCount: bikes.length },
+        metadata: { itemsCount: items.length },
       });
     } catch (auditErr) {
       console.error('Failed to record success crawl audit log:', auditErr);
@@ -92,23 +90,19 @@ export async function POST(request: NextRequest) {
       {
         success: true,
         proposalId: result.proposal.id,
-        summaryCounts: result.diff.summaryCounts,
-        itemsCount: result.diff.items.length,
+        summaryCounts: result.summaryCounts,
+        itemsCount: result.itemsCount,
       },
       { status: 201 }
     );
   } catch (error: any) {
-    if (error instanceof ExistingMotorcycleValidationError) {
+    if (
+      error instanceof ProposalItemValidationError ||
+      error instanceof GeodataImmutabilityError
+    ) {
       return NextResponse.json(
         { error: error.message },
         { status: 400 }
-      );
-    }
-
-    if (error instanceof ZeroDropSafeguardError) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 422 }
       );
     }
 

@@ -533,104 +533,42 @@ describe('ChangeProposalDiffViewer', () => {
     expect(screen.getByText('QBIX 125')).toBeInTheDocument();
   });
 
-  it('disables Approve & Apply Selected when a selected item has unresolved identity_review and resolves via PATCH endpoint', async () => {
-    const onApplySuccess = jest.fn();
-    const identityReviewItems: DiffViewerItem[] = [
+  it('renders before/after attribute and rate diffs from original_data and proposed_data even when diff_summary is omitted', () => {
+    const itemsWithoutDiffSummary: DiffViewerItem[] = [
       {
-        id: 'item-ambiguous-pg1',
+        id: 'item-no-summary',
         proposal_id: 'prop-1',
         entity_type: 'motorcycle',
-        action: 'add',
-        entity_id: null,
+        action: 'update',
+        entity_id: '7d316bb8-4f40-459c-a7ad-bfc445d8c851',
         brand_name: 'Yamaha',
         model_name: 'PG-1',
-        original_data: null,
+        original_data: {
+          brand: 'Yamaha',
+          model: 'PG1',
+          year: 2024,
+          rates: [{ minDays: 1, ratePerDay: 10, currency: 'USD' }],
+        },
         proposed_data: {
           brand: 'Yamaha',
-          modelName: 'PG-1',
-          year: 2026,
-          engineCapacityCc: 125,
+          model: 'PG-1',
+          year: 2025,
           rates: [{ minDays: 1, ratePerDay: 12, currency: 'USD' }],
         },
-        diff_summary: {
-          identity_review: {
-            needsReview: true,
-            reason: 'ambiguous_candidates',
-            candidateIds: [
-              '9500f956-4eb1-403f-bd52-de60fe6818f7',
-              '74a83430-2e1c-47af-ae9b-fb788a01367a',
-            ],
-            candidates: [
-              {
-                id: '9500f956-4eb1-403f-bd52-de60fe6818f7',
-                brand: 'Yamaha',
-                model: 'PG-1',
-                year: 2024,
-                engineCapacityCc: 125,
-              },
-              {
-                id: '74a83430-2e1c-47af-ae9b-fb788a01367a',
-                brand: 'Yamaha',
-                model: 'PG-1',
-                year: 2024,
-                engineCapacityCc: 125,
-              },
-            ],
-          },
-        },
+        diff_summary: null,
         status: 'pending',
       },
     ];
 
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        success: true,
-        item: {
-          id: 'item-ambiguous-pg1',
-          action: 'update',
-          entity_id: '9500f956-4eb1-403f-bd52-de60fe6818f7',
-        },
-      }),
-    });
+    render(<ChangeProposalDiffViewer proposal={mockProposal} items={itemsWithoutDiffSummary} />);
 
-    render(
-      <ChangeProposalDiffViewer
-        proposal={mockProposal}
-        items={identityReviewItems}
-        onApplySuccess={onApplySuccess}
-      />
-    );
-
-    // Must render Needs Identity Review badge/banner
-    expect(screen.getByText(/Needs Identity Review/i)).toBeInTheDocument();
-
-    // Approve & Apply Selected button must be disabled while selected item needs identity review
-    const applyBtn = screen.getByRole('button', { name: /Approve & Apply Selected/i });
-    expect(applyBtn).toBeDisabled();
-
-    // Clicking "Merge Duplicates into Surviving Record" sends PATCH to /api/admin/change-proposals/prop-1
-    const mergeBtn = screen.getByRole('button', { name: /Merge Duplicates/i });
-    fireEvent.click(mergeBtn);
-
-    await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith(
-        '/api/admin/change-proposals/prop-1',
-        expect.objectContaining({
-          method: 'PATCH',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
-            itemId: 'item-ambiguous-pg1',
-            resolution: 'merge_duplicates',
-            targetMotorcycleId: '9500f956-4eb1-403f-bd52-de60fe6818f7',
-            duplicateMotorcycleIds: ['74a83430-2e1c-47af-ae9b-fb788a01367a'],
-          }),
-        })
-      );
-      expect(onApplySuccess).toHaveBeenCalledTimes(1);
-    });
+    expect(screen.getByText('Yamaha PG-1')).toBeInTheDocument();
+    expect(screen.getByText(/\$10\/day/i)).toBeInTheDocument();
+    expect(screen.getByText(/\$12\/day/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Needs Identity Review/i)).not.toBeInTheDocument();
   });
 });
+
 
 
 

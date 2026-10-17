@@ -4,19 +4,23 @@
 
 import { NextRequest } from 'next/server';
 import { POST } from '@/app/api/agent/change-proposals/route';
-import { ChangeProposalService } from '@/services/change-proposals';
 import {
-  ZeroDropSafeguardError,
-  ExistingMotorcycleValidationError,
-} from '@/services/diff-engine';
+  ChangeProposalService,
+  ProposalItemValidationError,
+  GeodataImmutabilityError,
+} from '@/services/change-proposals';
 import { recordCrawlRun } from '@/services/crawl-runs';
 import { updateShopLearnedConfig } from '@/services/shop-agent-configs';
 
-jest.mock('@/services/change-proposals', () => ({
-  ChangeProposalService: {
-    createProposalFromCrawl: jest.fn(),
-  },
-}));
+jest.mock('@/services/change-proposals', () => {
+  const actual = jest.requireActual('@/services/change-proposals');
+  return {
+    ...actual,
+    ChangeProposalService: {
+      createProposalFromItems: jest.fn(),
+    },
+  };
+});
 
 jest.mock('@/services/crawl-runs', () => ({
   recordCrawlRun: jest.fn().mockResolvedValue({ id: 'crawl-run-1' }),
@@ -45,63 +49,63 @@ describe('POST /api/agent/change-proposals', () => {
   it('rejects request without authorization header with 401', async () => {
     const request = new NextRequest('http://localhost:3000/api/agent/change-proposals', {
       method: 'POST',
-      body: JSON.stringify({ shopId: 'shop-1', sourceUrl: 'https://example.com', bikes: [] }),
+      body: JSON.stringify({ shopId: 'shop-1', sourceUrl: 'https://example.com', items: [] }),
     });
 
     const response = await POST(request);
     expect(response.status).toBe(401);
   });
 
-  it('validates required fields and returns 400 when missing', async () => {
+  it('validates required fields and returns 400 when shopId, sourceUrl, or items array is missing', async () => {
     const request = new NextRequest('http://localhost:3000/api/agent/change-proposals', {
       method: 'POST',
       headers: {
         authorization: 'Bearer secret-agent-key',
         'content-type': 'application/json',
       },
-      body: JSON.stringify({ shopId: '' }),
+      body: JSON.stringify({ shopId: 'shop-1', sourceUrl: 'https://example.com' }),
     });
 
     const response = await POST(request);
     expect(response.status).toBe(400);
-  });
-
-  it('catches ZeroDropSafeguardError and returns 422', async () => {
-    (ChangeProposalService.createProposalFromCrawl as jest.Mock).mockRejectedValue(
-      new ZeroDropSafeguardError()
-    );
-
-    const request = new NextRequest('http://localhost:3000/api/agent/change-proposals', {
-      method: 'POST',
-      headers: {
-        authorization: 'Bearer secret-agent-key',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        shopId: 'shop-with-bikes',
-        sourceUrl: 'https://example.com/rates',
-        bikes: [],
-      }),
-    });
-
-    const response = await POST(request);
-    expect(response.status).toBe(422);
     const body = await response.json();
-    expect(body.error).toMatch(/Zero-drop safeguard triggered/i);
+    expect(body.error).toMatch(/items must be an array/i);
   });
 
-  it('stages proposal and returns 201 on valid crawl payload', async () => {
-    (ChangeProposalService.createProposalFromCrawl as jest.Mock).mockResolvedValue({
+  it('stages explicit agent-authored Change Proposal Items and returns 201', async () => {
+    (ChangeProposalService.createProposalFromItems as jest.Mock).mockResolvedValue({
       proposal: { id: 'prop-123', status: 'pending' },
-      diff: {
-        items: [
-          { action: 'add', model_name: 'PCX' },
-          { action: 'unchanged', model_name: 'Click 125i' },
-          { action: 'unchanged', model_name: 'NMAX 155' },
-        ],
-        summaryCounts: { add: 1, update: 0, delist: 0, unchanged: 2 },
-      },
+      summaryCounts: { add: 1, update: 1, delist: 0, unchanged: 1 },
+      itemsCount: 3,
     });
+
+    const submittedItems = [
+      {
+        entityType: 'motorcycle',
+        action: 'add',
+        brandName: 'Honda',
+        modelName: 'PCX 160',
+        proposedData: { year: 2024, rates: [{ minDays: 1, ratePerDay: 15, currency: 'USD' }] },
+      },
+      {
+        entityType: 'motorcycle',
+        action: 'update',
+        entityId: '7d316bb8-4f40-459c-a7ad-bfc445d8c851',
+        brandName: 'Yamaha',
+        modelName: 'QBIX',
+        originalData: { brand: 'Honda', modelName: 'QBIX', rates: [{ minDays: 1, ratePerDay: 17, currency: 'USD' }] },
+        proposedData: { brand: 'Yamaha', modelName: 'QBIX', rates: [{ minDays: 1, ratePerDay: 12, currency: 'USD' }] },
+        diffSummary: { brand: { old: 'Honda', new: 'Yamaha' } },
+      },
+      {
+        entityType: 'motorcycle',
+        action: 'unchanged',
+        entityId: 'bike-unchanged-1',
+        brandName: 'Honda',
+        modelName: 'Click 125',
+        proposedData: { year: 2023, rates: [{ minDays: 1, ratePerDay: 10, currency: 'USD' }] },
+      },
+    ];
 
     const request = new NextRequest('http://localhost:3000/api/agent/change-proposals', {
       method: 'POST',
@@ -112,33 +116,40 @@ describe('POST /api/agent/change-proposals', () => {
       body: JSON.stringify({
         shopId: 'shop-123',
         sourceUrl: 'https://example.com/fleet',
-        bikes: [{ brand: 'Honda', modelName: 'PCX' }],
+        agentRunId: 'run-abc',
+        items: submittedItems,
       }),
     });
 
     const response = await POST(request);
     expect(response.status).toBe(201);
     const body = await response.json();
-    expect(body.success).toBe(true);
-    expect(body.proposalId).toBe('prop-123');
-    expect(body.summaryCounts).toEqual({ add: 1, update: 0, delist: 0, unchanged: 2 });
-    expect(body.itemsCount).toBe(3);
+    expect(body).toEqual({
+      success: true,
+      proposalId: 'prop-123',
+      summaryCounts: { add: 1, update: 1, delist: 0, unchanged: 1 },
+      itemsCount: 3,
+    });
+    expect(ChangeProposalService.createProposalFromItems).toHaveBeenCalledWith({
+      shopId: 'shop-123',
+      sourceUrl: 'https://example.com/fleet',
+      agentRunId: 'run-abc',
+      items: submittedItems,
+    });
     expect(recordCrawlRun).toHaveBeenCalledWith({
       shopId: 'shop-123',
       status: 'success',
       proposalId: 'prop-123',
-      agentRunId: null,
-      metadata: { bikesCount: 1 },
+      agentRunId: 'run-abc',
+      metadata: { itemsCount: 3 },
     });
   });
 
   it('persists learned extraction hints and discovered source URL when provided in Change Proposal payload', async () => {
-    (ChangeProposalService.createProposalFromCrawl as jest.Mock).mockResolvedValue({
+    (ChangeProposalService.createProposalFromItems as jest.Mock).mockResolvedValue({
       proposal: { id: 'prop-456', status: 'pending' },
-      diff: {
-        items: [],
-        summaryCounts: { add: 0, update: 0, delist: 0 },
-      },
+      summaryCounts: { add: 1, update: 0, delist: 0, unchanged: 0 },
+      itemsCount: 1,
     });
 
     const request = new NextRequest('http://localhost:3000/api/agent/change-proposals', {
@@ -150,7 +161,7 @@ describe('POST /api/agent/change-proposals', () => {
       body: JSON.stringify({
         shopId: 'shop-456',
         sourceUrl: 'https://example.com/bikes',
-        bikes: [{ brand: 'Yamaha', modelName: 'NMAX' }],
+        items: [{ action: 'add', brandName: 'Yamaha', modelName: 'NMAX' }],
         learnedExtractionHints: 'Rates in EUR on /rentals. 2 helmets included.',
         discoveredSourceUrl: 'https://example.com/rentals/motorcycles',
       }),
@@ -167,39 +178,62 @@ describe('POST /api/agent/change-proposals', () => {
     );
   });
 
-  it('persists learned extraction hints even if zero-drop safeguard triggers', async () => {
-    (ChangeProposalService.createProposalFromCrawl as jest.Mock).mockRejectedValue(
-      new ZeroDropSafeguardError()
+  it('returns 400 when ProposalItemValidationError or GeodataImmutabilityError is thrown', async () => {
+    (ChangeProposalService.createProposalFromItems as jest.Mock).mockRejectedValueOnce(
+      new ProposalItemValidationError("Item at index 0 with action 'update' requires a non-empty entityId.")
     );
 
-    const request = new NextRequest('http://localhost:3000/api/agent/change-proposals', {
+    const request1 = new NextRequest('http://localhost:3000/api/agent/change-proposals', {
       method: 'POST',
       headers: {
         authorization: 'Bearer secret-agent-key',
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        shopId: 'shop-zero',
-        sourceUrl: 'https://example.com/bikes',
-        bikes: [],
-        learnedExtractionHints: 'Site blocked by Cloudflare challenge',
+        shopId: 'shop-123',
+        sourceUrl: 'https://example.com/',
+        items: [{ action: 'update', brandName: 'Yamaha', modelName: 'QBIX' }],
       }),
     });
 
-    const response = await POST(request);
-    expect(response.status).toBe(422);
-    expect(updateShopLearnedConfig).toHaveBeenCalledWith(
-      'shop-zero',
-      {
-        extractionHints: 'Site blocked by Cloudflare challenge',
-        discoveredSourceUrl: undefined,
-      }
+    const response1 = await POST(request1);
+    expect(response1.status).toBe(400);
+    expect(await response1.json()).toEqual({
+      error: "Item at index 0 with action 'update' requires a non-empty entityId.",
+    });
+
+    (ChangeProposalService.createProposalFromItems as jest.Mock).mockRejectedValueOnce(
+      new GeodataImmutabilityError('place_id')
     );
+
+    const request2 = new NextRequest('http://localhost:3000/api/agent/change-proposals', {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer secret-agent-key',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        shopId: 'shop-123',
+        sourceUrl: 'https://example.com/',
+        items: [
+          {
+            entityType: 'rental_shop',
+            action: 'update',
+            entityId: 'shop-123',
+            proposedData: { place_id: 'ChIJ-forbidden' },
+          },
+        ],
+      }),
+    });
+
+    const response2 = await POST(request2);
+    expect(response2.status).toBe(400);
+    expect((await response2.json()).error).toMatch(/Forbidden geodata mutation/i);
   });
 
-  it('returns 500 with error details and does not record a success crawl run when item staging fails and rolls back', async () => {
-    (ChangeProposalService.createProposalFromCrawl as jest.Mock).mockRejectedValue(
-      new Error('Failed to stage change proposal items: invalid input value for enum proposal_action: "unchanged"')
+  it('returns 500 with error details and does not record a success crawl run when staging fails', async () => {
+    (ChangeProposalService.createProposalFromItems as jest.Mock).mockRejectedValue(
+      new Error('Failed to stage change proposal items: database connection error')
     );
 
     const request = new NextRequest('http://localhost:3000/api/agent/change-proposals', {
@@ -211,8 +245,8 @@ describe('POST /api/agent/change-proposals', () => {
       body: JSON.stringify({
         shopId: '2b97f3dc-b0af-42b0-bb3a-68d286d94ef3',
         sourceUrl: 'https://wescooterrentalsiemreap.com/',
-        agentRunId: 'hermes-we-scooter-20261014T180742Z-be3924d7',
-        bikes: [{ brand: 'Honda', modelName: 'PCX', rates: [{ minDays: 1, dailyRate: 15, currency: 'USD' }] }],
+        agentRunId: 'hermes-we-scooter-run',
+        items: [{ action: 'add', brandName: 'Honda', modelName: 'PCX' }],
       }),
     });
 
@@ -221,46 +255,8 @@ describe('POST /api/agent/change-proposals', () => {
     const body = await response.json();
     expect(body).toEqual({
       error: 'Internal server error staging proposal',
-      details: 'Failed to stage change proposal items: invalid input value for enum proposal_action: "unchanged"',
-    });
-    expect(recordCrawlRun).not.toHaveBeenCalled();
-  });
-
-  it('returns 400 when ExistingMotorcycleValidationError is thrown for invalid or duplicate existingMotorcycleId', async () => {
-    (ChangeProposalService.createProposalFromCrawl as jest.Mock).mockRejectedValue(
-      new ExistingMotorcycleValidationError(
-        "Invalid existingMotorcycleId 'other-shop-id': record does not exist in target shop inventory."
-      )
-    );
-
-    const request = new NextRequest('http://localhost:3000/api/agent/change-proposals', {
-      method: 'POST',
-      headers: {
-        authorization: 'Bearer secret-agent-key',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        shopId: 'abc85b6d-9b86-40fa-98a5-f3bc91b9a48c',
-        sourceUrl: 'https://siemreapscooterrental.com/',
-        bikes: [
-          {
-            existingMotorcycleId: 'other-shop-id',
-            brand: 'Yamaha',
-            modelName: 'QBIX',
-            rates: [{ minDays: 1, dailyRate: 12, currency: 'USD' }],
-          },
-        ],
-      }),
-    });
-
-    const response = await POST(request);
-    expect(response.status).toBe(400);
-    const body = await response.json();
-    expect(body).toEqual({
-      error:
-        "Invalid existingMotorcycleId 'other-shop-id': record does not exist in target shop inventory.",
+      details: 'Failed to stage change proposal items: database connection error',
     });
     expect(recordCrawlRun).not.toHaveBeenCalled();
   });
 });
-

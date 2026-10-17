@@ -60,7 +60,6 @@ interface ChangeProposalDiffViewerProps {
   onRejectSuccess?: () => void;
 }
 
-
 function getEngineCapacity(data: any): number | null {
   const val = data?.engineCapacityCc ?? data?.engineCapacity ?? data?.engine_capacity_cc;
   return val != null && !isNaN(Number(val)) ? Number(val) : null;
@@ -267,6 +266,8 @@ function renderRateTiersDiff(
   const oldTiers = originalRates || ratesDiff?.old || [];
   const newTiers = proposedRates || ratesDiff?.new || [];
 
+  if (oldTiers.length === 0 && newTiers.length === 0) return null;
+
   return (
     <div className="mt-2 space-y-1 text-xs">
       <div className="font-semibold text-gray-700">Rates Comparison:</div>
@@ -306,28 +307,6 @@ export async function submitProposalDecision(
   return data;
 }
 
-export async function resolveProposalIdentityReview(
-  proposalId: string,
-  payload: {
-    itemId: string;
-    resolution: 'update_existing' | 'create_new' | 'merge_duplicates';
-    targetMotorcycleId?: string;
-    duplicateMotorcycleIds?: string[];
-  }
-) {
-  const res = await fetch(`/api/admin/change-proposals/${proposalId}`, {
-    method: 'PATCH',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.error || 'Failed to resolve identity review.');
-  }
-  return data;
-}
-
 export function ChangeProposalDiffViewer({
   proposal,
   items,
@@ -343,48 +322,9 @@ export function ChangeProposalDiffViewer({
   );
   const [isApplying, setIsApplying] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
-  const [resolvingItemId, setResolvingItemId] = useState<string | null>(null);
-  const [selectedCandidateByItem, setSelectedCandidateByItem] = useState<Record<string, string>>({});
   const [isUnchangedExpanded, setIsUnchangedExpanded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  const hasUnresolvedIdentityReview = items.some(
-    (item) => selectedIds.has(item.id) && item.diff_summary?.identity_review?.needsReview === true
-  );
-
-  const handleResolveIdentity = async (
-    item: DiffViewerItem,
-    resolution: 'update_existing' | 'create_new' | 'merge_duplicates'
-  ) => {
-    const review = item.diff_summary?.identity_review;
-    const candidateIds: string[] =
-      review?.candidateIds ||
-      (Array.isArray(review?.candidates) ? review.candidates.map((c: any) => c.id) : []);
-    const targetId = selectedCandidateByItem[item.id] || candidateIds[0];
-    const duplicateIds = candidateIds.filter((id) => id !== targetId);
-
-    setResolvingItemId(item.id);
-    setError(null);
-    try {
-      await resolveProposalIdentityReview(proposal.id, {
-        itemId: item.id,
-        resolution,
-        targetMotorcycleId:
-          resolution === 'update_existing' || resolution === 'merge_duplicates'
-            ? targetId
-            : undefined,
-        duplicateMotorcycleIds: resolution === 'merge_duplicates' ? duplicateIds : undefined,
-      });
-      if (onApplySuccess) {
-        onApplySuccess();
-      }
-    } catch (err: any) {
-      setError(err.message || 'Failed to resolve identity review');
-    } finally {
-      setResolvingItemId(null);
-    }
-  };
 
   const toggleItem = (id: string) => {
     const next = new Set(selectedIds);
@@ -450,133 +390,132 @@ export function ChangeProposalDiffViewer({
     }
   };
 
-  const addItems = items.filter((i) => i.action === 'add' && i.entity_type === 'motorcycle');
-  const updateItems = items.filter((i) => i.action === 'update' && i.entity_type === 'motorcycle');
-  const delistItems = items.filter((i) => i.action === 'delist' && i.entity_type === 'motorcycle');
-  const unchangedItems = items.filter((i) => i.action === 'unchanged' && i.entity_type === 'motorcycle');
+  const addItems = items.filter((i) => i.entity_type === 'motorcycle' && i.action === 'add');
+  const updateItems = items.filter((i) => i.entity_type === 'motorcycle' && i.action === 'update');
+  const delistItems = items.filter((i) => i.entity_type === 'motorcycle' && i.action === 'delist');
+  const unchangedItems = items.filter(
+    (i) => i.entity_type === 'motorcycle' && i.action === 'unchanged'
+  );
   const shopItems = items.filter((i) => i.entity_type === 'rental_shop');
 
   const isCompleted =
     proposal.status === 'applied' ||
     proposal.status === 'partially_applied' ||
     proposal.status === 'rejected';
-  const gmrShopUrl =
+
+  const resolvedShopUrl =
     proposal.shop_url ||
-    (proposal.rental_shops?.slug ? getShopUrl(proposal.rental_shops) : undefined);
+    (proposal.rental_shops?.slug ? getShopUrl(proposal.rental_shops as any) : undefined);
 
   return (
     <div className="space-y-6">
-      {/* Overview Card */}
+      {/* Proposal Summary Header */}
       <Card>
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">
-              {proposal.rental_shops?.provider_name || 'Rental Shop'}
-            </h2>
-            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 mt-1">
-              <span>Crawl Date: {new Date(proposal.created_at).toLocaleString()}</span>
-              <span>•</span>
+            <div className="flex items-center gap-3">
+              <h2 className="text-xl font-bold text-gray-900">
+                {proposal.rental_shops?.provider_name || 'Rental Shop'}
+              </h2>
+              <Badge
+                variant={
+                  proposal.status === 'applied'
+                    ? 'success'
+                    : proposal.status === 'rejected'
+                    ? 'danger'
+                    : 'warning'
+                }
+              >
+                {proposal.status.replace('_', ' ')}
+              </Badge>
+            </div>
+            <div className="mt-1 flex items-center gap-4 text-sm text-gray-500 flex-wrap">
+              <span>Proposal ID: {proposal.id}</span>
+              {resolvedShopUrl && (
+                <a
+                  href={resolvedShopUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-indigo-600 hover:underline font-medium"
+                >
+                  View on GMR
+                  <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+                </a>
+              )}
               <a
                 href={proposal.source_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                className="inline-flex items-center gap-1 text-blue-600 hover:underline"
               >
                 {proposal.source_url}
-                <ArrowTopRightOnSquareIcon className="w-3.5 h-3.5" />
+                <ArrowTopRightOnSquareIcon className="w-4 h-4" />
               </a>
-              {gmrShopUrl && (
-                <>
-                  <span>•</span>
-                  <a
-                    href={gmrShopUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-emerald-700 hover:text-emerald-900 font-medium flex items-center gap-1"
-                  >
-                    View on GMR
-                    <ArrowTopRightOnSquareIcon className="w-3.5 h-3.5" />
-                  </a>
-                </>
-              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">Status:</span>
-            <Badge
-              variant={
-                proposal.status === 'applied'
-                  ? 'success'
-                  : proposal.status === 'partially_applied'
-                  ? 'info'
-                  : proposal.status === 'rejected'
-                  ? 'danger'
-                  : 'warning'
-              }
-            >
-              {proposal.status}
-            </Badge>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+              +{addItems.length} New
+            </span>
+            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+              ~{updateItems.length} Updated
+            </span>
+            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+              -{delistItems.length} Delisted
+            </span>
+            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
+              ={unchangedItems.length} Unchanged
+            </span>
+            {!isCompleted && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleReject}
+                disabled={isApplying || isRejecting}
+                className="text-red-600 border-red-200 hover:bg-red-50"
+              >
+                <XMarkIcon className="w-4 h-4 mr-1" />
+                {isRejecting ? 'Rejecting...' : 'Reject Proposal'}
+              </Button>
+            )}
           </div>
         </div>
 
-        {/* Selection Toolbar (if pending) */}
-        {!isCompleted && (
-          <div className="flex flex-wrap items-center justify-between gap-4 mt-6 pt-4 border-t border-gray-200">
-            <div className="flex items-center gap-2 text-sm">
-              <span className="font-semibold text-gray-800">
+        {/* Action Toolbar */}
+        {!isCompleted && pendingActionableItems.length > 0 && (
+          <div className="mt-6 pt-4 border-t border-gray-100 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Button variant="outline" size="sm" onClick={selectAll}>
+                Select All
+              </Button>
+              <Button variant="outline" size="sm" onClick={deselectAll}>
+                Deselect All
+              </Button>
+              <span className="text-sm text-gray-600">
                 {selectedIds.size} of {pendingActionableItems.length} items selected
               </span>
-              <span className="text-gray-300">|</span>
-              <button
-                type="button"
-                onClick={selectAll}
-                className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
-              >
-                Select All
-              </button>
-              <span className="text-gray-300">|</span>
-              <button
-                type="button"
-                onClick={deselectAll}
-                className="text-xs text-gray-500 hover:text-gray-700 font-medium"
-              >
-                Deselect All
-              </button>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <Button
                 variant="outline"
                 onClick={handleReject}
                 disabled={isApplying || isRejecting}
-                className="border-red-300 text-red-700 hover:bg-red-50"
+                className="text-red-600 border-red-200 hover:bg-red-50"
               >
-                {isRejecting ? (
-                  <>
-                    <Spinner size="sm" className="mr-2" />
-                    Rejecting...
-                  </>
-                ) : (
-                  <>
-                    <XMarkIcon className="w-4 h-4 mr-1.5" />
-                    Reject Proposal
-                  </>
-                )}
+                <XMarkIcon className="w-4 h-4 mr-1.5" />
+                {isRejecting ? 'Rejecting...' : 'Reject All'}
               </Button>
               <Button
+                variant="primary"
                 onClick={handleApply}
-                disabled={
-                  isApplying ||
-                  isRejecting ||
-                  selectedIds.size === 0 ||
-                  hasUnresolvedIdentityReview
-                }
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                disabled={isApplying || isRejecting || selectedIds.size === 0}
               >
+                <CheckIcon className="w-4 h-4 mr-1.5" />
                 {isApplying ? (
                   <>
-                    <Spinner size="sm" className="mr-2" />
+                    <Spinner className="w-4 h-4 mr-2" />
                     Applying Changes...
                   </>
                 ) : (
@@ -604,13 +543,6 @@ export function ChangeProposalDiffViewer({
             {addItems.map((item) => {
               const year = getModelYear(item.proposed_data);
               const engineCc = getEngineCapacity(item.proposed_data);
-              const identityReview = item.diff_summary?.identity_review;
-              const needsReview = identityReview?.needsReview === true;
-              const candidates = identityReview?.candidates || [];
-              const candidateIds: string[] =
-                identityReview?.candidateIds || candidates.map((c: any) => c.id);
-              const selectedCandidateId =
-                selectedCandidateByItem[item.id] || candidateIds[0] || '';
 
               return (
                 <div
@@ -633,81 +565,12 @@ export function ChangeProposalDiffViewer({
                       <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800">
                         + New Bike
                       </span>
-                      {needsReview && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-800 border border-amber-300">
-                          Needs Identity Review
-                        </span>
-                      )}
                     </div>
                     <div className="text-xs text-gray-500 flex gap-4 mt-0.5">
                       {year != null && <span>Year: {year}</span>}
                       {engineCc != null && <span>Engine: {engineCc}cc</span>}
                     </div>
                     {renderRateTiers(item.proposed_data?.rates, item.proposed_data?.currency, 'emerald')}
-
-                    {needsReview && !isCompleted && (
-                      <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2 text-xs">
-                        <div className="font-semibold text-amber-900">
-                          {identityReview.reason === 'ambiguous_candidates'
-                            ? 'Multiple existing listings match this motorcycle. Choose how to reconcile identity:'
-                            : 'Potential replacement detected against an existing delisted motorcycle:'}
-                        </div>
-                        {candidates.length > 0 && (
-                          <div className="flex items-center gap-2">
-                            <label className="text-amber-800 font-medium">Target Record:</label>
-                            <select
-                              value={selectedCandidateId}
-                              onChange={(e) =>
-                                setSelectedCandidateByItem((prev) => ({
-                                  ...prev,
-                                  [item.id]: e.target.value,
-                                }))
-                              }
-                              className="border border-amber-300 rounded px-2 py-1 bg-white text-gray-800 text-xs"
-                            >
-                              {candidates.map((c: any) => (
-                                <option key={c.id} value={c.id}>
-                                  {c.brand || c.brand_name} {c.model || c.model_name} ({c.year || 'N/A'}) — {c.id.slice(0, 8)}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        )}
-                        <div className="flex flex-wrap gap-2 pt-1">
-                          {candidateIds.length > 0 && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={resolvingItemId === item.id}
-                              onClick={() => handleResolveIdentity(item, 'update_existing')}
-                              className="text-xs border-indigo-300 text-indigo-700 hover:bg-indigo-50"
-                            >
-                              Update Existing Motorcycle
-                            </Button>
-                          )}
-                          {candidateIds.length > 1 && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={resolvingItemId === item.id}
-                              onClick={() => handleResolveIdentity(item, 'merge_duplicates')}
-                              className="text-xs border-amber-400 text-amber-900 hover:bg-amber-100"
-                            >
-                              Merge Duplicates into Surviving Record
-                            </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={resolvingItemId === item.id}
-                            onClick={() => handleResolveIdentity(item, 'create_new')}
-                            className="text-xs border-emerald-300 text-emerald-800 hover:bg-emerald-50"
-                          >
-                            Create New Listing
-                          </Button>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               );
@@ -729,6 +592,15 @@ export function ChangeProposalDiffViewer({
             {updateItems.map((item) => {
               const year = getModelYear(item.proposed_data);
               const engineCc = getEngineCapacity(item.proposed_data);
+              const summary = item.diff_summary || {};
+              const oldYear = getModelYear(item.original_data);
+              const newYear = getModelYear(item.proposed_data);
+              const yearDiff =
+                summary.year ||
+                (oldYear && newYear && oldYear !== newYear
+                  ? { old: oldYear, new: newYear }
+                  : null);
+
               return (
                 <div
                   key={item.id}
@@ -750,60 +622,58 @@ export function ChangeProposalDiffViewer({
                       {year != null && <span>Year: {year}</span>}
                       {engineCc != null && <span>Engine: {engineCc}cc</span>}
                     </div>
-                    {item.diff_summary && (
-                      <div className="mt-2 space-y-2 text-xs">
-                        {item.diff_summary.brand && (
-                          <div className="text-gray-600 flex items-center gap-1.5">
-                            <span className="font-medium text-gray-800">Brand:</span>{' '}
-                            <span className="line-through text-red-500 font-medium">{item.diff_summary.brand.old}</span> →{' '}
-                            <span className="text-emerald-600 font-semibold">{item.diff_summary.brand.new}</span>
-                          </div>
-                        )}
-                        {item.diff_summary.model && (
-                          <div className="text-gray-600 flex items-center gap-1.5">
-                            <span className="font-medium text-gray-800">Model:</span>{' '}
-                            <span className="line-through text-red-500 font-medium">{item.diff_summary.model.old}</span> →{' '}
-                            <span className="text-emerald-600 font-semibold">{item.diff_summary.model.new}</span>
-                          </div>
-                        )}
-                        {item.diff_summary.year && (
-                          <div className="text-gray-600 flex items-center gap-1.5">
-                            <span className="font-medium text-gray-800">Year:</span>{' '}
-                            <span className="line-through text-red-500 font-medium">{item.diff_summary.year.old}</span> →{' '}
-                            <span className="text-emerald-600 font-semibold">{item.diff_summary.year.new}</span>
-                          </div>
-                        )}
-                        {item.diff_summary.engine_capacity_cc && (
-                          <div className="text-gray-600 flex items-center gap-1.5">
-                            <span className="font-medium text-gray-800">Engine:</span>{' '}
-                            <span className="line-through text-red-500 font-medium">{item.diff_summary.engine_capacity_cc.old}cc</span> →{' '}
-                            <span className="text-emerald-600 font-semibold">{item.diff_summary.engine_capacity_cc.new}cc</span>
-                          </div>
-                        )}
-                        {item.diff_summary.source_url && (
-                          <div className="text-gray-600 flex items-center gap-1.5 flex-wrap">
-                            <span className="font-medium text-gray-800">Source URL:</span>{' '}
-                            <span className="line-through text-red-500 font-medium">
-                              {item.diff_summary.source_url.old || '(none)'}
-                            </span>{' '}
-                            →{' '}
-                            <span className="text-emerald-600 font-semibold">
-                              {item.diff_summary.source_url.new}
-                            </span>
-                          </div>
-                        )}
-                        {item.diff_summary.rates ? (
-                          renderRateTiersDiff(
-                            item.diff_summary.rates,
-                            item.original_data?.rates,
-                            item.proposed_data?.rates,
-                            item.proposed_data?.currency
-                          )
-                        ) : (
-                          renderRateTiers(item.proposed_data?.rates, item.proposed_data?.currency, 'gray')
-                        )}
-                      </div>
-                    )}
+                    <div className="mt-2 space-y-2 text-xs">
+                      {summary.brand && (
+                        <div className="text-gray-600 flex items-center gap-1.5">
+                          <span className="font-medium text-gray-800">Brand:</span>{' '}
+                          <span className="line-through text-red-500 font-medium">{summary.brand.old}</span> →{' '}
+                          <span className="text-emerald-600 font-semibold">{summary.brand.new}</span>
+                        </div>
+                      )}
+                      {summary.model && (
+                        <div className="text-gray-600 flex items-center gap-1.5">
+                          <span className="font-medium text-gray-800">Model:</span>{' '}
+                          <span className="line-through text-red-500 font-medium">{summary.model.old}</span> →{' '}
+                          <span className="text-emerald-600 font-semibold">{summary.model.new}</span>
+                        </div>
+                      )}
+                      {yearDiff && (
+                        <div className="text-gray-600 flex items-center gap-1.5">
+                          <span className="font-medium text-gray-800">Year:</span>{' '}
+                          <span className="line-through text-red-500 font-medium">{yearDiff.old}</span> →{' '}
+                          <span className="text-emerald-600 font-semibold">{yearDiff.new}</span>
+                        </div>
+                      )}
+                      {summary.engine_capacity_cc && (
+                        <div className="text-gray-600 flex items-center gap-1.5">
+                          <span className="font-medium text-gray-800">Engine:</span>{' '}
+                          <span className="line-through text-red-500 font-medium">{summary.engine_capacity_cc.old}cc</span> →{' '}
+                          <span className="text-emerald-600 font-semibold">{summary.engine_capacity_cc.new}cc</span>
+                        </div>
+                      )}
+                      {summary.source_url && (
+                        <div className="text-gray-600 flex items-center gap-1.5 flex-wrap">
+                          <span className="font-medium text-gray-800">Source URL:</span>{' '}
+                          <span className="line-through text-red-500 font-medium">
+                            {summary.source_url.old || '(none)'}
+                          </span>{' '}
+                          →{' '}
+                          <span className="text-emerald-600 font-semibold">
+                            {summary.source_url.new}
+                          </span>
+                        </div>
+                      )}
+                      {summary.rates || (item.original_data?.rates && item.proposed_data?.rates) ? (
+                        renderRateTiersDiff(
+                          summary.rates,
+                          item.original_data?.rates,
+                          item.proposed_data?.rates,
+                          item.proposed_data?.currency
+                        )
+                      ) : (
+                        renderRateTiers(item.proposed_data?.rates, item.proposed_data?.currency, 'gray')
+                      )}
+                    </div>
                   </div>
                 </div>
               );
@@ -846,11 +716,6 @@ export function ChangeProposalDiffViewer({
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-red-100 text-red-800 line-through">
                       - Delisted / Unavailable
                     </span>
-                    {item.diff_summary?.identity_review?.needsReview === true && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-800 border border-amber-300">
-                        Needs Identity Review
-                      </span>
-                    )}
                   </div>
                   {renderRateTiers(item.original_data?.rates, item.original_data?.currency, 'red', true)}
                 </div>
@@ -1001,4 +866,3 @@ export function ChangeProposalDiffViewer({
     </div>
   );
 }
-
