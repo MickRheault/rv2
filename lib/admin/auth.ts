@@ -1,7 +1,7 @@
 import { jwtDecode } from 'jwt-decode';
 import { supabase } from '@/lib/supabase/client';
 import { Database } from '@/lib/supabase/database.types';
-import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient, type Session, type User } from '@supabase/supabase-js';
 import type { AppRole, AppPermission, AdminUser, UserRole, RolePermission } from '@/types/admin';
 
 interface CustomJwtPayload {
@@ -14,13 +14,38 @@ interface CustomJwtPayload {
   iss: string;
 }
 
+async function resolveSession(sessionOverride?: Session | null): Promise<Session | null> {
+  if (sessionOverride !== undefined) {
+    return sessionOverride;
+  }
+  const { data } = await supabase.auth.getSession();
+  return data.session;
+}
+
+async function resolveSessionUser(
+  session: Session,
+  userOverride?: User | null
+): Promise<User | null> {
+  if (userOverride !== undefined && userOverride !== null) {
+    return userOverride;
+  }
+  if (session.user && !(session.user as any).__isUserNotAvailableProxy) {
+    return session.user;
+  }
+  const { data } = await supabase.auth.getUser();
+  return data.user;
+}
+
 /**
  * Get current user's role from JWT token or database
  */
-export async function getCurrentUserRole(): Promise<AppRole | null> {
+export async function getCurrentUserRole(
+  sessionOverride?: Session | null,
+  userOverride?: User | null
+): Promise<AppRole | null> {
   try {
     const typedSupabase = supabase as unknown as SupabaseClient<Database>;
-    const { data: { session } } = await typedSupabase.auth.getSession();
+    const session = await resolveSession(sessionOverride);
 
     if (!session?.access_token) {
       return null;
@@ -36,8 +61,8 @@ export async function getCurrentUserRole(): Promise<AppRole | null> {
       console.warn('Could not decode JWT user_role, falling back to database:', jwtError);
     }
 
-    // Fallback to database lookup
-    const { data: { user } } = await typedSupabase.auth.getUser();
+    // Fallback to database lookup using already-available user if present
+    const user = await resolveSessionUser(session, userOverride);
     if (!user) {
       return null;
     }
@@ -120,15 +145,23 @@ export async function hasPermission(permission: AppPermission): Promise<boolean>
 /**
  * Get current admin user with permissions
  */
-export async function getCurrentAdminUser(): Promise<AdminUser | null> {
+export async function getCurrentAdminUser(
+  sessionOverride?: Session | null
+): Promise<AdminUser | null> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const session = await resolveSession(sessionOverride);
+
+    if (!session?.access_token) {
+      return null;
+    }
+
+    const user = await resolveSessionUser(session);
 
     if (!user) {
       return null;
     }
 
-    const role = await getCurrentUserRole();
+    const role = await getCurrentUserRole(session, user);
 
     if (!role || role !== 'admin') {
       return null;

@@ -12,9 +12,16 @@ export default function AdminLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [hasCompletedInitialCheck, setHasCompletedInitialCheck] = useState(false);
   
-  const { user, isAdmin, isLoading: authLoading } = useAdminAuth();
+  const { user, isAdmin, isLoading: authLoading, refreshAuth } = useAdminAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    if (!authLoading) {
+      setHasCompletedInitialCheck(true);
+    }
+  }, [authLoading]);
 
   // Redirect if already authenticated as admin
   useEffect(() => {
@@ -41,10 +48,14 @@ export default function AdminLoginPage() {
       }
 
       if (data.user) {
-        setMessage('Signed in successfully! Checking admin privileges...');
-        
-        // The useAdminAuth hook will handle the redirect
-        // once it confirms admin status
+        const adminUser = refreshAuth ? await refreshAuth(data.session) : null;
+        if (adminUser && adminUser.role === 'admin') {
+          setMessage('Signed in successfully! Redirecting to admin panel...');
+          router.push('/admin');
+        } else {
+          await supabase.auth.signOut();
+          setError('Access denied: this account does not have administrator privileges.');
+        }
       }
     } catch (err) {
       setError('An unexpected error occurred');
@@ -82,7 +93,7 @@ export default function AdminLoginPage() {
     }
   };
 
-  if (authLoading) {
+  if (authLoading && !hasCompletedInitialCheck) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
