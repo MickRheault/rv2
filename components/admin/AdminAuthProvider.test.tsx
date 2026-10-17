@@ -15,6 +15,44 @@ jest.mock('next/navigation', () => ({
   usePathname: () => '/admin/login',
 }));
 
+function captureAuthStateSubscriber() {
+  let subscriber: ((event: string, session: any) => Promise<void> | void) | null = null;
+  jest.spyOn(supabase.auth, 'onAuthStateChange').mockImplementation((cb: any) => {
+    subscriber = cb;
+    return {
+      data: {
+        subscription: {
+          id: 'sub-mock',
+          callback: cb,
+          unsubscribe: jest.fn(),
+        },
+      },
+    } as any;
+  });
+  return {
+    emit: async (event: string, session: any) => {
+      if (subscriber) {
+        await subscriber(event, session);
+      }
+    },
+  };
+}
+
+function mockUserRoleQuery(roleData: { role: string } | null) {
+  jest.spyOn(supabase, 'from').mockReturnValue({
+    select: jest.fn().mockReturnValue({
+      eq: jest.fn().mockReturnValue({
+        eq: jest.fn().mockReturnValue({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: roleData,
+            error: null,
+          }),
+        }),
+      }),
+    }),
+  } as any);
+}
+
 describe('AdminAuthProvider & AdminLoginPage authentication loop diagnosis (#147)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -59,7 +97,7 @@ describe('AdminAuthProvider & AdminLoginPage authentication loop diagnosis (#147
       }
     };
 
-    let authSubscriber: ((event: string, session: any) => Promise<void> | void) | null = null;
+    const authEvents = captureAuthStateSubscriber();
 
     let resolveInitGate!: () => void;
     const initGate = new Promise<void>((r) => {
@@ -68,25 +106,10 @@ describe('AdminAuthProvider & AdminLoginPage authentication loop diagnosis (#147
 
     const initializePromise = acquireLock(async () => {
       await initGate;
-      if (authSubscriber) {
-        await authSubscriber('TOKEN_REFRESHED', {
-          access_token: 'refreshed-jwt',
-          user: { id: 'admin-1', email: 'admin@gmr.com', created_at: '2026-01-01T00:00:00Z' },
-        });
-      }
-    });
-
-    jest.spyOn(supabase.auth, 'onAuthStateChange').mockImplementation((cb: any) => {
-      authSubscriber = cb;
-      return {
-        data: {
-          subscription: {
-            id: 'sub-1',
-            callback: cb,
-            unsubscribe: jest.fn(),
-          },
-        },
-      } as any;
+      await authEvents.emit('TOKEN_REFRESHED', {
+        access_token: 'refreshed-jwt',
+        user: { id: 'admin-1', email: 'admin@gmr.com', created_at: '2026-01-01T00:00:00Z' },
+      });
     });
 
     jest.spyOn(supabase.auth, 'getSession').mockImplementation(async () => {
@@ -129,18 +152,8 @@ describe('AdminAuthProvider & AdminLoginPage authentication loop diagnosis (#147
 
   it('falls back to rendering the Sign In form after the 5s initialization timeout if getSession hangs indefinitely', async () => {
     jest.useFakeTimers();
+    captureAuthStateSubscriber();
 
-    jest.spyOn(supabase.auth, 'onAuthStateChange').mockReturnValue({
-      data: {
-        subscription: {
-          id: 'sub-timeout',
-          callback: jest.fn(),
-          unsubscribe: jest.fn(),
-        },
-      },
-    } as any);
-
-    // Simulate a permanently hung Web Lock / getSession promise
     jest.spyOn(supabase.auth, 'getSession').mockImplementation(
       () => new Promise(() => {}) as any
     );
@@ -162,20 +175,7 @@ describe('AdminAuthProvider & AdminLoginPage authentication loop diagnosis (#147
   });
 
   it('keeps the login form mounted during sign-in without flashing "Checking authentication..." and shows an error when a signed-in user lacks admin privileges', async () => {
-    let authSubscriber: ((event: string, session: any) => Promise<void> | void) | null = null;
-
-    jest.spyOn(supabase.auth, 'onAuthStateChange').mockImplementation((cb: any) => {
-      authSubscriber = cb;
-      return {
-        data: {
-          subscription: {
-            id: 'sub-signin',
-            callback: cb,
-            unsubscribe: jest.fn(),
-          },
-        },
-      } as any;
-    });
+    const authEvents = captureAuthStateSubscriber();
 
     jest.spyOn(supabase.auth, 'getSession').mockResolvedValue({
       data: { session: null },
@@ -195,34 +195,18 @@ describe('AdminAuthProvider & AdminLoginPage authentication loop diagnosis (#147
     };
 
     jest.spyOn(supabase.auth, 'signInWithPassword').mockImplementation(async () => {
-      if (authSubscriber) {
-        await authSubscriber('SIGNED_IN', nonAdminSession);
-      }
+      await authEvents.emit('SIGNED_IN', nonAdminSession);
       return {
         data: { user: nonAdminUser, session: nonAdminSession },
         error: null,
       } as any;
     });
 
-    jest.spyOn(supabase.auth, 'getUser').mockResolvedValue({
-      data: { user: nonAdminUser },
-      error: null,
-    } as any);
-
     const signOutSpy = jest.spyOn(supabase.auth, 'signOut').mockResolvedValue({
       error: null,
     } as any);
 
-    // Mock database lookup returning no admin role
-    jest.spyOn(supabase, 'from').mockReturnValue({
-      select: jest.fn().mockReturnValue({
-        eq: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
-          }),
-        }),
-      }),
-    } as any);
+    mockUserRoleQuery(null);
 
     render(
       <AdminAuthProvider>
@@ -245,11 +229,9 @@ describe('AdminAuthProvider & AdminLoginPage authentication loop diagnosis (#147
       fireEvent.click(screen.getByRole('button', { name: /Sign in/i }));
     });
 
-    // Must not unmount form back to "Checking authentication..."
     expect(screen.queryByText(/Checking authentication\.\.\./i)).not.toBeInTheDocument();
     expect(screen.getByText(/Sign in to Admin Panel/i)).toBeInTheDocument();
 
-    // Must surface a clear error message explaining that the account lacks admin privileges
     await waitFor(() => {
       expect(
         screen.getByText(/does not have administrator privileges/i)
@@ -259,20 +241,7 @@ describe('AdminAuthProvider & AdminLoginPage authentication loop diagnosis (#147
   });
 
   it('redirects to /admin after successful admin sign-in without flashing "Checking authentication..."', async () => {
-    let authSubscriber: ((event: string, session: any) => Promise<void> | void) | null = null;
-
-    jest.spyOn(supabase.auth, 'onAuthStateChange').mockImplementation((cb: any) => {
-      authSubscriber = cb;
-      return {
-        data: {
-          subscription: {
-            id: 'sub-admin-signin',
-            callback: cb,
-            unsubscribe: jest.fn(),
-          },
-        },
-      } as any;
-    });
+    const authEvents = captureAuthStateSubscriber();
 
     jest.spyOn(supabase.auth, 'getSession').mockResolvedValue({
       data: { session: null },
@@ -292,27 +261,14 @@ describe('AdminAuthProvider & AdminLoginPage authentication loop diagnosis (#147
     };
 
     jest.spyOn(supabase.auth, 'signInWithPassword').mockImplementation(async () => {
-      if (authSubscriber) {
-        await authSubscriber('SIGNED_IN', adminSession);
-      }
+      await authEvents.emit('SIGNED_IN', adminSession);
       return {
         data: { user: adminUser, session: adminSession },
         error: null,
       } as any;
     });
 
-    jest.spyOn(supabase, 'from').mockReturnValue({
-      select: jest.fn().mockReturnValue({
-        eq: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            maybeSingle: jest.fn().mockResolvedValue({
-              data: { role: 'admin' },
-              error: null,
-            }),
-          }),
-        }),
-      }),
-    } as any);
+    mockUserRoleQuery({ role: 'admin' });
 
     render(
       <AdminAuthProvider>
@@ -341,4 +297,3 @@ describe('AdminAuthProvider & AdminLoginPage authentication loop diagnosis (#147
     });
   });
 });
-

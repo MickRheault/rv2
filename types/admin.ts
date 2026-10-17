@@ -1,4 +1,6 @@
 // Admin authentication types
+import type { Session } from '@supabase/supabase-js';
+
 export type AppRole = 'admin' | 'user';
 
 export type AppPermission = 
@@ -37,7 +39,7 @@ export interface AdminAuthContext {
   isLoading: boolean;
   hasPermission: (permission: AppPermission) => boolean;
   signOut: () => Promise<void>;
-  refreshAuth?: (sessionOverride?: any) => Promise<AdminUser | null>;
+  refreshAuth?: (sessionOverride?: Session | null) => Promise<AdminUser | null>;
 }
 
 export interface AdminRouteProps {

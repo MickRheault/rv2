@@ -14,6 +14,28 @@ interface CustomJwtPayload {
   iss: string;
 }
 
+async function resolveSession(sessionOverride?: Session | null): Promise<Session | null> {
+  if (sessionOverride !== undefined) {
+    return sessionOverride;
+  }
+  const { data } = await supabase.auth.getSession();
+  return data.session;
+}
+
+async function resolveSessionUser(
+  session: Session,
+  userOverride?: User | null
+): Promise<User | null> {
+  if (userOverride !== undefined && userOverride !== null) {
+    return userOverride;
+  }
+  if (session.user && !(session.user as any).__isUserNotAvailableProxy) {
+    return session.user;
+  }
+  const { data } = await supabase.auth.getUser();
+  return data.user;
+}
+
 /**
  * Get current user's role from JWT token or database
  */
@@ -23,10 +45,7 @@ export async function getCurrentUserRole(
 ): Promise<AppRole | null> {
   try {
     const typedSupabase = supabase as unknown as SupabaseClient<Database>;
-    const session =
-      sessionOverride !== undefined
-        ? sessionOverride
-        : (await typedSupabase.auth.getSession()).data.session;
+    const session = await resolveSession(sessionOverride);
 
     if (!session?.access_token) {
       return null;
@@ -43,11 +62,7 @@ export async function getCurrentUserRole(
     }
 
     // Fallback to database lookup using already-available user if present
-    const user =
-      userOverride ??
-      (session.user && !(session.user as any).__isUserNotAvailableProxy
-        ? session.user
-        : (await typedSupabase.auth.getUser()).data.user);
+    const user = await resolveSessionUser(session, userOverride);
     if (!user) {
       return null;
     }
@@ -134,19 +149,13 @@ export async function getCurrentAdminUser(
   sessionOverride?: Session | null
 ): Promise<AdminUser | null> {
   try {
-    const session =
-      sessionOverride !== undefined
-        ? sessionOverride
-        : (await supabase.auth.getSession()).data.session;
+    const session = await resolveSession(sessionOverride);
 
     if (!session?.access_token) {
       return null;
     }
 
-    const user =
-      session.user && !(session.user as any).__isUserNotAvailableProxy
-        ? session.user
-        : (await supabase.auth.getUser()).data.user;
+    const user = await resolveSessionUser(session);
 
     if (!user) {
       return null;

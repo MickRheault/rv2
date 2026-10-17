@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { getCurrentAdminUser, adminSignOut } from '@/lib/admin/auth';
+import type { Session } from '@supabase/supabase-js';
 import type { AdminUser, AdminAuthContext, AppPermission } from '@/types/admin';
 
 const AdminAuthContext = createContext<AdminAuthContext | undefined>(undefined);
@@ -35,7 +36,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         return user.permissions.includes(permission);
     }, [user, isAdmin]);
 
-    const refreshAuth = useCallback(async (sessionOverride?: any) => {
+    const refreshAuth = useCallback(async (sessionOverride?: Session | null) => {
         try {
             const adminUser = await getCurrentAdminUser(sessionOverride);
             setUser(adminUser);
