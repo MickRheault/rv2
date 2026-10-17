@@ -1656,10 +1656,148 @@ describe('Change Proposal Application & Geodata Protection', () => {
         },
       });
     });
+
+    it('rejects add items missing brandName/modelName, duplicate entityIds, and entityIds belonging to another shop', async () => {
+      await expect(
+        ChangeProposalService.createProposalFromItems({
+          shopId: 'shop-1',
+          sourceUrl: 'https://example.com',
+          items: [
+            {
+              entityType: 'motorcycle',
+              action: 'add',
+              proposedData: { rates: [] },
+            },
+          ],
+        })
+      ).rejects.toThrow(/requires non-empty brandName and modelName/i);
+
+      await expect(
+        ChangeProposalService.createProposalFromItems({
+          shopId: 'shop-1',
+          sourceUrl: 'https://example.com',
+          items: [
+            {
+              entityType: 'motorcycle',
+              action: 'update',
+              entityId: 'bike-1',
+              proposedData: { year: 2024 },
+            },
+            {
+              entityType: 'motorcycle',
+              action: 'delist',
+              entityId: 'bike-1',
+            },
+          ],
+        })
+      ).rejects.toThrow(/Duplicate entityId 'bike-1'/i);
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue({
+        from: jest.fn(() => ({
+          select: jest.fn().mockReturnValue({
+            in: jest.fn().mockResolvedValue({
+              data: [{ id: 'bike-other-shop', shop_id: 'shop-other' }],
+              error: null,
+            }),
+          }),
+        })),
+      });
+
+      await expect(
+        ChangeProposalService.createProposalFromItems({
+          shopId: 'shop-1',
+          sourceUrl: 'https://example.com',
+          items: [
+            {
+              entityType: 'motorcycle',
+              action: 'update',
+              entityId: 'bike-other-shop',
+              proposedData: { year: 2024 },
+            },
+          ],
+        })
+      ).rejects.toThrow(/does not belong to shop 'shop-1'/i);
+    });
+
+    it('applies rental_shop inclusions and conditions from proposed_data vs original_data when diff_summary is omitted', async () => {
+      const insertedInclusions: any[] = [];
+      const deletedInclusions: string[] = [];
+
+      const mockSupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({
+                    data: { id: 'prop-shop-fallback', shop_id: 'shop-1', status: 'pending' },
+                    error: null,
+                  }),
+                }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: 'item-shop-fallback',
+                      proposal_id: 'prop-shop-fallback',
+                      entity_type: 'rental_shop',
+                      action: 'update',
+                      entity_id: 'shop-1',
+                      brand_name: 'Shop Profile',
+                      model_name: 'General Information & Policies',
+                      original_data: {
+                        inclusions: ['2 Helmets', 'Old Paper Map'],
+                      },
+                      proposed_data: {
+                        inclusions: ['2 Helmets', 'Phone Holder'],
+                      },
+                      diff_summary: null,
+                      status: 'pending',
+                    },
+                  ],
+                  error: null,
+                }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'rental_shop_inclusions') {
+            return {
+              insert: jest.fn((rows: any[]) => {
+                insertedInclusions.push(...rows);
+                return Promise.resolve({ error: null });
+              }),
+              delete: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  in: jest.fn((_col: string, vals: string[]) => {
+                    deletedInclusions.push(...vals);
+                    return Promise.resolve({ error: null });
+                  }),
+                }),
+              }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      const res = await ChangeProposalService.apply('prop-shop-fallback', ['item-shop-fallback']);
+      expect(res.success).toBe(true);
+      expect(insertedInclusions).toEqual([{ shop_id: 'shop-1', inclusion_text: 'Phone Holder' }]);
+      expect(deletedInclusions).toEqual(['Old Paper Map']);
+    });
   });
 });
-
-
-
-
 

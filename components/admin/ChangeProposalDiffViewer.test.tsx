@@ -544,16 +544,41 @@ describe('ChangeProposalDiffViewer', () => {
         brand_name: 'Yamaha',
         model_name: 'PG-1',
         original_data: {
-          brand: 'Yamaha',
+          brand: 'Honda',
           model: 'PG1',
           year: 2024,
+          engineCapacityCc: 110,
+          sourceUrl: 'https://example.com/old-pg1',
           rates: [{ minDays: 1, ratePerDay: 10, currency: 'USD' }],
         },
         proposed_data: {
           brand: 'Yamaha',
           model: 'PG-1',
           year: 2025,
+          engineCapacityCc: 115,
+          sourceUrl: 'https://example.com/new-pg1',
           rates: [{ minDays: 1, ratePerDay: 12, currency: 'USD' }],
+        },
+        diff_summary: null,
+        status: 'pending',
+      },
+      {
+        id: 'item-shop-no-summary',
+        proposal_id: 'prop-1',
+        entity_type: 'rental_shop',
+        action: 'update',
+        entity_id: 'shop-1',
+        brand_name: 'Shop Profile',
+        model_name: 'General Information & Policies',
+        original_data: {
+          businessDescription: 'Old description',
+          phone: '+661111',
+          inclusions: ['2 Helmets'],
+        },
+        proposed_data: {
+          businessDescription: 'New description',
+          phone: '+662222',
+          inclusions: ['2 Helmets', 'Phone Holder'],
         },
         diff_summary: null,
         status: 'pending',
@@ -563,8 +588,17 @@ describe('ChangeProposalDiffViewer', () => {
     render(<ChangeProposalDiffViewer proposal={mockProposal} items={itemsWithoutDiffSummary} />);
 
     expect(screen.getByText('Yamaha PG-1')).toBeInTheDocument();
+    expect(screen.getByText('Honda')).toBeInTheDocument();
+    expect(screen.getByText('PG1')).toBeInTheDocument();
+    expect(screen.getByText('110cc')).toBeInTheDocument();
+    expect(screen.getByText('https://example.com/old-pg1')).toBeInTheDocument();
+    expect(screen.getByText('https://example.com/new-pg1')).toBeInTheDocument();
     expect(screen.getByText(/\$10\/day/i)).toBeInTheDocument();
     expect(screen.getByText(/\$12\/day/i)).toBeInTheDocument();
+    expect(screen.getByText('Old description')).toBeInTheDocument();
+    expect(screen.getByText('New description')).toBeInTheDocument();
+    expect(screen.getByText('+662222')).toBeInTheDocument();
+    expect(screen.getByText('Phone Holder')).toBeInTheDocument();
     expect(screen.queryByText(/Needs Identity Review/i)).not.toBeInTheDocument();
   });
 });

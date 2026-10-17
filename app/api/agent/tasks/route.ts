@@ -6,8 +6,8 @@ import { TaskSchedulerService } from '@/services/task-scheduler';
 
 /**
  * GET /api/agent/tasks
- * 
- * Returns due crawl targets ordered by their Relative Overdue Ratio (Urgency Score),
+ *
+ * Returns due crawl targets ordered by their Urgency Score,
  * enriched with each shop's full current inventory and shop profile baseline (ADR 0016).
  * Supports optional ?shopId=<uuid> filtering for targeted runs.
  * Authenticated via Bearer AGENT_API_KEY.

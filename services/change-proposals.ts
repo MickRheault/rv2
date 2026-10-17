@@ -38,6 +38,25 @@ export function validateGeodataImmutability(proposedData: Record<string, any> | 
   }
 }
 
+function normalizeRateTiers(rawRates: any[], fallbackCurrency?: string) {
+  if (!Array.isArray(rawRates)) return [];
+  return rawRates.map((r: any) => {
+    const rawMin = r?.minDays ?? r?.min_days;
+    const minDays = rawMin !== undefined && rawMin !== null ? Number(rawMin) : 1;
+    const rawMax = r?.maxDays !== undefined ? r?.maxDays : r?.max_days;
+    const maxDays = rawMax !== undefined && rawMax !== null ? Number(rawMax) : null;
+    const rawRate = r?.ratePerDay ?? r?.dailyRate ?? r?.rate_per_day ?? r?.daily_rate;
+    const ratePerDay = rawRate !== undefined && rawRate !== null ? Number(rawRate) : 0;
+
+    return {
+      minDays: isNaN(minDays) ? 1 : minDays,
+      maxDays: maxDays !== null && !isNaN(maxDays) ? maxDays : null,
+      ratePerDay: isNaN(ratePerDay) ? 0 : ratePerDay,
+      currency: r?.currency || fallbackCurrency,
+    };
+  });
+}
+
 /**
  * Normalizes a proposed motorcycle payload from agent/crawler/MCP aliases into canonical fields.
  */
@@ -57,22 +76,10 @@ function normalizeProposedMotorcycle(rawBike: Record<string, any>) {
       ? rawSourceUrl.trim()
       : null;
 
-  const rawRates = Array.isArray(rawBike.rates) ? rawBike.rates : [];
-  const rates = rawRates.map((r: any) => {
-    const rawMin = r?.minDays ?? r?.min_days;
-    const minDays = rawMin !== undefined && rawMin !== null ? Number(rawMin) : 1;
-    const rawMax = r?.maxDays !== undefined ? r?.maxDays : r?.max_days;
-    const maxDays = rawMax !== undefined && rawMax !== null ? Number(rawMax) : null;
-    const rawRate = r?.ratePerDay ?? r?.dailyRate ?? r?.rate_per_day ?? r?.daily_rate;
-    const ratePerDay = rawRate !== undefined && rawRate !== null ? Number(rawRate) : 0;
-
-    return {
-      minDays: isNaN(minDays) ? 1 : minDays,
-      maxDays: maxDays !== null && !isNaN(maxDays) ? maxDays : null,
-      ratePerDay: isNaN(ratePerDay) ? 0 : ratePerDay,
-      currency: r?.currency || rawBike.currency,
-    };
-  });
+  const rates = normalizeRateTiers(
+    Array.isArray(rawBike.rates) ? rawBike.rates : [],
+    rawBike.currency
+  );
 
   return {
     brand,
@@ -118,21 +125,14 @@ export async function insertRateTiers(
   defaultCurrency?: string
 ) {
   const currency = defaultCurrency || rates[0]?.currency || 'THB';
-  const rateTiers = rates.map((r: any) => {
-    const rawMin = r?.minDays ?? r?.min_days;
-    const minDays = rawMin !== undefined && rawMin !== null ? Number(rawMin) : 1;
-    const rawMax = r?.maxDays !== undefined ? r?.maxDays : r?.max_days;
-    const maxDays = rawMax !== undefined && rawMax !== null ? Number(rawMax) : null;
-    const rawRate = r?.ratePerDay ?? r?.dailyRate ?? r?.rate_per_day ?? r?.daily_rate;
-    const ratePerDay = rawRate !== undefined && rawRate !== null ? Number(rawRate) : 0;
-    return {
-      motorcycle_id: motorcycleId,
-      min_days: isNaN(minDays) ? 1 : minDays,
-      max_days: maxDays !== null && !isNaN(maxDays) ? maxDays : null,
-      rate_per_day: isNaN(ratePerDay) ? 0 : ratePerDay,
-      currency: r?.currency || currency,
-    };
-  });
+  const normalized = normalizeRateTiers(rates, currency);
+  const rateTiers = normalized.map((r) => ({
+    motorcycle_id: motorcycleId,
+    min_days: r.minDays,
+    max_days: r.maxDays,
+    rate_per_day: r.ratePerDay,
+    currency: r.currency || currency,
+  }));
   return (supabase.from('rental_rate_tiers') as any).insert(rateTiers);
 }
 
@@ -253,21 +253,24 @@ async function resolveOrCreateBrandId(supabase: any, brandName?: string | null):
   const normalizedName = (brandName || '').trim();
   if (!normalizedName) return null;
 
-  const { data: existingBrand } = await supabase
-    .from('brands')
-    .select('id')
-    .ilike('name', normalizedName)
-    .maybeSingle();
+  const brandsTable = supabase.from?.('brands');
+  if (!brandsTable?.select) return null;
+
+  const { data: existingBrand } =
+    (await brandsTable
+      .select('id')
+      ?.ilike?.('name', normalizedName)
+      ?.maybeSingle?.()) || { data: null };
 
   if (existingBrand?.id) {
     return existingBrand.id;
   }
 
-  const { data: newBrand } = await supabase
-    .from('brands')
-    .insert({ name: normalizedName })
-    .select('id')
-    .single();
+  const { data: newBrand } =
+    (await brandsTable
+      .insert?.({ name: normalizedName })
+      ?.select?.('id')
+      ?.single?.()) || { data: null };
 
   return newBrand?.id || null;
 }
@@ -280,6 +283,8 @@ export class ChangeProposalService {
     if (!Array.isArray(input.items)) {
       throw new ProposalItemValidationError('items must be an array of Change Proposal Items.');
     }
+
+    const seenEntityKeys = new Set<string>();
 
     const normalizedItems = input.items.map((raw, index) => {
       if (!raw || typeof raw !== 'object') {
@@ -312,25 +317,43 @@ export class ChangeProposalService {
         );
       }
 
+      if (entityId) {
+        const entityKey = `${entityType}:${entityId}`;
+        if (seenEntityKeys.has(entityKey)) {
+          throw new ProposalItemValidationError(
+            `Duplicate entityId '${entityId}' for entityType '${entityType}' at index ${index}.`
+          );
+        }
+        seenEntityKeys.add(entityKey);
+      }
+
       const proposedData = (raw.proposedData ?? raw.proposed_data ?? {}) as Record<string, any>;
       validateGeodataImmutability(proposedData);
 
       const originalData = (raw.originalData ?? raw.original_data ?? null) as Record<string, any> | null;
       const diffSummary = (raw.diffSummary ?? raw.diff_summary ?? null) as Record<string, any> | null;
 
-      const brandName =
+      const rawBrand =
         raw.brandName ??
         raw.brand_name ??
         proposedData.brand ??
         proposedData.brandName ??
         (entityType === 'rental_shop' ? 'Shop Profile' : null);
+      const brandName = typeof rawBrand === 'string' && rawBrand.trim().length > 0 ? rawBrand.trim() : null;
 
-      const modelName =
+      const rawModel =
         raw.modelName ??
         raw.model_name ??
         proposedData.modelName ??
         proposedData.model ??
         (entityType === 'rental_shop' ? 'General Information & Policies' : null);
+      const modelName = typeof rawModel === 'string' && rawModel.trim().length > 0 ? rawModel.trim() : null;
+
+      if (entityType === 'motorcycle' && action === 'add' && (!brandName || !modelName)) {
+        throw new ProposalItemValidationError(
+          `Item at index ${index} with action 'add' requires non-empty brandName and modelName.`
+        );
+      }
 
       return {
         entity_type: entityType,
@@ -356,6 +379,30 @@ export class ChangeProposalService {
     const initialProposalStatus = hasMutableItems ? 'pending' : 'applied';
 
     const supabase = getSupabaseAdmin();
+
+    // Verify shop ownership for any referenced motorcycle entityIds when database rows are returned
+    const motorcycleEntityIds = normalizedItems
+      .filter((i) => i.entity_type === 'motorcycle' && i.entity_id)
+      .map((i) => i.entity_id as string);
+    if (motorcycleEntityIds.length > 0) {
+      const ownershipQuery = (supabase.from('motorcycle_rentals') as any)
+        ?.select?.('id, shop_id')
+        ?.in?.('id', motorcycleEntityIds);
+      if (ownershipQuery) {
+        const { data: existingRows } = await ownershipQuery;
+        if (Array.isArray(existingRows) && existingRows.length > 0) {
+          const byId = new Map(existingRows.map((r: any) => [r.id, r.shop_id]));
+          for (const targetId of motorcycleEntityIds) {
+            const ownerShopId = byId.get(targetId);
+            if (!ownerShopId || ownerShopId !== input.shopId) {
+              throw new ProposalItemValidationError(
+                `Motorcycle entityId '${targetId}' does not belong to shop '${input.shopId}'.`
+              );
+            }
+          }
+        }
+      }
+    }
 
     // 1. Insert parent proposal record
     const { data: proposal, error: proposalError } = await (supabase
@@ -609,8 +656,8 @@ export class ChangeProposalService {
             throw new Error(`Failed to insert motorcycle: ${bikeError.message}`);
           }
 
-          if (newBike && Array.isArray(proposed.rates) && proposed.rates.length > 0) {
-            await insertRateTiers(supabase, newBike.id, proposed.rates, proposed.currency);
+          if (newBike && normalizedBike.rates.length > 0) {
+            await insertRateTiers(supabase, newBike.id, normalizedBike.rates, proposed.currency);
           }
 
           appliedCount++;
@@ -619,9 +666,17 @@ export class ChangeProposalService {
           const updatePayload: Record<string, any> = {};
           const itemDiffSummary = (item.diff_summary as Record<string, any>) || {};
 
+          const origBike = (item.original_data as Record<string, any>) || {};
+          const origBrand = origBike.brand ?? origBike.brandName ?? origBike.brand_name;
+          const origModel = origBike.model ?? origBike.modelName ?? origBike.model_name;
+
           const targetBrandName =
             itemDiffSummary.brand?.new || normalizedBike.brand || item.brand_name;
-          if (itemDiffSummary.brand || normalizedBike.brand) {
+          if (
+            itemDiffSummary.brand ||
+            normalizedBike.brand ||
+            (item.brand_name && origBrand && item.brand_name !== origBrand)
+          ) {
             const brandId = await resolveOrCreateBrandId(supabase, targetBrandName);
             if (brandId) {
               updatePayload.brand_id = brandId;
@@ -630,7 +685,11 @@ export class ChangeProposalService {
 
           const targetModelName =
             itemDiffSummary.model?.new || normalizedBike.modelName || item.model_name;
-          if (itemDiffSummary.model || normalizedBike.modelName) {
+          if (
+            itemDiffSummary.model ||
+            normalizedBike.modelName ||
+            (item.model_name && origModel && item.model_name !== origModel)
+          ) {
             if (targetModelName) {
               updatePayload.model = targetModelName;
             }
@@ -694,13 +753,13 @@ export class ChangeProposalService {
               .eq('id', item.entity_id);
           }
 
-          if (Array.isArray(proposed.rates) && proposed.rates.length > 0) {
+          if (normalizedBike.rates.length > 0) {
             await supabase
               .from('rental_rate_tiers')
               .delete()
               .eq('motorcycle_id', item.entity_id);
 
-            await insertRateTiers(supabase, item.entity_id, proposed.rates, proposed.currency);
+            await insertRateTiers(supabase, item.entity_id, normalizedBike.rates, proposed.currency);
           }
 
           appliedCount++;
@@ -715,6 +774,7 @@ export class ChangeProposalService {
         }
       } else if (item.entity_type === 'rental_shop') {
         const normalizedShop = normalizeProposedShopProfile(proposed) || ({} as Record<string, any>);
+        const originalShop = (item.original_data as Record<string, any>) || {};
         const allowedUpdates: Record<string, any> = {};
         if (normalizedShop.business_description !== undefined) {
           allowedUpdates.business_description = normalizedShop.business_description;
@@ -734,7 +794,18 @@ export class ChangeProposalService {
         }
 
         const diffSummary = item.diff_summary as Record<string, any> | null;
-        const inclusionsDiff = diffSummary?.inclusions;
+        const origInclusions: string[] = Array.isArray(originalShop.inclusions)
+          ? originalShop.inclusions
+          : [];
+        const inclusionsDiff =
+          diffSummary?.inclusions ||
+          (Array.isArray(normalizedShop.inclusions)
+            ? {
+                added: normalizedShop.inclusions.filter((x: string) => !origInclusions.includes(x)),
+                removed: origInclusions.filter((x: string) => !normalizedShop.inclusions.includes(x)),
+              }
+            : null);
+
         if (inclusionsDiff?.added && Array.isArray(inclusionsDiff.added) && inclusionsDiff.added.length > 0) {
           const inserts = inclusionsDiff.added.map((text: string) => ({
             shop_id: proposal.shop_id,
@@ -749,7 +820,18 @@ export class ChangeProposalService {
             .in('inclusion_text', inclusionsDiff.removed);
         }
 
-        const conditionsDiff = diffSummary?.conditions;
+        const origConditions: string[] = Array.isArray(originalShop.conditions)
+          ? originalShop.conditions
+          : [];
+        const conditionsDiff =
+          diffSummary?.conditions ||
+          (Array.isArray(normalizedShop.conditions)
+            ? {
+                added: normalizedShop.conditions.filter((x: string) => !origConditions.includes(x)),
+                removed: origConditions.filter((x: string) => !normalizedShop.conditions.includes(x)),
+              }
+            : null);
+
         if (conditionsDiff?.added && Array.isArray(conditionsDiff.added) && conditionsDiff.added.length > 0) {
           const assignedTypeIds = new Set<string>();
           const inserts = [];

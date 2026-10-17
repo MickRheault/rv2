@@ -593,12 +593,47 @@ export function ChangeProposalDiffViewer({
               const year = getModelYear(item.proposed_data);
               const engineCc = getEngineCapacity(item.proposed_data);
               const summary = item.diff_summary || {};
-              const oldYear = getModelYear(item.original_data);
-              const newYear = getModelYear(item.proposed_data);
+              const orig = item.original_data || {};
+              const prop = item.proposed_data || {};
+
+              const oldBrand = orig.brand ?? orig.brandName ?? orig.brand_name;
+              const newBrand = prop.brand ?? prop.brandName ?? prop.brand_name ?? item.brand_name;
+              const brandDiff =
+                summary.brand ||
+                (oldBrand && newBrand && oldBrand !== newBrand
+                  ? { old: oldBrand, new: newBrand }
+                  : null);
+
+              const oldModel = orig.model ?? orig.modelName ?? orig.model_name;
+              const newModel = prop.model ?? prop.modelName ?? prop.model_name ?? item.model_name;
+              const modelDiff =
+                summary.model ||
+                (oldModel && newModel && oldModel !== newModel
+                  ? { old: oldModel, new: newModel }
+                  : null);
+
+              const oldYear = getModelYear(orig);
+              const newYear = getModelYear(prop);
               const yearDiff =
                 summary.year ||
                 (oldYear && newYear && oldYear !== newYear
                   ? { old: oldYear, new: newYear }
+                  : null);
+
+              const oldCc = getEngineCapacity(orig);
+              const newCc = getEngineCapacity(prop);
+              const engineCcDiff =
+                summary.engine_capacity_cc ||
+                (oldCc != null && newCc != null && oldCc !== newCc
+                  ? { old: oldCc, new: newCc }
+                  : null);
+
+              const oldSourceUrl = orig.source_url ?? orig.sourceUrl;
+              const newSourceUrl = prop.source_url ?? prop.sourceUrl;
+              const sourceUrlDiff =
+                summary.source_url ||
+                (newSourceUrl && oldSourceUrl !== newSourceUrl
+                  ? { old: oldSourceUrl ?? null, new: newSourceUrl }
                   : null);
 
               return (
@@ -623,18 +658,18 @@ export function ChangeProposalDiffViewer({
                       {engineCc != null && <span>Engine: {engineCc}cc</span>}
                     </div>
                     <div className="mt-2 space-y-2 text-xs">
-                      {summary.brand && (
+                      {brandDiff && (
                         <div className="text-gray-600 flex items-center gap-1.5">
                           <span className="font-medium text-gray-800">Brand:</span>{' '}
-                          <span className="line-through text-red-500 font-medium">{summary.brand.old}</span> →{' '}
-                          <span className="text-emerald-600 font-semibold">{summary.brand.new}</span>
+                          <span className="line-through text-red-500 font-medium">{brandDiff.old}</span> →{' '}
+                          <span className="text-emerald-600 font-semibold">{brandDiff.new}</span>
                         </div>
                       )}
-                      {summary.model && (
+                      {modelDiff && (
                         <div className="text-gray-600 flex items-center gap-1.5">
                           <span className="font-medium text-gray-800">Model:</span>{' '}
-                          <span className="line-through text-red-500 font-medium">{summary.model.old}</span> →{' '}
-                          <span className="text-emerald-600 font-semibold">{summary.model.new}</span>
+                          <span className="line-through text-red-500 font-medium">{modelDiff.old}</span> →{' '}
+                          <span className="text-emerald-600 font-semibold">{modelDiff.new}</span>
                         </div>
                       )}
                       {yearDiff && (
@@ -644,22 +679,22 @@ export function ChangeProposalDiffViewer({
                           <span className="text-emerald-600 font-semibold">{yearDiff.new}</span>
                         </div>
                       )}
-                      {summary.engine_capacity_cc && (
+                      {engineCcDiff && (
                         <div className="text-gray-600 flex items-center gap-1.5">
                           <span className="font-medium text-gray-800">Engine:</span>{' '}
-                          <span className="line-through text-red-500 font-medium">{summary.engine_capacity_cc.old}cc</span> →{' '}
-                          <span className="text-emerald-600 font-semibold">{summary.engine_capacity_cc.new}cc</span>
+                          <span className="line-through text-red-500 font-medium">{engineCcDiff.old}cc</span> →{' '}
+                          <span className="text-emerald-600 font-semibold">{engineCcDiff.new}cc</span>
                         </div>
                       )}
-                      {summary.source_url && (
+                      {sourceUrlDiff && (
                         <div className="text-gray-600 flex items-center gap-1.5 flex-wrap">
                           <span className="font-medium text-gray-800">Source URL:</span>{' '}
                           <span className="line-through text-red-500 font-medium">
-                            {summary.source_url.old || '(none)'}
+                            {sourceUrlDiff.old || '(none)'}
                           </span>{' '}
                           →{' '}
                           <span className="text-emerald-600 font-semibold">
-                            {summary.source_url.new}
+                            {sourceUrlDiff.new}
                           </span>
                         </div>
                       )}
@@ -735,76 +770,120 @@ export function ChangeProposalDiffViewer({
             </h3>
           </div>
           <div className="divide-y divide-gray-100">
-            {shopItems.map((item) => (
-              <div
-                key={item.id}
-                className="py-3 flex items-start gap-3 hover:bg-gray-50 px-2 rounded-lg transition-colors"
-              >
-                {!isCompleted && (
-                  <div className="pt-1">
-                    <Checkbox
-                      checked={selectedIds.has(item.id)}
-                      onChange={() => toggleItem(item.id)}
-                    />
-                  </div>
-                )}
-                <div className="flex-1 text-sm space-y-1">
-                  <div className="font-semibold text-gray-900">General Information</div>
-                  {item.diff_summary && (
+            {shopItems.map((item) => {
+              const summary = item.diff_summary || {};
+              const orig = item.original_data || {};
+              const prop = item.proposed_data || {};
+
+              const origDesc = orig.business_description ?? orig.businessDescription;
+              const propDesc = prop.business_description ?? prop.businessDescription;
+              const descDiff =
+                summary.business_description ||
+                (propDesc !== undefined && propDesc !== origDesc
+                  ? { old: origDesc ?? null, new: propDesc }
+                  : null);
+
+              const phoneDiff =
+                summary.phone ||
+                (prop.phone !== undefined && prop.phone !== orig.phone
+                  ? { old: orig.phone ?? null, new: prop.phone }
+                  : null);
+
+              const websiteDiff =
+                summary.website ||
+                (prop.website !== undefined && prop.website !== orig.website
+                  ? { old: orig.website ?? null, new: prop.website }
+                  : null);
+
+              const origInc: string[] = Array.isArray(orig.inclusions) ? orig.inclusions : [];
+              const propInc: string[] | undefined = Array.isArray(prop.inclusions)
+                ? prop.inclusions
+                : undefined;
+              const inclusionsDiff =
+                summary.inclusions ||
+                (propInc
+                  ? {
+                      added: propInc.filter((x) => !origInc.includes(x)),
+                      removed: origInc.filter((x) => !propInc.includes(x)),
+                    }
+                  : null);
+
+              const origCond: string[] = Array.isArray(orig.conditions) ? orig.conditions : [];
+              const propCond: string[] | undefined = Array.isArray(prop.conditions)
+                ? prop.conditions
+                : undefined;
+              const conditionsDiff =
+                summary.conditions ||
+                (propCond
+                  ? {
+                      added: propCond.filter((x) => !origCond.includes(x)),
+                      removed: origCond.filter((x) => !propCond.includes(x)),
+                    }
+                  : null);
+
+              return (
+                <div
+                  key={item.id}
+                  className="py-3 flex items-start gap-3 hover:bg-gray-50 px-2 rounded-lg transition-colors"
+                >
+                  {!isCompleted && (
+                    <div className="pt-1">
+                      <Checkbox
+                        checked={selectedIds.has(item.id)}
+                        onChange={() => toggleItem(item.id)}
+                      />
+                    </div>
+                  )}
+                  <div className="flex-1 text-sm space-y-1">
+                    <div className="font-semibold text-gray-900">General Information</div>
                     <div className="space-y-1 text-xs">
-                      {item.diff_summary.business_description && (
+                      {descDiff && (
                         <div className="text-gray-700">
                           <span className="font-medium text-gray-900">Description:</span>{' '}
                           <span className="line-through text-red-500 mr-1">
-                            {item.diff_summary.business_description.old || '(empty)'}
+                            {descDiff.old || '(empty)'}
                           </span>
                           →{' '}
-                          <span className="text-emerald-700 font-medium">
-                            {item.diff_summary.business_description.new}
-                          </span>
+                          <span className="text-emerald-700 font-medium">{descDiff.new}</span>
                         </div>
                       )}
-                      {item.diff_summary.phone && (
+                      {phoneDiff && (
                         <div className="text-gray-700">
                           <span className="font-medium text-gray-900">Phone:</span>{' '}
                           <span className="line-through text-red-500 mr-1">
-                            {item.diff_summary.phone.old || '(empty)'}
+                            {phoneDiff.old || '(empty)'}
                           </span>
                           →{' '}
-                          <span className="text-emerald-700 font-medium">
-                            {item.diff_summary.phone.new}
-                          </span>
+                          <span className="text-emerald-700 font-medium">{phoneDiff.new}</span>
                         </div>
                       )}
-                      {item.diff_summary.website && (
+                      {websiteDiff && (
                         <div className="text-gray-700">
                           <span className="font-medium text-gray-900">Website:</span>{' '}
                           <span className="line-through text-red-500 mr-1">
-                            {item.diff_summary.website.old || '(empty)'}
+                            {websiteDiff.old || '(empty)'}
                           </span>
                           →{' '}
-                          <span className="text-emerald-700 font-medium">
-                            {item.diff_summary.website.new}
-                          </span>
+                          <span className="text-emerald-700 font-medium">{websiteDiff.new}</span>
                         </div>
                       )}
-                      {item.diff_summary.inclusions &&
+                      {inclusionsDiff &&
                         renderPolicyList(
                           'Rental Inclusions',
-                          item.diff_summary.inclusions.added,
-                          item.diff_summary.inclusions.removed
+                          inclusionsDiff.added,
+                          inclusionsDiff.removed
                         )}
-                      {item.diff_summary.conditions &&
+                      {conditionsDiff &&
                         renderPolicyList(
                           'Rental Conditions',
-                          item.diff_summary.conditions.added,
-                          item.diff_summary.conditions.removed
+                          conditionsDiff.added,
+                          conditionsDiff.removed
                         )}
                     </div>
-                  )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Card>
       )}
