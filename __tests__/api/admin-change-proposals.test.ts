@@ -4,14 +4,12 @@
 
 import { NextRequest } from 'next/server';
 import { GET } from '@/app/api/admin/change-proposals/route';
-import { PATCH } from '@/app/api/admin/change-proposals/[id]/route';
 import { ChangeProposalService } from '@/services/change-proposals';
 
 jest.mock('@/services/change-proposals', () => ({
   ChangeProposalService: {
     getProposals: jest.fn(),
     getProposalById: jest.fn(),
-    resolveIdentityReview: jest.fn(),
   },
 }));
 
@@ -59,56 +57,6 @@ describe('GET /api/admin/change-proposals', () => {
   });
 });
 
-describe('PATCH /api/admin/change-proposals/[id]', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('resolves an identity review item and returns 200', async () => {
-    (isAuthorizedAdmin as jest.Mock).mockResolvedValue(true);
-    (ChangeProposalService.resolveIdentityReview as jest.Mock).mockResolvedValue({
-      success: true,
-      item: { id: 'item-1', action: 'update', entity_id: '7d316bb8-4f40-459c-a7ad-bfc445d8c851' },
-      removedItemIds: ['item-delist-1'],
-      summaryCounts: { add: 0, update: 1, delist: 0, unchanged: 0 },
-    });
-
-    const req = new NextRequest('http://localhost:3000/api/admin/change-proposals/prop-1', {
-      method: 'PATCH',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        itemId: 'item-1',
-        resolution: 'update_existing',
-        targetMotorcycleId: '7d316bb8-4f40-459c-a7ad-bfc445d8c851',
-      }),
-    });
-
-    const res = await PATCH(req, { params: Promise.resolve({ id: 'prop-1' }) });
-    expect(res.status).toBe(200);
-    const json = await res.json();
-    expect(json.success).toBe(true);
-    expect(json.removedItemIds).toEqual(['item-delist-1']);
-    expect(ChangeProposalService.resolveIdentityReview).toHaveBeenCalledWith('prop-1', {
-      itemId: 'item-1',
-      resolution: 'update_existing',
-      targetMotorcycleId: '7d316bb8-4f40-459c-a7ad-bfc445d8c851',
-      duplicateMotorcycleIds: undefined,
-    });
-  });
-
-  it('returns 400 when itemId or resolution is missing or invalid', async () => {
-    (isAuthorizedAdmin as jest.Mock).mockResolvedValue(true);
-
-    const req = new NextRequest('http://localhost:3000/api/admin/change-proposals/prop-1', {
-      method: 'PATCH',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ itemId: '' }),
-    });
-
-    const res = await PATCH(req, { params: Promise.resolve({ id: 'prop-1' }) });
-    expect(res.status).toBe(400);
-  });
-});
 
 jest.mock('next/navigation', () => ({
   notFound: jest.fn(),

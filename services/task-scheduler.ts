@@ -10,6 +10,33 @@ export const CADENCE_DAYS: Record<number, number> = {
   3: 60,  // Tier 3: Bi-monthly (Infrequent / seasonal)
 };
 
+export interface ExistingInventoryBike {
+  id: string;
+  brand: string;
+  model: string;
+  year: number | null;
+  year_to: number | null;
+  engineCapacityCc: number | null;
+  availabilityStatus: string | null;
+  sourceUrl: string | null;
+  rates: Array<{
+    minDays: number;
+    maxDays: number | null;
+    ratePerDay: number;
+    currency: string;
+  }>;
+}
+
+export interface CurrentShopBaseline {
+  id: string;
+  providerName: string;
+  businessDescription: string | null;
+  phone: string | null;
+  website: string | null;
+  inclusions: string[];
+  conditions: string[];
+}
+
 export interface AgentTask {
   taskId: string;
   shopId: string;
@@ -21,11 +48,14 @@ export interface AgentTask {
   lastRunAt: string | null;
   canonicalBrands: string[];
   knownModels: Array<{ brand: string; modelName: string }>;
+  existingInventory: ExistingInventoryBike[];
+  currentShop: CurrentShopBaseline;
 }
 
 export interface GetDueTasksOptions {
   limit?: number;
   minUrgency?: number;
+  shopId?: string;
 }
 
 /**
@@ -54,7 +84,8 @@ export function calculateUrgencyScore(
 
 export class TaskSchedulerService {
   /**
-   * Retrieves due crawl tasks ordered by Urgency Score descending.
+   * Retrieves due crawl tasks ordered by Urgency Score descending,
+   * enriched with each shop's full current inventory and shop profile baseline (ADR 0016).
    */
   static async getDueTasks(options: GetDueTasksOptions = {}): Promise<AgentTask[]> {
     const limit = Math.min(Math.max(options.limit ?? 10, 1), 50);
@@ -75,7 +106,10 @@ export class TaskSchedulerService {
         consecutive_errors,
         rental_shops!inner (
           id,
-          provider_name
+          provider_name,
+          business_description,
+          phone,
+          website
         )
       `)
       .eq('is_active', true);
@@ -103,6 +137,7 @@ export class TaskSchedulerService {
     // 3. Compute Urgency Score and sort descending
     const now = new Date();
     const scoredConfigs = configs
+      .filter((config) => (options.shopId ? config.shop_id === options.shopId : true))
       .map((config) => {
         const score = calculateUrgencyScore(config.last_run_at, config.created_at, config.tier, now);
         return {
@@ -111,7 +146,7 @@ export class TaskSchedulerService {
         };
       })
       .filter((config) => {
-        if (options.minUrgency !== undefined) {
+        if (options.minUrgency !== undefined && !options.shopId) {
           return config.urgencyScore >= options.minUrgency;
         }
         return true;
@@ -119,39 +154,114 @@ export class TaskSchedulerService {
       .sort((a, b) => b.urgencyScore - a.urgencyScore)
       .slice(0, limit);
 
-    // 4. Batch fetch known motorcycles for selected shops to prevent N+1 queries
+    if (scoredConfigs.length === 0) {
+      return [];
+    }
+
+    // 4. Batch fetch active inventory, inclusions, and conditions for selected shops
     const shopIds = scoredConfigs.map((cfg) => cfg.shop_id);
-    const { data: allBikes } = await supabase
+
+    let bikesQuery: any = supabase
       .from('motorcycle_rentals')
       .select(`
+        id,
         shop_id,
         model,
+        year,
+        year_to,
+        engine_capacity_cc,
+        availability_status,
+        source_url,
         brands (
           name
+        ),
+        rental_rate_tiers (
+          min_days,
+          max_days,
+          rate_per_day,
+          currency
         )
       `)
       .in('shop_id', shopIds);
 
+    if (bikesQuery && typeof bikesQuery.or === 'function') {
+      bikesQuery = bikesQuery.or('availability_status.is.null,availability_status.neq.unavailable');
+    }
+
+    const inclusionsTable = (supabase.from('rental_shop_inclusions') as any);
+    const conditionsTable = (supabase.from('rental_shop_conditions') as any);
+
+    const [bikesRes, inclusionsRes, conditionsRes] = await Promise.all([
+      bikesQuery,
+      inclusionsTable?.select
+        ? inclusionsTable.select('shop_id, inclusion_text').in('shop_id', shopIds)
+        : Promise.resolve({ data: [] }),
+      conditionsTable?.select
+        ? conditionsTable.select('shop_id, condition_value').in('shop_id', shopIds)
+        : Promise.resolve({ data: [] }),
+    ]);
+
+    const allBikes = bikesRes?.data || [];
+    const allInclusions = inclusionsRes?.data || [];
+    const allConditions = conditionsRes?.data || [];
+
     const bikesByShop = new Map<string, any[]>();
-    (allBikes || []).forEach((bike: any) => {
+    allBikes.forEach((bike: any) => {
       const list = bikesByShop.get(bike.shop_id) || [];
       list.push(bike);
       bikesByShop.set(bike.shop_id, list);
     });
 
+    const inclusionsByShop = new Map<string, string[]>();
+    allInclusions.forEach((inc: any) => {
+      const list = inclusionsByShop.get(inc.shop_id) || [];
+      if (inc.inclusion_text) list.push(inc.inclusion_text);
+      inclusionsByShop.set(inc.shop_id, list);
+    });
+
+    const conditionsByShop = new Map<string, string[]>();
+    allConditions.forEach((cond: any) => {
+      const list = conditionsByShop.get(cond.shop_id) || [];
+      if (cond.condition_value) list.push(cond.condition_value);
+      conditionsByShop.set(cond.shop_id, list);
+    });
+
     const tasks: AgentTask[] = scoredConfigs.map((cfg) => {
       const bikes = bikesByShop.get(cfg.shop_id) || [];
       const knownModelsMap = new Map<string, { brand: string; modelName: string }>();
-      bikes.forEach((bike: any) => {
+      const existingInventory: ExistingInventoryBike[] = bikes.map((bike: any) => {
         const brandName = bike.brands?.name || 'Unknown';
         const modelName = bike.model || '';
         const key = `${brandName}:${modelName}`.toLowerCase();
         if (modelName && !knownModelsMap.has(key)) {
           knownModelsMap.set(key, { brand: brandName, modelName });
         }
+
+        return {
+          id: bike.id,
+          brand: brandName,
+          model: modelName,
+          year: bike.year ?? null,
+          year_to: bike.year_to ?? null,
+          engineCapacityCc: bike.engine_capacity_cc ?? null,
+          availabilityStatus: bike.availability_status ?? null,
+          sourceUrl: bike.source_url ?? null,
+          rates: (bike.rental_rate_tiers || []).map((r: any) => ({
+            minDays: r.min_days ?? 1,
+            maxDays: r.max_days ?? null,
+            ratePerDay: Number(r.rate_per_day),
+            currency: r.currency || 'THB',
+          })),
+        };
       });
 
-      const shop = cfg.rental_shops as unknown as { id: string; provider_name: string };
+      const shop = cfg.rental_shops as unknown as {
+        id: string;
+        provider_name: string;
+        business_description?: string | null;
+        phone?: string | null;
+        website?: string | null;
+      };
 
       return {
         taskId: cfg.id,
@@ -164,6 +274,16 @@ export class TaskSchedulerService {
         lastRunAt: cfg.last_run_at,
         canonicalBrands,
         knownModels: Array.from(knownModelsMap.values()),
+        existingInventory,
+        currentShop: {
+          id: cfg.shop_id,
+          providerName: shop.provider_name,
+          businessDescription: shop.business_description ?? null,
+          phone: shop.phone ?? null,
+          website: shop.website ?? null,
+          inclusions: inclusionsByShop.get(cfg.shop_id) || [],
+          conditions: conditionsByShop.get(cfg.shop_id) || [],
+        },
       };
     });
 
@@ -254,4 +374,3 @@ export class TaskSchedulerService {
     return updated;
   }
 }
-

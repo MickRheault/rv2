@@ -1,4 +1,6 @@
-# Motorcycle Identity Reconciliation Priority and SEO Preservation
+# Motorcycle Identity Reconciliation Priority and SEO Preservation (Superseded by ADR 0016)
+
+> Superseded by [0016-agent-computed-change-proposals.md](./0016-agent-computed-change-proposals.md).
 
 Incoming motorcycle snapshots in a Change Proposal must reconcile against a shop's existing inventory in strict priority order before calculating additions and soft-delistings:
 1. **Explicit Record Targeting (`existingMotorcycleId`)**: Validated to exist within the submitted shop and targeted by at most one incoming bike per payload; invalid or duplicate IDs return a `400` validation error rather than falling back to an addition.

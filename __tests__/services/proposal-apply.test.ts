@@ -349,24 +349,8 @@ describe('Change Proposal Application & Geodata Protection', () => {
     });
   });
 
-  describe('ChangeProposalService.createProposalFromCrawl with unchanged items', () => {
+  describe('ChangeProposalService.createProposalFromItems with explicit agent items', () => {
     it('stages unchanged items with status: "applied" and mutable items with status: "pending"', async () => {
-      const existingInventory = [
-        {
-          id: 'bike-existing-1',
-          brand_name: 'Honda',
-          model_name: 'Click 125i',
-          year: 2023,
-          engine_capacity_cc: 125,
-          availability_status: 'available',
-          rates: [{ min_days: 1, max_days: 6, rate_per_day: 250 }],
-        },
-      ];
-
-      const getExistingInventorySpy = jest
-        .spyOn(ChangeProposalService, 'getExistingShopInventory')
-        .mockResolvedValue(existingInventory as any);
-
       let stagedProposal: any = null;
       let stagedItems: any[] = [];
 
@@ -389,15 +373,6 @@ describe('Change Proposal Application & Geodata Protection', () => {
 
       const mockSupabase = {
         from: jest.fn((table: string) => {
-          if (table === 'rental_shops') {
-            return {
-              select: jest.fn().mockReturnValue({
-                eq: jest.fn().mockReturnValue({
-                  maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
-                }),
-              }),
-            };
-          }
           if (table === 'change_proposals') {
             return {
               insert: insertProposalMock,
@@ -408,49 +383,43 @@ describe('Change Proposal Application & Geodata Protection', () => {
               insert: insertItemsMock,
             };
           }
-          if (table === 'rental_shop_inclusions' || table === 'rental_shop_conditions') {
-            return {
-              select: jest.fn().mockReturnValue({
-                eq: jest.fn().mockResolvedValue({ data: [], error: null }),
-              }),
-            };
-          }
           return {};
         }),
       };
 
       (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
 
-      const crawlSnapshot = {
+      const result = await ChangeProposalService.createProposalFromItems({
         shopId: 'shop-uuid-1',
         sourceUrl: 'https://example.com/rates',
-        bikes: [
+        items: [
           {
-            brand: 'Honda',
+            entityType: 'motorcycle',
+            action: 'unchanged',
+            entityId: 'bike-existing-1',
+            brandName: 'Honda',
             modelName: 'Click 125i',
-            year: 2023,
-            rates: [{ minDays: 1, maxDays: 6, ratePerDay: 250 }],
+            originalData: { year: 2023, rates: [{ min_days: 1, max_days: 6, rate_per_day: 250 }] },
+            proposedData: { year: 2023, rates: [{ minDays: 1, maxDays: 6, ratePerDay: 250 }] },
           },
           {
-            brand: 'Honda',
+            entityType: 'motorcycle',
+            action: 'add',
+            brandName: 'Honda',
             modelName: 'Forza 350',
-            year: 2024,
-            rates: [{ minDays: 1, maxDays: 6, ratePerDay: 700 }],
+            proposedData: { year: 2024, rates: [{ minDays: 1, maxDays: 6, ratePerDay: 700 }] },
           },
         ],
-      };
-
-      const result = await ChangeProposalService.createProposalFromCrawl(crawlSnapshot);
+      });
 
       expect(result.proposal).toBeDefined();
-      expect(result.diff.summaryCounts).toEqual({
+      expect(result.summaryCounts).toEqual({
         add: 1,
         update: 0,
         delist: 0,
         unchanged: 1,
       });
 
-      // Verify proposal summary_counts includes unchanged counter
       expect(stagedProposal.summary_counts).toEqual({
         add: 1,
         update: 0,
@@ -458,52 +427,25 @@ describe('Change Proposal Application & Geodata Protection', () => {
         unchanged: 1,
       });
 
-      // Verify staged items statuses
       expect(stagedItems).toHaveLength(2);
       const unchangedItem = stagedItems.find((i) => i.action === 'unchanged');
       const addedItem = stagedItems.find((i) => i.action === 'add');
 
       expect(unchangedItem).toBeDefined();
       expect(unchangedItem.status).toBe('applied');
+      expect(unchangedItem.entity_id).toBe('bike-existing-1');
       expect(unchangedItem.model_name).toBe('Click 125i');
 
       expect(addedItem).toBeDefined();
       expect(addedItem.status).toBe('pending');
       expect(addedItem.model_name).toBe('Forza 350');
-
-      getExistingInventorySpy.mockRestore();
     });
 
-    it('stages proposal with status: "applied" when all observed inventory is unchanged', async () => {
-      const existingInventory = [
-        {
-          id: 'bike-existing-1',
-          brand_name: 'Honda',
-          model_name: 'Click 125i',
-          year: 2023,
-          engine_capacity_cc: 125,
-          availability_status: 'available',
-          rates: [{ min_days: 1, max_days: 6, rate_per_day: 250 }],
-        },
-      ];
-
-      const getExistingInventorySpy = jest
-        .spyOn(ChangeProposalService, 'getExistingShopInventory')
-        .mockResolvedValue(existingInventory as any);
-
+    it('stages proposal with status: "applied" when all submitted items are unchanged', async () => {
       let stagedProposal: any = null;
 
       const mockSupabase = {
         from: jest.fn((table: string) => {
-          if (table === 'rental_shops') {
-            return {
-              select: jest.fn().mockReturnValue({
-                eq: jest.fn().mockReturnValue({
-                  maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
-                }),
-              }),
-            };
-          }
           if (table === 'change_proposals') {
             return {
               insert: jest.fn((payload) => {
@@ -524,38 +466,47 @@ describe('Change Proposal Application & Geodata Protection', () => {
               insert: jest.fn().mockResolvedValue({ error: null }),
             };
           }
-          if (table === 'rental_shop_inclusions' || table === 'rental_shop_conditions') {
-            return {
-              select: jest.fn().mockReturnValue({
-                eq: jest.fn().mockResolvedValue({ data: [], error: null }),
-              }),
-            };
-          }
           return {};
         }),
       };
 
       (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
 
-      const crawlSnapshot = {
+      const result = await ChangeProposalService.createProposalFromItems({
         shopId: 'shop-uuid-1',
         sourceUrl: 'https://example.com/rates',
-        bikes: [
+        items: [
           {
-            brand: 'Honda',
+            entityType: 'motorcycle',
+            action: 'unchanged',
+            entityId: 'bike-existing-1',
+            brandName: 'Honda',
             modelName: 'Click 125i',
-            year: 2023,
-            rates: [{ minDays: 1, maxDays: 6, ratePerDay: 250 }],
+            proposedData: { year: 2023, rates: [{ minDays: 1, maxDays: 6, ratePerDay: 250 }] },
           },
         ],
-      };
-
-      const result = await ChangeProposalService.createProposalFromCrawl(crawlSnapshot);
+      });
 
       expect(result.proposal.status).toBe('applied');
       expect(stagedProposal.status).toBe('applied');
+    });
 
-      getExistingInventorySpy.mockRestore();
+    it('throws ProposalItemValidationError when an update/delist/unchanged item is missing entityId', async () => {
+      await expect(
+        ChangeProposalService.createProposalFromItems({
+          shopId: 'shop-uuid-1',
+          sourceUrl: 'https://example.com/rates',
+          items: [
+            {
+              entityType: 'motorcycle',
+              action: 'update',
+              brandName: 'Yamaha',
+              modelName: 'PG-1',
+              proposedData: { year: 2025 },
+            },
+          ],
+        })
+      ).rejects.toThrow(/entityId/i);
     });
   });
 
@@ -1086,40 +1037,10 @@ describe('Change Proposal Application & Geodata Protection', () => {
     });
 
     it('rolls back (deletes) the newly inserted parent change_proposals row when inserting change_proposal_items fails', async () => {
-      const getExistingInventorySpy = jest
-        .spyOn(ChangeProposalService, 'getExistingShopInventory')
-        .mockResolvedValue([
-          {
-            id: 'bike-pcx-1',
-            brand_name: 'Honda',
-            model_name: 'PCX',
-            year: null,
-            engine_capacity_cc: 150,
-            availability_status: 'available',
-            rates: [{ min_days: 1, max_days: null, rate_per_day: 15 }],
-          },
-        ] as any);
-
       const deletedProposalIds: string[] = [];
 
       const mockSupabase = {
         from: jest.fn((table: string) => {
-          if (table === 'rental_shops') {
-            return {
-              select: jest.fn().mockReturnValue({
-                eq: jest.fn().mockReturnValue({
-                  maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
-                }),
-              }),
-            };
-          }
-          if (table === 'rental_shop_inclusions' || table === 'rental_shop_conditions') {
-            return {
-              select: jest.fn().mockReturnValue({
-                eq: jest.fn().mockResolvedValue({ data: [], error: null }),
-              }),
-            };
-          }
           if (table === 'change_proposals') {
             return {
               insert: jest.fn((payload) => ({
@@ -1158,15 +1079,17 @@ describe('Change Proposal Application & Geodata Protection', () => {
       (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
 
       await expect(
-        ChangeProposalService.createProposalFromCrawl({
+        ChangeProposalService.createProposalFromItems({
           shopId: '2b97f3dc-b0af-42b0-bb3a-68d286d94ef3',
           sourceUrl: 'https://wescooterrentalsiemreap.com/',
           agentRunId: 'hermes-we-scooter-20261014T180742Z-be3924d7',
-          bikes: [
+          items: [
             {
-              brand: 'Honda',
+              entityType: 'motorcycle',
+              action: 'add',
+              brandName: 'Honda',
               modelName: 'PCX',
-              rates: [{ minDays: 1, ratePerDay: 15, currency: 'USD' }],
+              proposedData: { rates: [{ minDays: 1, ratePerDay: 15, currency: 'USD' }] },
             },
           ],
         })
@@ -1174,25 +1097,9 @@ describe('Change Proposal Application & Geodata Protection', () => {
 
       // Parent row must be rolled back so no orphaned 0-item proposal remains
       expect(deletedProposalIds).toContain('prop-orphan-candidate');
-
-      getExistingInventorySpy.mockRestore();
     });
 
     it('replaces existing pending Change Proposals for the same (shopId, agentRunId) when staging succeeds', async () => {
-      const getExistingInventorySpy = jest
-        .spyOn(ChangeProposalService, 'getExistingShopInventory')
-        .mockResolvedValue([
-          {
-            id: 'bike-click-1',
-            brand_name: 'Honda',
-            model_name: 'Click',
-            year: null,
-            engine_capacity_cc: 125,
-            availability_status: 'available',
-            rates: [{ min_days: 1, max_days: null, rate_per_day: 10 }],
-          },
-        ] as any);
-
       const deleteFilters: Array<Record<string, any>> = [];
 
       const createDeleteChain = () => {
@@ -1216,22 +1123,6 @@ describe('Change Proposal Application & Geodata Protection', () => {
 
       const mockSupabase = {
         from: jest.fn((table: string) => {
-          if (table === 'rental_shops') {
-            return {
-              select: jest.fn().mockReturnValue({
-                eq: jest.fn().mockReturnValue({
-                  maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
-                }),
-              }),
-            };
-          }
-          if (table === 'rental_shop_inclusions' || table === 'rental_shop_conditions') {
-            return {
-              select: jest.fn().mockReturnValue({
-                eq: jest.fn().mockResolvedValue({ data: [], error: null }),
-              }),
-            };
-          }
           if (table === 'change_proposals') {
             return {
               insert: jest.fn((payload) => ({
@@ -1256,22 +1147,27 @@ describe('Change Proposal Application & Geodata Protection', () => {
 
       (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
 
-      const result = await ChangeProposalService.createProposalFromCrawl({
+      const result = await ChangeProposalService.createProposalFromItems({
         shopId: '2b97f3dc-b0af-42b0-bb3a-68d286d94ef3',
         sourceUrl: 'https://wescooterrentalsiemreap.com/',
         agentRunId: 'hermes-we-scooter-20261014T180742Z-be3924d7',
-        bikes: [
+        items: [
           {
-            brand: 'Honda',
+            entityType: 'motorcycle',
+            action: 'update',
+            entityId: 'bike-click-1',
+            brandName: 'Honda',
             modelName: 'Click 125',
-            engineCapacityCc: 125,
-            rates: [{ minDays: 1, ratePerDay: 11, currency: 'USD' }],
+            proposedData: {
+              engineCapacityCc: 125,
+              rates: [{ minDays: 1, ratePerDay: 11, currency: 'USD' }],
+            },
           },
         ],
       });
 
       expect(result.proposal.id).toBe('prop-new-11usd');
-      expect(result.diff.summaryCounts).toEqual({
+      expect(result.summaryCounts).toEqual({
         add: 0,
         update: 1,
         delist: 0,
@@ -1285,8 +1181,6 @@ describe('Change Proposal Application & Geodata Protection', () => {
         status: 'pending',
         neq_id: 'prop-new-11usd',
       });
-
-      getExistingInventorySpy.mockRestore();
     });
 
     it('persists camelCase businessDescription in proposed_data to rental_shops.business_description when applying a shop update', async () => {
@@ -1489,54 +1383,7 @@ describe('Change Proposal Application & Geodata Protection', () => {
       );
     });
 
-    it('loads year_to in getExistingShopInventory and persists year and year_to on add and update in apply (#138)', async () => {
-      let selectedColumns = '';
-      const mockInventoryRows = [
-        {
-          id: 'bike-gen-1',
-          model: 'Click 125',
-          year: 2015,
-          year_to: 2020,
-          engine_capacity_cc: 125,
-          availability_status: 'available',
-          brands: { name: 'Honda' },
-          rental_rate_tiers: [{ min_days: 1, max_days: null, rate_per_day: 200 }],
-        },
-      ];
-
-      const mockInventorySupabase = {
-        from: jest.fn(() => ({
-          select: jest.fn((cols: string) => {
-            selectedColumns = cols;
-            return {
-              eq: jest.fn(() => ({
-                or: jest.fn().mockResolvedValue({ data: mockInventoryRows, error: null }),
-              })),
-            };
-          }),
-        })),
-      };
-
-      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockInventorySupabase);
-
-      const inventory = await ChangeProposalService.getExistingShopInventory('shop-1');
-      expect(selectedColumns).toContain('year_to');
-      expect(inventory).toEqual([
-        {
-          id: 'bike-gen-1',
-          brand_name: 'Honda',
-          model_name: 'Click 125',
-          year: 2015,
-          year_to: 2020,
-          engine_capacity_cc: 125,
-          availability_status: 'available',
-          source_url: null,
-          source_url_aliases: [],
-          rates: [{ min_days: 1, max_days: null, rate_per_day: 200 }],
-        },
-      ]);
-
-      // Now test ChangeProposalService.apply for add (with range) and update (range -> single year)
+    it('persists year and year_to on add and update in apply (#138)', async () => {
       const proposalData = {
         id: 'prop-year-range',
         shop_id: 'shop-1',
@@ -1674,8 +1521,8 @@ describe('Change Proposal Application & Geodata Protection', () => {
     });
   });
 
-  describe('Motorcycle Identity Reconciliation, Resolution & SEO Preservation (#135)', () => {
-    it('updates brand_id, model, year, source_url, and rates in-place while preserving motorcycle ID when applying a brand/model correction update', async () => {
+  describe('Direct In-Place Updates on Approved Motorcycle Items', () => {
+    it('updates brand_id, model, year, source_url, and rates directly from proposed_data even when diff_summary is omitted', async () => {
       const proposalData = {
         id: 'prop-qbix',
         shop_id: 'abc85b6d-9b86-40fa-98a5-f3bc91b9a48c',
@@ -1690,27 +1537,22 @@ describe('Change Proposal Application & Geodata Protection', () => {
           action: 'update',
           entity_id: '7d316bb8-4f40-459c-a7ad-bfc445d8c851',
           brand_name: 'Yamaha',
-          model_name: 'QBIX',
+          model_name: 'QBIX 125',
           original_data: {
+            brand: 'Honda',
+            model: 'QBIX',
             year: 2022,
             source_url: 'https://siemreapscooterrental.com/index.php/bike-rental/honda-qbix-2022/',
             rates: [{ min_days: 1, max_days: null, rate_per_day: 17 }],
           },
           proposed_data: {
-            existingMotorcycleId: '7d316bb8-4f40-459c-a7ad-bfc445d8c851',
             brand: 'Yamaha',
-            modelName: 'QBIX',
+            modelName: 'QBIX 125',
             year: 2022,
             sourceUrl: 'https://siemreapscooterrental.com/index.php/bike-rental/yamaha-qbix-2022/',
             rates: [{ minDays: 1, ratePerDay: 12, currency: 'USD' }],
           },
-          diff_summary: {
-            brand: { old: 'Honda', new: 'Yamaha' },
-            rates: {
-              old: [{ min_days: 1, max_days: null, rate_per_day: 17 }],
-              new: [{ minDays: 1, ratePerDay: 12, currency: 'USD' }],
-            },
-          },
+          diff_summary: null,
           status: 'pending',
         },
       ];
@@ -1773,7 +1615,7 @@ describe('Change Proposal Application & Geodata Protection', () => {
               update: jest.fn((payload: any) => {
                 updatedRentalPayload = payload;
                 return {
-                  eq: jest.fn((col: string, val: string) => {
+                  eq: jest.fn((_col: string, val: string) => {
                     updatedRentalId = val;
                     return Promise.resolve({ error: null });
                   }),
@@ -1802,6 +1644,7 @@ describe('Change Proposal Application & Geodata Protection', () => {
       expect(updatedRentalId).toBe('7d316bb8-4f40-459c-a7ad-bfc445d8c851');
       expect(updatedRentalPayload).toMatchObject({
         brand_id: 'da4e4ea0-311e-4b3b-bbe4-a3692a74f5fd',
+        model: 'QBIX 125',
         year: 2022,
         rental_rate_per_day: 12,
         rental_rate_currency: 'USD',
@@ -1814,129 +1657,71 @@ describe('Change Proposal Application & Geodata Protection', () => {
       });
     });
 
-    it('blocks applying an item that still has unresolved identity_review.needsReview === true', async () => {
-      const proposalData = {
-        id: 'prop-unresolved',
-        shop_id: 'shop-1',
-        status: 'pending',
-      };
-
-      const itemsData = [
-        {
-          id: 'item-ambiguous',
-          proposal_id: 'prop-unresolved',
-          entity_type: 'motorcycle',
-          action: 'add',
-          entity_id: null,
-          brand_name: 'Yamaha',
-          model_name: 'PG-1',
-          proposed_data: { brand: 'Yamaha', modelName: 'PG-1', rates: [] },
-          diff_summary: {
-            identity_review: {
-              needsReview: true,
-              reason: 'ambiguous_candidates',
-              candidates: [{ id: '9500f956-4eb1-403f-bd52-de60fe6818f7' }],
+    it('rejects add items missing brandName/modelName, duplicate entityIds, and entityIds belonging to another shop', async () => {
+      await expect(
+        ChangeProposalService.createProposalFromItems({
+          shopId: 'shop-1',
+          sourceUrl: 'https://example.com',
+          items: [
+            {
+              entityType: 'motorcycle',
+              action: 'add',
+              proposedData: { rates: [] },
             },
-          },
-          status: 'pending',
-        },
-      ];
-
-      const mockSupabase = {
-        from: jest.fn((table: string) => {
-          if (table === 'change_proposals') {
-            return {
-              select: jest.fn().mockReturnValue({
-                eq: jest.fn().mockReturnValue({
-                  single: jest.fn().mockResolvedValue({ data: proposalData, error: null }),
-                }),
-              }),
-            };
-          }
-          if (table === 'change_proposal_items') {
-            return {
-              select: jest.fn().mockReturnValue({
-                eq: jest.fn().mockResolvedValue({ data: itemsData, error: null }),
-              }),
-            };
-          }
-          return {};
-        }),
-      };
-
-      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+          ],
+        })
+      ).rejects.toThrow(/requires non-empty brandName and modelName/i);
 
       await expect(
-        ChangeProposalService.apply('prop-unresolved', ['item-ambiguous'])
-      ).rejects.toThrow(/identity review/i);
+        ChangeProposalService.createProposalFromItems({
+          shopId: 'shop-1',
+          sourceUrl: 'https://example.com',
+          items: [
+            {
+              entityType: 'motorcycle',
+              action: 'update',
+              entityId: 'bike-1',
+              proposedData: { year: 2024 },
+            },
+            {
+              entityType: 'motorcycle',
+              action: 'delist',
+              entityId: 'bike-1',
+            },
+          ],
+        })
+      ).rejects.toThrow(/Duplicate entityId 'bike-1'/i);
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue({
+        from: jest.fn(() => ({
+          select: jest.fn().mockReturnValue({
+            in: jest.fn().mockResolvedValue({
+              data: [{ id: 'bike-other-shop', shop_id: 'shop-other' }],
+              error: null,
+            }),
+          }),
+        })),
+      });
+
+      await expect(
+        ChangeProposalService.createProposalFromItems({
+          shopId: 'shop-1',
+          sourceUrl: 'https://example.com',
+          items: [
+            {
+              entityType: 'motorcycle',
+              action: 'update',
+              entityId: 'bike-other-shop',
+              proposedData: { year: 2024 },
+            },
+          ],
+        })
+      ).rejects.toThrow(/does not belong to shop 'shop-1'/i);
     });
 
-    it('resolves an identity_review item to update an existing motorcycle, recomputes the diff, and deletes the superseded delist item', async () => {
-      const proposalData = {
-        id: 'prop-resolve',
-        shop_id: 'abc85b6d-9b86-40fa-98a5-f3bc91b9a48c',
-        status: 'pending',
-      };
-
-      const itemsData = [
-        {
-          id: 'item-add-qbix',
-          proposal_id: 'prop-resolve',
-          entity_type: 'motorcycle',
-          action: 'add',
-          entity_id: null,
-          brand_name: 'Yamaha',
-          model_name: 'QBIX',
-          original_data: null,
-          proposed_data: {
-            brand: 'Yamaha',
-            modelName: 'QBIX',
-            year: 2022,
-            rates: [{ minDays: 1, ratePerDay: 12, currency: 'USD' }],
-          },
-          diff_summary: {
-            status: { old: null, new: 'new_listing' },
-            rates: { old: null, new: [{ minDays: 1, ratePerDay: 12, currency: 'USD' }] },
-            identity_review: {
-              needsReview: true,
-              reason: 'likely_replacement',
-              candidates: [
-                {
-                  id: '7d316bb8-4f40-459c-a7ad-bfc445d8c851',
-                  brand_name: 'Honda',
-                  model_name: 'QBIX',
-                  year: 2022,
-                  engine_capacity_cc: null,
-                  source_url:
-                    'https://siemreapscooterrental.com/index.php/bike-rental/honda-qbix-2022/',
-                  rates: [{ min_days: 1, max_days: null, rate_per_day: 17 }],
-                },
-              ],
-            },
-          },
-          status: 'pending',
-        },
-        {
-          id: 'item-delist-qbix',
-          proposal_id: 'prop-resolve',
-          entity_type: 'motorcycle',
-          action: 'delist',
-          entity_id: '7d316bb8-4f40-459c-a7ad-bfc445d8c851',
-          brand_name: 'Honda',
-          model_name: 'QBIX',
-          original_data: {
-            year: 2022,
-            rates: [{ min_days: 1, max_days: null, rate_per_day: 17 }],
-          },
-          proposed_data: { availability_status: 'unavailable' },
-          diff_summary: { availability_status: { old: 'available', new: 'unavailable' } },
-          status: 'pending',
-        },
-      ];
-
-      let updatedItemPayload: any = null;
-      let deletedItemIds: string[] = [];
-      let updatedSummaryCounts: any = null;
+    it('applies rental_shop inclusions and conditions from proposed_data vs original_data when diff_summary is omitted', async () => {
+      const insertedInclusions: any[] = [];
+      const deletedInclusions: string[] = [];
 
       const mockSupabase = {
         from: jest.fn((table: string) => {
@@ -1944,173 +1729,62 @@ describe('Change Proposal Application & Geodata Protection', () => {
             return {
               select: jest.fn().mockReturnValue({
                 eq: jest.fn().mockReturnValue({
-                  single: jest.fn().mockResolvedValue({ data: proposalData, error: null }),
-                }),
-              }),
-              update: jest.fn((payload: any) => {
-                updatedSummaryCounts = payload.summary_counts;
-                return {
-                  eq: jest.fn().mockResolvedValue({ error: null }),
-                };
-              }),
-            };
-          }
-          if (table === 'change_proposal_items') {
-            return {
-              select: jest.fn().mockReturnValue({
-                eq: jest.fn().mockResolvedValue({ data: itemsData, error: null }),
-              }),
-              update: jest.fn((payload: any) => {
-                updatedItemPayload = payload;
-                return {
-                  eq: jest.fn().mockResolvedValue({ error: null }),
-                };
-              }),
-              delete: jest.fn(() => ({
-                in: jest.fn((_col: string, ids: string[]) => {
-                  deletedItemIds = ids;
-                  return Promise.resolve({ error: null });
-                }),
-              })),
-            };
-          }
-          return {};
-        }),
-      };
-
-      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
-
-      const resolved = await ChangeProposalService.resolveIdentityReview('prop-resolve', {
-        itemId: 'item-add-qbix',
-        resolution: 'update_existing',
-        targetMotorcycleId: '7d316bb8-4f40-459c-a7ad-bfc445d8c851',
-      });
-
-      expect(resolved.success).toBe(true);
-      expect(updatedItemPayload).toMatchObject({
-        action: 'update',
-        entity_id: '7d316bb8-4f40-459c-a7ad-bfc445d8c851',
-        brand_name: 'Yamaha',
-        model_name: 'QBIX',
-      });
-      expect(updatedItemPayload.diff_summary.brand).toEqual({ old: 'Honda', new: 'Yamaha' });
-      expect(updatedItemPayload.diff_summary.identity_review.needsReview).toBe(false);
-      expect(deletedItemIds).toEqual(['item-delist-qbix']);
-      expect(updatedSummaryCounts).toEqual({
-        add: 0,
-        update: 1,
-        delist: 0,
-        unchanged: 0,
-      });
-    });
-
-    it('retires merged duplicate records with merged_into_id and appends retired source_url to surviving source_url_aliases when applying a merge_duplicates update', async () => {
-      const proposalData = {
-        id: 'prop-merge',
-        shop_id: 'abc85b6d-9b86-40fa-98a5-f3bc91b9a48c',
-        status: 'pending',
-      };
-
-      const itemsData = [
-        {
-          id: 'item-merge-pg1',
-          proposal_id: 'prop-merge',
-          entity_type: 'motorcycle',
-          action: 'update',
-          entity_id: '9500f956-4eb1-403f-bd52-de60fe6818f7',
-          brand_name: 'Yamaha',
-          model_name: 'PG-1',
-          original_data: {
-            year: 2024,
-            source_url:
-              'https://siemreapscooterrental.com/index.php/bike-rental/yamaha-pg-1-125-cc-semi-automatic-brand-new-2024-14-21-days/',
-            rates: [{ min_days: 1, max_days: null, rate_per_day: 21 }],
-          },
-          proposed_data: {
-            existingMotorcycleId: '9500f956-4eb1-403f-bd52-de60fe6818f7',
-            mergeDuplicateIds: ['74a83430-2e1c-47af-ae9b-fb788a01367a'],
-            brand: 'Yamaha',
-            modelName: 'PG-1',
-            year: 2026,
-            rates: [{ minDays: 1, ratePerDay: 21, currency: 'USD' }],
-          },
-          diff_summary: {
-            year: { old: 2024, new: 2026 },
-            identity_review: {
-              needsReview: false,
-              resolution: 'merge_duplicates',
-              targetMotorcycleId: '9500f956-4eb1-403f-bd52-de60fe6818f7',
-              duplicateMotorcycleIds: ['74a83430-2e1c-47af-ae9b-fb788a01367a'],
-            },
-          },
-          status: 'pending',
-        },
-      ];
-
-      const rentalUpdatesById: Record<string, any> = {};
-
-      const mockSupabase = {
-        from: jest.fn((table: string) => {
-          if (table === 'change_proposals') {
-            return {
-              select: jest.fn().mockReturnValue({
-                eq: jest.fn().mockReturnValue({
-                  single: jest.fn().mockResolvedValue({ data: proposalData, error: null }),
-                }),
-              }),
-              update: jest.fn().mockReturnValue({
-                eq: jest.fn().mockResolvedValue({ error: null }),
-              }),
-            };
-          }
-          if (table === 'change_proposal_items') {
-            return {
-              select: jest.fn().mockReturnValue({
-                eq: jest.fn().mockResolvedValue({ data: itemsData, error: null }),
-              }),
-              update: jest.fn().mockReturnValue({
-                eq: jest.fn().mockResolvedValue({ error: null }),
-                in: jest.fn().mockResolvedValue({ error: null }),
-              }),
-            };
-          }
-          if (table === 'motorcycle_rentals') {
-            return {
-              select: jest.fn().mockReturnValue({
-                eq: jest.fn((_col: string, id: string) => ({
-                  maybeSingle: jest.fn().mockResolvedValue({
-                    data:
-                      id === '9500f956-4eb1-403f-bd52-de60fe6818f7'
-                        ? {
-                            id,
-                            source_url:
-                              'https://siemreapscooterrental.com/index.php/bike-rental/yamaha-pg-1-125-cc-semi-automatic-brand-new-2024-14-21-days/',
-                            specifications_details: { raw_shop_model: 'PG 1' },
-                          }
-                        : {
-                            id,
-                            source_url:
-                              'https://siemreapscooterrental.com/index.php/bike-rental/yamaha-pg1-2024-125-cc-semi-automatic/',
-                            specifications_details: { raw_shop_model: 'PG1' },
-                          },
+                  single: jest.fn().mockResolvedValue({
+                    data: { id: 'prop-shop-fallback', shop_id: 'shop-1', status: 'pending' },
                     error: null,
                   }),
-                })),
-              }),
-              update: jest.fn((payload: any) => ({
-                eq: jest.fn((_col: string, id: string) => {
-                  rentalUpdatesById[id] = { ...(rentalUpdatesById[id] || {}), ...payload };
-                  return Promise.resolve({ error: null });
                 }),
-              })),
-            };
-          }
-          if (table === 'rental_rate_tiers') {
-            return {
-              delete: jest.fn().mockReturnValue({
+              }),
+              update: jest.fn().mockReturnValue({
                 eq: jest.fn().mockResolvedValue({ error: null }),
               }),
-              insert: jest.fn().mockResolvedValue({ error: null }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: 'item-shop-fallback',
+                      proposal_id: 'prop-shop-fallback',
+                      entity_type: 'rental_shop',
+                      action: 'update',
+                      entity_id: 'shop-1',
+                      brand_name: 'Shop Profile',
+                      model_name: 'General Information & Policies',
+                      original_data: {
+                        inclusions: ['2 Helmets', 'Old Paper Map'],
+                      },
+                      proposed_data: {
+                        inclusions: ['2 Helmets', 'Phone Holder'],
+                      },
+                      diff_summary: null,
+                      status: 'pending',
+                    },
+                  ],
+                  error: null,
+                }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'rental_shop_inclusions') {
+            return {
+              insert: jest.fn((rows: any[]) => {
+                insertedInclusions.push(...rows);
+                return Promise.resolve({ error: null });
+              }),
+              delete: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  in: jest.fn((_col: string, vals: string[]) => {
+                    deletedInclusions.push(...vals);
+                    return Promise.resolve({ error: null });
+                  }),
+                }),
+              }),
             };
           }
           return {};
@@ -2119,31 +1793,11 @@ describe('Change Proposal Application & Geodata Protection', () => {
 
       (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
 
-      const res = await ChangeProposalService.apply('prop-merge', ['item-merge-pg1']);
-
+      const res = await ChangeProposalService.apply('prop-shop-fallback', ['item-shop-fallback']);
       expect(res.success).toBe(true);
-      // Duplicate record soft-retired with merged_into_id
-      expect(rentalUpdatesById['74a83430-2e1c-47af-ae9b-fb788a01367a']).toEqual({
-        availability_status: 'unavailable',
-        specifications_details: {
-          raw_shop_model: 'PG1',
-          merged_into_id: '9500f956-4eb1-403f-bd52-de60fe6818f7',
-        },
-      });
-      // Surviving record updated with retired source_url in source_url_aliases
-      expect(rentalUpdatesById['9500f956-4eb1-403f-bd52-de60fe6818f7']).toMatchObject({
-        year: 2026,
-        specifications_details: {
-          raw_shop_model: 'PG 1',
-          source_url_aliases: [
-            'https://siemreapscooterrental.com/index.php/bike-rental/yamaha-pg1-2024-125-cc-semi-automatic/',
-          ],
-        },
-      });
+      expect(insertedInclusions).toEqual([{ shop_id: 'shop-1', inclusion_text: 'Phone Holder' }]);
+      expect(deletedInclusions).toEqual(['Old Paper Map']);
     });
   });
 });
-
-
-
 

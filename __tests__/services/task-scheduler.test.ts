@@ -7,6 +7,11 @@ import {
   CADENCE_DAYS,
   TaskSchedulerService,
 } from '@/services/task-scheduler';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
+
+jest.mock('@/lib/supabase/admin', () => ({
+  getSupabaseAdmin: jest.fn(),
+}));
 
 describe('TaskSchedulerService', () => {
   describe('calculateUrgencyScore', () => {
@@ -89,4 +94,126 @@ describe('TaskSchedulerService', () => {
       expect(scored.map(s => s.id)).toEqual(['2', '3', '1']);
     });
   });
+
+  describe('getDueTasks baseline enrichment and shopId filtering', () => {
+    it('returns full existingInventory and currentShop baseline for due tasks and supports filtering by shopId', async () => {
+      (getSupabaseAdmin as jest.Mock).mockReturnValue({
+        from: jest.fn((table: string) => {
+          if (table === 'shop_agent_configs') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: 'task-cfg-1',
+                      shop_id: 'shop-1',
+                      tier: 1,
+                      source_url: 'https://siemreapscooterrental.com/',
+                      extraction_hints: 'Check table rates',
+                      is_active: true,
+                      last_run_at: '2026-10-01T00:00:00Z',
+                      created_at: '2026-01-01T00:00:00Z',
+                      consecutive_errors: 0,
+                      rental_shops: {
+                        id: 'shop-1',
+                        provider_name: 'Siem Reap Scooter Rental',
+                        business_description: 'Scooter rentals in Siem Reap',
+                        phone: '+855 12 345 678',
+                        website: 'https://siemreapscooterrental.com/',
+                      },
+                    },
+                  ],
+                  error: null,
+                }),
+              }),
+            };
+          }
+          if (table === 'brands') {
+            return {
+              select: jest.fn().mockReturnValue({
+                order: jest.fn().mockResolvedValue({
+                  data: [{ name: 'Honda' }, { name: 'Yamaha' }],
+                  error: null,
+                }),
+              }),
+            };
+          }
+          if (table === 'motorcycle_rentals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                in: jest.fn().mockReturnValue({
+                  or: jest.fn().mockResolvedValue({
+                    data: [
+                      {
+                        id: 'bike-1',
+                        shop_id: 'shop-1',
+                        model: 'PG-1',
+                        year: 2024,
+                        year_to: 2026,
+                        engine_capacity_cc: 115,
+                        availability_status: 'available',
+                        source_url: 'https://siemreapscooterrental.com/pg-1',
+                        brands: { name: 'Yamaha' },
+                        rental_rate_tiers: [
+                          { min_days: 1, max_days: 6, rate_per_day: 12, currency: 'USD' },
+                        ],
+                      },
+                    ],
+                    error: null,
+                  }),
+                }),
+              }),
+            };
+          }
+          if (table === 'rental_shop_inclusions') {
+            return {
+              select: jest.fn().mockReturnValue({
+                in: jest.fn().mockResolvedValue({
+                  data: [{ shop_id: 'shop-1', inclusion_text: '2 helmets included' }],
+                  error: null,
+                }),
+              }),
+            };
+          }
+          if (table === 'rental_shop_conditions') {
+            return {
+              select: jest.fn().mockReturnValue({
+                in: jest.fn().mockResolvedValue({
+                  data: [{ shop_id: 'shop-1', condition_value: 'Passport or cash deposit' }],
+                  error: null,
+                }),
+              }),
+            };
+          }
+          return {};
+        }),
+      });
+
+      const tasks = await TaskSchedulerService.getDueTasks({ shopId: 'shop-1' });
+      expect(tasks).toHaveLength(1);
+      expect(tasks[0].existingInventory).toEqual([
+        {
+          id: 'bike-1',
+          brand: 'Yamaha',
+          model: 'PG-1',
+          year: 2024,
+          year_to: 2026,
+          engineCapacityCc: 115,
+          availabilityStatus: 'available',
+          sourceUrl: 'https://siemreapscooterrental.com/pg-1',
+          rates: [{ minDays: 1, maxDays: 6, ratePerDay: 12, currency: 'USD' }],
+        },
+      ]);
+      expect(tasks[0].currentShop).toEqual({
+        id: 'shop-1',
+        providerName: 'Siem Reap Scooter Rental',
+        businessDescription: 'Scooter rentals in Siem Reap',
+        phone: '+855 12 345 678',
+        website: 'https://siemreapscooterrental.com/',
+        inclusions: ['2 helmets included'],
+        conditions: ['Passport or cash deposit'],
+      });
+    });
+  });
 });
+

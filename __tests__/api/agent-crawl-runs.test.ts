@@ -9,16 +9,23 @@ import { ChangeProposalService } from '@/services/change-proposals';
 import { TaskSchedulerService } from '@/services/task-scheduler';
 import { recordCrawlRun } from '@/services/crawl-runs';
 
-jest.mock('@/services/change-proposals', () => ({
-  ChangeProposalService: {
-    createProposalFromCrawl: jest.fn(),
-  },
-}));
+jest.mock('@/services/change-proposals', () => {
+  const actual = jest.requireActual('@/services/change-proposals');
+  return {
+    GeodataImmutabilityError: actual.GeodataImmutabilityError,
+    ProposalItemValidationError: actual.ProposalItemValidationError,
+    ChangeProposalService: {
+      createProposalFromItems: jest.fn(),
+    },
+  };
+});
 
 jest.mock('@/services/task-scheduler', () => ({
   TaskSchedulerService: {
     updateTaskStatus: jest.fn(),
   },
+  extractLearnedAgentConfig: jest.fn(),
+  updateShopLearnedConfig: jest.fn(),
 }));
 
 jest.mock('@/services/crawl-runs', () => ({
@@ -42,12 +49,10 @@ describe('Agent Crawl Runs Integration', () => {
 
   describe('Proposal Ingestion creates Crawl Run', () => {
     it('inserts a success crawl_run record when proposal is staged', async () => {
-      (ChangeProposalService.createProposalFromCrawl as jest.Mock).mockResolvedValue({
+      (ChangeProposalService.createProposalFromItems as jest.Mock).mockResolvedValue({
         proposal: { id: 'prop-uuid-999', status: 'pending' },
-        diff: {
-          items: [{ action: 'add', model_name: 'Forza 350' }],
-          summaryCounts: { add: 1, update: 0, delist: 0 },
-        },
+        itemsCount: 2,
+        summaryCounts: { add: 1, update: 0, delist: 0, unchanged: 1 },
       });
       (recordCrawlRun as jest.Mock).mockResolvedValue({ id: 'crawl-run-1' });
 
@@ -61,9 +66,21 @@ describe('Agent Crawl Runs Integration', () => {
           shopId: 'shop-uuid-1',
           sourceUrl: 'https://rentalshop.com/bikes',
           agentRunId: 'hermes-run-42',
-          bikes: [
-            { brand: 'Honda', modelName: 'Forza 350' },
-            { brand: 'Yamaha', modelName: 'NMAX 155' },
+          items: [
+            {
+              entityType: 'motorcycle',
+              action: 'add',
+              brandName: 'Honda',
+              modelName: 'Forza 350',
+              proposedData: { brand: 'Honda', model: 'Forza 350', rates: [] },
+            },
+            {
+              entityType: 'motorcycle',
+              action: 'unchanged',
+              entityId: 'bike-uuid-2',
+              brandName: 'Yamaha',
+              modelName: 'NMAX 155',
+            },
           ],
         }),
       });
@@ -77,7 +94,7 @@ describe('Agent Crawl Runs Integration', () => {
         status: 'success',
         proposalId: 'prop-uuid-999',
         agentRunId: 'hermes-run-42',
-        metadata: { bikesCount: 2 },
+        metadata: { itemsCount: 2 },
       });
     });
   });

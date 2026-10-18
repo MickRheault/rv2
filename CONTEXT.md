@@ -5,12 +5,12 @@ Global motorcycle rental aggregator platform connecting riders with rental shops
 ## Language
 
 **Change Proposal**:
-A staged set of proposed additions, updates, or removals to a rental shop's inventory and rates produced from a single ingestion run, awaiting review or automated application.
-_Avoid_: Scrape proposal, crawl diff, patch request
+A staged batch of agent-authored Change Proposal Items (`add`, `update`, `delist`, and `unchanged`) for a rental shop produced by comparing the shop's website against its current RideVault database baseline, awaiting administrator review and application.
+_Avoid_: Scrape proposal, raw snapshot diff, patch request
 
 **Change Proposal Item**:
-An individual inventory record or proposed action (create, update, delist, or unchanged confirmed inventory) targeting a specific motorcycle listing, rate, condition, or shop property within a Change Proposal.
-_Avoid_: Diff item, patch row, mutation entry
+An explicit proposed action (`add`, `update`, `delist`, or `unchanged`) submitted by an ingestion agent targeting a specific motorcycle listing (`entity_id`) or rental shop profile within a Change Proposal, carrying the item's `original_data`, `proposed_data`, and `diff_summary`.
+_Avoid_: Heuristic diff item, patch row, mutation entry
 
 **Shop Agent Config**:
 Per-shop configuration defining target source URL, crawl cadence tier (Tier 1 = weekly, Tier 2 = monthly, Tier 3 = bi-monthly), extraction hints, and active status for automated ingestion agents.
@@ -31,12 +31,4 @@ _Avoid_: Generation string, year suffix in model name, open-ended year
 **Recovery Snapshot**:
 A full, self-contained SQL dump of the `public` and `auth` database schemas and data, compressed and GPG-encrypted for point-in-time disaster recovery.
 _Avoid_: Partial dump, unencrypted export, table CSV
-
-**Source Offer Identity**:
-The stable external identity of a shop's motorcycle rental offer—anchored by an explicit target motorcycle record ID, the offer's canonical source page URL, or a verified historical source URL alias—used to match incoming crawl snapshots to existing listings even when editable attributes (brand, model spelling, model year, or rates) are corrected.
-_Avoid_: Brand-model primary key, URL guess, title-only identity
-
-**Identity Review**:
-An explicit review state on a Change Proposal Item indicating that an incoming motorcycle snapshot matches multiple existing shop listings or forms a likely replacement pair with an unmatched existing listing, requiring an administrator to choose between updating a specific existing motorcycle, creating a genuinely new listing, or merging duplicate listings into a surviving record before the proposal can be applied.
-_Avoid_: Silent first-match fallback, unlinked delist-and-add pair
 

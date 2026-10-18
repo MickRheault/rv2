@@ -82,7 +82,24 @@ describe('Agent Tasks API Endpoints', () => {
       const json = await response.json();
       expect(json.success).toBe(true);
       expect(json.tasks).toEqual(mockTasks);
-      expect(TaskSchedulerService.getDueTasks).toHaveBeenCalledWith({ limit: 5 });
+      expect(TaskSchedulerService.getDueTasks).toHaveBeenCalledWith({ limit: 5, shopId: undefined });
+    });
+
+    it('forwards shopId query parameter to TaskSchedulerService.getDueTasks', async () => {
+      (TaskSchedulerService.getDueTasks as jest.Mock).mockResolvedValue([]);
+
+      const request = new NextRequest('http://localhost:3000/api/agent/tasks?shopId=shop-42&limit=1', {
+        headers: {
+          authorization: 'Bearer valid-agent-key-secret',
+        },
+      });
+
+      const response = await GET(request);
+      expect(response.status).toBe(200);
+      expect(TaskSchedulerService.getDueTasks).toHaveBeenCalledWith({
+        limit: 1,
+        shopId: 'shop-42',
+      });
     });
   });
 
