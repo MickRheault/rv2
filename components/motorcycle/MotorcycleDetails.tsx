@@ -18,6 +18,7 @@ import { StarIcon as StarSolid } from '@heroicons/react/24/solid'
 import { Card, CardHeader, CardTitle, CardContent, Badge, Button } from '@/components/ui'
 import { FlagButton } from '@/components/common/FlagButton'
 import { MotorcycleWithDetails } from '@/services/motorcycles'
+import { isMotorcycleAvailable } from '@/services/shops'
 import { getShopUrl } from '@/lib/utils/urls'
 import { formatMotorcycleYear } from '@/lib/utils'
 import SameModelWidget from '@/components/motorcycle/SameModelWidget'
@@ -39,7 +40,6 @@ export default function MotorcycleDetails({
     engine_capacity_cc,
     rental_rate_per_day,
     rental_rate_currency,
-    availability_status,
     brands,
     categories,
     rental_shops,
@@ -124,7 +124,7 @@ export default function MotorcycleDetails({
             <h1 className="text-3xl font-bold text-gray-900">
               {brands?.name} {model}
             </h1>
-            {availability_status === 'unavailable' && (
+            {!isMotorcycleAvailable(motorcycle) && (
               <Badge variant="default" className="bg-amber-50 text-amber-800 border border-amber-200">
                 Currently Unavailable
               </Badge>

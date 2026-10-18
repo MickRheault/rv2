@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/Table'
 import { formatCurrency, formatMotorcycleYear, cn } from '@/lib/utils'
 import { Button } from '@/components/ui'
+import { filterAvailableMotorcycles } from '@/services/shops'
 
 interface MotorcycleTableProps {
     motorcycles: any[]
@@ -55,8 +56,7 @@ export default function MotorcycleTable({
     }
 
     const availableMotorcycles = useMemo(() => {
-        if (!motorcycles) return []
-        return motorcycles.filter((m) => m?.availability_status !== 'unavailable')
+        return filterAvailableMotorcycles(motorcycles)
     }, [motorcycles])
 
     // Sort motorcycles based on sortConfig

@@ -107,28 +107,60 @@ describe('Unavailable Motorcycles Public Filtering (#151)', () => {
         'bike-null-status-1',
       ]);
     });
+
+    it('excludes availability_status = "unavailable" in getShopsWithCounts', async () => {
+      const orCalls: string[] = [];
+      jest.spyOn(shopService, 'getShops').mockResolvedValueOnce({
+        shops: [{ id: 'shop-1', provider_name: 'Siem Reap Scooter Rental' } as any],
+        total: 1,
+      });
+
+      (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === 'motorcycle_rentals') {
+          const countBuilder: any = {
+            select: jest.fn(() => countBuilder),
+            eq: jest.fn(() => countBuilder),
+            or: jest.fn((expr: string) => {
+              orCalls.push(expr);
+              return Promise.resolve({ count: 2, error: null });
+            }),
+          };
+          return countBuilder;
+        }
+        return { select: jest.fn() };
+      });
+
+      const res = await shopService.getShopsWithCounts({});
+      expect(orCalls).toContain('availability_status.is.null,availability_status.neq.unavailable');
+      expect(res.shops[0].motorcycle_count).toBe(2);
+    });
   });
 
   describe('motorcycleService public search and direct URL behavior', () => {
-    it('excludes availability_status = "unavailable" in getSearchTableMotorcycles and getMotorcycles', async () => {
+    it('excludes availability_status = "unavailable" in getSearchTableMotorcycles, getMotorcycles, searchMotorcycles, getMotorcyclesByShop, getSameModelMotorcyclesInCountry, getPriceRange, and getEngineCapacityRange', async () => {
       const orCalls: string[] = [];
 
       const createQueryMock = (rows: any[]) => {
+        const resultPromise = Promise.resolve({
+          data: rows,
+          count: rows.length,
+          error: null,
+        });
         const builder: any = {
           select: jest.fn(() => builder),
           in: jest.fn(() => builder),
           eq: jest.fn(() => builder),
+          neq: jest.fn(() => builder),
+          not: jest.fn(() => builder),
           ilike: jest.fn(() => builder),
           or: jest.fn((expr: string) => {
             orCalls.push(expr);
             return builder;
           }),
           order: jest.fn(() => builder),
-          range: jest.fn().mockResolvedValue({
-            data: rows,
-            count: rows.length,
-            error: null,
-          }),
+          limit: jest.fn(() => builder),
+          range: jest.fn(() => resultPromise),
+          then: resultPromise.then.bind(resultPromise),
         };
         return builder;
       };
@@ -143,8 +175,20 @@ describe('Unavailable Motorcycles Public Filtering (#151)', () => {
         }
         if (table === 'motorcycle_rentals') {
           return createQueryMock([
-            { id: 'bike-avail-1', model: 'QBIX 125', availability_status: 'available' },
-            { id: 'bike-unavail-1', model: 'Wave 110', availability_status: 'unavailable' },
+            {
+              id: 'bike-avail-1',
+              model: 'QBIX 125',
+              rental_rate_per_day: 12,
+              engine_capacity_cc: 125,
+              availability_status: 'available',
+            },
+            {
+              id: 'bike-unavail-1',
+              model: 'Wave 110',
+              rental_rate_per_day: 6,
+              engine_capacity_cc: 110,
+              availability_status: 'unavailable',
+            },
           ]);
         }
         return {};
@@ -158,6 +202,31 @@ describe('Unavailable Motorcycles Public Filtering (#151)', () => {
       const listRes = await motorcycleService.getMotorcycles({});
       expect(orCalls).toContain('availability_status.is.null,availability_status.neq.unavailable');
       expect(listRes.motorcycles.map((m: any) => m.id)).toEqual(['bike-avail-1']);
+
+      orCalls.length = 0;
+      const searchRes = await motorcycleService.searchMotorcycles('QBIX');
+      expect(orCalls).toContain('availability_status.is.null,availability_status.neq.unavailable');
+      expect(searchRes.map((m: any) => m.id)).toEqual(['bike-avail-1']);
+
+      orCalls.length = 0;
+      const byShopRes = await motorcycleService.getMotorcyclesByShop('shop-1');
+      expect(orCalls).toContain('availability_status.is.null,availability_status.neq.unavailable');
+      expect(byShopRes.map((m: any) => m.id)).toEqual(['bike-avail-1']);
+
+      orCalls.length = 0;
+      const sameModelRes = await motorcycleService.getSameModelMotorcyclesInCountry('KH', 'brand-1', 'QBIX 125');
+      expect(orCalls).toContain('availability_status.is.null,availability_status.neq.unavailable');
+      expect(sameModelRes.map((m: any) => m.id)).toEqual(['bike-avail-1']);
+
+      orCalls.length = 0;
+      const priceRange = await motorcycleService.getPriceRange();
+      expect(orCalls).toContain('availability_status.is.null,availability_status.neq.unavailable');
+      expect(priceRange).toEqual({ min: 12, max: 12 });
+
+      orCalls.length = 0;
+      const ccRange = await motorcycleService.getEngineCapacityRange();
+      expect(orCalls).toContain('availability_status.is.null,availability_status.neq.unavailable');
+      expect(ccRange).toEqual({ min: 125, max: 125 });
     });
 
     it('preserves direct lookup in getMotorcycleById for soft-delisted motorcycles (availability_status = "unavailable")', async () => {

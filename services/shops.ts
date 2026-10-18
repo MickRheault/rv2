@@ -107,15 +107,37 @@ function applyActiveStatusFilterSync(query: any, activeStatusIds: number[]): any
   return query.eq('id', 'impossible-id-that-will-never-match')
 }
 
+export const UNAVAILABLE_MOTORCYCLE_STATUS = 'unavailable' as const
+export const AVAILABLE_MOTORCYCLE_OR_FILTER =
+  'availability_status.is.null,availability_status.neq.unavailable'
+
+export function isMotorcycleAvailable(
+  motorcycle: { availability_status?: string | null } | null | undefined
+): boolean {
+  return Boolean(motorcycle) && motorcycle?.availability_status !== UNAVAILABLE_MOTORCYCLE_STATUS
+}
+
+export function applyAvailableMotorcycleFilterSync(query: any): any {
+  if (query && typeof query.or === 'function') {
+    return query.or(AVAILABLE_MOTORCYCLE_OR_FILTER)
+  }
+  return query
+}
+
+export function filterAvailableMotorcycles<T extends { availability_status?: string | null }>(
+  rows: T[] | null | undefined
+): T[] {
+  if (!Array.isArray(rows)) return []
+  return rows.filter((row) => isMotorcycleAvailable(row))
+}
+
 function filterAvailableShopMotorcycles<T extends { motorcycle_rentals?: any[] }>(shop: T): T {
   if (!shop || !Array.isArray(shop.motorcycle_rentals)) {
     return shop
   }
   return {
     ...shop,
-    motorcycle_rentals: shop.motorcycle_rentals.filter(
-      (m: any) => m?.availability_status !== 'unavailable'
-    ),
+    motorcycle_rentals: filterAvailableMotorcycles(shop.motorcycle_rentals),
   }
 }
 
@@ -245,18 +267,16 @@ export const shopService = {
     try {
       const shopIds = filteredData.map(s => s.id)
       if (shopIds.length > 0) {
-        let rentalsCatQuery: any = typedSupabase
-          .from('motorcycle_rentals')
-          .select('shop_id, availability_status, categories ( name )')
-          .in('shop_id', shopIds)
-        if (rentalsCatQuery?.or) {
-          rentalsCatQuery = rentalsCatQuery.or('availability_status.is.null,availability_status.neq.unavailable')
-        }
+        const rentalsCatQuery = applyAvailableMotorcycleFilterSync(
+          typedSupabase
+            .from('motorcycle_rentals')
+            .select('shop_id, availability_status, categories ( name )')
+            .in('shop_id', shopIds)
+        )
         const { data: rentalsWithCats } = await rentalsCatQuery
 
         const shopIdToCategoryNames = new Map<string, Set<string>>()
-        for (const row of rentalsWithCats || []) {
-          if ((row as any).availability_status === 'unavailable') continue
+        for (const row of filterAvailableMotorcycles(rentalsWithCats as any[])) {
           const sid = (row as any).shop_id as string
           const catName = (row as any).categories?.name as string | null
           if (!sid || !catName) continue
@@ -445,13 +465,12 @@ export const shopService = {
     // Add motorcycle count to each shop (excluding unavailable motorcycles)
     const shopsWithCounts = await Promise.all(
       shopsResult.shops.map(async (shop) => {
-        let countQuery: any = typedSupabase
-          .from('motorcycle_rentals')
-          .select('*', { count: 'exact', head: true })
-          .eq('shop_id', shop.id)
-        if (countQuery?.or) {
-          countQuery = countQuery.or('availability_status.is.null,availability_status.neq.unavailable')
-        }
+        const countQuery = applyAvailableMotorcycleFilterSync(
+          typedSupabase
+            .from('motorcycle_rentals')
+            .select('*', { count: 'exact', head: true })
+            .eq('shop_id', shop.id)
+        )
         const { count } = await countQuery
 
         return {

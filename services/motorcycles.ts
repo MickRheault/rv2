@@ -1,7 +1,11 @@
 import { supabase } from '@/lib/supabase/client'
 import { Database } from '@/lib/supabase/database.types'
 import { SupabaseClient } from '@supabase/supabase-js'
-import { ACTIVE_BUSINESS_STATUSES } from './shops'
+import {
+  ACTIVE_BUSINESS_STATUSES,
+  applyAvailableMotorcycleFilterSync,
+  filterAvailableMotorcycles
+} from './shops'
 
 const typedSupabase = supabase as unknown as SupabaseClient<Database>
 
@@ -295,20 +299,6 @@ async function getActiveBusinessStatusIdsForMotorcycles(): Promise<number[]> {
   return ids
 }
 
-function applyAvailableMotorcycleFilterSync(query: any): any {
-  if (query && typeof query.or === 'function') {
-    return query.or('availability_status.is.null,availability_status.neq.unavailable')
-  }
-  return query
-}
-
-function filterAvailableMotorcycles<T extends { availability_status?: string | null }>(
-  rows: T[] | null | undefined
-): T[] {
-  if (!Array.isArray(rows)) return []
-  return rows.filter((row) => row?.availability_status !== 'unavailable')
-}
-
 // Helper function to apply active shop status filter to motorcycle queries
 function applyActiveShopStatusFilterSync(query: any, activeStatusIds: number[]): any {
   query = applyAvailableMotorcycleFilterSync(query)
@@ -409,6 +399,7 @@ export const motorcycleService = {
         engine_capacity_cc,
         rental_rate_per_day,
         rental_rate_currency,
+        availability_status,
         created_at,
         brands (id, name),
         categories (id, name),
@@ -701,17 +692,23 @@ export const motorcycleService = {
 
   // Get price range for filters
   async getPriceRange() {
-    const { data, error } = await typedSupabase
-      .from('motorcycle_rentals')
-      .select('rental_rate_per_day')
-      .not('rental_rate_per_day', 'is', null)
-      .order('rental_rate_per_day')
+    const query = applyAvailableMotorcycleFilterSync(
+      typedSupabase
+        .from('motorcycle_rentals')
+        .select('rental_rate_per_day, availability_status')
+        .not('rental_rate_per_day', 'is', null)
+    ).order('rental_rate_per_day')
+    const { data, error } = await query
 
-    if (error || !data || data.length === 0) {
+    const availableData = filterAvailableMotorcycles(data as any[])
+    if (error || availableData.length === 0) {
       return { min: 0, max: 1000 }
     }
 
-    const prices = data.map((item: any) => item.rental_rate_per_day).filter(Boolean) as number[]
+    const prices = availableData.map((item: any) => item.rental_rate_per_day).filter(Boolean) as number[]
+    if (prices.length === 0) {
+      return { min: 0, max: 1000 }
+    }
     return {
       min: Math.min(...prices),
       max: Math.max(...prices)
@@ -735,17 +732,23 @@ export const motorcycleService = {
 
   // Get engine capacity range for filters
   async getEngineCapacityRange() {
-    const { data, error } = await typedSupabase
-      .from('motorcycle_rentals')
-      .select('engine_capacity_cc')
-      .not('engine_capacity_cc', 'is', null)
-      .order('engine_capacity_cc')
+    const query = applyAvailableMotorcycleFilterSync(
+      typedSupabase
+        .from('motorcycle_rentals')
+        .select('engine_capacity_cc, availability_status')
+        .not('engine_capacity_cc', 'is', null)
+    ).order('engine_capacity_cc')
+    const { data, error } = await query
 
-    if (error || !data || data.length === 0) {
+    const availableData = filterAvailableMotorcycles(data as any[])
+    if (error || availableData.length === 0) {
       return { min: 0, max: 1000 }
     }
 
-    const capacities = data.map((item: any) => item.engine_capacity_cc).filter(Boolean) as number[]
+    const capacities = availableData.map((item: any) => item.engine_capacity_cc).filter(Boolean) as number[]
+    if (capacities.length === 0) {
+      return { min: 0, max: 1000 }
+    }
     return {
       min: Math.min(...capacities),
       max: Math.max(...capacities)
@@ -809,8 +812,8 @@ export const motorcycleService = {
         )
       `)
       .or(`model.ilike.%${searchQuery}%,brands.name.ilike.%${searchQuery}%`)
-      .or('availability_status.is.null,availability_status.neq.unavailable')
-      .limit(limit)
+
+    query = applyAvailableMotorcycleFilterSync(query).limit(limit)
 
     const { data, error } = await query
 
@@ -865,35 +868,44 @@ export const motorcycleService = {
   async getMotorcycleStats() {
     const [totalMotorcycles, avgPrice, topBrand] = await Promise.all([
       // Total motorcycle count
-      typedSupabase
-        .from('motorcycle_rentals')
-        .select('*', { count: 'exact', head: true }),
+      applyAvailableMotorcycleFilterSync(
+        typedSupabase
+          .from('motorcycle_rentals')
+          .select('*', { count: 'exact', head: true })
+      ),
 
       // Average price
-      typedSupabase
-        .from('motorcycle_rentals')
-        .select('rental_rate_per_day')
-        .not('rental_rate_per_day', 'is', null),
+      applyAvailableMotorcycleFilterSync(
+        typedSupabase
+          .from('motorcycle_rentals')
+          .select('rental_rate_per_day, availability_status')
+          .not('rental_rate_per_day', 'is', null)
+      ),
 
       // Most popular brand
-      typedSupabase
-        .from('motorcycle_rentals')
-        .select(`
-          brand_id,
-          brands!inner (name)
-        `)
-        .not('brand_id', 'is', null)
+      applyAvailableMotorcycleFilterSync(
+        typedSupabase
+          .from('motorcycle_rentals')
+          .select(`
+            brand_id,
+            availability_status,
+            brands!inner (name)
+          `)
+          .not('brand_id', 'is', null)
+      )
     ])
 
     // Calculate average price
-    const prices = avgPrice.data?.map((bike: any) => bike.rental_rate_per_day).filter((price: any): price is number => price !== null) || []
+    const prices = filterAvailableMotorcycles(avgPrice.data as any[])
+      .map((bike: any) => bike.rental_rate_per_day)
+      .filter((price: any): price is number => price !== null)
     const averagePrice = prices.length > 0
       ? prices.reduce((sum, price) => sum + price, 0) / prices.length
       : 0
 
     // Calculate brand popularity
     const brandCounts: Record<string, number> = {}
-    topBrand.data?.forEach(bike => {
+    filterAvailableMotorcycles(topBrand.data as any[]).forEach(bike => {
       const brandName = (bike as any).brands.name
       brandCounts[brandName] = (brandCounts[brandName] || 0) + 1
     })
