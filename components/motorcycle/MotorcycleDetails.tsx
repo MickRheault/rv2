@@ -120,10 +120,15 @@ export default function MotorcycleDetails({
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex flex-wrap items-center gap-3 mb-2">
             <h1 className="text-3xl font-bold text-gray-900">
               {brands?.name} {model}
             </h1>
+            {availability_status === 'unavailable' && (
+              <Badge variant="default" className="bg-amber-50 text-amber-800 border border-amber-200">
+                Currently Unavailable
+              </Badge>
+            )}
           </div>
           <div className="flex items-center gap-2 text-gray-600">
             {formattedYear && (

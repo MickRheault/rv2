@@ -295,8 +295,23 @@ async function getActiveBusinessStatusIdsForMotorcycles(): Promise<number[]> {
   return ids
 }
 
+function applyAvailableMotorcycleFilterSync(query: any): any {
+  if (query && typeof query.or === 'function') {
+    return query.or('availability_status.is.null,availability_status.neq.unavailable')
+  }
+  return query
+}
+
+function filterAvailableMotorcycles<T extends { availability_status?: string | null }>(
+  rows: T[] | null | undefined
+): T[] {
+  if (!Array.isArray(rows)) return []
+  return rows.filter((row) => row?.availability_status !== 'unavailable')
+}
+
 // Helper function to apply active shop status filter to motorcycle queries
 function applyActiveShopStatusFilterSync(query: any, activeStatusIds: number[]): any {
+  query = applyAvailableMotorcycleFilterSync(query)
   if (activeStatusIds.length > 0) {
     return query.in('rental_shops.business_status_id', activeStatusIds)
   }
@@ -435,7 +450,7 @@ export const motorcycleService = {
       throw error
     }
 
-    const motorcycles = (data || []) as unknown as MotorcycleWithDetails[]
+    const motorcycles = filterAvailableMotorcycles(data as any[]) as unknown as MotorcycleWithDetails[]
     return {
       motorcycles,
       total: motorcycles.length
@@ -564,7 +579,7 @@ export const motorcycleService = {
       }
 
       // Apply feature filtering
-      const filteredData = (allData || []).filter((motorcycle: any) => {
+      const filteredData = filterAvailableMotorcycles(allData as any[]).filter((motorcycle: any) => {
         const motorcycleFeatures = (motorcycle as any).motorcycle_features || []
         const motorcycleFeatureIds = motorcycleFeatures.map((mf: any) => mf.feature_id)
 
@@ -588,9 +603,10 @@ export const motorcycleService = {
         throw error
       }
 
+      const availableRows = filterAvailableMotorcycles(data as any[]) as MotorcycleWithDetails[]
       return {
-        motorcycles: (data || []) as MotorcycleWithDetails[],
-        total: count || 0 // Use the database count
+        motorcycles: availableRows,
+        total: count ?? availableRows.length // Use the database count
       }
     }
   },
@@ -753,7 +769,8 @@ export const motorcycleService = {
         )
       `)
       .eq('shop_id', shopId)
-      .order('created_at', { ascending: false })
+
+    query = applyAvailableMotorcycleFilterSync(query).order('created_at', { ascending: false })
 
     if (limit) {
       query = query.limit(limit)
@@ -766,12 +783,12 @@ export const motorcycleService = {
       throw error
     }
 
-    return data
+    return filterAvailableMotorcycles(data as any[])
   },
 
   // Search motorcycles by text query
   async searchMotorcycles(searchQuery: string, limit: number = 20) {
-    const { data, error } = await typedSupabase
+    let query: any = typedSupabase
       .from('motorcycle_rentals')
       .select(`
         *,
@@ -792,19 +809,22 @@ export const motorcycleService = {
         )
       `)
       .or(`model.ilike.%${searchQuery}%,brands.name.ilike.%${searchQuery}%`)
+      .or('availability_status.is.null,availability_status.neq.unavailable')
       .limit(limit)
+
+    const { data, error } = await query
 
     if (error) {
       console.error('Error searching motorcycles:', error)
       throw error
     }
 
-    return data as MotorcycleWithDetails[]
+    return filterAvailableMotorcycles(data as any[]) as MotorcycleWithDetails[]
   },
 
   // Get featured/popular motorcycles
   async getFeaturedMotorcycles(limit: number = 10) {
-    const { data, error } = await typedSupabase
+    let query: any = typedSupabase
       .from('motorcycle_rentals')
       .select(`
         *,
@@ -825,16 +845,20 @@ export const motorcycleService = {
         )
       `)
       .not('rental_rate_per_day', 'is', null)
+
+    query = applyAvailableMotorcycleFilterSync(query)
       .order('rental_shops.rating', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false })
       .limit(limit)
+
+    const { data, error } = await query
 
     if (error) {
       console.error('Error fetching featured motorcycles:', error)
       throw error
     }
 
-    return data as MotorcycleWithDetails[]
+    return filterAvailableMotorcycles(data as any[]) as MotorcycleWithDetails[]
   },
 
   // Get motorcycle statistics
@@ -899,6 +923,7 @@ export const motorcycleService = {
         .from('motorcycle_rentals')
         .select(`
           model,
+          availability_status,
           brands!inner (name),
           rental_shops!inner (
             city_id,
@@ -925,9 +950,12 @@ export const motorcycleService = {
         .from('motorcycle_rentals')
         .select(`
           model,
+          availability_status,
           brands!inner (name)
         `)
     }
+
+    query = applyAvailableMotorcycleFilterSync(query)
 
     // Apply other filters
     if (filters?.brandId) {
@@ -947,7 +975,7 @@ export const motorcycleService = {
     // Group by model and count occurrences
     const modelCounts: Record<string, { brandName: string; count: number }> = {}
 
-    data?.forEach(item => {
+    filterAvailableMotorcycles(data as any[]).forEach(item => {
       const { model, brands } = item as any
       const key = `${model}-${brands.name}`
 
@@ -973,6 +1001,7 @@ export const motorcycleService = {
       .select(`
         id,
         model,
+        availability_status,
         brands!inner (
           name
         ),
@@ -1005,7 +1034,7 @@ export const motorcycleService = {
       throw error
     }
 
-    return data
+    return filterAvailableMotorcycles(data as any[])
   },
 
   // ADMIN CRUD OPERATIONS
@@ -1255,7 +1284,7 @@ export const motorcycleService = {
       throw error
     }
 
-    return data as MotorcycleWithDetails[]
+    return filterAvailableMotorcycles(data as MotorcycleWithDetails[])
   },
 
   // Get structured filter options with counts based on current filters
@@ -1274,15 +1303,17 @@ export const motorcycleService = {
       : ''
 
     // Build base query for counting with minimal projection
-    let baseQuery = typedSupabase
-      .from('motorcycle_rentals')
-      .select(`
+    let baseQuery = applyAvailableMotorcycleFilterSync(
+      typedSupabase
+        .from('motorcycle_rentals')
+        .select(`
         id,
         model,
         brand_id,
         category_id,
         rental_rate_per_day,
         engine_capacity_cc,
+        availability_status,
         brands (
           id,
           name
@@ -1296,6 +1327,7 @@ export const motorcycleService = {
           feature_id
         )${locationSelect}
       `)
+    )
 
     // Apply location filters
     if (currentFilters?.cityId) {
@@ -1335,7 +1367,7 @@ export const motorcycleService = {
     const modelCounts: Record<string, { brandName: string; count: number }> = {}
     const featureCounts: Record<string, number> = {}
 
-    motorcycles?.forEach(motorcycle => {
+    filterAvailableMotorcycles(motorcycles as any[])?.forEach(motorcycle => {
       const brand = (motorcycle as any).brands
       const category = (motorcycle as any).categories
       const model = (motorcycle as any).model
@@ -1417,12 +1449,16 @@ export const motorcycleService = {
 
   // Get popular models across all locations
   async getPopularModels(limit: number = 20) {
-    const { data, error } = await typedSupabase
-      .from('motorcycle_rentals')
-      .select(`
-        model,
-        brands!inner (name)
-      `)
+    const query = applyAvailableMotorcycleFilterSync(
+      typedSupabase
+        .from('motorcycle_rentals')
+        .select(`
+          model,
+          availability_status,
+          brands!inner (name)
+        `)
+    )
+    const { data, error } = await query
 
     if (error) {
       console.error('Error fetching popular models:', error)
@@ -1432,7 +1468,7 @@ export const motorcycleService = {
     // Count model occurrences
     const modelCounts: Record<string, { brandName: string; count: number }> = {}
 
-    data?.forEach(item => {
+    filterAvailableMotorcycles(data as any[])?.forEach(item => {
       const model = (item as any).model
       const brandName = (item as any).brands.name
       const key = `${model}|${brandName}`

@@ -107,6 +107,18 @@ function applyActiveStatusFilterSync(query: any, activeStatusIds: number[]): any
   return query.eq('id', 'impossible-id-that-will-never-match')
 }
 
+function filterAvailableShopMotorcycles<T extends { motorcycle_rentals?: any[] }>(shop: T): T {
+  if (!shop || !Array.isArray(shop.motorcycle_rentals)) {
+    return shop
+  }
+  return {
+    ...shop,
+    motorcycle_rentals: shop.motorcycle_rentals.filter(
+      (m: any) => m?.availability_status !== 'unavailable'
+    ),
+  }
+}
+
 export const shopService = {
   // Get paginated shops with filters
   async getShops(filters: ShopSearchFilters = {}) {
@@ -233,13 +245,18 @@ export const shopService = {
     try {
       const shopIds = filteredData.map(s => s.id)
       if (shopIds.length > 0) {
-        const { data: rentalsWithCats } = await typedSupabase
+        let rentalsCatQuery: any = typedSupabase
           .from('motorcycle_rentals')
-          .select('shop_id, categories ( name )')
+          .select('shop_id, availability_status, categories ( name )')
           .in('shop_id', shopIds)
+        if (rentalsCatQuery?.or) {
+          rentalsCatQuery = rentalsCatQuery.or('availability_status.is.null,availability_status.neq.unavailable')
+        }
+        const { data: rentalsWithCats } = await rentalsCatQuery
 
         const shopIdToCategoryNames = new Map<string, Set<string>>()
         for (const row of rentalsWithCats || []) {
+          if ((row as any).availability_status === 'unavailable') continue
           const sid = (row as any).shop_id as string
           const catName = (row as any).categories?.name as string | null
           if (!sid || !catName) continue
@@ -302,7 +319,7 @@ export const shopService = {
       throw new Error('Shop not found or not available')
     }
 
-    return data as ShopWithMotorcycles
+    return filterAvailableShopMotorcycles(data as ShopWithMotorcycles)
   },
 
   // Get shop by slug
@@ -347,7 +364,7 @@ export const shopService = {
       throw new Error('Shop not found or not available')
     }
 
-    return data as ShopWithMotorcycles
+    return filterAvailableShopMotorcycles(data as ShopWithMotorcycles)
   },
 
   // Get shop by location and slug (for new URL structure)
@@ -418,20 +435,24 @@ export const shopService = {
       throw new Error('Shop not found or not available')
     }
 
-    return data as ShopWithMotorcycles
+    return filterAvailableShopMotorcycles(data as ShopWithMotorcycles)
   },
 
   // Get shops with motorcycle count for overview/stats
   async getShopsWithCounts(filters: ShopSearchFilters = {}) {
     const shopsResult = await this.getShops(filters)
 
-    // Add motorcycle count to each shop
+    // Add motorcycle count to each shop (excluding unavailable motorcycles)
     const shopsWithCounts = await Promise.all(
       shopsResult.shops.map(async (shop) => {
-        const { count } = await typedSupabase
+        let countQuery: any = typedSupabase
           .from('motorcycle_rentals')
           .select('*', { count: 'exact', head: true })
           .eq('shop_id', shop.id)
+        if (countQuery?.or) {
+          countQuery = countQuery.or('availability_status.is.null,availability_status.neq.unavailable')
+        }
+        const { count } = await countQuery
 
         return {
           ...shop,
