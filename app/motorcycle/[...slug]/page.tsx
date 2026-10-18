@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ArrowLeftIcon } from '@heroicons/react/24/outline'
 
 import { motorcycleService } from '@/services/motorcycles'
+import { isMotorcycleAvailable } from '@/services/shops'
 import { locationService } from '@/services/locations'
 import MotorcycleDetails from '@/components/motorcycle/MotorcycleDetails'
 import MotorcycleCard from '@/components/motorcycle/MotorcycleCard'
@@ -164,7 +165,7 @@ async function renderMotorcycleDetails(id: string) {
             image: (motorcycle as any).motorcycle_images?.[0]?.images?.url || undefined,
             features: (motorcycle as any).motorcycle_features?.map((f: any) => f.features?.name).filter(Boolean),
             engineSize: (motorcycle as any).engine_capacity_cc || undefined,
-            availability: true,
+            availability: isMotorcycleAvailable(motorcycle as any),
             // Enhanced data from rental rate tiers
             rentalRates: (motorcycle as any).rental_rate_tiers?.map((tier: any) => ({
                 rateText: `${tier.min_days}-${tier.max_days || '+'} day rate`,

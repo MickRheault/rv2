@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/Table'
 import { formatCurrency, formatMotorcycleYear, cn } from '@/lib/utils'
 import { Button } from '@/components/ui'
+import { filterAvailableMotorcycles } from '@/services/shops'
 
 interface MotorcycleTableProps {
     motorcycles: any[]
@@ -54,11 +55,15 @@ export default function MotorcycleTable({
         return motorcycle.rental_rate_per_day || 0
     }
 
+    const availableMotorcycles = useMemo(() => {
+        return filterAvailableMotorcycles(motorcycles)
+    }, [motorcycles])
+
     // Sort motorcycles based on sortConfig
     const sortedMotorcycles = useMemo(() => {
-        if (!motorcycles) return []
-        if (!sortConfig) return motorcycles
-        return [...motorcycles].sort((a, b) => {
+        if (!availableMotorcycles.length) return []
+        if (!sortConfig) return availableMotorcycles
+        return [...availableMotorcycles].sort((a, b) => {
             let valA: any = ''
             let valB: any = ''
 
@@ -89,9 +94,9 @@ export default function MotorcycleTable({
             if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1
             return 0
         })
-    }, [motorcycles, sortConfig])
+    }, [availableMotorcycles, sortConfig])
 
-    if (!motorcycles || motorcycles.length === 0) return null
+    if (availableMotorcycles.length === 0) return null
 
     const requestSort = (key: SortKey) => {
         let direction: SortDirection = 'asc'
@@ -118,7 +123,7 @@ export default function MotorcycleTable({
                 <div className="flex items-center gap-2">
                     <BuildingStorefrontIcon className="w-5 h-5 text-gray-400" />
                     <h2 className="text-lg md:text-2xl font-bold text-gray-900">
-                        {title || `Motorcycles Available (${motorcycles.length})`}
+                        {title || `Motorcycles Available (${availableMotorcycles.length})`}
                     </h2>
                 </div>
 
