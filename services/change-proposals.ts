@@ -623,7 +623,9 @@ export class ChangeProposalService {
     // Partition actionable mutation items from unchanged informational items
     const mutableItems = allItems.filter((i) => isActionableProposalAction(i.action));
     const previouslyAppliedItems = mutableItems.filter((i) => i.status === 'applied');
-    const pendingMutableItems = mutableItems.filter((i) => i.status !== 'applied');
+    const pendingMutableItems = mutableItems.filter(
+      (i) => !i.status || i.status === 'pending'
+    );
     const approvedItems = pendingMutableItems.filter((i) => approvedSet.has(i.id));
 
     // 3. Validate geodata immutability across all approved items

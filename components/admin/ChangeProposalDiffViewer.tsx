@@ -433,6 +433,18 @@ export function ChangeProposalDiffViewer({
     proposal.status === 'partially_applied' ||
     proposal.status === 'rejected';
 
+  const renderPendingItemCheckbox = (item: DiffViewerItem) => {
+    if (isCompleted || item.status !== 'pending') return null;
+    return (
+      <div className="pt-1">
+        <Checkbox
+          checked={selectedIds.has(item.id)}
+          onChange={() => toggleItem(item.id)}
+        />
+      </div>
+    );
+  };
+
   const resolvedShopUrl =
     proposal.shop_url ||
     (proposal.rental_shops?.slug ? getShopUrl(proposal.rental_shops as any) : undefined);
@@ -584,14 +596,7 @@ export function ChangeProposalDiffViewer({
                   key={item.id}
                   className="py-3 flex items-start gap-3 hover:bg-gray-50 px-2 rounded-lg transition-colors"
                 >
-                  {!isCompleted && item.status === 'pending' && (
-                    <div className="pt-1">
-                      <Checkbox
-                        checked={selectedIds.has(item.id)}
-                        onChange={() => toggleItem(item.id)}
-                      />
-                    </div>
-                  )}
+                  {renderPendingItemCheckbox(item)}
                   <div className="flex-1 text-sm">
                     <div className="flex items-center gap-2 flex-wrap">
                       <div className="font-semibold text-gray-900">
@@ -677,14 +682,7 @@ export function ChangeProposalDiffViewer({
                   key={item.id}
                   className="py-3 flex items-start gap-3 hover:bg-gray-50 px-2 rounded-lg transition-colors"
                 >
-                  {!isCompleted && item.status === 'pending' && (
-                    <div className="pt-1">
-                      <Checkbox
-                        checked={selectedIds.has(item.id)}
-                        onChange={() => toggleItem(item.id)}
-                      />
-                    </div>
-                  )}
+                  {renderPendingItemCheckbox(item)}
                   <div className="flex-1 text-sm">
                     <div className="flex items-center gap-2 flex-wrap">
                       <div className="font-semibold text-gray-900">
@@ -774,14 +772,7 @@ export function ChangeProposalDiffViewer({
                 key={item.id}
                 className="py-3 flex items-start gap-3 hover:bg-gray-50 px-2 rounded-lg transition-colors"
               >
-                {!isCompleted && item.status === 'pending' && (
-                  <div className="pt-1">
-                    <Checkbox
-                      checked={selectedIds.has(item.id)}
-                      onChange={() => toggleItem(item.id)}
-                    />
-                  </div>
-                )}
+                {renderPendingItemCheckbox(item)}
                 <div className="flex-1 text-sm">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold text-gray-900">
@@ -866,14 +857,7 @@ export function ChangeProposalDiffViewer({
                   key={item.id}
                   className="py-3 flex items-start gap-3 hover:bg-gray-50 px-2 rounded-lg transition-colors"
                 >
-                  {!isCompleted && item.status === 'pending' && (
-                    <div className="pt-1">
-                      <Checkbox
-                        checked={selectedIds.has(item.id)}
-                        onChange={() => toggleItem(item.id)}
-                      />
-                    </div>
-                  )}
+                  {renderPendingItemCheckbox(item)}
                   <div className="flex-1 text-sm space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <div className="font-semibold text-gray-900">General Information</div>
