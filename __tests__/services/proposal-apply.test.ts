@@ -3222,6 +3222,31 @@ describe('Change Proposal Application & Geodata Protection', () => {
         },
       ]);
 
+      // 4b. Approval validation also rejects nonexistent condition_type_id during apply
+      stagedItems.splice(0, stagedItems.length, {
+        id: 'staged-item-invalid',
+        proposal_id: 'prop-fatboys-160',
+        entity_type: 'motorcycle',
+        action: 'update',
+        entity_id: 'bike-fatboys-1',
+        brand_name: 'Honda',
+        model_name: 'Click 125i',
+        original_data: { conditions: [] },
+        proposed_data: {
+          conditions: [
+            {
+              condition_type_id: 'ffffffff-ffff-4fff-8fff-ffffffffffff',
+              name: 'Security Deposit',
+              notes: 'THB 3,000',
+            },
+          ],
+        },
+        status: 'pending',
+      });
+      await expect(
+        ChangeProposalService.apply('prop-fatboys-160', ['staged-item-invalid'])
+      ).rejects.toThrow(/Invalid condition_type_id 'ffffffff-ffff-4fff-8fff-ffffffffffff'/i);
+
       // 5. Fallback catalog pagination via .range() also resolves condition_type_id beyond row 100
       const paginatedSupabase = {
         ...mockSupabase,

@@ -2,6 +2,8 @@ import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import {
   CANONICAL_CONDITION_TYPE_NAMES,
   ConditionTypeCatalog,
+  getExplicitConditionName,
+  getExplicitConditionTypeId,
   resolveConditionName,
   resolveConditionNotes,
   resolveConditionTypeIdFromEntry,
@@ -42,35 +44,33 @@ export interface MotorcycleConditionProposalEntry {
   notes: string | null;
 }
 
+export interface ConditionBearingItem {
+  entity_type?: string;
+  proposed_data?: unknown;
+  original_data?: unknown;
+}
+
 const CONDITION_TYPES_PAGE_SIZE = 500;
 
 export function collectRequestedConditionTypeIds(
-  items: Array<{
-    entity_type?: string;
-    proposed_data?: Record<string, any> | null;
-    original_data?: Record<string, any> | null;
-  }> = []
+  items: ConditionBearingItem[] = []
 ): { requestedIds: string[]; hasNameOnlyEntries: boolean } {
   const idSet = new Set<string>();
   let hasNameOnlyEntries = false;
 
   for (const item of items) {
     if (item?.entity_type && item.entity_type !== 'motorcycle') continue;
-    const condArrays = [item?.proposed_data?.conditions, item?.original_data?.conditions];
-    for (const arr of condArrays) {
+    const proposedConds = (item?.proposed_data as Record<string, any> | null | undefined)?.conditions;
+    const originalConds = (item?.original_data as Record<string, any> | null | undefined)?.conditions;
+    for (const arr of [proposedConds, originalConds]) {
       if (!Array.isArray(arr)) continue;
       for (const entry of arr) {
         if (!entry || typeof entry !== 'object' || Array.isArray(entry)) continue;
-        const explicitId = String(entry.condition_type_id ?? entry.conditionTypeId ?? '').trim();
+        const explicitId = getExplicitConditionTypeId(entry);
         if (explicitId) {
           idSet.add(explicitId);
-        } else {
-          const explicitName = String(
-            entry.name ?? entry.condition_type_name ?? entry.condition_types?.name ?? ''
-          ).trim();
-          if (explicitName) {
-            hasNameOnlyEntries = true;
-          }
+        } else if (getExplicitConditionName(entry)) {
+          hasNameOnlyEntries = true;
         }
       }
     }
@@ -84,16 +84,16 @@ export function collectRequestedConditionTypeIds(
 
 async function loadConditionTypeCatalog(
   supabase: any,
-  items: Array<{
-    entity_type?: string;
-    proposed_data?: Record<string, any> | null;
-    original_data?: Record<string, any> | null;
-  }> = []
+  items: ConditionBearingItem[] = []
 ): Promise<ConditionTypeCatalog> {
   const byId = new Map<string, { id: string; name: string }>();
   const byName = new Map<string, { id: string; name: string }>();
 
-  const addRowsToCatalog = (rows: any[]) => {
+  const consumeCatalogResponse = (res: any): any[] => {
+    if (res?.error) {
+      throw new Error(`Failed to load condition_types catalog: ${res.error.message}`);
+    }
+    const rows = res?.data || [];
     for (const row of rows) {
       if (row?.id && row?.name) {
         const entry = { id: String(row.id), name: String(row.name) };
@@ -101,11 +101,16 @@ async function loadConditionTypeCatalog(
         byName.set(entry.name.toLowerCase(), entry);
       }
     }
+    return rows;
   };
 
   const table = supabase?.from?.('condition_types');
   if (table?.select) {
     const { requestedIds, hasNameOnlyEntries } = collectRequestedConditionTypeIds(items);
+    if (items.length > 0 && requestedIds.length === 0 && !hasNameOnlyEntries) {
+      return { byId, byName, loadedFromDb: true };
+    }
+
     const initialQuery = table.select('id, name');
     let usedInitialQuery = false;
 
@@ -114,11 +119,7 @@ async function loadConditionTypeCatalog(
         const chunk = requestedIds.slice(i, i + CONDITION_TYPES_PAGE_SIZE);
         const query = !usedInitialQuery ? initialQuery : table.select('id, name');
         usedInitialQuery = true;
-        const res = await query.in('id', chunk);
-        if (res?.error) {
-          throw new Error(`Failed to load condition_types catalog: ${res.error.message}`);
-        }
-        addRowsToCatalog(res?.data || []);
+        consumeCatalogResponse(await query.in('id', chunk));
       }
       if (!hasNameOnlyEntries) {
         return { byId, byName, loadedFromDb: true };
@@ -132,12 +133,9 @@ async function loadConditionTypeCatalog(
       let offset = 0;
       let currentQuery = pageStartQuery;
       while (true) {
-        const res = await currentQuery.range(offset, offset + CONDITION_TYPES_PAGE_SIZE - 1);
-        if (res?.error) {
-          throw new Error(`Failed to load condition_types catalog: ${res.error.message}`);
-        }
-        const rows = res?.data || [];
-        addRowsToCatalog(rows);
+        const rows = consumeCatalogResponse(
+          await currentQuery.range(offset, offset + CONDITION_TYPES_PAGE_SIZE - 1)
+        );
         if (rows.length < CONDITION_TYPES_PAGE_SIZE) {
           break;
         }
@@ -147,11 +145,7 @@ async function loadConditionTypeCatalog(
       return { byId, byName, loadedFromDb: true };
     }
 
-    const res = await Promise.resolve(pageStartQuery);
-    if (res?.error) {
-      throw new Error(`Failed to load condition_types catalog: ${res.error.message}`);
-    }
-    addRowsToCatalog(res?.data || []);
+    consumeCatalogResponse(await Promise.resolve(pageStartQuery));
     return { byId, byName, loadedFromDb: true };
   }
 
@@ -186,7 +180,7 @@ export function normalizeAndValidateMotorcycleConditions(
       );
     }
 
-    const explicitId = String(rawCond?.condition_type_id ?? rawCond?.conditionTypeId ?? '').trim();
+    const explicitId = getExplicitConditionTypeId(rawCond);
     const typeId = enforceCatalogExistence
       ? explicitId
       : resolveConditionTypeIdFromEntry(rawCond, catalog);
@@ -909,7 +903,7 @@ export class ChangeProposalService {
       (i) => i.entity_type === 'motorcycle' && (i.proposed_data as any)?.conditions !== undefined
     );
     const conditionCatalog: ConditionTypeCatalog = hasApprovedBikeConditions
-      ? await loadConditionTypeCatalog(supabase, approvedItems as any)
+      ? await loadConditionTypeCatalog(supabase, approvedItems)
       : { byId: new Map(), byName: new Map() };
 
     const validatedConditionsByItemId = new Map<
