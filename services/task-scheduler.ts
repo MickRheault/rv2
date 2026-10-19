@@ -1,5 +1,9 @@
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import {
+  resolveConditionName,
+  resolveConditionNotes,
+} from '@/lib/motorcycle-conditions-helpers';
+import {
   LearnedAgentConfig,
   sanitizeLearnedConfig,
 } from '@/services/shop-agent-configs';
@@ -9,6 +13,12 @@ export const CADENCE_DAYS: Record<number, number> = {
   2: 30,  // Tier 2: Monthly (Standard catalog)
   3: 60,  // Tier 3: Bi-monthly (Infrequent / seasonal)
 };
+
+export interface ExistingInventoryBikeCondition {
+  condition_type_id: string;
+  name: string;
+  notes: string | null;
+}
 
 export interface ExistingInventoryBike {
   id: string;
@@ -25,6 +35,7 @@ export interface ExistingInventoryBike {
     ratePerDay: number;
     currency: string;
   }>;
+  conditions: ExistingInventoryBikeCondition[];
 }
 
 export interface CurrentShopBaseline {
@@ -47,6 +58,7 @@ export interface AgentTask {
   urgencyScore: number;
   lastRunAt: string | null;
   canonicalBrands: string[];
+  conditionTypes: Array<{ id: string; name: string }>;
   knownModels: Array<{ brand: string; modelName: string }>;
   existingInventory: ExistingInventoryBike[];
   currentShop: CurrentShopBaseline;
@@ -180,6 +192,14 @@ export class TaskSchedulerService {
           max_days,
           rate_per_day,
           currency
+        ),
+        motorcycle_conditions (
+          condition_type_id,
+          notes,
+          condition_types (
+            id,
+            name
+          )
         )
       `)
       .in('shop_id', shopIds);
@@ -190,8 +210,17 @@ export class TaskSchedulerService {
 
     const inclusionsTable = (supabase.from('rental_shop_inclusions') as any);
     const conditionsTable = (supabase.from('rental_shop_conditions') as any);
+    const conditionTypesTable = (supabase.from('condition_types') as any);
 
-    const [bikesRes, inclusionsRes, conditionsRes] = await Promise.all([
+    let conditionTypesQuery: Promise<any> = Promise.resolve({ data: [] });
+    if (conditionTypesTable?.select) {
+      const sel = conditionTypesTable.select('id, name');
+      conditionTypesQuery = typeof sel?.order === 'function'
+        ? sel.order('name', { ascending: true })
+        : Promise.resolve(sel);
+    }
+
+    const [bikesRes, inclusionsRes, conditionsRes, conditionTypesRes] = await Promise.all([
       bikesQuery,
       inclusionsTable?.select
         ? inclusionsTable.select('shop_id, inclusion_text').in('shop_id', shopIds)
@@ -199,11 +228,21 @@ export class TaskSchedulerService {
       conditionsTable?.select
         ? conditionsTable.select('shop_id, condition_value').in('shop_id', shopIds)
         : Promise.resolve({ data: [] }),
+      conditionTypesQuery,
     ]);
 
     const allBikes = bikesRes?.data || [];
     const allInclusions = inclusionsRes?.data || [];
     const allConditions = conditionsRes?.data || [];
+    const conditionTypes: Array<{ id: string; name: string }> = (conditionTypesRes?.data || []).map(
+      (ct: any) => ({
+        id: ct.id,
+        name: ct.name,
+      })
+    );
+    const conditionTypeNameById = new Map<string, string>(
+      conditionTypes.map((ct) => [ct.id, ct.name])
+    );
 
     const bikesByShop = new Map<string, any[]>();
     allBikes.forEach((bike: any) => {
@@ -237,6 +276,14 @@ export class TaskSchedulerService {
           knownModelsMap.set(key, { brand: brandName, modelName });
         }
 
+        const bikeConditions: ExistingInventoryBikeCondition[] = (
+          bike.motorcycle_conditions || []
+        ).map((mc: any) => ({
+          condition_type_id: mc.condition_type_id,
+          name: resolveConditionName(mc, conditionTypeNameById),
+          notes: resolveConditionNotes(mc),
+        }));
+
         return {
           id: bike.id,
           brand: brandName,
@@ -252,6 +299,7 @@ export class TaskSchedulerService {
             ratePerDay: Number(r.rate_per_day),
             currency: r.currency || 'THB',
           })),
+          conditions: bikeConditions,
         };
       });
 
@@ -273,6 +321,7 @@ export class TaskSchedulerService {
         urgencyScore: cfg.urgencyScore,
         lastRunAt: cfg.last_run_at,
         canonicalBrands,
+        conditionTypes,
         knownModels: Array.from(knownModelsMap.values()),
         existingInventory,
         currentShop: {

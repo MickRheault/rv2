@@ -259,4 +259,95 @@ describe('POST /api/agent/change-proposals', () => {
     });
     expect(recordCrawlRun).not.toHaveBeenCalled();
   });
+
+  it('stages motorcycle items containing proposedData.conditions and returns 400 on invalid condition_type_id (#156)', async () => {
+    (ChangeProposalService.createProposalFromItems as jest.Mock).mockResolvedValueOnce({
+      proposal: { id: 'prop-cond-156', status: 'pending' },
+      summaryCounts: { add: 0, update: 1, delist: 0, unchanged: 0 },
+      itemsCount: 1,
+    });
+
+    const itemsWithConditions = [
+      {
+        entityType: 'motorcycle',
+        action: 'update',
+        entityId: 'f9734329-0b8d-494f-bfba-a3c74986d60e',
+        brandName: 'Honda',
+        modelName: 'Click 125',
+        originalData: {
+          brand: 'Honda',
+          model: 'Click 125',
+          conditions: [],
+        },
+        proposedData: {
+          brand: 'Honda',
+          model: 'Click 125',
+          conditions: [
+            {
+              condition_type_id: '9526b7ae-8c84-45a2-a8ac-c4ecbeea600b',
+              notes: 'THB 3,000',
+            },
+          ],
+        },
+      },
+    ];
+
+    const validRequest = new NextRequest('http://localhost:3000/api/agent/change-proposals', {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer secret-agent-key',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        shopId: '1a0e00c2-d41c-430f-b6ac-cf17c2879fee',
+        sourceUrl: 'https://madbikerental.com/',
+        agentRunId: 'run-madbike-156',
+        items: itemsWithConditions,
+      }),
+    });
+
+    const validRes = await POST(validRequest);
+    expect(validRes.status).toBe(201);
+    expect(ChangeProposalService.createProposalFromItems).toHaveBeenCalledWith({
+      shopId: '1a0e00c2-d41c-430f-b6ac-cf17c2879fee',
+      sourceUrl: 'https://madbikerental.com/',
+      agentRunId: 'run-madbike-156',
+      items: itemsWithConditions,
+    });
+
+    (ChangeProposalService.createProposalFromItems as jest.Mock).mockRejectedValueOnce(
+      new ProposalItemValidationError(
+        "Item at index 0 contains unknown condition_type_id 'invalid-uuid' in proposedData.conditions."
+      )
+    );
+
+    const invalidRequest = new NextRequest('http://localhost:3000/api/agent/change-proposals', {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer secret-agent-key',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        shopId: '1a0e00c2-d41c-430f-b6ac-cf17c2879fee',
+        sourceUrl: 'https://madbikerental.com/',
+        items: [
+          {
+            entityType: 'motorcycle',
+            action: 'update',
+            entityId: 'f9734329-0b8d-494f-bfba-a3c74986d60e',
+            proposedData: {
+              conditions: [{ condition_type_id: 'invalid-uuid', notes: 'THB 3,000' }],
+            },
+          },
+        ],
+      }),
+    });
+
+    const invalidRes = await POST(invalidRequest);
+    expect(invalidRes.status).toBe(400);
+    expect(await invalidRes.json()).toEqual({
+      error: "Item at index 0 contains unknown condition_type_id 'invalid-uuid' in proposedData.conditions.",
+    });
+  });
 });
+

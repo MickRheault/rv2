@@ -39,6 +39,15 @@ export async function POST(
 
     return NextResponse.json(result, { status: 200 });
   } catch (error: any) {
+    if (
+      error?.name === 'ProposalItemValidationError' ||
+      error?.name === 'GeodataImmutabilityError'
+    ) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    if (error?.name === 'StaleConditionStateError') {
+      return NextResponse.json({ error: error.message }, { status: 409 });
+    }
     console.error(`Error applying change proposal ${id}:`, error);
     return NextResponse.json(
       { error: error.message || 'Failed to apply change proposal' },

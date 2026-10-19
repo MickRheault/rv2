@@ -157,10 +157,35 @@ describe('TaskSchedulerService', () => {
                         rental_rate_tiers: [
                           { min_days: 1, max_days: 6, rate_per_day: 12, currency: 'USD' },
                         ],
+                        motorcycle_conditions: [
+                          {
+                            condition_type_id: '9526b7ae-8c84-45a2-a8ac-c4ecbeea600b',
+                            notes: 'USD 100 or Passport',
+                            condition_types: {
+                              id: '9526b7ae-8c84-45a2-a8ac-c4ecbeea600b',
+                              name: 'Security Deposit',
+                            },
+                          },
+                        ],
                       },
                     ],
                     error: null,
                   }),
+                }),
+              }),
+            };
+          }
+          if (table === 'condition_types') {
+            return {
+              select: jest.fn().mockReturnValue({
+                order: jest.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: '9526b7ae-8c84-45a2-a8ac-c4ecbeea600b',
+                      name: 'Security Deposit',
+                    },
+                  ],
+                  error: null,
                 }),
               }),
             };
@@ -191,6 +216,12 @@ describe('TaskSchedulerService', () => {
 
       const tasks = await TaskSchedulerService.getDueTasks({ shopId: 'shop-1' });
       expect(tasks).toHaveLength(1);
+      expect(tasks[0].conditionTypes).toEqual([
+        {
+          id: '9526b7ae-8c84-45a2-a8ac-c4ecbeea600b',
+          name: 'Security Deposit',
+        },
+      ]);
       expect(tasks[0].existingInventory).toEqual([
         {
           id: 'bike-1',
@@ -202,6 +233,13 @@ describe('TaskSchedulerService', () => {
           availabilityStatus: 'available',
           sourceUrl: 'https://siemreapscooterrental.com/pg-1',
           rates: [{ minDays: 1, maxDays: 6, ratePerDay: 12, currency: 'USD' }],
+          conditions: [
+            {
+              condition_type_id: '9526b7ae-8c84-45a2-a8ac-c4ecbeea600b',
+              name: 'Security Deposit',
+              notes: 'USD 100 or Passport',
+            },
+          ],
         },
       ]);
       expect(tasks[0].currentShop).toEqual({
