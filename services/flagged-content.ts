@@ -11,10 +11,73 @@ import {
   FlagStatus
 } from '@/types/flagged-content';
 
+export const ALLOWED_MOTORCYCLE_PROPOSED_FIELDS = [
+  'model',
+  'year',
+  'year_to',
+  'engine_capacity_cc',
+  'rental_rate_per_day',
+  'rental_rate_currency',
+  'availability_status',
+  'brand_id',
+  'category_id',
+  'shop_id',
+  'source_url',
+  'specifications_details',
+  'conditions_details',
+] as const;
+
+export const ALLOWED_RENTAL_SHOP_PROPOSED_FIELDS = [
+  'provider_name',
+  'full_address',
+  'phone',
+  'website',
+  'business_description',
+  'rating',
+  'review_count',
+  'google_maps_url',
+  'latitude',
+  'longitude',
+  'location_name',
+  'city_id',
+  'business_status_id',
+] as const;
+
+const IMMUTABLE_METADATA_FIELDS = new Set(['id', 'created_at', 'updated_at']);
+
+function validateProposedDataKeys(contentType: ContentType, proposedData: Json): Json {
+  if (proposedData === null || typeof proposedData !== 'object' || Array.isArray(proposedData)) {
+    throw new Error('Invalid proposed_data: expected a JSON object');
+  }
+
+  const allowedSet =
+    contentType === 'motorcycle'
+      ? new Set<string>(ALLOWED_MOTORCYCLE_PROPOSED_FIELDS)
+      : contentType === 'rental_shop'
+        ? new Set<string>(ALLOWED_RENTAL_SHOP_PROPOSED_FIELDS)
+        : null;
+
+  const sanitized: Record<string, Json | undefined> = {};
+
+  for (const [key, value] of Object.entries(proposedData)) {
+    if (IMMUTABLE_METADATA_FIELDS.has(key)) {
+      continue;
+    }
+    if (allowedSet && !allowedSet.has(key)) {
+      throw new Error(`Disallowed field in proposed_data for ${contentType}: "${key}"`);
+    }
+    sanitized[key] = value;
+  }
+
+  return sanitized as Json;
+}
+
 // Service for managing flagged content
 export class FlaggedContentService {
   // Create a new flagged content entry
   static async createFlaggedContent(data: CreateFlaggedContentData, originalData: Json): Promise<FlaggedContent> {
+    const validatedProposedData = validateProposedDataKeys(data.content_type, data.proposed_data);
+
     let userId: string | null = null;
 
     try {
@@ -37,10 +100,16 @@ export class FlaggedContentService {
     }
 
     const flaggedContentData = {
-      ...data,
+      content_type: data.content_type,
+      entity_id: data.entity_id,
+      flag_category: data.flag_category,
+      flag_reason: data.flag_reason,
+      proposed_data: validatedProposedData,
+      flagged_by_email: data.flagged_by_email,
       original_data: originalData,
       flagged_by_user_id: userId,
       priority: data.priority || 2, // Default to normal priority
+      status: 'pending' as const,
     };
 
     const { data: result, error } = await supabase

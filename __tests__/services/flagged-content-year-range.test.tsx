@@ -164,6 +164,134 @@ describe('FlagContentForm & FlaggedContentService Model Year Range Support (#139
       expect(sql).toMatch(/parsed_end\s*=\s*parsed_start/i);
       expect(sql).toMatch(/parsed_end\s*<\s*parsed_start/i);
     });
+
+    it('hardens apply_flagged_content_changes against SQL injection and missing admin authorization (#165)', () => {
+      const fs = require('fs');
+      const path = require('path');
+      const migrationPath = path.join(
+        process.cwd(),
+        'supabase/migrations/20261020000000_harden_apply_flagged_content_changes_rpc.sql'
+      );
+      expect(fs.existsSync(migrationPath)).toBe(true);
+      const sql = fs.readFileSync(migrationPath, 'utf8');
+
+      // 1. SECURITY DEFINER + pinned search_path
+      expect(sql).toMatch(/CREATE OR REPLACE FUNCTION public\.apply_flagged_content_changes\(flagged_content_id UUID,\s*admin_id UUID\)/i);
+      expect(sql).toMatch(/SECURITY DEFINER/i);
+      expect(sql).toMatch(/SET search_path = public, extensions/i);
+
+      // 2. Explicit admin / service_role authorization check
+      expect(sql).toMatch(/NOT public\.is_admin\(\)/i);
+      expect(sql).toMatch(/RAISE EXCEPTION 'Access denied: admin privileges required'/i);
+
+      // 3. Audit trail bound to auth.uid() rather than blindly trusting caller-supplied admin_id
+      expect(sql).toMatch(/acting_admin_id\s*:=\s*COALESCE\(auth\.uid\(\),\s*admin_id\)/i);
+      expect(sql).toMatch(/applied_by_admin_id\s*=\s*acting_admin_id/i);
+
+      // 4. Explicit per-content_type column allowlist and safe identifier quoting with format('%I', ...)
+      expect(sql).toMatch(/allowed_fields\s*:=\s*ARRAY\[/i);
+      expect(sql).toMatch(/NOT\s*\(field_name\s*=\s*ANY\(allowed_fields\)\)/i);
+      expect(sql).toMatch(/RAISE EXCEPTION 'Disallowed field "%" for content_type "%"'/i);
+      expect(sql).toMatch(/format\('%I = %L',\s*field_name,\s*field_value\)/i);
+      expect(sql).toMatch(/format\('%I = NULL',\s*field_name\)/i);
+      expect(sql).not.toMatch(/update_query\s*\|\|\s*field_name\s*\|\|/i);
+
+      // 5. Function EXECUTE grants revoked from PUBLIC and anon
+      expect(sql).toMatch(/REVOKE EXECUTE ON FUNCTION public\.apply_flagged_content_changes\(UUID,\s*UUID\) FROM PUBLIC,\s*anon/i);
+      expect(sql).toMatch(/GRANT EXECUTE ON FUNCTION public\.apply_flagged_content_changes\(UUID,\s*UUID\) TO authenticated,\s*service_role/i);
+
+      // 6. flagged_content INSERT RLS restricted to pending status and null admin fields
+      expect(sql).toMatch(/DROP POLICY IF EXISTS "Allow insert for all users" ON public\.flagged_content/i);
+      expect(sql).toMatch(/CREATE POLICY "Allow insert for all users" ON public\.flagged_content/i);
+      expect(sql).toMatch(/status = 'pending'/i);
+      expect(sql).toMatch(/reviewed_by_admin_id IS NULL/i);
+      expect(sql).toMatch(/applied_by_admin_id IS NULL/i);
+    });
+  });
+
+  describe('FlaggedContentService.createFlaggedContent proposed_data allowlist validation (#165)', () => {
+    it('rejects disallowed SQL-injection keys in proposed_data before inserting', async () => {
+      await expect(
+        FlaggedContentService.createFlaggedContent(
+          {
+            content_type: 'motorcycle',
+            entity_id: 'bike-1',
+            flag_category: 'incorrect_info',
+            flag_reason: 'Injected key attempt',
+            proposed_data: {
+              'model = \'x\'; DROP TABLE user_roles; --': 'malicious',
+            },
+            flagged_by_email: 'test@example.com',
+          },
+          { id: 'bike-1', model: 'CB500X' }
+        )
+      ).rejects.toThrow(/Disallowed field in proposed_data/i);
+
+      expect(supabase.from).not.toHaveBeenCalled();
+    });
+
+    it('accepts allowlisted rental_shop fields, strips immutable metadata, and enforces status = pending', async () => {
+      const singleMock = jest.fn().mockResolvedValue({ data: { id: 'flag-shop-1', status: 'pending' }, error: null });
+      const selectMock = jest.fn().mockReturnValue({ single: singleMock });
+      const insertMock = jest.fn().mockReturnValue({ select: selectMock });
+      (supabase.from as jest.Mock).mockReturnValue({ insert: insertMock });
+
+      await FlaggedContentService.createFlaggedContent(
+        {
+          content_type: 'rental_shop',
+          entity_id: 'shop-1',
+          flag_category: 'contact_error',
+          flag_reason: 'Updated phone and website',
+          proposed_data: {
+            id: 'should-be-stripped',
+            phone: '+66 81 234 5678',
+            website: 'https://example.com',
+          },
+          flagged_by_email: 'rider@example.com',
+          ...({ status: 'approved', reviewed_by_admin_id: 'spoofed-admin' } as any),
+        },
+        { id: 'shop-1', provider_name: 'Test Shop' }
+      );
+
+      expect(insertMock).toHaveBeenCalledWith([
+        expect.objectContaining({
+          content_type: 'rental_shop',
+          entity_id: 'shop-1',
+          proposed_data: {
+            phone: '+66 81 234 5678',
+            website: 'https://example.com',
+          },
+          status: 'pending',
+        }),
+      ]);
+      const insertedPayload = insertMock.mock.calls[0][0][0];
+      expect(insertedPayload.reviewed_by_admin_id).toBeUndefined();
+      expect(insertedPayload.proposed_data.id).toBeUndefined();
+    });
+
+    it('does not expose non-column joined relation names (brand_name, category_name, city_name) in FlagContentForm', () => {
+      render(
+        <FlagContentForm
+          contentType="motorcycle"
+          entityId="bike-1"
+          entityData={{
+            id: 'bike-1',
+            model: 'CB500X',
+            year: 2020,
+            brands: { name: 'Honda' },
+            categories: { name: 'Adventure' },
+          }}
+          onSubmit={jest.fn()}
+          onCancel={jest.fn()}
+          isSubmitting={false}
+          setIsSubmitting={jest.fn()}
+        />
+      );
+
+      expect(screen.queryByDisplayValue('Honda')).not.toBeInTheDocument();
+      expect(screen.queryByDisplayValue('Adventure')).not.toBeInTheDocument();
+      expect(screen.getByDisplayValue('CB500X')).toBeInTheDocument();
+    });
   });
 });
 
