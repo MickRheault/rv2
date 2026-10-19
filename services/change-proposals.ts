@@ -42,21 +42,58 @@ export interface MotorcycleConditionProposalEntry {
   notes: string | null;
 }
 
-async function loadConditionTypeCatalog(supabase: any): Promise<ConditionTypeCatalog> {
+const CONDITION_TYPES_PAGE_SIZE = 500;
+
+export function collectRequestedConditionTypeIds(
+  items: Array<{
+    entity_type?: string;
+    proposed_data?: Record<string, any> | null;
+    original_data?: Record<string, any> | null;
+  }> = []
+): { requestedIds: string[]; hasNameOnlyEntries: boolean } {
+  const idSet = new Set<string>();
+  let hasNameOnlyEntries = false;
+
+  for (const item of items) {
+    if (item?.entity_type && item.entity_type !== 'motorcycle') continue;
+    const condArrays = [item?.proposed_data?.conditions, item?.original_data?.conditions];
+    for (const arr of condArrays) {
+      if (!Array.isArray(arr)) continue;
+      for (const entry of arr) {
+        if (!entry || typeof entry !== 'object' || Array.isArray(entry)) continue;
+        const explicitId = String(entry.condition_type_id ?? entry.conditionTypeId ?? '').trim();
+        if (explicitId) {
+          idSet.add(explicitId);
+        } else {
+          const explicitName = String(
+            entry.name ?? entry.condition_type_name ?? entry.condition_types?.name ?? ''
+          ).trim();
+          if (explicitName) {
+            hasNameOnlyEntries = true;
+          }
+        }
+      }
+    }
+  }
+
+  return {
+    requestedIds: Array.from(idSet),
+    hasNameOnlyEntries,
+  };
+}
+
+async function loadConditionTypeCatalog(
+  supabase: any,
+  items: Array<{
+    entity_type?: string;
+    proposed_data?: Record<string, any> | null;
+    original_data?: Record<string, any> | null;
+  }> = []
+): Promise<ConditionTypeCatalog> {
   const byId = new Map<string, { id: string; name: string }>();
   const byName = new Map<string, { id: string; name: string }>();
 
-  const table = supabase?.from?.('condition_types');
-  if (table?.select) {
-    const query = table.select('id, name');
-    const res =
-      typeof query?.limit === 'function'
-        ? await query.limit(100)
-        : await Promise.resolve(query);
-    if (res?.error) {
-      throw new Error(`Failed to load condition_types catalog: ${res.error.message}`);
-    }
-    const rows = res?.data || [];
+  const addRowsToCatalog = (rows: any[]) => {
     for (const row of rows) {
       if (row?.id && row?.name) {
         const entry = { id: String(row.id), name: String(row.name) };
@@ -64,6 +101,57 @@ async function loadConditionTypeCatalog(supabase: any): Promise<ConditionTypeCat
         byName.set(entry.name.toLowerCase(), entry);
       }
     }
+  };
+
+  const table = supabase?.from?.('condition_types');
+  if (table?.select) {
+    const { requestedIds, hasNameOnlyEntries } = collectRequestedConditionTypeIds(items);
+    const initialQuery = table.select('id, name');
+    let usedInitialQuery = false;
+
+    if (requestedIds.length > 0 && typeof initialQuery?.in === 'function') {
+      for (let i = 0; i < requestedIds.length; i += CONDITION_TYPES_PAGE_SIZE) {
+        const chunk = requestedIds.slice(i, i + CONDITION_TYPES_PAGE_SIZE);
+        const query = !usedInitialQuery ? initialQuery : table.select('id, name');
+        usedInitialQuery = true;
+        const res = await query.in('id', chunk);
+        if (res?.error) {
+          throw new Error(`Failed to load condition_types catalog: ${res.error.message}`);
+        }
+        addRowsToCatalog(res?.data || []);
+      }
+      if (!hasNameOnlyEntries) {
+        return { byId, byName, loadedFromDb: true };
+      }
+    }
+
+    const pageStartQuery = !usedInitialQuery ? initialQuery : table.select('id, name');
+    usedInitialQuery = true;
+
+    if (typeof pageStartQuery?.range === 'function') {
+      let offset = 0;
+      let currentQuery = pageStartQuery;
+      while (true) {
+        const res = await currentQuery.range(offset, offset + CONDITION_TYPES_PAGE_SIZE - 1);
+        if (res?.error) {
+          throw new Error(`Failed to load condition_types catalog: ${res.error.message}`);
+        }
+        const rows = res?.data || [];
+        addRowsToCatalog(rows);
+        if (rows.length < CONDITION_TYPES_PAGE_SIZE) {
+          break;
+        }
+        offset += rows.length;
+        currentQuery = table.select('id, name');
+      }
+      return { byId, byName, loadedFromDb: true };
+    }
+
+    const res = await Promise.resolve(pageStartQuery);
+    if (res?.error) {
+      throw new Error(`Failed to load condition_types catalog: ${res.error.message}`);
+    }
+    addRowsToCatalog(res?.data || []);
     return { byId, byName, loadedFromDb: true };
   }
 
@@ -92,13 +180,16 @@ export function normalizeAndValidateMotorcycleConditions(
 
   const seenTypeIds = new Set<string>();
   return rawConditions.map((rawCond: any, idx: number) => {
-    if (!rawCond || typeof rawCond !== 'object') {
+    if (!rawCond || typeof rawCond !== 'object' || Array.isArray(rawCond)) {
       throw new ProposalItemValidationError(
         `Motorcycle condition at index ${idx} must be an object with condition_type_id and notes.`
       );
     }
 
-    const typeId = resolveConditionTypeIdFromEntry(rawCond, catalog);
+    const explicitId = String(rawCond?.condition_type_id ?? rawCond?.conditionTypeId ?? '').trim();
+    const typeId = enforceCatalogExistence
+      ? explicitId
+      : resolveConditionTypeIdFromEntry(rawCond, catalog);
     if (!typeId) {
       throw new ProposalItemValidationError(
         `Invalid condition_type_id at index ${idx}: condition_type_id is required.`
@@ -120,7 +211,7 @@ export function normalizeAndValidateMotorcycleConditions(
 
     return {
       condition_type_id: typeId,
-      name: resolveConditionName(rawCond, catalog),
+      name: catalog.byId.get(typeId)?.name || resolveConditionName(rawCond, catalog),
       notes: resolveConditionNotes(rawCond),
     };
   });
@@ -553,7 +644,7 @@ export class ChangeProposalService {
         (i.proposed_data?.conditions !== undefined || i.original_data?.conditions !== undefined)
     );
     if (hasMotorcycleConditions) {
-      const conditionCatalog = await loadConditionTypeCatalog(supabase);
+      const conditionCatalog = await loadConditionTypeCatalog(supabase, normalizedItems);
       for (const item of normalizedItems) {
         if (item.entity_type !== 'motorcycle') continue;
         if (item.proposed_data && item.proposed_data.conditions !== undefined) {
@@ -818,7 +909,7 @@ export class ChangeProposalService {
       (i) => i.entity_type === 'motorcycle' && (i.proposed_data as any)?.conditions !== undefined
     );
     const conditionCatalog: ConditionTypeCatalog = hasApprovedBikeConditions
-      ? await loadConditionTypeCatalog(supabase)
+      ? await loadConditionTypeCatalog(supabase, approvedItems as any)
       : { byId: new Map(), byName: new Map() };
 
     const validatedConditionsByItemId = new Map<

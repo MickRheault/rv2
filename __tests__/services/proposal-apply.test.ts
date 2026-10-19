@@ -2971,7 +2971,294 @@ describe('Change Proposal Application & Geodata Protection', () => {
       );
       expect(totalRateRows).toBe(19);
     });
+
+    it('accepts valid condition_type_id outside the first 100 condition_types rows (508-row catalog) in both staging and approval, while rejecting nonexistent IDs and name-spoofing (#160)', async () => {
+      // Build a 508-row catalog matching production where Security Deposit sits at index 431 (> 100)
+      const catalog508 = Array.from({ length: 508 }, (_, idx) => {
+        if (idx === 431) {
+          return {
+            id: SECURITY_DEPOSIT_ID,
+            name: 'Security Deposit',
+          };
+        }
+        return {
+          id: `00000000-0000-4000-8000-${String(idx + 1).padStart(12, '0')}`,
+          name: `Condition Type #${idx + 1}`,
+        };
+      });
+
+      const stagedItems: any[] = [];
+      const inCalls: string[][] = [];
+      const liveConditions = new Map<string, any[]>([['bike-fatboys-1', []]]);
+
+      const createCatalogQueryMock = (includeIn = true) => ({
+        select: jest.fn(() => {
+          const builder: any = {
+            limit: jest.fn((n: number) =>
+              Promise.resolve({
+                data: catalog508.slice(0, n),
+                error: null,
+              })
+            ),
+            range: jest.fn((from: number, to: number) =>
+              Promise.resolve({
+                data: catalog508.slice(from, to + 1),
+                error: null,
+              })
+            ),
+          };
+          if (includeIn) {
+            builder.in = jest.fn((_col: string, ids: string[]) => {
+              inCalls.push(ids);
+              const idSet = new Set(ids);
+              return Promise.resolve({
+                data: catalog508.filter((row) => idSet.has(row.id)),
+                error: null,
+              });
+            });
+          }
+          return builder;
+        }),
+      });
+
+      const mockSupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'condition_types') {
+            return createCatalogQueryMock(true);
+          }
+          if (table === 'motorcycle_rentals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                in: jest.fn().mockResolvedValue({
+                  data: [{ id: 'bike-fatboys-1', shop_id: 'shop-fatboys' }],
+                  error: null,
+                }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'change_proposals') {
+            return {
+              insert: jest.fn().mockReturnValue({
+                select: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({
+                    data: { id: 'prop-fatboys-160', shop_id: 'shop-fatboys', status: 'pending' },
+                    error: null,
+                  }),
+                }),
+              }),
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({
+                    data: { id: 'prop-fatboys-160', shop_id: 'shop-fatboys', status: 'pending' },
+                    error: null,
+                  }),
+                }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              insert: jest.fn((rows: any[]) => {
+                stagedItems.push(
+                  ...rows.map((r, i) => ({
+                    id: `staged-item-${i + 1}`,
+                    ...r,
+                  }))
+                );
+                return Promise.resolve({ error: null });
+              }),
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockImplementation(() =>
+                  Promise.resolve({ data: [...stagedItems], error: null })
+                ),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+                in: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'motorcycle_conditions') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn((_col: string, bikeId: string) =>
+                  Promise.resolve({
+                    data: [...(liveConditions.get(bikeId) || [])],
+                    error: null,
+                  })
+                ),
+              }),
+              delete: jest.fn().mockReturnValue({
+                eq: jest.fn((_col: string, bikeId: string) => {
+                  liveConditions.set(bikeId, []);
+                  return Promise.resolve({ error: null });
+                }),
+              }),
+              insert: jest.fn((rows: any[]) => {
+                for (const r of rows) {
+                  const list = liveConditions.get(r.motorcycle_id) || [];
+                  list.push({
+                    motorcycle_id: r.motorcycle_id,
+                    condition_type_id: r.condition_type_id,
+                    notes: r.notes ?? null,
+                  });
+                  liveConditions.set(r.motorcycle_id, list);
+                }
+                return Promise.resolve({ error: null });
+              }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      // 1. Valid ID at index 431 (> 100) is accepted in staging and preserved with canonical name + notes
+      const stagedRes = await ChangeProposalService.createProposalFromItems({
+        shopId: 'shop-fatboys',
+        sourceUrl: 'https://fatboysmotorbikes.com/',
+        items: [
+          {
+            entityType: 'motorcycle',
+            action: 'update',
+            entityId: 'bike-fatboys-1',
+            brandName: 'Honda',
+            modelName: 'Click 125i',
+            originalData: {
+              conditions: [],
+            },
+            proposedData: {
+              conditions: [
+                {
+                  condition_type_id: SECURITY_DEPOSIT_ID,
+                  name: 'Untrusted Client Label',
+                  notes: 'THB 3,000 or Passport',
+                },
+              ],
+            },
+          },
+        ],
+      });
+
+      expect(stagedRes.proposal.id).toBe('prop-fatboys-160');
+      expect(inCalls.length).toBeGreaterThanOrEqual(1);
+      expect(inCalls[0]).toEqual([SECURITY_DEPOSIT_ID]);
+      expect(stagedItems).toHaveLength(1);
+      expect(stagedItems[0].proposed_data.conditions).toEqual([
+        {
+          condition_type_id: SECURITY_DEPOSIT_ID,
+          name: 'Security Deposit',
+          notes: 'THB 3,000 or Passport',
+        },
+      ]);
+
+      // 2. Nonexistent ID is rejected even when client provides a valid condition name
+      await expect(
+        ChangeProposalService.createProposalFromItems({
+          shopId: 'shop-fatboys',
+          sourceUrl: 'https://fatboysmotorbikes.com/',
+          items: [
+            {
+              entityType: 'motorcycle',
+              action: 'update',
+              entityId: 'bike-fatboys-1',
+              brandName: 'Honda',
+              modelName: 'Click 125i',
+              proposedData: {
+                conditions: [
+                  {
+                    condition_type_id: 'ffffffff-ffff-4fff-8fff-ffffffffffff',
+                    name: 'Security Deposit',
+                    notes: 'THB 3,000',
+                  },
+                ],
+              },
+            },
+          ],
+        })
+      ).rejects.toThrow(/Invalid condition_type_id 'ffffffff-ffff-4fff-8fff-ffffffffffff'/i);
+
+      // 3. Omitting condition_type_id and supplying only a client name is rejected in proposedData.conditions
+      await expect(
+        ChangeProposalService.createProposalFromItems({
+          shopId: 'shop-fatboys',
+          sourceUrl: 'https://fatboysmotorbikes.com/',
+          items: [
+            {
+              entityType: 'motorcycle',
+              action: 'update',
+              entityId: 'bike-fatboys-1',
+              brandName: 'Honda',
+              modelName: 'Click 125i',
+              proposedData: {
+                conditions: [
+                  {
+                    name: 'Security Deposit',
+                    notes: 'THB 3,000',
+                  },
+                ],
+              },
+            },
+          ],
+        })
+      ).rejects.toThrow(/condition_type_id is required/i);
+
+      // 4. Approval validation (ChangeProposalService.apply) uses the same complete lookup and persists the condition
+      const applyRes = await ChangeProposalService.apply('prop-fatboys-160', ['staged-item-1']);
+      expect(applyRes.success).toBe(true);
+      expect(applyRes.appliedCount).toBe(1);
+      expect(liveConditions.get('bike-fatboys-1')).toEqual([
+        {
+          motorcycle_id: 'bike-fatboys-1',
+          condition_type_id: SECURITY_DEPOSIT_ID,
+          notes: 'THB 3,000 or Passport',
+        },
+      ]);
+
+      // 5. Fallback catalog pagination via .range() also resolves condition_type_id beyond row 100
+      const paginatedSupabase = {
+        ...mockSupabase,
+        from: jest.fn((table: string) => {
+          if (table === 'condition_types') {
+            return createCatalogQueryMock(false);
+          }
+          return mockSupabase.from(table);
+        }),
+      };
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(paginatedSupabase);
+
+      const paginatedStageRes = await ChangeProposalService.createProposalFromItems({
+        shopId: 'shop-fatboys',
+        sourceUrl: 'https://fatboysmotorbikes.com/',
+        items: [
+          {
+            entityType: 'motorcycle',
+            action: 'update',
+            entityId: 'bike-fatboys-1',
+            brandName: 'Honda',
+            modelName: 'Click 125i',
+            proposedData: {
+              conditions: [
+                {
+                  condition_type_id: SECURITY_DEPOSIT_ID,
+                  notes: 'THB 4,000',
+                },
+              ],
+            },
+          },
+        ],
+      });
+      expect(paginatedStageRes.proposal.id).toBe('prop-fatboys-160');
+    });
   });
 });
+
 
 
