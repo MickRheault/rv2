@@ -202,9 +202,10 @@ it('configures SYSTEM_PROMPT with strict domain boundaries, redirect instruction
     expect(SYSTEM_PROMPT).toMatch(/prompt injection/i);
     expect(SYSTEM_PROMPT).toMatch(/jailbreak/i);
 
-    // Verify SYSTEM_PROMPT is passed to OpenAI completion
+    // Verify SYSTEM_PROMPT and model are passed to OpenAI completion
     await POST(request(`Bearer ${configuredSecret}`, 'Tell me about motorcycle rentals'));
     expect(mockCreateCompletion).toHaveBeenCalledWith(expect.objectContaining({
+        model: 'gpt-4.1-mini',
         messages: expect.arrayContaining([
             { role: 'system', content: SYSTEM_PROMPT },
         ]),

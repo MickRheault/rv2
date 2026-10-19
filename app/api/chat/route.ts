@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
 
         // Call OpenAI with tools
         let response = await getOpenAI().chat.completions.create({
-            model: 'gpt-4o-mini',
+            model: 'gpt-4.1-mini',
             messages,
             tools: openAITools,
             tool_choice: 'auto',
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
 
             // Get next response from OpenAI
             response = await getOpenAI().chat.completions.create({
-                model: 'gpt-4o-mini',
+                model: 'gpt-4.1-mini',
                 messages,
                 tools: openAITools,
                 tool_choice: 'auto',
