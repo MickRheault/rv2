@@ -212,6 +212,13 @@ it('configures SYSTEM_PROMPT with strict domain boundaries, redirect instruction
     }));
 });
 
+it('instructs SYSTEM_PROMPT to keep motorcycle and shop URLs as relative paths and never prepend domains like globalmoto.com', () => {
+    expect(SYSTEM_PROMPT).toMatch(/relative/i);
+    expect(SYSTEM_PROMPT).toContain('/motorcycle/');
+    expect(SYSTEM_PROMPT).toContain('/shop/');
+    expect(SYSTEM_PROMPT).toContain('globalmoto.com');
+});
+
 it('handles off-topic queries with redirect response without executing tools', async () => {
     const redirectResponse = 'I can only help with motorcycle rentals, riding tips, and Global Moto Rentals services. How can I help you find a bike today?';
     mockCreateCompletion.mockResolvedValueOnce({

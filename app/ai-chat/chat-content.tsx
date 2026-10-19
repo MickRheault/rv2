@@ -8,6 +8,7 @@ import { ArrowLeftIcon, PlusIcon } from '@heroicons/react/24/outline';
 import ReactMarkdown from 'react-markdown';
 import { SUGGESTION_PROMPTS } from '@/lib/chat/suggestions';
 import { submitFormOnEnter } from '@/lib/chat/keyboard';
+import { normalizeChatHref } from '@/lib/chat/links';
 import './markdown.css';
 
 interface Message {
@@ -268,7 +269,7 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
                                             <ReactMarkdown
                                                 components={{
                                                     a: ({ href, children }) => (
-                                                        <a href={href} target="_blank" rel="noopener noreferrer">
+                                                        <a href={normalizeChatHref(href)} target="_blank" rel="noopener noreferrer">
                                                             {children}
                                                         </a>
                                                     ),
