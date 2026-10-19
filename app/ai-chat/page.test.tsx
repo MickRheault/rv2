@@ -1,3 +1,4 @@
+import { StrictMode } from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useSearchParams } from 'next/navigation';
 import ChatPage from './page';
@@ -211,4 +212,85 @@ it('provides accessible labels for input and live region for message history', (
     expect(screen.getByRole('button', { name: 'Send message' })).toBeInTheDocument();
     expect(screen.getByLabelText('Ask about motorcycles, shops, or locations...')).toBeInTheDocument();
 });
+
+it('automatically sends the initial prompt from the ?q= query parameter once on load and clears on New Chat without re-sending', async () => {
+    delete process.env.AI_CHAT_ACCESS_SECRET;
+    jest.mocked(useSearchParams).mockReturnValue(new URLSearchParams({
+        q: 'Find scooters in Bangkok',
+    }) as ReturnType<typeof useSearchParams>);
+
+    const { rerender } = render(<ChatPage />);
+
+    expect(await screen.findByText('Find scooters in Bangkok')).toBeInTheDocument();
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    expect(fetch).toHaveBeenCalledWith('/api/chat', expect.objectContaining({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Find scooters in Bangkok' }),
+    }));
+    expect(await screen.findByText('Here are some scooters.')).toBeInTheDocument();
+
+    // Re-rendering with the same searchParams should not re-send the initial query
+    rerender(<ChatPage />);
+    expect(fetch).toHaveBeenCalledTimes(1);
+
+    // Clicking New Chat clears the conversation and does not re-send ?q=
+    fireEvent.click(screen.getByRole('button', { name: /New Chat/i }));
+    expect(screen.queryByText('Here are some scooters.')).not.toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledTimes(1);
+});
+
+it('does not auto-send the ?q= query parameter when accessRequired is true and no secret is provided', () => {
+    process.env.AI_CHAT_ACCESS_SECRET = 'test-only-server-access-code';
+    jest.mocked(useSearchParams).mockReturnValue(new URLSearchParams({
+        q: 'Find scooters in Bangkok',
+    }) as ReturnType<typeof useSearchParams>);
+
+    render(<ChatPage />);
+
+    expect(screen.getByText('Access denied')).toBeInTheDocument();
+    expect(fetch).not.toHaveBeenCalled();
+});
+
+it('completes the ?q= initial query under React StrictMode without losing the response or duplicating the user message', async () => {
+    delete process.env.AI_CHAT_ACCESS_SECRET;
+    jest.mocked(useSearchParams).mockReturnValue(new URLSearchParams({
+        q: 'Find scooters in Bangkok',
+    }) as ReturnType<typeof useSearchParams>);
+
+    jest.mocked(fetch).mockImplementation((_url, init) => {
+        const signal = (init as RequestInit)?.signal as AbortSignal | undefined;
+        return new Promise((resolve, reject) => {
+            if (signal?.aborted) {
+                const abortErr = new Error('The operation was aborted.');
+                abortErr.name = 'AbortError';
+                reject(abortErr);
+                return;
+            }
+            signal?.addEventListener('abort', () => {
+                const abortErr = new Error('The operation was aborted.');
+                abortErr.name = 'AbortError';
+                reject(abortErr);
+            });
+            setTimeout(() => {
+                resolve({
+                    ok: true,
+                    status: 200,
+                    text: async () => JSON.stringify({ response: 'Here are some scooters.' }),
+                } as Response);
+            }, 10);
+        });
+    });
+
+    render(
+        <StrictMode>
+            <ChatPage />
+        </StrictMode>
+    );
+
+    expect(await screen.findByText('Here are some scooters.')).toBeInTheDocument();
+    expect(screen.getAllByText('Find scooters in Bangkok')).toHaveLength(1);
+});
+
+
 

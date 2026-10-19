@@ -11,6 +11,7 @@ export default function Header() {
   const pathname = usePathname()
 
   const navigation = [
+    { name: 'AI Chat', href: '/ai-chat' },
     { name: 'Search', href: '/search' },
     { name: 'Countries', href: '/browse' },
     { name: 'Motorcycles', href: '/motorcycle' },

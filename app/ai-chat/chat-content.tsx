@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { ArrowLeftIcon, PlusIcon } from '@heroicons/react/24/outline';
 import ReactMarkdown from 'react-markdown';
+import { SUGGESTION_PROMPTS } from '@/lib/chat/suggestions';
+import { submitFormOnEnter } from '@/lib/chat/keyboard';
 import './markdown.css';
 
 interface Message {
@@ -14,16 +16,10 @@ interface Message {
     toolCalls?: { name: string; args: string; result: string }[];
 }
 
-const SUGGESTION_PROMPTS = [
-    'Find scooters in Bangkok',
-    'List adventure bikes in Chiang Mai',
-    'What brands are available?',
-    'Show me shops in Phuket',
-] as const;
-
 export default function ChatContent({ accessRequired }: { accessRequired: boolean }) {
     const searchParams = useSearchParams();
     const secret = searchParams.get('secret');
+    const initialQuery = searchParams.get('q')?.trim() || '';
 
     // Hooks must be called unconditionally (before any returns)
     const [messages, setMessages] = useState<Message[]>([]);
@@ -34,65 +30,18 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
+    const autoSentQueryRef = useRef<string | null>(null);
 
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView?.({ behavior: 'smooth' });
-    }, [messages, isLoading]);
+    const submitPrompt = useCallback(async (
+        userMessage: string,
+        options: { appendUserMessage?: boolean } = {}
+    ) => {
+        if (!userMessage) return;
+        const { appendUserMessage = true } = options;
 
-    // Abort any in-flight request when component unmounts
-    useEffect(() => {
-        return () => {
-            if (abortControllerRef.current) {
-                abortControllerRef.current.abort();
-            }
-        };
-    }, []);
-
-    // The API validates the supplied access code against a server-only environment variable.
-    if (accessRequired && !secret) {
-        return (
-            <div style={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                height: '100vh',
-                background: '#0a0a0a',
-                color: '#666'
-            }}>
-                Access denied
-            </div>
-        );
-    }
-
-    const handleNewChat = () => {
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
+        if (appendUserMessage) {
+            setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
         }
-        setMessages([]);
-        setInput('');
-        setIsLoading(false);
-    };
-
-    const handleSuggestionClick = (prompt: string) => {
-        setInput(prompt);
-        textareaRef.current?.focus();
-    };
-
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        const isComposing = (e.nativeEvent as any)?.isComposing || (e as any).isComposing;
-        if (e.key === 'Enter' && !e.shiftKey && !isComposing) {
-            e.preventDefault();
-            formRef.current?.requestSubmit();
-        }
-    };
-
-    const sendMessage = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!input.trim() || isLoading) return;
-
-        const userMessage = input.trim();
-        setInput('');
-        setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
         setIsLoading(true);
 
         const controller = new AbortController();
@@ -143,8 +92,81 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
                 { role: 'assistant', content: `Error: ${error instanceof Error ? error.message : 'Unable to contact the chat server. Please try again.'}` },
             ]);
         } finally {
-            setIsLoading(false);
+            if (abortControllerRef.current === controller) {
+                abortControllerRef.current = null;
+                setIsLoading(false);
+            }
         }
+    }, [accessRequired, secret]);
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView?.({ behavior: 'smooth' });
+    }, [messages, isLoading]);
+
+    // Auto-submit initial ?q= prompt once when access is allowed
+    useEffect(() => {
+        if (accessRequired && !secret) return;
+        if (!initialQuery) return;
+        const wasAbortedByStrictCleanup =
+            autoSentQueryRef.current === initialQuery &&
+            Boolean(abortControllerRef.current?.signal.aborted);
+        if (autoSentQueryRef.current === initialQuery && !wasAbortedByStrictCleanup) return;
+
+        autoSentQueryRef.current = initialQuery;
+        void submitPrompt(initialQuery, { appendUserMessage: !wasAbortedByStrictCleanup });
+    }, [accessRequired, secret, initialQuery, submitPrompt]);
+
+    // Abort any in-flight request when component unmounts
+    useEffect(() => {
+        return () => {
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+        };
+    }, []);
+
+    // The API validates the supplied access code against a server-only environment variable.
+    if (accessRequired && !secret) {
+        return (
+            <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                height: '100vh',
+                background: '#0a0a0a',
+                color: '#666'
+            }}>
+                Access denied
+            </div>
+        );
+    }
+
+    const handleNewChat = () => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+            abortControllerRef.current = null;
+        }
+        setMessages([]);
+        setInput('');
+        setIsLoading(false);
+    };
+
+    const handleSuggestionClick = (prompt: string) => {
+        setInput(prompt);
+        textareaRef.current?.focus();
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        submitFormOnEnter(e, formRef.current);
+    };
+
+    const sendMessage = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!input.trim() || isLoading) return;
+
+        const userMessage = input.trim();
+        setInput('');
+        await submitPrompt(userMessage);
     };
 
     return (
