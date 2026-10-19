@@ -601,8 +601,74 @@ describe('ChangeProposalDiffViewer', () => {
     expect(screen.getByText('Phone Holder')).toBeInTheDocument();
     expect(screen.queryByText(/Needs Identity Review/i)).not.toBeInTheDocument();
   });
-});
 
+  it('displays a clear timeout/server error instead of JSON syntax error when apply returns a non-JSON 504 response (#153)', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 504,
+      json: async () => {
+        throw new SyntaxError('Unexpected token \'A\', "An error o"... is not valid JSON');
+      },
+    });
+
+    render(<ChangeProposalDiffViewer proposal={mockProposal} items={mockItems} />);
+
+    const applyBtn = screen.getByRole('button', { name: /Approve & Apply Selected/i });
+    fireEvent.click(applyBtn);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Request timed out while applying changes/i)
+      ).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/Unexpected token/i)).not.toBeInTheDocument();
+  });
+
+  it('renders an Applied badge without an unchecked checkbox for already-applied items in a pending proposal (#153)', () => {
+    const partiallyCompletedItems: DiffViewerItem[] = [
+      {
+        id: 'item-applied-update',
+        proposal_id: 'prop-1',
+        entity_type: 'motorcycle',
+        action: 'update',
+        entity_id: 'bike-applied-1',
+        brand_name: 'Honda',
+        model_name: 'Moove 110',
+        original_data: { year: 2022, rates: [{ minDays: 1, ratePerDay: 200 }] },
+        proposed_data: { year: 2023, rates: [{ minDays: 1, ratePerDay: 250 }] },
+        diff_summary: null,
+        status: 'applied',
+      },
+      {
+        id: 'item-pending-update',
+        proposal_id: 'prop-1',
+        entity_type: 'motorcycle',
+        action: 'update',
+        entity_id: 'bike-pending-2',
+        brand_name: 'Yamaha',
+        model_name: 'Fazzio 125',
+        original_data: { year: 2023, rates: [{ minDays: 1, ratePerDay: 300 }] },
+        proposed_data: { year: 2024, rates: [{ minDays: 1, ratePerDay: 350 }] },
+        diff_summary: null,
+        status: 'pending',
+      },
+    ];
+
+    render(<ChangeProposalDiffViewer proposal={mockProposal} items={partiallyCompletedItems} />);
+
+    // Only the 1 pending item should have a checkbox (and be checked)
+    const checkboxes = screen.getAllByRole('checkbox');
+    expect(checkboxes).toHaveLength(1);
+    expect(checkboxes[0]).toBeChecked();
+
+    // The already-applied item should display an "Applied" badge and toolbar summary
+    expect(screen.getByText('Honda Moove 110')).toBeInTheDocument();
+    expect(screen.getByText('Yamaha Fazzio 125')).toBeInTheDocument();
+    expect(screen.getByText(/^✓ Applied$/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 of 1 items selected/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 already applied/i)).toBeInTheDocument();
+  });
+});
 
 
 

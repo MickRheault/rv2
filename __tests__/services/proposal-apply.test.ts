@@ -1798,6 +1798,371 @@ describe('Change Proposal Application & Geodata Protection', () => {
       expect(insertedInclusions).toEqual([{ shop_id: 'shop-1', inclusion_text: 'Phone Holder' }]);
       expect(deletedInclusions).toEqual(['Old Paper Map']);
     });
+
+    it('preserves already-applied items on partial retry without re-inserting duplicates or overwriting them to rejected (#153)', async () => {
+      const proposalData = {
+        id: 'prop-partial-retry',
+        shop_id: 'shop-ekkamai',
+        status: 'pending',
+      };
+
+      const itemsData = [
+        {
+          id: 'item-already-applied-add',
+          proposal_id: 'prop-partial-retry',
+          entity_type: 'motorcycle',
+          action: 'add',
+          entity_id: null,
+          brand_name: 'Honda',
+          model_name: 'Moove 110',
+          proposed_data: {
+            brand: 'Honda',
+            modelName: 'Moove 110',
+            year: 2023,
+            rates: [{ minDays: 1, ratePerDay: 200, currency: 'THB' }],
+          },
+          status: 'applied',
+        },
+        {
+          id: 'item-already-applied-update',
+          proposal_id: 'prop-partial-retry',
+          entity_type: 'motorcycle',
+          action: 'update',
+          entity_id: 'bike-existing-1',
+          brand_name: 'Yamaha',
+          model_name: 'Qbix 125',
+          proposed_data: {
+            brand: 'Yamaha',
+            modelName: 'Qbix 125',
+            year: 2022,
+            rates: [{ minDays: 1, ratePerDay: 250, currency: 'THB' }],
+          },
+          status: 'applied',
+        },
+        {
+          id: 'item-remaining-pending-add',
+          proposal_id: 'prop-partial-retry',
+          entity_type: 'motorcycle',
+          action: 'add',
+          entity_id: null,
+          brand_name: 'Honda',
+          model_name: 'Click 160',
+          proposed_data: {
+            brand: 'Honda',
+            modelName: 'Click 160',
+            year: 2024,
+            rates: [{ minDays: 1, ratePerDay: 350, currency: 'THB' }],
+          },
+          status: 'pending',
+        },
+        {
+          id: 'item-remaining-pending-reject',
+          proposal_id: 'prop-partial-retry',
+          entity_type: 'motorcycle',
+          action: 'delist',
+          entity_id: 'bike-existing-2',
+          brand_name: 'Honda',
+          model_name: 'Zoomer-X 110',
+          proposed_data: { availability_status: 'unavailable' },
+          status: 'pending',
+        },
+      ];
+
+      const insertedMotorcycles: any[] = [];
+      const updatedMotorcycles: any[] = [];
+      const rejectedItemIds: string[] = [];
+      let finalProposalUpdate: any = null;
+
+      const mockSupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({ data: proposalData, error: null }),
+                }),
+              }),
+              update: jest.fn((payload: any) => {
+                finalProposalUpdate = payload;
+                return {
+                  eq: jest.fn().mockResolvedValue({ error: null }),
+                };
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ data: itemsData, error: null }),
+              }),
+              update: jest.fn((payload: any) => ({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+                in: jest.fn((_col: string, ids: string[]) => {
+                  if (payload.status === 'rejected') {
+                    rejectedItemIds.push(...ids);
+                  }
+                  return Promise.resolve({ error: null });
+                }),
+              })),
+            };
+          }
+          if (table === 'brands') {
+            return {
+              select: jest.fn().mockReturnValue({
+                ilike: jest.fn().mockReturnValue({
+                  maybeSingle: jest.fn().mockResolvedValue({ data: { id: 'brand-honda' }, error: null }),
+                }),
+              }),
+            };
+          }
+          if (table === 'motorcycle_rentals') {
+            return {
+              insert: jest.fn((payload: any) => {
+                insertedMotorcycles.push(payload);
+                return {
+                  select: jest.fn().mockReturnValue({
+                    single: jest.fn().mockResolvedValue({ data: { id: 'bike-click-new' }, error: null }),
+                  }),
+                };
+              }),
+              update: jest.fn((payload: any) => ({
+                eq: jest.fn((_col: string, id: string) => {
+                  updatedMotorcycles.push({ id, payload });
+                  return Promise.resolve({ error: null });
+                }),
+              })),
+            };
+          }
+          if (table === 'rental_rate_tiers') {
+            return {
+              delete: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+              insert: jest.fn().mockResolvedValue({ error: null }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      // Caller passes an already-applied item ID AND one of the remaining pending item IDs,
+      // while omitting the other already-applied item ID (since it was unchecked in the UI)
+      // and omitting item-remaining-pending-reject.
+      const res = await ChangeProposalService.apply('prop-partial-retry', [
+        'item-already-applied-add',
+        'item-remaining-pending-add',
+      ]);
+
+      expect(res.success).toBe(true);
+      expect(res.appliedCount).toBe(1);
+
+      // Must ONLY insert the pending add item ("Click 160"), NEVER re-insert "Moove 110"
+      expect(insertedMotorcycles).toHaveLength(1);
+      expect(insertedMotorcycles[0].model).toBe('Click 160');
+      expect(updatedMotorcycles).toHaveLength(0);
+
+      // Must ONLY mark the unapproved PENDING item as rejected, NEVER overwrite item-already-applied-update
+      expect(rejectedItemIds).toEqual(['item-remaining-pending-reject']);
+      expect(finalProposalUpdate.status).toBe('partially_applied');
+    });
+
+    it('marks proposal status as applied when all remaining pending items are approved after a partial timeout (#153)', async () => {
+      const proposalData = {
+        id: 'prop-finish-retry',
+        shop_id: 'shop-ekkamai',
+        status: 'pending',
+      };
+
+      const itemsData = [
+        {
+          id: 'item-applied-1',
+          proposal_id: 'prop-finish-retry',
+          entity_type: 'motorcycle',
+          action: 'update',
+          entity_id: 'bike-1',
+          brand_name: 'Honda',
+          model_name: 'Click 125',
+          proposed_data: { year: 2023 },
+          status: 'applied',
+        },
+        {
+          id: 'item-pending-2',
+          proposal_id: 'prop-finish-retry',
+          entity_type: 'motorcycle',
+          action: 'update',
+          entity_id: 'bike-2',
+          brand_name: 'Yamaha',
+          model_name: 'Aerox 155',
+          proposed_data: { year: 2024 },
+          status: 'pending',
+        },
+      ];
+
+      const rejectedItemIds: string[] = [];
+      let finalProposalUpdate: any = null;
+
+      const mockSupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({ data: proposalData, error: null }),
+                }),
+              }),
+              update: jest.fn((payload: any) => {
+                finalProposalUpdate = payload;
+                return {
+                  eq: jest.fn().mockResolvedValue({ error: null }),
+                };
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ data: itemsData, error: null }),
+              }),
+              update: jest.fn((payload: any) => ({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+                in: jest.fn((_col: string, ids: string[]) => {
+                  if (payload.status === 'rejected') {
+                    rejectedItemIds.push(...ids);
+                  }
+                  return Promise.resolve({ error: null });
+                }),
+              })),
+            };
+          }
+          if (table === 'brands') {
+            return {
+              select: jest.fn().mockReturnValue({
+                ilike: jest.fn().mockReturnValue({
+                  maybeSingle: jest.fn().mockResolvedValue({ data: { id: 'brand-yamaha' }, error: null }),
+                }),
+              }),
+            };
+          }
+          if (table === 'motorcycle_rentals') {
+            return {
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      // UI only sends the remaining pending item ID ('item-pending-2')
+      const res = await ChangeProposalService.apply('prop-finish-retry', ['item-pending-2']);
+
+      expect(res.success).toBe(true);
+      expect(res.appliedCount).toBe(1);
+      expect(res.status).toBe('applied');
+      expect(rejectedItemIds).toEqual([]);
+      expect(finalProposalUpdate.status).toBe('applied');
+    });
+
+    it('deduplicates brand lookups across large batches of items sharing the same brand (#153)', async () => {
+      const proposalData = {
+        id: 'prop-50-items',
+        shop_id: 'shop-large',
+        status: 'pending',
+      };
+
+      const itemsData = Array.from({ length: 20 }, (_, i) => ({
+        id: `item-batch-${i}`,
+        proposal_id: 'prop-50-items',
+        entity_type: 'motorcycle',
+        action: 'update',
+        entity_id: `bike-${i}`,
+        brand_name: i % 2 === 0 ? 'Honda' : 'Yamaha',
+        model_name: `Model ${i}`,
+        proposed_data: {
+          brand: i % 2 === 0 ? 'Honda' : 'Yamaha',
+          modelName: `Model ${i}`,
+          year: 2024,
+          rates: [{ minDays: 1, ratePerDay: 300, currency: 'THB' }],
+        },
+        status: 'pending',
+      }));
+
+      let brandQueryCount = 0;
+
+      const mockSupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({ data: proposalData, error: null }),
+                }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ data: itemsData, error: null }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+                in: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'brands') {
+            return {
+              select: jest.fn().mockReturnValue({
+                ilike: jest.fn((_col: string, name: string) => ({
+                  maybeSingle: jest.fn().mockImplementation(async () => {
+                    brandQueryCount++;
+                    return { data: { id: `brand-${name.toLowerCase()}` }, error: null };
+                  }),
+                })),
+              }),
+            };
+          }
+          if (table === 'motorcycle_rentals') {
+            return {
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'rental_rate_tiers') {
+            return {
+              delete: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+              insert: jest.fn().mockResolvedValue({ error: null }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      const res = await ChangeProposalService.apply(
+        'prop-50-items',
+        itemsData.map((i) => i.id)
+      );
+
+      expect(res.success).toBe(true);
+      expect(res.appliedCount).toBe(20);
+      // Should only query brands twice (once for Honda, once for Yamaha), not 20 times
+      expect(brandQueryCount).toBe(2);
+    });
   });
 });
+
 
