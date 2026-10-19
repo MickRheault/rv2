@@ -1,8 +1,6 @@
-import Link from 'next/link'
 import Image from 'next/image'
-import { MagnifyingGlassIcon, MapPinIcon, CurrencyDollarIcon, ShieldCheckIcon } from '@heroicons/react/24/outline'
 import AuthTokenDetector from '@/components/auth/AuthTokenDetector'
-import HeroSearchForm from '@/components/search/HeroSearchForm'
+import HeroDiscoveryCard from '@/components/search/HeroDiscoveryCard'
 
 export default function Home() {
   return (
@@ -36,15 +34,17 @@ export default function Home() {
           <div className="absolute inset-0 bg-black/40 z-10"></div>
         </div>
 
-        <div className="container-custom relative z-20">
+        <div className="container-custom relative z-20 py-12">
           <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 text-balance">
+            <h1 className="text-4xl md:text-6xl font-bold text-white mb-4 text-balance">
               Where do you want to ride?
             </h1>
+            <p className="text-lg md:text-xl text-white/90 mb-8 max-w-2xl mx-auto">
+              Ask our AI rental assistant or browse motorcycles by country and city.
+            </p>
 
-
-            {/* Search Form */}
-            <HeroSearchForm />
+            {/* AI Chat & Location Search Discovery Card */}
+            <HeroDiscoveryCard />
           </div>
         </div>
       </section>

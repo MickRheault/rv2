@@ -16,7 +16,11 @@ interface City {
   countryCode: string
 }
 
-export default function HeroSearchForm() {
+export interface HeroSearchFormProps {
+  embedded?: boolean
+}
+
+export default function HeroSearchForm({ embedded = false }: HeroSearchFormProps = {}) {
   const router = useRouter()
   const [countries, setCountries] = useState<Country[]>([])
   const [cities, setCities] = useState<City[]>([])
@@ -117,9 +121,13 @@ export default function HeroSearchForm() {
     router.push(`/search?${searchParams.toString()}`)
   }
 
+  const containerClassName = embedded
+    ? 'text-left'
+    : 'bg-white/95 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg max-w-4xl mx-auto text-left'
+
   if (loading) {
     return (
-      <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg max-w-4xl mx-auto">
+      <div className={containerClassName}>
         <div className="animate-pulse">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             <div className="space-y-2">
@@ -144,7 +152,7 @@ export default function HeroSearchForm() {
   }
 
   return (
-    <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg max-w-4xl mx-auto">
+    <div className={containerClassName}>
       <div className="flex flex-col gap-4">
         {/* Mobile: Stack all fields vertically, Desktop: Row layout */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

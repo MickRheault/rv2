@@ -212,3 +212,43 @@ it('provides accessible labels for input and live region for message history', (
     expect(screen.getByLabelText('Ask about motorcycles, shops, or locations...')).toBeInTheDocument();
 });
 
+it('automatically sends the initial prompt from the ?q= query parameter once on load and clears on New Chat without re-sending', async () => {
+    delete process.env.AI_CHAT_ACCESS_SECRET;
+    jest.mocked(useSearchParams).mockReturnValue(new URLSearchParams({
+        q: 'Find scooters in Bangkok',
+    }) as ReturnType<typeof useSearchParams>);
+
+    const { rerender } = render(<ChatPage />);
+
+    expect(await screen.findByText('Find scooters in Bangkok')).toBeInTheDocument();
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    expect(fetch).toHaveBeenCalledWith('/api/chat', expect.objectContaining({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Find scooters in Bangkok' }),
+    }));
+    expect(await screen.findByText('Here are some scooters.')).toBeInTheDocument();
+
+    // Re-rendering with the same searchParams should not re-send the initial query
+    rerender(<ChatPage />);
+    expect(fetch).toHaveBeenCalledTimes(1);
+
+    // Clicking New Chat clears the conversation and does not re-send ?q=
+    fireEvent.click(screen.getByRole('button', { name: /New Chat/i }));
+    expect(screen.queryByText('Here are some scooters.')).not.toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledTimes(1);
+});
+
+it('does not auto-send the ?q= query parameter when accessRequired is true and no secret is provided', () => {
+    process.env.AI_CHAT_ACCESS_SECRET = 'test-only-server-access-code';
+    jest.mocked(useSearchParams).mockReturnValue(new URLSearchParams({
+        q: 'Find scooters in Bangkok',
+    }) as ReturnType<typeof useSearchParams>);
+
+    render(<ChatPage />);
+
+    expect(screen.getByText('Access denied')).toBeInTheDocument();
+    expect(fetch).not.toHaveBeenCalled();
+});
+
+
