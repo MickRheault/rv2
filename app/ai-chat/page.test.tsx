@@ -1,3 +1,4 @@
+import { StrictMode } from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useSearchParams } from 'next/navigation';
 import ChatPage from './page';
@@ -250,5 +251,46 @@ it('does not auto-send the ?q= query parameter when accessRequired is true and n
     expect(screen.getByText('Access denied')).toBeInTheDocument();
     expect(fetch).not.toHaveBeenCalled();
 });
+
+it('completes the ?q= initial query under React StrictMode without losing the response or duplicating the user message', async () => {
+    delete process.env.AI_CHAT_ACCESS_SECRET;
+    jest.mocked(useSearchParams).mockReturnValue(new URLSearchParams({
+        q: 'Find scooters in Bangkok',
+    }) as ReturnType<typeof useSearchParams>);
+
+    jest.mocked(fetch).mockImplementation((_url, init) => {
+        const signal = (init as RequestInit)?.signal as AbortSignal | undefined;
+        return new Promise((resolve, reject) => {
+            if (signal?.aborted) {
+                const abortErr = new Error('The operation was aborted.');
+                abortErr.name = 'AbortError';
+                reject(abortErr);
+                return;
+            }
+            signal?.addEventListener('abort', () => {
+                const abortErr = new Error('The operation was aborted.');
+                abortErr.name = 'AbortError';
+                reject(abortErr);
+            });
+            setTimeout(() => {
+                resolve({
+                    ok: true,
+                    status: 200,
+                    text: async () => JSON.stringify({ response: 'Here are some scooters.' }),
+                } as Response);
+            }, 10);
+        });
+    });
+
+    render(
+        <StrictMode>
+            <ChatPage />
+        </StrictMode>
+    );
+
+    expect(await screen.findByText('Here are some scooters.')).toBeInTheDocument();
+    expect(screen.getAllByText('Find scooters in Bangkok')).toHaveLength(1);
+});
+
 
 

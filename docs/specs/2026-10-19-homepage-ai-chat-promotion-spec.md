@@ -16,7 +16,7 @@ Promote the AI Chat assistant as the primary default discovery experience on the
      - **"Ask AI"** (`role="tab"`, active by default, `aria-selected="true"`).
      - **"Search by Location"** (`role="tab"`, `aria-selected="false"`).
    - **Ask AI Tab Panel**:
-     - Renders an accessible prompt form (`<textarea>` or `<input>` with associated label, IME-safe `Enter`-to-submit while allowing `Shift+Enter` newlines, and an explicit `"Ask AI"` submit button).
+     - Renders an accessible prompt form (`<textarea>` or `<input>` with associated label, IME-safe `Enter`-to-submit via [`lib/chat/keyboard.ts`](file:///Users/mick/workspace/personal/rv2/lib/chat/keyboard.ts) while allowing `Shift+Enter` newlines, and an explicit `"Ask AI"` submit button).
      - Displays the 4 starter suggestion chips (`"Find scooters in Bangkok"`, `"List adventure bikes in Chiang Mai"`, `"What brands are available?"`, `"Show me shops in Phuket"`), shared with `/ai-chat` via a single constant module ([`lib/chat/suggestions.ts`](file:///Users/mick/workspace/personal/rv2/lib/chat/suggestions.ts)) to avoid duplication.
      - Submitting a non-empty prompt or clicking any suggestion chip immediately navigates to `/ai-chat?q=<encodeURIComponent(prompt)>`.
    - **Search by Location Tab Panel**:

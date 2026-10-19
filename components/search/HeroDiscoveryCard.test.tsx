@@ -88,25 +88,28 @@ describe('HeroDiscoveryCard & Homepage Hero', () => {
     fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: true })
     expect(mockPush).not.toHaveBeenCalled()
 
-    // IME composition (isComposing: true) does not submit
-    fireEvent.keyDown(textarea, {
+    // IME composition (isComposing: true) does not submit or preventDefault
+    const imeEventCompleted = fireEvent.keyDown(textarea, {
       key: 'Enter',
       shiftKey: false,
       isComposing: true,
       nativeEvent: { isComposing: true },
     })
+    expect(imeEventCompleted).toBe(true)
     expect(mockPush).not.toHaveBeenCalled()
 
-    // Safari IME fallback (keyCode: 229) does not submit
-    fireEvent.keyDown(textarea, {
+    // Safari IME fallback (keyCode: 229) does not submit or preventDefault
+    const safariImeEventCompleted = fireEvent.keyDown(textarea, {
       key: 'Enter',
       shiftKey: false,
       keyCode: 229,
     })
+    expect(safariImeEventCompleted).toBe(true)
     expect(mockPush).not.toHaveBeenCalled()
 
-    // Plain Enter submits the form
-    fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false })
+    // Plain Enter prevents default newline and submits the form
+    const enterEventCompleted = fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false })
+    expect(enterEventCompleted).toBe(false)
     expect(mockPush).toHaveBeenCalledWith(
       `/ai-chat?q=${encodeURIComponent('Find scooters in Bangkok')}`
     )

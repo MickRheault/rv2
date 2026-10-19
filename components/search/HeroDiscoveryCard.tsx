@@ -4,9 +4,33 @@ import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { SparklesIcon, MapPinIcon } from '@heroicons/react/24/outline'
 import HeroSearchForm from './HeroSearchForm'
-import { SUGGESTION_PROMPTS, isImeComposing } from '@/lib/chat/suggestions'
+import { SUGGESTION_PROMPTS } from '@/lib/chat/suggestions'
+import { submitFormOnEnter } from '@/lib/chat/keyboard'
 
 type DiscoveryTab = 'ai' | 'location'
+
+const DISCOVERY_TABS: {
+  id: DiscoveryTab
+  tabId: string
+  panelId: string
+  label: string
+  Icon: typeof SparklesIcon
+}[] = [
+  {
+    id: 'ai',
+    tabId: 'hero-tab-ai',
+    panelId: 'hero-panel-ai',
+    label: 'Ask AI',
+    Icon: SparklesIcon,
+  },
+  {
+    id: 'location',
+    tabId: 'hero-tab-location',
+    panelId: 'hero-panel-location',
+    label: 'Search by Location',
+    Icon: MapPinIcon,
+  },
+]
 
 export default function HeroDiscoveryCard() {
   const router = useRouter()
@@ -26,11 +50,7 @@ export default function HeroDiscoveryCard() {
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      if (isImeComposing(e)) return
-      formRef.current?.requestSubmit()
-    }
+    submitFormOnEnter(e, formRef.current)
   }
 
   return (
@@ -41,39 +61,28 @@ export default function HeroDiscoveryCard() {
         aria-label="Discovery mode"
         className="grid grid-cols-2 gap-1 p-1 bg-gray-100 rounded-xl mb-5 max-w-md mx-auto"
       >
-        <button
-          id="hero-tab-ai"
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'ai'}
-          aria-controls="hero-panel-ai"
-          onClick={() => setActiveTab('ai')}
-          className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
-            activeTab === 'ai'
-              ? 'bg-white text-blue-600 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          <SparklesIcon className="w-4 h-4 shrink-0" />
-          <span>Ask AI</span>
-        </button>
-
-        <button
-          id="hero-tab-location"
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'location'}
-          aria-controls="hero-panel-location"
-          onClick={() => setActiveTab('location')}
-          className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
-            activeTab === 'location'
-              ? 'bg-white text-blue-600 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          <MapPinIcon className="w-4 h-4 shrink-0" />
-          <span>Search by Location</span>
-        </button>
+        {DISCOVERY_TABS.map(({ id, tabId, panelId, label, Icon }) => {
+          const isSelected = activeTab === id
+          return (
+            <button
+              key={id}
+              id={tabId}
+              type="button"
+              role="tab"
+              aria-selected={isSelected}
+              aria-controls={panelId}
+              onClick={() => setActiveTab(id)}
+              className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
+                isSelected
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Icon className="w-4 h-4 shrink-0" />
+              <span>{label}</span>
+            </button>
+          )
+        })}
       </div>
 
       {/* Ask AI Panel */}

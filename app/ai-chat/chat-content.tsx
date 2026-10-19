@@ -6,7 +6,8 @@ import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { ArrowLeftIcon, PlusIcon } from '@heroicons/react/24/outline';
 import ReactMarkdown from 'react-markdown';
-import { SUGGESTION_PROMPTS, isImeComposing } from '@/lib/chat/suggestions';
+import { SUGGESTION_PROMPTS } from '@/lib/chat/suggestions';
+import { submitFormOnEnter } from '@/lib/chat/keyboard';
 import './markdown.css';
 
 interface Message {
@@ -31,10 +32,16 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
     const abortControllerRef = useRef<AbortController | null>(null);
     const autoSentQueryRef = useRef<string | null>(null);
 
-    const submitPrompt = useCallback(async (userMessage: string) => {
+    const submitPrompt = useCallback(async (
+        userMessage: string,
+        options: { appendUserMessage?: boolean } = {}
+    ) => {
         if (!userMessage) return;
+        const { appendUserMessage = true } = options;
 
-        setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+        if (appendUserMessage) {
+            setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+        }
         setIsLoading(true);
 
         const controller = new AbortController();
@@ -85,7 +92,10 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
                 { role: 'assistant', content: `Error: ${error instanceof Error ? error.message : 'Unable to contact the chat server. Please try again.'}` },
             ]);
         } finally {
-            setIsLoading(false);
+            if (abortControllerRef.current === controller) {
+                abortControllerRef.current = null;
+                setIsLoading(false);
+            }
         }
     }, [accessRequired, secret]);
 
@@ -97,10 +107,13 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
     useEffect(() => {
         if (accessRequired && !secret) return;
         if (!initialQuery) return;
-        if (autoSentQueryRef.current === initialQuery) return;
+        const wasAbortedByStrictCleanup =
+            autoSentQueryRef.current === initialQuery &&
+            Boolean(abortControllerRef.current?.signal.aborted);
+        if (autoSentQueryRef.current === initialQuery && !wasAbortedByStrictCleanup) return;
 
         autoSentQueryRef.current = initialQuery;
-        void submitPrompt(initialQuery);
+        void submitPrompt(initialQuery, { appendUserMessage: !wasAbortedByStrictCleanup });
     }, [accessRequired, secret, initialQuery, submitPrompt]);
 
     // Abort any in-flight request when component unmounts
@@ -131,6 +144,7 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
     const handleNewChat = () => {
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
+            abortControllerRef.current = null;
         }
         setMessages([]);
         setInput('');
@@ -143,10 +157,7 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (e.key === 'Enter' && !e.shiftKey && !isImeComposing(e)) {
-            e.preventDefault();
-            formRef.current?.requestSubmit();
-        }
+        submitFormOnEnter(e, formRef.current);
     };
 
     const sendMessage = async (e: React.FormEvent) => {
