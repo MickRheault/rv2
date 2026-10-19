@@ -249,31 +249,47 @@ function resolveProposalShopUrl(shop: any): string | undefined {
   return shop?.slug ? getShopUrl(shop) : undefined;
 }
 
-async function resolveOrCreateBrandId(supabase: any, brandName?: string | null): Promise<string | null> {
+async function resolveOrCreateBrandId(
+  supabase: any,
+  brandName?: string | null,
+  brandCache?: Map<string, Promise<string | null>>
+): Promise<string | null> {
   const normalizedName = (brandName || '').trim();
   if (!normalizedName) return null;
 
-  const brandsTable = supabase.from?.('brands');
-  if (!brandsTable?.select) return null;
-
-  const { data: existingBrand } =
-    (await brandsTable
-      .select('id')
-      ?.ilike?.('name', normalizedName)
-      ?.maybeSingle?.()) || { data: null };
-
-  if (existingBrand?.id) {
-    return existingBrand.id;
+  const cacheKey = normalizedName.toLowerCase();
+  if (brandCache?.has(cacheKey)) {
+    return brandCache.get(cacheKey)!;
   }
 
-  const { data: newBrand } =
-    (await brandsTable
-      .insert?.({ name: normalizedName })
-      ?.select?.('id')
-      ?.single?.()) || { data: null };
+  const lookupPromise = (async () => {
+    const brandsTable = supabase.from?.('brands');
+    if (!brandsTable?.select) return null;
 
-  return newBrand?.id || null;
+    const { data: existingBrand } =
+      (await brandsTable
+        .select('id')
+        ?.ilike?.('name', normalizedName)
+        ?.maybeSingle?.()) || { data: null };
+
+    if (existingBrand?.id) {
+      return existingBrand.id;
+    }
+
+    const { data: newBrand } =
+      (await brandsTable
+        .insert?.({ name: normalizedName })
+        ?.select?.('id')
+        ?.single?.()) || { data: null };
+
+    return newBrand?.id || null;
+  })();
+
+  brandCache?.set(cacheKey, lookupPromise);
+  return lookupPromise;
 }
+
+const APPLY_CONCURRENCY = 10;
 
 export class ChangeProposalService {
   /**
@@ -606,7 +622,9 @@ export class ChangeProposalService {
     const approvedSet = new Set(approvedItemIds);
     // Partition actionable mutation items from unchanged informational items
     const mutableItems = allItems.filter((i) => isActionableProposalAction(i.action));
-    const approvedItems = mutableItems.filter((i) => approvedSet.has(i.id));
+    const previouslyAppliedItems = mutableItems.filter((i) => i.status === 'applied');
+    const pendingMutableItems = mutableItems.filter((i) => i.status !== 'applied');
+    const approvedItems = pendingMutableItems.filter((i) => approvedSet.has(i.id));
 
     // 3. Validate geodata immutability across all approved items
     for (const item of approvedItems) {
@@ -614,9 +632,10 @@ export class ChangeProposalService {
     }
 
     let appliedCount = 0;
+    const brandCache = new Map<string, Promise<string | null>>();
 
-    // 4. Apply each approved item
-    for (const item of approvedItems) {
+    // 4. Apply each approved pending item in bounded concurrent batches
+    const applySingleItem = async (item: (typeof approvedItems)[number]) => {
       const proposed = (item.proposed_data as Record<string, any>) || {};
 
       if (item.entity_type === 'motorcycle') {
@@ -631,7 +650,8 @@ export class ChangeProposalService {
         if (item.action === 'add') {
           const brandId = await resolveOrCreateBrandId(
             supabase,
-            item.brand_name || normalizedBike.brand || 'Generic'
+            item.brand_name || normalizedBike.brand || 'Generic',
+            brandCache
           );
 
           const { data: newBike, error: bikeError } = await (supabase
@@ -677,7 +697,7 @@ export class ChangeProposalService {
             normalizedBike.brand ||
             (item.brand_name && origBrand && item.brand_name !== origBrand)
           ) {
-            const brandId = await resolveOrCreateBrandId(supabase, targetBrandName);
+            const brandId = await resolveOrCreateBrandId(supabase, targetBrandName, brandCache);
             if (brandId) {
               updatePayload.brand_id = brandId;
             }
@@ -864,10 +884,15 @@ export class ChangeProposalService {
         .from('change_proposal_items') as any)
         .update({ status: 'applied' })
         .eq('id', item.id);
+    };
+
+    for (let i = 0; i < approvedItems.length; i += APPLY_CONCURRENCY) {
+      const batch = approvedItems.slice(i, i + APPLY_CONCURRENCY);
+      await Promise.all(batch.map((item) => applySingleItem(item)));
     }
 
-    // 5. Mark non-approved mutable items as rejected (leave unchanged items as applied)
-    const unapprovedItems = mutableItems.filter((i) => !approvedSet.has(i.id));
+    // 5. Mark non-approved pending mutable items as rejected (leave unchanged & already-applied items as applied)
+    const unapprovedItems = pendingMutableItems.filter((i) => !approvedSet.has(i.id));
     if (unapprovedItems.length > 0) {
       await (supabase
         .from('change_proposal_items') as any)
@@ -875,11 +900,12 @@ export class ChangeProposalService {
         .in('id', unapprovedItems.map((i) => i.id));
     }
 
-    // 6. Update proposal status based on mutable items
+    // 6. Update proposal status based on total applied mutable items (including prior partial runs)
+    const totalAppliedMutableCount = previouslyAppliedItems.length + appliedCount;
     let finalStatus: 'applied' | 'partially_applied' | 'rejected';
-    if (mutableItems.length === 0 || approvedItems.length === mutableItems.length) {
+    if (mutableItems.length === 0 || totalAppliedMutableCount === mutableItems.length) {
       finalStatus = 'applied';
-    } else if (approvedItems.length === 0) {
+    } else if (totalAppliedMutableCount === 0) {
       finalStatus = 'rejected';
     } else {
       finalStatus = 'partially_applied';

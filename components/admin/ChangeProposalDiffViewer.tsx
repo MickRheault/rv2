@@ -293,18 +293,47 @@ export async function submitProposalDecision(
     body: JSON.stringify({ approvedItemIds }),
   });
 
-  const data = await res.json();
+  let data: any = null;
+  try {
+    data = await res.json();
+  } catch {
+    // Non-JSON response body (e.g. Vercel 504 gateway timeout or HTML error page)
+  }
 
   if (!res.ok) {
     throw new Error(
-      data.error ||
-        (approvedItemIds.length === 0
+      data?.error ||
+        (res.status === 504
+          ? 'Request timed out while applying changes. Some items may have been applied — please refresh to review remaining items.'
+          : approvedItemIds.length === 0
           ? 'Failed to reject proposal.'
           : 'Failed to apply selected changes.')
     );
   }
 
+  if (!data) {
+    throw new Error('Unexpected non-JSON response from server.');
+  }
+
   return data;
+}
+
+function renderItemDecisionBadge(status: DiffViewerItem['status']) {
+  if (status === 'applied') {
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800">
+        ✓ Applied
+      </span>
+    );
+  }
+  if (status === 'rejected') {
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-red-100 text-red-800">
+        Rejected
+      </span>
+    );
+  }
+  return null;
 }
 
 export function ChangeProposalDiffViewer({
@@ -315,6 +344,7 @@ export function ChangeProposalDiffViewer({
 }: ChangeProposalDiffViewerProps) {
   const actionableItems = items.filter((i) => i.action !== 'unchanged');
   const pendingActionableItems = actionableItems.filter((i) => i.status === 'pending');
+  const appliedActionableItems = actionableItems.filter((i) => i.status === 'applied');
 
   // All pending actionable items selected by default (binary approval workflow, ADR 0012)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
@@ -485,7 +515,7 @@ export function ChangeProposalDiffViewer({
         {/* Action Toolbar */}
         {!isCompleted && pendingActionableItems.length > 0 && (
           <div className="mt-6 pt-4 border-t border-gray-100 flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <Button variant="outline" size="sm" onClick={selectAll}>
                 Select All
               </Button>
@@ -495,6 +525,11 @@ export function ChangeProposalDiffViewer({
               <span className="text-sm text-gray-600">
                 {selectedIds.size} of {pendingActionableItems.length} items selected
               </span>
+              {appliedActionableItems.length > 0 && (
+                <span className="text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                  {appliedActionableItems.length} already applied
+                </span>
+              )}
             </div>
 
             <div className="flex items-center gap-3">
@@ -549,7 +584,7 @@ export function ChangeProposalDiffViewer({
                   key={item.id}
                   className="py-3 flex items-start gap-3 hover:bg-gray-50 px-2 rounded-lg transition-colors"
                 >
-                  {!isCompleted && (
+                  {!isCompleted && item.status === 'pending' && (
                     <div className="pt-1">
                       <Checkbox
                         checked={selectedIds.has(item.id)}
@@ -565,6 +600,7 @@ export function ChangeProposalDiffViewer({
                       <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800">
                         + New Bike
                       </span>
+                      {renderItemDecisionBadge(item.status)}
                     </div>
                     <div className="text-xs text-gray-500 flex gap-4 mt-0.5">
                       {year != null && <span>Year: {year}</span>}
@@ -641,7 +677,7 @@ export function ChangeProposalDiffViewer({
                   key={item.id}
                   className="py-3 flex items-start gap-3 hover:bg-gray-50 px-2 rounded-lg transition-colors"
                 >
-                  {!isCompleted && (
+                  {!isCompleted && item.status === 'pending' && (
                     <div className="pt-1">
                       <Checkbox
                         checked={selectedIds.has(item.id)}
@@ -650,8 +686,11 @@ export function ChangeProposalDiffViewer({
                     </div>
                   )}
                   <div className="flex-1 text-sm">
-                    <div className="font-semibold text-gray-900">
-                      {item.brand_name} {item.model_name}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="font-semibold text-gray-900">
+                        {item.brand_name} {item.model_name}
+                      </div>
+                      {renderItemDecisionBadge(item.status)}
                     </div>
                     <div className="text-xs text-gray-500 flex gap-4 mt-0.5">
                       {year != null && <span>Year: {year}</span>}
@@ -735,7 +774,7 @@ export function ChangeProposalDiffViewer({
                 key={item.id}
                 className="py-3 flex items-start gap-3 hover:bg-gray-50 px-2 rounded-lg transition-colors"
               >
-                {!isCompleted && (
+                {!isCompleted && item.status === 'pending' && (
                   <div className="pt-1">
                     <Checkbox
                       checked={selectedIds.has(item.id)}
@@ -751,6 +790,7 @@ export function ChangeProposalDiffViewer({
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-red-100 text-red-800 line-through">
                       - Delisted / Unavailable
                     </span>
+                    {renderItemDecisionBadge(item.status)}
                   </div>
                   {renderRateTiers(item.original_data?.rates, item.original_data?.currency, 'red', true)}
                 </div>
@@ -826,7 +866,7 @@ export function ChangeProposalDiffViewer({
                   key={item.id}
                   className="py-3 flex items-start gap-3 hover:bg-gray-50 px-2 rounded-lg transition-colors"
                 >
-                  {!isCompleted && (
+                  {!isCompleted && item.status === 'pending' && (
                     <div className="pt-1">
                       <Checkbox
                         checked={selectedIds.has(item.id)}
@@ -835,7 +875,10 @@ export function ChangeProposalDiffViewer({
                     </div>
                   )}
                   <div className="flex-1 text-sm space-y-1">
-                    <div className="font-semibold text-gray-900">General Information</div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="font-semibold text-gray-900">General Information</div>
+                      {renderItemDecisionBadge(item.status)}
+                    </div>
                     <div className="space-y-1 text-xs">
                       {descDiff && (
                         <div className="text-gray-700">
