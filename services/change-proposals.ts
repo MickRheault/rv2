@@ -1,7 +1,17 @@
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import {
+  CANONICAL_CONDITION_TYPE_NAMES,
+  ConditionTypeCatalog,
+  resolveConditionName,
+  resolveConditionNotes,
+  resolveConditionTypeIdFromEntry,
+  toConditionNotesMap,
+} from '@/lib/motorcycle-conditions-helpers';
 import { normalizeMotorcycleYearRange } from '@/lib/utils';
 import { getShopUrl } from '@/lib/utils/urls';
 import { TaskSchedulerService } from './task-scheduler';
+
+export { CANONICAL_CONDITION_TYPE_NAMES };
 
 export class GeodataImmutabilityError extends Error {
   constructor(field: string) {
@@ -32,14 +42,7 @@ export interface MotorcycleConditionProposalEntry {
   notes: string | null;
 }
 
-export const CANONICAL_CONDITION_TYPE_NAMES: Record<string, string> = {
-  '9526b7ae-8c84-45a2-a8ac-c4ecbeea600b': 'Security Deposit',
-};
-
-async function loadConditionTypeCatalog(supabase: any): Promise<{
-  byId: Map<string, { id: string; name: string }>;
-  byName: Map<string, { id: string; name: string }>;
-}> {
+async function loadConditionTypeCatalog(supabase: any): Promise<ConditionTypeCatalog> {
   const byId = new Map<string, { id: string; name: string }>();
   const byName = new Map<string, { id: string; name: string }>();
 
@@ -50,6 +53,9 @@ async function loadConditionTypeCatalog(supabase: any): Promise<{
       typeof query?.limit === 'function'
         ? await query.limit(100)
         : await Promise.resolve(query);
+    if (res?.error) {
+      throw new Error(`Failed to load condition_types catalog: ${res.error.message}`);
+    }
     const rows = res?.data || [];
     for (const row of rows) {
       if (row?.id && row?.name) {
@@ -58,17 +64,20 @@ async function loadConditionTypeCatalog(supabase: any): Promise<{
         byName.set(entry.name.toLowerCase(), entry);
       }
     }
+    return { byId, byName, loadedFromDb: true };
   }
 
-  return { byId, byName };
+  for (const [id, name] of Object.entries(CANONICAL_CONDITION_TYPE_NAMES)) {
+    const entry = { id, name };
+    byId.set(id, entry);
+    byName.set(name.toLowerCase(), entry);
+  }
+  return { byId, byName, loadedFromDb: false };
 }
 
 export function normalizeAndValidateMotorcycleConditions(
   rawConditions: any,
-  catalog: {
-    byId: Map<string, { id: string; name: string }>;
-    byName: Map<string, { id: string; name: string }>;
-  },
+  catalog: ConditionTypeCatalog,
   enforceCatalogExistence = true
 ): MotorcycleConditionProposalEntry[] | undefined {
   if (rawConditions === undefined) {
@@ -89,22 +98,14 @@ export function normalizeAndValidateMotorcycleConditions(
       );
     }
 
-    let typeId = String(rawCond.condition_type_id ?? rawCond.conditionTypeId ?? '').trim();
-    const rawName = String(
-      rawCond.name ?? rawCond.condition_type_name ?? rawCond.condition_types?.name ?? ''
-    ).trim();
-
-    if (!typeId && rawName && catalog.byName.has(rawName.toLowerCase())) {
-      typeId = catalog.byName.get(rawName.toLowerCase())!.id;
-    }
-
+    const typeId = resolveConditionTypeIdFromEntry(rawCond, catalog);
     if (!typeId) {
       throw new ProposalItemValidationError(
         `Invalid condition_type_id at index ${idx}: condition_type_id is required.`
       );
     }
 
-    if (enforceCatalogExistence && catalog.byId.size > 0 && !catalog.byId.has(typeId)) {
+    if (enforceCatalogExistence && !catalog.byId.has(typeId)) {
       throw new ProposalItemValidationError(
         `Invalid condition_type_id '${typeId}': not found in condition_types.`
       );
@@ -117,58 +118,32 @@ export function normalizeAndValidateMotorcycleConditions(
     }
     seenTypeIds.add(typeId);
 
-    const rawNotes = rawCond.notes;
-    const notes =
-      rawNotes !== undefined && rawNotes !== null && String(rawNotes).trim().length > 0
-        ? String(rawNotes).trim()
-        : null;
-
-    const resolvedName =
-      catalog.byId.get(typeId)?.name ||
-      rawName ||
-      CANONICAL_CONDITION_TYPE_NAMES[typeId] ||
-      'Security Deposit';
-
     return {
       condition_type_id: typeId,
-      name: resolvedName,
-      notes,
+      name: resolveConditionName(rawCond, catalog),
+      notes: resolveConditionNotes(rawCond),
     };
   });
 }
 
 function areConditionStatesEqual(
   expectedOriginal: any[],
-  liveDbRows: Array<{ condition_type_id: string; notes?: string | null }>
+  liveDbRows: Array<{ condition_type_id: string; notes?: string | null }>,
+  catalog?: ConditionTypeCatalog
 ): boolean {
-  const expectedMap = new Map<string, string | null>();
-  for (const cond of expectedOriginal) {
-    const id = String(cond?.condition_type_id ?? cond?.conditionTypeId ?? '').trim();
-    if (!id) continue;
-    const notes =
-      cond?.notes !== undefined && cond?.notes !== null && String(cond.notes).trim().length > 0
-        ? String(cond.notes).trim()
-        : null;
-    expectedMap.set(id, notes);
-  }
+  const expected = toConditionNotesMap(expectedOriginal, catalog);
+  const live = toConditionNotesMap(liveDbRows, catalog);
 
-  const liveMap = new Map<string, string | null>();
-  for (const row of liveDbRows) {
-    const id = String(row?.condition_type_id ?? '').trim();
-    if (!id) continue;
-    const notes =
-      row?.notes !== undefined && row?.notes !== null && String(row.notes).trim().length > 0
-        ? String(row.notes).trim()
-        : null;
-    liveMap.set(id, notes);
-  }
-
-  if (expectedMap.size !== liveMap.size) {
+  if (expected.hasUnresolvedEntry || live.hasUnresolvedEntry) {
     return false;
   }
 
-  for (const [typeId, expectedNotes] of expectedMap.entries()) {
-    if (!liveMap.has(typeId) || liveMap.get(typeId) !== expectedNotes) {
+  if (expected.map.size !== live.map.size) {
+    return false;
+  }
+
+  for (const [typeId, expectedNotes] of expected.map.entries()) {
+    if (!live.map.has(typeId) || live.map.get(typeId) !== expectedNotes) {
       return false;
     }
   }
@@ -820,17 +795,21 @@ export class ChangeProposalService {
     );
     const approvedItems = pendingMutableItems.filter((i) => approvedSet.has(i.id));
 
-    // 3. Validate geodata immutability and motorcycle conditions across all approved items
+    // 3. Validate geodata immutability, motorcycle conditions, and before-state freshness across all approved items
     const hasApprovedBikeConditions = approvedItems.some(
       (i) => i.entity_type === 'motorcycle' && (i.proposed_data as any)?.conditions !== undefined
     );
-    const conditionCatalog = hasApprovedBikeConditions
+    const conditionCatalog: ConditionTypeCatalog = hasApprovedBikeConditions
       ? await loadConditionTypeCatalog(supabase)
       : { byId: new Map(), byName: new Map() };
 
     const validatedConditionsByItemId = new Map<
       string,
       MotorcycleConditionProposalEntry[] | undefined
+    >();
+    const liveConditionSnapshotByItemId = new Map<
+      string,
+      Array<{ motorcycle_id: string; condition_type_id: string; notes: string | null }>
     >();
 
     for (const item of approvedItems) {
@@ -844,6 +823,38 @@ export class ChangeProposalService {
             true
           );
           validatedConditionsByItemId.set(item.id, validated);
+
+          if (item.action === 'update' && item.entity_id) {
+            const origBike = (item.original_data as Record<string, any>) || {};
+            const mcTable = supabase.from('motorcycle_conditions') as any;
+            const condSelectRes = mcTable?.select
+              ? await mcTable
+                  .select('motorcycle_id, condition_type_id, notes')
+                  .eq('motorcycle_id', item.entity_id)
+              : { data: [], error: null };
+
+            if (condSelectRes?.error) {
+              throw new Error(
+                `Failed to read existing motorcycle conditions: ${condSelectRes.error.message}`
+              );
+            }
+
+            const snapshot = (condSelectRes?.data || []).map((r: any) => ({
+              motorcycle_id: item.entity_id as string,
+              condition_type_id: r.condition_type_id,
+              notes: r.notes ?? null,
+            }));
+            liveConditionSnapshotByItemId.set(item.id, snapshot);
+
+            if (
+              Array.isArray(origBike.conditions) &&
+              !areConditionStatesEqual(origBike.conditions, snapshot, conditionCatalog)
+            ) {
+              throw new StaleConditionStateError(
+                `Stale motorcycle conditions for motorcycle '${item.entity_id}': live database state diverged from proposal original_data.conditions.`
+              );
+            }
+          }
         }
       }
     }
@@ -905,51 +916,35 @@ export class ChangeProposalService {
               condition_type_id: c.condition_type_id,
               notes: c.notes,
             }));
-            const condRes = await mcTable.insert(condRows);
-            if (condRes?.error) {
-              throw new Error(`Failed to persist motorcycle conditions: ${condRes.error.message}`);
+            let addCondErr: any = null;
+            try {
+              const condRes = await mcTable.insert(condRows);
+              if (condRes?.error) {
+                addCondErr = condRes.error;
+              }
+            } catch (err) {
+              addCondErr = err;
+            }
+            if (addCondErr) {
+              try {
+                await (supabase.from('motorcycle_rentals') as any)
+                  .delete?.()
+                  ?.eq?.('id', newBike.id);
+              } catch {
+                // Best-effort cleanup of newly inserted motorcycle on condition failure
+              }
+              throw new Error(
+                `Failed to persist motorcycle conditions: ${
+                  addCondErr.message || String(addCondErr)
+                }`
+              );
             }
           }
 
           appliedCount++;
         } else if (item.action === 'update' && item.entity_id) {
           const origBike = (item.original_data as Record<string, any>) || {};
-          let liveConditionSnapshot: Array<{
-            motorcycle_id: string;
-            condition_type_id: string;
-            notes: string | null;
-          }> = [];
-
-          // If conditions are part of this update, verify before-state freshness first before any mutations
-          if (normalizedConditions !== undefined) {
-            const mcTable = supabase.from('motorcycle_conditions') as any;
-            const condSelectRes = mcTable?.select
-              ? await mcTable
-                  .select('motorcycle_id, condition_type_id, notes')
-                  .eq('motorcycle_id', item.entity_id)
-              : { data: [], error: null };
-
-            if (condSelectRes?.error) {
-              throw new Error(
-                `Failed to read existing motorcycle conditions: ${condSelectRes.error.message}`
-              );
-            }
-
-            liveConditionSnapshot = (condSelectRes?.data || []).map((r: any) => ({
-              motorcycle_id: item.entity_id as string,
-              condition_type_id: r.condition_type_id,
-              notes: r.notes ?? null,
-            }));
-
-            if (
-              Array.isArray(origBike.conditions) &&
-              !areConditionStatesEqual(origBike.conditions, liveConditionSnapshot)
-            ) {
-              throw new StaleConditionStateError(
-                `Stale motorcycle conditions for motorcycle '${item.entity_id}': live database state diverged from proposal original_data.conditions.`
-              );
-            }
-          }
+          const liveConditionSnapshot = liveConditionSnapshotByItemId.get(item.id) || [];
 
           // Update specifications directly from proposed_data / item metadata while preserving motorcycle ID
           const updatePayload: Record<string, any> = {};

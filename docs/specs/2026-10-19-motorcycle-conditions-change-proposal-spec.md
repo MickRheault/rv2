@@ -48,7 +48,7 @@ While the GMR database (`motorcycle_conditions` joined with `condition_types`) a
 
 1. **`__tests__/services/task-scheduler.test.ts`**:
    - Verify `TaskSchedulerService.getDueTasks` includes `conditions` on each `existingInventory` item and `conditionTypes` on the task payload.
-2. **`__tests__/services/proposal-apply.test.ts` & `__tests__/api/agent/change-proposals.test.ts`**:
+2. **`__tests__/services/proposal-apply.test.ts`, `__tests__/api/agent-change-proposals.test.ts`, & `__tests__/api/admin-proposal-apply.test.ts`**:
    - Verify `createProposalFromItems` accepts valid `proposedData.conditions`, rejects unknown `condition_type_id` or duplicate `condition_type_id` values with `ProposalItemValidationError`.
    - Verify `ChangeProposalService.apply`:
      - Persists `motorcycle_conditions` on `add` and `update`.

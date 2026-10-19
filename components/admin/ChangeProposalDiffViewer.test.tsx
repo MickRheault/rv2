@@ -698,6 +698,31 @@ describe('ChangeProposalDiffViewer', () => {
         diff_summary: null,
         status: 'pending',
       },
+      {
+        id: 'item-unchanged-deposit',
+        proposal_id: 'prop-1',
+        entity_type: 'motorcycle',
+        action: 'unchanged',
+        entity_id: '33d9d4ab-00c5-42de-87bb-b310fc9b1d70',
+        brand_name: 'Vespa',
+        model_name: 'Vespa LX125',
+        original_data: {
+          brand: 'Vespa',
+          model: 'Vespa LX125',
+          conditions: [
+            {
+              condition_type_id: '9526b7ae-8c84-45a2-a8ac-c4ecbeea600b',
+              notes: 'THB 10,000',
+            },
+          ],
+        },
+        proposed_data: {
+          brand: 'Vespa',
+          model: 'Vespa LX125',
+        },
+        diff_summary: null,
+        status: 'applied',
+      },
     ];
 
     render(<ChangeProposalDiffViewer proposal={mockProposal} items={conditionUpdateItems} />);
@@ -705,6 +730,9 @@ describe('ChangeProposalDiffViewer', () => {
     expect(
       screen.getByText('Honda Click 125 — Security Deposit: not set → THB 3,000')
     ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Unchanged Inventory/i }));
+    expect(screen.getByText('Security Deposit: THB 10,000')).toBeInTheDocument();
   });
 });
 

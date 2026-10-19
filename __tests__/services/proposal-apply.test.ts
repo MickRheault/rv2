@@ -2619,6 +2619,111 @@ describe('Change Proposal Application & Geodata Protection', () => {
           notes: 'THB 2,000',
         },
       ]);
+
+      // Case 3: Failed condition insertion during action === 'add' cleans up the newly created motorcycle_rentals row
+      const deletedMotorcycleIds: string[] = [];
+      (getSupabaseAdmin as jest.Mock).mockReturnValue({
+        from: jest.fn((table: string) => {
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({
+                    data: { id: 'prop-add-fail', shop_id: 'shop-madbike', status: 'pending' },
+                    error: null,
+                  }),
+                }),
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: 'item-add-fail',
+                      proposal_id: 'prop-add-fail',
+                      entity_type: 'motorcycle',
+                      action: 'add',
+                      entity_id: null,
+                      brand_name: 'Honda',
+                      model_name: 'Lead 125',
+                      proposed_data: {
+                        brand: 'Honda',
+                        modelName: 'Lead 125',
+                        year: 2024,
+                        rates: [{ minDays: 1, ratePerDay: 300, currency: 'THB' }],
+                        conditions: [{ condition_type_id: SECURITY_DEPOSIT_ID, notes: 'THB 3,000' }],
+                      },
+                      status: 'pending',
+                    },
+                  ],
+                  error: null,
+                }),
+              }),
+            };
+          }
+          if (table === 'condition_types') {
+            return {
+              select: jest.fn().mockResolvedValue({
+                data: [{ id: SECURITY_DEPOSIT_ID, name: 'Security Deposit' }],
+                error: null,
+              }),
+            };
+          }
+          if (table === 'brands') {
+            return {
+              select: jest.fn().mockReturnValue({
+                ilike: jest.fn().mockReturnValue({
+                  maybeSingle: jest.fn().mockResolvedValue({ data: { id: 'brand-honda' }, error: null }),
+                }),
+              }),
+            };
+          }
+          if (table === 'motorcycle_rentals') {
+            return {
+              insert: jest.fn().mockReturnValue({
+                select: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({ data: { id: 'bike-orphan-add' }, error: null }),
+                }),
+              }),
+              delete: jest.fn().mockReturnValue({
+                eq: jest.fn((_col: string, id: string) => {
+                  deletedMotorcycleIds.push(id);
+                  return Promise.resolve({ error: null });
+                }),
+              }),
+            };
+          }
+          if (table === 'rental_rate_tiers') {
+            return {
+              insert: jest.fn().mockResolvedValue({ error: null }),
+            };
+          }
+          if (table === 'motorcycle_conditions') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ data: [], error: null }),
+              }),
+              delete: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+              insert: jest.fn().mockResolvedValue({
+                data: null,
+                error: { message: 'Condition insert failed on add' },
+              }),
+            };
+          }
+          return {};
+        }),
+      });
+
+      await expect(
+        ChangeProposalService.apply('prop-add-fail', ['item-add-fail'])
+      ).rejects.toThrow(/Condition insert failed on add/i);
+
+      expect(deletedMotorcycleIds).toEqual(['bike-orphan-add']);
     });
 
     it('applies the 7-bike MadBike Sathon deposit corrective batch while preserving all 19 rental-price rows', async () => {

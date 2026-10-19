@@ -15,6 +15,11 @@ import {
   ChevronRightIcon,
 } from '@heroicons/react/24/outline';
 import { formatMotorcycleYear, getCurrencySymbol } from '@/lib/utils';
+import {
+  resolveConditionName,
+  resolveConditionNotes,
+  toConditionDisplayMap,
+} from '@/lib/motorcycle-conditions-helpers';
 import { getShopUrl } from '@/lib/utils/urls';
 
 export interface DiffViewerItem {
@@ -112,30 +117,6 @@ function renderRateTiers(
   );
 }
 
-const KNOWN_CONDITION_TYPE_NAMES: Record<string, string> = {
-  '9526b7ae-8c84-45a2-a8ac-c4ecbeea600b': 'Security Deposit',
-};
-
-function resolveConditionName(cond: any): string {
-  const explicitName =
-    cond?.name ?? cond?.condition_type_name ?? cond?.condition_types?.name;
-  if (typeof explicitName === 'string' && explicitName.trim().length > 0) {
-    return explicitName.trim();
-  }
-  const typeId = String(cond?.condition_type_id ?? cond?.conditionTypeId ?? '').trim();
-  if (typeId && KNOWN_CONDITION_TYPE_NAMES[typeId]) {
-    return KNOWN_CONDITION_TYPE_NAMES[typeId];
-  }
-  return 'Security Deposit';
-}
-
-function resolveConditionNotes(cond: any): string | null {
-  const raw = cond?.notes;
-  return raw !== undefined && raw !== null && String(raw).trim().length > 0
-    ? String(raw).trim()
-    : null;
-}
-
 function renderMotorcycleConditionsList(conditions: any[] | undefined) {
   if (!Array.isArray(conditions) || conditions.length === 0) return null;
   return (
@@ -181,26 +162,8 @@ function computeMotorcycleConditionDiffs(
     return [];
   }
 
-  const origList = Array.isArray(origConditions) ? origConditions : [];
-  const origByKey = new Map<string, { name: string; notes: string | null }>();
-  for (const c of origList) {
-    const key = String(c?.condition_type_id ?? c?.conditionTypeId ?? resolveConditionName(c)).trim();
-    if (!key) continue;
-    origByKey.set(key, {
-      name: resolveConditionName(c),
-      notes: resolveConditionNotes(c),
-    });
-  }
-
-  const propByKey = new Map<string, { name: string; notes: string | null }>();
-  for (const c of propConditions) {
-    const key = String(c?.condition_type_id ?? c?.conditionTypeId ?? resolveConditionName(c)).trim();
-    if (!key) continue;
-    propByKey.set(key, {
-      name: resolveConditionName(c),
-      notes: resolveConditionNotes(c),
-    });
-  }
+  const origByKey = toConditionDisplayMap(Array.isArray(origConditions) ? origConditions : []);
+  const propByKey = toConditionDisplayMap(propConditions);
 
   const allKeys = new Set<string>([...origByKey.keys(), ...propByKey.keys()]);
   const diffs: MotorcycleConditionDiff[] = [];
@@ -1097,7 +1060,9 @@ export function ChangeProposalDiffViewer({
                           {engineCc != null && <span>Engine: {engineCc}cc</span>}
                         </div>
                         {renderRateTiers(item.proposed_data?.rates, item.proposed_data?.currency, 'gray')}
-                        {renderMotorcycleConditionsList(item.proposed_data?.conditions)}
+                        {renderMotorcycleConditionsList(
+                          item.proposed_data?.conditions ?? item.original_data?.conditions
+                        )}
                       </div>
                     </div>
                   );
