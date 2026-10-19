@@ -421,6 +421,24 @@ async function resolveOrCreateBrandId(
   return lookupPromise;
 }
 
+async function insertMotorcycleConditions(
+  mcTable: any,
+  motorcycleId: string,
+  conditions: MotorcycleConditionProposalEntry[]
+): Promise<any | null> {
+  const rowsToInsert = conditions.map((c) => ({
+    motorcycle_id: motorcycleId,
+    condition_type_id: c.condition_type_id,
+    notes: c.notes,
+  }));
+  try {
+    const res = await mcTable.insert(rowsToInsert);
+    return res?.error || null;
+  } catch (err) {
+    return err;
+  }
+}
+
 const APPLY_CONCURRENCY = 10;
 
 export class ChangeProposalService {
@@ -911,20 +929,11 @@ export class ChangeProposalService {
 
           if (newBike && normalizedConditions && normalizedConditions.length > 0) {
             const mcTable = supabase.from('motorcycle_conditions') as any;
-            const condRows = normalizedConditions.map((c) => ({
-              motorcycle_id: newBike.id,
-              condition_type_id: c.condition_type_id,
-              notes: c.notes,
-            }));
-            let addCondErr: any = null;
-            try {
-              const condRes = await mcTable.insert(condRows);
-              if (condRes?.error) {
-                addCondErr = condRes.error;
-              }
-            } catch (err) {
-              addCondErr = err;
-            }
+            const addCondErr = await insertMotorcycleConditions(
+              mcTable,
+              newBike.id,
+              normalizedConditions
+            );
             if (addCondErr) {
               try {
                 await (supabase.from('motorcycle_rentals') as any)
@@ -1056,21 +1065,11 @@ export class ChangeProposalService {
             }
 
             if (normalizedConditions.length > 0) {
-              const rowsToInsert = normalizedConditions.map((c) => ({
-                motorcycle_id: item.entity_id,
-                condition_type_id: c.condition_type_id,
-                notes: c.notes,
-              }));
-
-              let insertErr: any = null;
-              try {
-                const insRes = await mcTable.insert(rowsToInsert);
-                if (insRes?.error) {
-                  insertErr = insRes.error;
-                }
-              } catch (err) {
-                insertErr = err;
-              }
+              const insertErr = await insertMotorcycleConditions(
+                mcTable,
+                item.entity_id,
+                normalizedConditions
+              );
 
               if (insertErr) {
                 if (liveConditionSnapshot.length > 0) {

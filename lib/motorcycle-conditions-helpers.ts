@@ -27,16 +27,26 @@ export function resolveConditionTypeIdFromEntry(
 
 export function resolveConditionName(
   cond: any,
-  catalog?: ConditionTypeCatalog
+  catalogOrNameMap?: ConditionTypeCatalog | Map<string, string>
 ): string {
+  const catalog =
+    catalogOrNameMap && !(catalogOrNameMap instanceof Map)
+      ? catalogOrNameMap
+      : undefined;
+  const nameMap =
+    catalogOrNameMap instanceof Map ? catalogOrNameMap : undefined;
+
   const typeId = resolveConditionTypeIdFromEntry(cond, catalog);
-  if (typeId && catalog?.byId.has(typeId)) {
+  if (typeId && catalog?.byId?.has(typeId)) {
     return catalog.byId.get(typeId)!.name;
   }
   const explicitName =
     cond?.name ?? cond?.condition_type_name ?? cond?.condition_types?.name;
   if (typeof explicitName === 'string' && explicitName.trim().length > 0) {
     return explicitName.trim();
+  }
+  if (typeId && nameMap?.has(typeId)) {
+    return nameMap.get(typeId)!;
   }
   if (typeId && CANONICAL_CONDITION_TYPE_NAMES[typeId]) {
     return CANONICAL_CONDITION_TYPE_NAMES[typeId];

@@ -1,5 +1,9 @@
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import {
+  resolveConditionName,
+  resolveConditionNotes,
+} from '@/lib/motorcycle-conditions-helpers';
+import {
   LearnedAgentConfig,
   sanitizeLearnedConfig,
 } from '@/services/shop-agent-configs';
@@ -276,11 +280,8 @@ export class TaskSchedulerService {
           bike.motorcycle_conditions || []
         ).map((mc: any) => ({
           condition_type_id: mc.condition_type_id,
-          name:
-            mc.condition_types?.name ||
-            conditionTypeNameById.get(mc.condition_type_id) ||
-            'Security Deposit',
-          notes: mc.notes ?? null,
+          name: resolveConditionName(mc, conditionTypeNameById),
+          notes: resolveConditionNotes(mc),
         }));
 
         return {
