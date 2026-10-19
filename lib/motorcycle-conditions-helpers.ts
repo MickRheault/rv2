@@ -8,17 +8,25 @@ export const CANONICAL_CONDITION_TYPE_NAMES: Record<string, string> = {
   '9526b7ae-8c84-45a2-a8ac-c4ecbeea600b': 'Security Deposit',
 };
 
+export function getExplicitConditionTypeId(cond: any): string {
+  return String(cond?.condition_type_id ?? cond?.conditionTypeId ?? '').trim();
+}
+
+export function getExplicitConditionName(cond: any): string {
+  return String(
+    cond?.name ?? cond?.condition_type_name ?? cond?.condition_types?.name ?? ''
+  ).trim();
+}
+
 export function resolveConditionTypeIdFromEntry(
   cond: any,
   catalog?: ConditionTypeCatalog
 ): string {
-  const explicitId = String(cond?.condition_type_id ?? cond?.conditionTypeId ?? '').trim();
+  const explicitId = getExplicitConditionTypeId(cond);
   if (explicitId) {
     return explicitId;
   }
-  const explicitName = String(
-    cond?.name ?? cond?.condition_type_name ?? cond?.condition_types?.name ?? ''
-  ).trim();
+  const explicitName = getExplicitConditionName(cond);
   if (explicitName && catalog?.byName.has(explicitName.toLowerCase())) {
     return catalog.byName.get(explicitName.toLowerCase())!.id;
   }
@@ -40,10 +48,9 @@ export function resolveConditionName(
   if (typeId && catalog?.byId?.has(typeId)) {
     return catalog.byId.get(typeId)!.name;
   }
-  const explicitName =
-    cond?.name ?? cond?.condition_type_name ?? cond?.condition_types?.name;
-  if (typeof explicitName === 'string' && explicitName.trim().length > 0) {
-    return explicitName.trim();
+  const explicitName = getExplicitConditionName(cond);
+  if (explicitName.length > 0) {
+    return explicitName;
   }
   if (typeId && nameMap?.has(typeId)) {
     return nameMap.get(typeId)!;
