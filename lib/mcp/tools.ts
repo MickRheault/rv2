@@ -8,7 +8,7 @@ import { shopService } from '@/services/shops';
 import { brandService } from '@/services/brands';
 import { categoryService } from '@/services/categories';
 import { locationService } from '@/services/locations';
-import { getShopUrl } from '@/lib/utils/urls';
+import { getMotorcycleUrl, getOptionalShopUrl, getShopUrl } from '@/lib/utils/urls';
 import type { ChatCompletionTool } from 'openai/resources/chat/completions';
 
 // ============================================
@@ -185,34 +185,8 @@ async function resolveCountryCode(countryName: string): Promise<string | null> {
 // Tool Executor
 // ============================================
 
-interface ShopLocationCandidate {
-    id?: string;
-    slug?: string | null;
-    cities?: {
-        name: string;
-        slug?: string | null;
-        provinces?: {
-            countries?: { name: string } | null;
-        } | null;
-    } | null;
-}
-
-function getMotorcycleRelativeUrl(id: string): string {
-    return `/motorcycle/${id}`;
-}
-
-function getOptionalShopUrl(shop?: ShopLocationCandidate | null): string | undefined {
-    if (!shop?.slug || !shop.cities?.name || !shop.cities.provinces?.countries?.name) {
-        return undefined;
-    }
-    return getShopUrl(shop);
-}
-
-function getShopToolUrl(shop: ShopLocationCandidate & { id: string }): string {
-    return getShopUrl({
-        ...shop,
-        slug: shop.slug || shop.id,
-    });
+function getYearTo(record: { year_to?: number | null }): number | null {
+    return record.year_to ?? null;
 }
 
 export interface ToolResult {
@@ -291,10 +265,10 @@ export async function executeTool(
 
                         return {
                             id: m.id,
-                            url: getMotorcycleRelativeUrl(m.id),
+                            url: getMotorcycleUrl(m.id),
                             model: m.model,
                             year: m.year,
-                            year_to: (m as { year_to?: number | null }).year_to ?? null,
+                            year_to: getYearTo(m),
                             brand: m.brands?.name,
                             category: m.categories?.name,
                             dailyRate,
@@ -314,16 +288,14 @@ export async function executeTool(
                 if (!motorcycle) {
                     return { success: false, error: 'Motorcycle not found' };
                 }
-                const shopUrl = getOptionalShopUrl(
-                    (motorcycle as { rental_shops?: ShopLocationCandidate | null }).rental_shops
-                );
+                const shopUrl = getOptionalShopUrl(motorcycle.rental_shops);
                 return {
                     success: true,
                     data: {
                         ...motorcycle,
-                        url: getMotorcycleRelativeUrl(motorcycle.id),
+                        url: getMotorcycleUrl(motorcycle.id),
                         ...(shopUrl ? { shopUrl } : {}),
-                        year_to: (motorcycle as { year_to?: number | null }).year_to ?? null,
+                        year_to: getYearTo(motorcycle),
                     },
                 };
             }
@@ -348,15 +320,23 @@ export async function executeTool(
                 // Format for LLM with URLs
                 const formatted = {
                     total: result.total,
-                    shops: result.shops.map((s: ShopLocationCandidate & {
+                    shops: result.shops.map((s: {
                         id: string;
+                        slug?: string | null;
                         provider_name: string;
                         rating?: number | null;
                         review_count?: number | null;
+                        cities?: {
+                            name: string;
+                            slug?: string | null;
+                            provinces?: {
+                                countries?: { name: string } | null
+                            } | null;
+                        } | null;
                     }) => {
                         return {
                             id: s.id,
-                            url: getShopToolUrl(s),
+                            url: getShopUrl(s),
                             name: s.provider_name,
                             rating: s.rating,
                             reviewCount: s.review_count,
@@ -376,7 +356,7 @@ export async function executeTool(
                     success: true,
                     data: {
                         ...shop,
-                        url: getShopToolUrl(shop as ShopLocationCandidate & { id: string }),
+                        url: getShopUrl(shop),
                     },
                 };
             }

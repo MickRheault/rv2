@@ -213,6 +213,7 @@ it('configures SYSTEM_PROMPT with strict domain boundaries, redirect instruction
 });
 
 it('instructs SYSTEM_PROMPT to keep motorcycle and shop URLs as relative paths and never prepend domains like globalmoto.com', () => {
+    expect(SYSTEM_PROMPT).toContain('globalmotorentals.com');
     expect(SYSTEM_PROMPT).toMatch(/relative/i);
     expect(SYSTEM_PROMPT).toContain('/motorcycle/');
     expect(SYSTEM_PROMPT).toContain('/shop/');

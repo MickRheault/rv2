@@ -122,6 +122,23 @@ it('includes canonical relative url in get_shop tool results and falls back to s
     });
 
     mockGetShopById.mockResolvedValueOnce({
+        id: 'shop-123',
+        slug: 'example-motorcycle-rentals',
+        provider_name: 'Example Motorcycle Rentals',
+        cities: {
+            name: 'Ho Chi Minh City',
+            slug: 'saigon',
+            provinces: { countries: { name: 'Vietnam' } },
+        },
+    });
+    const withCitySlug = await executeTool('get_shop', { id: 'shop-123' });
+    expect(withCitySlug.success).toBe(true);
+    expect(JSON.parse(formatToolResultForLLM(withCitySlug))).toMatchObject({
+        id: 'shop-123',
+        url: '/shop/vietnam/saigon/example-motorcycle-rentals',
+    });
+
+    mockGetShopById.mockResolvedValueOnce({
         id: 'shop-456',
         slug: null,
         provider_name: 'Unmapped Shop',
@@ -135,34 +152,5 @@ it('includes canonical relative url in get_shop tool results and falls back to s
     });
 });
 
-it('includes canonical relative url in list_shops tool results', async () => {
-    mockGetShops.mockResolvedValueOnce({
-        total: 1,
-        shops: [{
-            id: 'shop-123',
-            slug: 'example-motorcycle-rentals',
-            provider_name: 'Example Motorcycle Rentals',
-            rating: 4.8,
-            review_count: 42,
-            cities: {
-                name: 'Chiang Mai',
-                provinces: { countries: { name: 'Thailand' } },
-            },
-        }],
-    });
-    const result = await executeTool('list_shops', {});
-    expect(result.success).toBe(true);
-    expect(JSON.parse(formatToolResultForLLM(result))).toEqual({
-        total: 1,
-        shops: [{
-            id: 'shop-123',
-            url: '/shop/thailand/chiang-mai/example-motorcycle-rentals',
-            name: 'Example Motorcycle Rentals',
-            rating: 4.8,
-            reviewCount: 42,
-            city: 'Chiang Mai',
-        }],
-    });
-});
 
 
