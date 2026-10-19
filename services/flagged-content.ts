@@ -43,6 +43,15 @@ export const ALLOWED_RENTAL_SHOP_PROPOSED_FIELDS = [
   'business_status_id',
 ] as const;
 
+export const DIRECT_MOTORCYCLE_PROPOSED_FIELDS = ALLOWED_MOTORCYCLE_PROPOSED_FIELDS.filter(
+  (field) => field !== 'year' && field !== 'year_to'
+);
+
+const ALLOWED_PROPOSED_FIELDS_BY_CONTENT_TYPE: Partial<Record<ContentType, ReadonlySet<string>>> = {
+  motorcycle: new Set<string>(ALLOWED_MOTORCYCLE_PROPOSED_FIELDS),
+  rental_shop: new Set<string>(ALLOWED_RENTAL_SHOP_PROPOSED_FIELDS),
+};
+
 const IMMUTABLE_METADATA_FIELDS = new Set(['id', 'created_at', 'updated_at']);
 
 function validateProposedDataKeys(contentType: ContentType, proposedData: Json): Json {
@@ -50,12 +59,10 @@ function validateProposedDataKeys(contentType: ContentType, proposedData: Json):
     throw new Error('Invalid proposed_data: expected a JSON object');
   }
 
-  const allowedSet =
-    contentType === 'motorcycle'
-      ? new Set<string>(ALLOWED_MOTORCYCLE_PROPOSED_FIELDS)
-      : contentType === 'rental_shop'
-        ? new Set<string>(ALLOWED_RENTAL_SHOP_PROPOSED_FIELDS)
-        : null;
+  const allowedSet = ALLOWED_PROPOSED_FIELDS_BY_CONTENT_TYPE[contentType];
+  if (!allowedSet) {
+    throw new Error(`Unsupported content_type for proposed_data: "${contentType}"`);
+  }
 
   const sanitized: Record<string, Json | undefined> = {};
 
@@ -63,7 +70,7 @@ function validateProposedDataKeys(contentType: ContentType, proposedData: Json):
     if (IMMUTABLE_METADATA_FIELDS.has(key)) {
       continue;
     }
-    if (allowedSet && !allowedSet.has(key)) {
+    if (!allowedSet.has(key)) {
       throw new Error(`Disallowed field in proposed_data for ${contentType}: "${key}"`);
     }
     sanitized[key] = value;
@@ -209,21 +216,8 @@ export class FlaggedContentService {
     proposedChanges: Record<string, any>
   ): Promise<void> {
     const updateData: Record<string, any> = {};
-    const directFields = [
-      'model',
-      'engine_capacity_cc',
-      'rental_rate_per_day',
-      'rental_rate_currency',
-      'availability_status',
-      'brand_id',
-      'category_id',
-      'shop_id',
-      'source_url',
-      'specifications_details',
-      'conditions_details',
-    ];
 
-    for (const field of directFields) {
+    for (const field of DIRECT_MOTORCYCLE_PROPOSED_FIELDS) {
       if (proposedChanges[field] !== undefined) {
         updateData[field] = proposedChanges[field];
       }

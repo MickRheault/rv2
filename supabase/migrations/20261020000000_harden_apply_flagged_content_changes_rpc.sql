@@ -20,14 +20,17 @@ DECLARE
   parsed_start INTEGER;
   parsed_end INTEGER;
 BEGIN
-  -- 1. Enforce caller authorization
+  -- 1. Enforce caller authorization via auth.role() and public.is_admin()
   IF COALESCE(auth.role(), '') <> 'service_role'
-     AND current_user NOT IN ('postgres', 'supabase_admin')
      AND NOT public.is_admin() THEN
     RAISE EXCEPTION 'Access denied: admin privileges required';
   END IF;
 
-  -- 2. Bind audit identity to authenticated caller when available
+  -- 2. Verify and bind audit identity to authenticated caller when available
+  IF auth.uid() IS NOT NULL AND admin_id IS NOT NULL AND admin_id <> auth.uid() THEN
+    RAISE EXCEPTION 'Access denied: admin_id does not match authenticated user';
+  END IF;
+
   acting_admin_id := COALESCE(auth.uid(), admin_id);
   IF acting_admin_id IS NULL THEN
     RAISE EXCEPTION 'Access denied: acting admin identity is required';

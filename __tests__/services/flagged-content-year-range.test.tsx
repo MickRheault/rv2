@@ -180,11 +180,13 @@ describe('FlagContentForm & FlaggedContentService Model Year Range Support (#139
       expect(sql).toMatch(/SECURITY DEFINER/i);
       expect(sql).toMatch(/SET search_path = public, extensions/i);
 
-      // 2. Explicit admin / service_role authorization check
-      expect(sql).toMatch(/NOT public\.is_admin\(\)/i);
+      // 2. Explicit admin / service_role authorization check (must not check current_user inside SECURITY DEFINER)
+      expect(sql).toMatch(/IF COALESCE\(auth\.role\(\), ''\) <> 'service_role'\s+AND NOT public\.is_admin\(\) THEN/i);
+      expect(sql).not.toMatch(/current_user/i);
       expect(sql).toMatch(/RAISE EXCEPTION 'Access denied: admin privileges required'/i);
 
-      // 3. Audit trail bound to auth.uid() rather than blindly trusting caller-supplied admin_id
+      // 3. Audit trail verified against auth.uid() and bound to auth.uid()
+      expect(sql).toMatch(/IF auth\.uid\(\) IS NOT NULL AND admin_id IS NOT NULL AND admin_id <> auth\.uid\(\) THEN/i);
       expect(sql).toMatch(/acting_admin_id\s*:=\s*COALESCE\(auth\.uid\(\),\s*admin_id\)/i);
       expect(sql).toMatch(/applied_by_admin_id\s*=\s*acting_admin_id/i);
 
