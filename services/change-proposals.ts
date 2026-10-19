@@ -19,6 +19,163 @@ export class ProposalItemValidationError extends Error {
   }
 }
 
+export class StaleConditionStateError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'StaleConditionStateError';
+  }
+}
+
+export interface MotorcycleConditionProposalEntry {
+  condition_type_id: string;
+  name: string;
+  notes: string | null;
+}
+
+export const CANONICAL_CONDITION_TYPE_NAMES: Record<string, string> = {
+  '9526b7ae-8c84-45a2-a8ac-c4ecbeea600b': 'Security Deposit',
+};
+
+async function loadConditionTypeCatalog(supabase: any): Promise<{
+  byId: Map<string, { id: string; name: string }>;
+  byName: Map<string, { id: string; name: string }>;
+}> {
+  const byId = new Map<string, { id: string; name: string }>();
+  const byName = new Map<string, { id: string; name: string }>();
+
+  const table = supabase?.from?.('condition_types');
+  if (table?.select) {
+    const query = table.select('id, name');
+    const res =
+      typeof query?.limit === 'function'
+        ? await query.limit(100)
+        : await Promise.resolve(query);
+    const rows = res?.data || [];
+    for (const row of rows) {
+      if (row?.id && row?.name) {
+        const entry = { id: String(row.id), name: String(row.name) };
+        byId.set(entry.id, entry);
+        byName.set(entry.name.toLowerCase(), entry);
+      }
+    }
+  }
+
+  return { byId, byName };
+}
+
+export function normalizeAndValidateMotorcycleConditions(
+  rawConditions: any,
+  catalog: {
+    byId: Map<string, { id: string; name: string }>;
+    byName: Map<string, { id: string; name: string }>;
+  },
+  enforceCatalogExistence = true
+): MotorcycleConditionProposalEntry[] | undefined {
+  if (rawConditions === undefined) {
+    return undefined;
+  }
+
+  if (!Array.isArray(rawConditions)) {
+    throw new ProposalItemValidationError(
+      'proposedData.conditions must be an array of { condition_type_id, notes } when provided.'
+    );
+  }
+
+  const seenTypeIds = new Set<string>();
+  return rawConditions.map((rawCond: any, idx: number) => {
+    if (!rawCond || typeof rawCond !== 'object') {
+      throw new ProposalItemValidationError(
+        `Motorcycle condition at index ${idx} must be an object with condition_type_id and notes.`
+      );
+    }
+
+    let typeId = String(rawCond.condition_type_id ?? rawCond.conditionTypeId ?? '').trim();
+    const rawName = String(
+      rawCond.name ?? rawCond.condition_type_name ?? rawCond.condition_types?.name ?? ''
+    ).trim();
+
+    if (!typeId && rawName && catalog.byName.has(rawName.toLowerCase())) {
+      typeId = catalog.byName.get(rawName.toLowerCase())!.id;
+    }
+
+    if (!typeId) {
+      throw new ProposalItemValidationError(
+        `Invalid condition_type_id at index ${idx}: condition_type_id is required.`
+      );
+    }
+
+    if (enforceCatalogExistence && catalog.byId.size > 0 && !catalog.byId.has(typeId)) {
+      throw new ProposalItemValidationError(
+        `Invalid condition_type_id '${typeId}': not found in condition_types.`
+      );
+    }
+
+    if (seenTypeIds.has(typeId)) {
+      throw new ProposalItemValidationError(
+        `Duplicate condition_type_id '${typeId}' in motorcycle conditions.`
+      );
+    }
+    seenTypeIds.add(typeId);
+
+    const rawNotes = rawCond.notes;
+    const notes =
+      rawNotes !== undefined && rawNotes !== null && String(rawNotes).trim().length > 0
+        ? String(rawNotes).trim()
+        : null;
+
+    const resolvedName =
+      catalog.byId.get(typeId)?.name ||
+      rawName ||
+      CANONICAL_CONDITION_TYPE_NAMES[typeId] ||
+      'Security Deposit';
+
+    return {
+      condition_type_id: typeId,
+      name: resolvedName,
+      notes,
+    };
+  });
+}
+
+function areConditionStatesEqual(
+  expectedOriginal: any[],
+  liveDbRows: Array<{ condition_type_id: string; notes?: string | null }>
+): boolean {
+  const expectedMap = new Map<string, string | null>();
+  for (const cond of expectedOriginal) {
+    const id = String(cond?.condition_type_id ?? cond?.conditionTypeId ?? '').trim();
+    if (!id) continue;
+    const notes =
+      cond?.notes !== undefined && cond?.notes !== null && String(cond.notes).trim().length > 0
+        ? String(cond.notes).trim()
+        : null;
+    expectedMap.set(id, notes);
+  }
+
+  const liveMap = new Map<string, string | null>();
+  for (const row of liveDbRows) {
+    const id = String(row?.condition_type_id ?? '').trim();
+    if (!id) continue;
+    const notes =
+      row?.notes !== undefined && row?.notes !== null && String(row.notes).trim().length > 0
+        ? String(row.notes).trim()
+        : null;
+    liveMap.set(id, notes);
+  }
+
+  if (expectedMap.size !== liveMap.size) {
+    return false;
+  }
+
+  for (const [typeId, expectedNotes] of expectedMap.entries()) {
+    if (!liveMap.has(typeId) || liveMap.get(typeId) !== expectedNotes) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 const IMMUTABLE_GEODATA_FIELDS = [
   'place_id',
   'provider_name',
@@ -396,6 +553,41 @@ export class ChangeProposalService {
 
     const supabase = getSupabaseAdmin();
 
+    // Validate and normalize motorcycle-level conditions if present on any item
+    const hasMotorcycleConditions = normalizedItems.some(
+      (i) =>
+        i.entity_type === 'motorcycle' &&
+        (i.proposed_data?.conditions !== undefined || i.original_data?.conditions !== undefined)
+    );
+    if (hasMotorcycleConditions) {
+      const conditionCatalog = await loadConditionTypeCatalog(supabase);
+      for (const item of normalizedItems) {
+        if (item.entity_type !== 'motorcycle') continue;
+        if (item.proposed_data && item.proposed_data.conditions !== undefined) {
+          const normalizedConds = normalizeAndValidateMotorcycleConditions(
+            item.proposed_data.conditions,
+            conditionCatalog,
+            true
+          );
+          item.proposed_data = {
+            ...item.proposed_data,
+            conditions: normalizedConds,
+          };
+        }
+        if (item.original_data && item.original_data.conditions !== undefined) {
+          const normalizedOrigConds = normalizeAndValidateMotorcycleConditions(
+            item.original_data.conditions,
+            conditionCatalog,
+            false
+          );
+          item.original_data = {
+            ...item.original_data,
+            conditions: normalizedOrigConds,
+          };
+        }
+      }
+    }
+
     // Verify shop ownership for any referenced motorcycle entityIds when database rows are returned
     const motorcycleEntityIds = normalizedItems
       .filter((i) => i.entity_type === 'motorcycle' && i.entity_id)
@@ -628,9 +820,32 @@ export class ChangeProposalService {
     );
     const approvedItems = pendingMutableItems.filter((i) => approvedSet.has(i.id));
 
-    // 3. Validate geodata immutability across all approved items
+    // 3. Validate geodata immutability and motorcycle conditions across all approved items
+    const hasApprovedBikeConditions = approvedItems.some(
+      (i) => i.entity_type === 'motorcycle' && (i.proposed_data as any)?.conditions !== undefined
+    );
+    const conditionCatalog = hasApprovedBikeConditions
+      ? await loadConditionTypeCatalog(supabase)
+      : { byId: new Map(), byName: new Map() };
+
+    const validatedConditionsByItemId = new Map<
+      string,
+      MotorcycleConditionProposalEntry[] | undefined
+    >();
+
     for (const item of approvedItems) {
       validateGeodataImmutability(item.proposed_data as any);
+      if (item.entity_type === 'motorcycle') {
+        const rawConditions = (item.proposed_data as any)?.conditions;
+        if (rawConditions !== undefined) {
+          const validated = normalizeAndValidateMotorcycleConditions(
+            rawConditions,
+            conditionCatalog,
+            true
+          );
+          validatedConditionsByItemId.set(item.id, validated);
+        }
+      }
     }
 
     let appliedCount = 0;
@@ -642,6 +857,7 @@ export class ChangeProposalService {
 
       if (item.entity_type === 'motorcycle') {
         const normalizedBike = normalizeProposedMotorcycle(proposed);
+        const normalizedConditions = validatedConditionsByItemId.get(item.id);
         const primaryTier = normalizedBike.rates?.[0];
         const primaryRate =
           primaryTier?.ratePerDay !== undefined && !isNaN(Number(primaryTier.ratePerDay))
@@ -682,13 +898,63 @@ export class ChangeProposalService {
             await insertRateTiers(supabase, newBike.id, normalizedBike.rates, proposed.currency);
           }
 
+          if (newBike && normalizedConditions && normalizedConditions.length > 0) {
+            const mcTable = supabase.from('motorcycle_conditions') as any;
+            const condRows = normalizedConditions.map((c) => ({
+              motorcycle_id: newBike.id,
+              condition_type_id: c.condition_type_id,
+              notes: c.notes,
+            }));
+            const condRes = await mcTable.insert(condRows);
+            if (condRes?.error) {
+              throw new Error(`Failed to persist motorcycle conditions: ${condRes.error.message}`);
+            }
+          }
+
           appliedCount++;
         } else if (item.action === 'update' && item.entity_id) {
+          const origBike = (item.original_data as Record<string, any>) || {};
+          let liveConditionSnapshot: Array<{
+            motorcycle_id: string;
+            condition_type_id: string;
+            notes: string | null;
+          }> = [];
+
+          // If conditions are part of this update, verify before-state freshness first before any mutations
+          if (normalizedConditions !== undefined) {
+            const mcTable = supabase.from('motorcycle_conditions') as any;
+            const condSelectRes = mcTable?.select
+              ? await mcTable
+                  .select('motorcycle_id, condition_type_id, notes')
+                  .eq('motorcycle_id', item.entity_id)
+              : { data: [], error: null };
+
+            if (condSelectRes?.error) {
+              throw new Error(
+                `Failed to read existing motorcycle conditions: ${condSelectRes.error.message}`
+              );
+            }
+
+            liveConditionSnapshot = (condSelectRes?.data || []).map((r: any) => ({
+              motorcycle_id: item.entity_id as string,
+              condition_type_id: r.condition_type_id,
+              notes: r.notes ?? null,
+            }));
+
+            if (
+              Array.isArray(origBike.conditions) &&
+              !areConditionStatesEqual(origBike.conditions, liveConditionSnapshot)
+            ) {
+              throw new StaleConditionStateError(
+                `Stale motorcycle conditions for motorcycle '${item.entity_id}': live database state diverged from proposal original_data.conditions.`
+              );
+            }
+          }
+
           // Update specifications directly from proposed_data / item metadata while preserving motorcycle ID
           const updatePayload: Record<string, any> = {};
           const itemDiffSummary = (item.diff_summary as Record<string, any>) || {};
 
-          const origBike = (item.original_data as Record<string, any>) || {};
           const origBrand = origBike.brand ?? origBike.brandName ?? origBike.brand_name;
           const origModel = origBike.model ?? origBike.modelName ?? origBike.model_name;
 
@@ -782,6 +1048,46 @@ export class ChangeProposalService {
               .eq('motorcycle_id', item.entity_id);
 
             await insertRateTiers(supabase, item.entity_id, normalizedBike.rates, proposed.currency);
+          }
+
+          // Synchronize motorcycle_conditions atomically when proposedData.conditions is provided
+          if (normalizedConditions !== undefined) {
+            const mcTable = supabase.from('motorcycle_conditions') as any;
+            const delRes = await mcTable.delete().eq('motorcycle_id', item.entity_id);
+            if (delRes?.error) {
+              throw new Error(
+                `Failed to clear existing motorcycle conditions: ${delRes.error.message}`
+              );
+            }
+
+            if (normalizedConditions.length > 0) {
+              const rowsToInsert = normalizedConditions.map((c) => ({
+                motorcycle_id: item.entity_id,
+                condition_type_id: c.condition_type_id,
+                notes: c.notes,
+              }));
+
+              let insertErr: any = null;
+              try {
+                const insRes = await mcTable.insert(rowsToInsert);
+                if (insRes?.error) {
+                  insertErr = insRes.error;
+                }
+              } catch (err) {
+                insertErr = err;
+              }
+
+              if (insertErr) {
+                if (liveConditionSnapshot.length > 0) {
+                  await mcTable.insert(liveConditionSnapshot);
+                }
+                throw new Error(
+                  `Failed to persist motorcycle conditions: ${
+                    insertErr.message || String(insertErr)
+                  }`
+                );
+              }
+            }
           }
 
           appliedCount++;

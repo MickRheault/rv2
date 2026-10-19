@@ -2091,5 +2091,782 @@ describe('Change Proposal Application & Geodata Protection', () => {
       expect(brandQueryCount).toBe(2);
     });
   });
+
+  describe('Motorcycle-Level Conditions in Change Proposals (#156)', () => {
+    const SECURITY_DEPOSIT_ID = '9526b7ae-8c84-45a2-a8ac-c4ecbeea600b';
+    const PASSPORT_CONDITION_ID = 'b79c1111-2222-4333-8444-555555555555';
+
+    it('accepts valid proposedData.conditions and rejects invalid or duplicate condition_type_id in createProposalFromItems', async () => {
+      const stagedItems: any[] = [];
+
+      const mockSupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'condition_types') {
+            return {
+              select: jest.fn().mockResolvedValue({
+                data: [
+                  { id: SECURITY_DEPOSIT_ID, name: 'Security Deposit' },
+                  { id: PASSPORT_CONDITION_ID, name: 'Passport Required' },
+                ],
+                error: null,
+              }),
+            };
+          }
+          if (table === 'motorcycle_rentals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                in: jest.fn().mockResolvedValue({
+                  data: [{ id: 'bike-click-125', shop_id: 'shop-madbike' }],
+                  error: null,
+                }),
+              }),
+            };
+          }
+          if (table === 'change_proposals') {
+            return {
+              insert: jest.fn().mockReturnValue({
+                select: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({
+                    data: { id: 'prop-cond-1', shop_id: 'shop-madbike', status: 'pending' },
+                    error: null,
+                  }),
+                }),
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              insert: jest.fn((rows: any[]) => {
+                stagedItems.push(...rows);
+                return Promise.resolve({ error: null });
+              }),
+            };
+          }
+          if (table === 'shop_agent_configs') {
+            return {
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  select: jest.fn().mockReturnValue({
+                    maybeSingle: jest.fn().mockResolvedValue({ data: { id: 'cfg-1' }, error: null }),
+                  }),
+                }),
+              }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      // 1. Rejects unknown condition_type_id
+      await expect(
+        ChangeProposalService.createProposalFromItems({
+          shopId: 'shop-madbike',
+          sourceUrl: 'https://madbikerentalbangkok.com/',
+          items: [
+            {
+              entityType: 'motorcycle',
+              action: 'update',
+              entityId: 'bike-click-125',
+              brandName: 'Honda',
+              modelName: 'Click 125',
+              proposedData: {
+                conditions: [
+                  { condition_type_id: 'non-existent-type-id', notes: 'THB 3,000' },
+                ],
+              },
+            },
+          ],
+        })
+      ).rejects.toThrow(/Invalid condition_type_id/i);
+
+      // 2. Rejects duplicate condition_type_id on the same motorcycle
+      await expect(
+        ChangeProposalService.createProposalFromItems({
+          shopId: 'shop-madbike',
+          sourceUrl: 'https://madbikerentalbangkok.com/',
+          items: [
+            {
+              entityType: 'motorcycle',
+              action: 'update',
+              entityId: 'bike-click-125',
+              brandName: 'Honda',
+              modelName: 'Click 125',
+              proposedData: {
+                conditions: [
+                  { condition_type_id: SECURITY_DEPOSIT_ID, notes: 'THB 3,000' },
+                  { condition_type_id: SECURITY_DEPOSIT_ID, notes: 'THB 5,000' },
+                ],
+              },
+            },
+          ],
+        })
+      ).rejects.toThrow(/Duplicate condition_type_id/i);
+
+      // 3. Accepts valid conditions and enriches canonical name
+      const res = await ChangeProposalService.createProposalFromItems({
+        shopId: 'shop-madbike',
+        sourceUrl: 'https://madbikerentalbangkok.com/',
+        items: [
+          {
+            entityType: 'motorcycle',
+            action: 'update',
+            entityId: 'bike-click-125',
+            brandName: 'Honda',
+            modelName: 'Click 125',
+            originalData: {
+              conditions: [],
+            },
+            proposedData: {
+              conditions: [
+                { condition_type_id: SECURITY_DEPOSIT_ID, notes: 'THB 3,000' },
+              ],
+            },
+          },
+        ],
+      });
+
+      expect(res.proposal.id).toBe('prop-cond-1');
+      expect(stagedItems).toHaveLength(1);
+      expect(stagedItems[0].proposed_data.conditions).toEqual([
+        {
+          condition_type_id: SECURITY_DEPOSIT_ID,
+          name: 'Security Deposit',
+          notes: 'THB 3,000',
+        },
+      ]);
+    });
+
+    it('persists motorcycle_conditions on add and update, preserves omitted conditions, and clears on explicit empty array', async () => {
+      const liveConditions = new Map<string, Array<{ motorcycle_id: string; condition_type_id: string; notes: string | null }>>([
+        [
+          'bike-preserve-omitted',
+          [{ motorcycle_id: 'bike-preserve-omitted', condition_type_id: SECURITY_DEPOSIT_ID, notes: 'THB 4,000' }],
+        ],
+        [
+          'bike-clear-empty',
+          [{ motorcycle_id: 'bike-clear-empty', condition_type_id: SECURITY_DEPOSIT_ID, notes: 'THB 3,000' }],
+        ],
+        ['bike-update-deposit', []],
+      ]);
+
+      const proposalData = {
+        id: 'prop-cond-apply',
+        shop_id: 'shop-madbike',
+        status: 'pending',
+      };
+
+      const itemsData = [
+        {
+          id: 'item-add-with-cond',
+          proposal_id: 'prop-cond-apply',
+          entity_type: 'motorcycle',
+          action: 'add',
+          entity_id: null,
+          brand_name: 'Honda',
+          model_name: 'Lead 125',
+          proposed_data: {
+            brand: 'Honda',
+            modelName: 'Lead 125',
+            year: 2024,
+            rates: [{ minDays: 1, ratePerDay: 300, currency: 'THB' }],
+            conditions: [{ condition_type_id: SECURITY_DEPOSIT_ID, notes: 'THB 3,000' }],
+          },
+          status: 'pending',
+        },
+        {
+          id: 'item-update-deposit',
+          proposal_id: 'prop-cond-apply',
+          entity_type: 'motorcycle',
+          action: 'update',
+          entity_id: 'bike-update-deposit',
+          brand_name: 'Honda',
+          model_name: 'Click 125',
+          original_data: {
+            conditions: [],
+          },
+          proposed_data: {
+            conditions: [{ condition_type_id: SECURITY_DEPOSIT_ID, notes: 'THB 3,000' }],
+          },
+          status: 'pending',
+        },
+        {
+          id: 'item-preserve-omitted',
+          proposal_id: 'prop-cond-apply',
+          entity_type: 'motorcycle',
+          action: 'update',
+          entity_id: 'bike-preserve-omitted',
+          brand_name: 'Yamaha',
+          model_name: 'Fazzio 125',
+          original_data: { year: 2023 },
+          proposed_data: { year: 2024 },
+          status: 'pending',
+        },
+        {
+          id: 'item-clear-empty',
+          proposal_id: 'prop-cond-apply',
+          entity_type: 'motorcycle',
+          action: 'update',
+          entity_id: 'bike-clear-empty',
+          brand_name: 'Honda',
+          model_name: 'Wave 110',
+          original_data: {
+            conditions: [{ condition_type_id: SECURITY_DEPOSIT_ID, notes: 'THB 3,000' }],
+          },
+          proposed_data: {
+            conditions: [],
+          },
+          status: 'pending',
+        },
+      ];
+
+      const mockSupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({ data: proposalData, error: null }),
+                }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ data: itemsData, error: null }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+                in: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'condition_types') {
+            return {
+              select: jest.fn().mockResolvedValue({
+                data: [{ id: SECURITY_DEPOSIT_ID, name: 'Security Deposit' }],
+                error: null,
+              }),
+            };
+          }
+          if (table === 'brands') {
+            return {
+              select: jest.fn().mockReturnValue({
+                ilike: jest.fn().mockReturnValue({
+                  maybeSingle: jest.fn().mockResolvedValue({ data: { id: 'brand-honda' }, error: null }),
+                }),
+              }),
+            };
+          }
+          if (table === 'motorcycle_rentals') {
+            return {
+              insert: jest.fn().mockReturnValue({
+                select: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({ data: { id: 'bike-new-lead' }, error: null }),
+                }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'rental_rate_tiers') {
+            return {
+              delete: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+              insert: jest.fn().mockResolvedValue({ error: null }),
+            };
+          }
+          if (table === 'motorcycle_conditions') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn((_col: string, bikeId: string) =>
+                  Promise.resolve({
+                    data: [...(liveConditions.get(bikeId) || [])],
+                    error: null,
+                  })
+                ),
+              }),
+              delete: jest.fn().mockReturnValue({
+                eq: jest.fn((_col: string, bikeId: string) => {
+                  liveConditions.set(bikeId, []);
+                  return Promise.resolve({ error: null });
+                }),
+              }),
+              insert: jest.fn((rows: any[]) => {
+                for (const row of rows) {
+                  const list = liveConditions.get(row.motorcycle_id) || [];
+                  list.push({
+                    motorcycle_id: row.motorcycle_id,
+                    condition_type_id: row.condition_type_id,
+                    notes: row.notes ?? null,
+                  });
+                  liveConditions.set(row.motorcycle_id, list);
+                }
+                return Promise.resolve({ error: null });
+              }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      const res = await ChangeProposalService.apply(
+        'prop-cond-apply',
+        itemsData.map((i) => i.id)
+      );
+
+      expect(res.success).toBe(true);
+      expect(res.appliedCount).toBe(4);
+
+      // 1. Added bike received its Security Deposit condition
+      expect(liveConditions.get('bike-new-lead')).toEqual([
+        {
+          motorcycle_id: 'bike-new-lead',
+          condition_type_id: SECURITY_DEPOSIT_ID,
+          notes: 'THB 3,000',
+        },
+      ]);
+
+      // 2. Updated bike received its Security Deposit condition
+      expect(liveConditions.get('bike-update-deposit')).toEqual([
+        {
+          motorcycle_id: 'bike-update-deposit',
+          condition_type_id: SECURITY_DEPOSIT_ID,
+          notes: 'THB 3,000',
+        },
+      ]);
+
+      // 3. Omitted proposedData.conditions preserved existing THB 4,000 deposit
+      expect(liveConditions.get('bike-preserve-omitted')).toEqual([
+        {
+          motorcycle_id: 'bike-preserve-omitted',
+          condition_type_id: SECURITY_DEPOSIT_ID,
+          notes: 'THB 4,000',
+        },
+      ]);
+
+      // 4. Explicit empty array cleared existing conditions
+      expect(liveConditions.get('bike-clear-empty')).toEqual([]);
+    });
+
+    it('detects stale before-states and makes condition replacement atomic so a failed insert never erases existing conditions', async () => {
+      const liveConditions = new Map<string, Array<{ motorcycle_id: string; condition_type_id: string; notes: string | null }>>([
+        [
+          'bike-stale',
+          [{ motorcycle_id: 'bike-stale', condition_type_id: SECURITY_DEPOSIT_ID, notes: 'THB 5,000' }],
+        ],
+        [
+          'bike-atomic-fail',
+          [{ motorcycle_id: 'bike-atomic-fail', condition_type_id: SECURITY_DEPOSIT_ID, notes: 'THB 2,000' }],
+        ],
+      ]);
+
+      let failNextNewInsert = false;
+
+      const createStatefulMock = (items: any[]) => ({
+        from: jest.fn((table: string) => {
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({
+                    data: { id: 'prop-safe', shop_id: 'shop-madbike', status: 'pending' },
+                    error: null,
+                  }),
+                }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ data: items, error: null }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+                in: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'condition_types') {
+            return {
+              select: jest.fn().mockResolvedValue({
+                data: [{ id: SECURITY_DEPOSIT_ID, name: 'Security Deposit' }],
+                error: null,
+              }),
+            };
+          }
+          if (table === 'motorcycle_conditions') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn((_col: string, bikeId: string) =>
+                  Promise.resolve({
+                    data: [...(liveConditions.get(bikeId) || [])],
+                    error: null,
+                  })
+                ),
+              }),
+              delete: jest.fn().mockReturnValue({
+                eq: jest.fn((_col: string, bikeId: string) => {
+                  liveConditions.set(bikeId, []);
+                  return Promise.resolve({ error: null });
+                }),
+              }),
+              insert: jest.fn((rows: any[]) => {
+                if (failNextNewInsert) {
+                  failNextNewInsert = false;
+                  return Promise.resolve({
+                    data: null,
+                    error: { message: 'Simulated database write error during condition insert' },
+                  });
+                }
+                for (const row of rows) {
+                  const list = liveConditions.get(row.motorcycle_id) || [];
+                  list.push({
+                    motorcycle_id: row.motorcycle_id,
+                    condition_type_id: row.condition_type_id,
+                    notes: row.notes ?? null,
+                  });
+                  liveConditions.set(row.motorcycle_id, list);
+                }
+                return Promise.resolve({ error: null });
+              }),
+            };
+          }
+          return {};
+        }),
+      });
+
+      // Case 1: Stale before-state (original_data claims conditions: [], but DB has THB 5,000)
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(
+        createStatefulMock([
+          {
+            id: 'item-stale',
+            proposal_id: 'prop-safe',
+            entity_type: 'motorcycle',
+            action: 'update',
+            entity_id: 'bike-stale',
+            brand_name: 'Honda',
+            model_name: 'Click 125',
+            original_data: {
+              conditions: [],
+            },
+            proposed_data: {
+              conditions: [{ condition_type_id: SECURITY_DEPOSIT_ID, notes: 'THB 3,000' }],
+            },
+            status: 'pending',
+          },
+        ])
+      );
+
+      await expect(
+        ChangeProposalService.apply('prop-safe', ['item-stale'])
+      ).rejects.toThrow(/Stale motorcycle conditions/i);
+
+      // Existing THB 5,000 condition must remain untouched
+      expect(liveConditions.get('bike-stale')).toEqual([
+        {
+          motorcycle_id: 'bike-stale',
+          condition_type_id: SECURITY_DEPOSIT_ID,
+          notes: 'THB 5,000',
+        },
+      ]);
+
+      // Case 2: Failed insertion during condition replacement rolls back / preserves previous THB 2,000 condition
+      failNextNewInsert = true;
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(
+        createStatefulMock([
+          {
+            id: 'item-atomic',
+            proposal_id: 'prop-safe',
+            entity_type: 'motorcycle',
+            action: 'update',
+            entity_id: 'bike-atomic-fail',
+            brand_name: 'Honda',
+            model_name: 'Scoopy i',
+            original_data: {
+              conditions: [{ condition_type_id: SECURITY_DEPOSIT_ID, notes: 'THB 2,000' }],
+            },
+            proposed_data: {
+              conditions: [{ condition_type_id: SECURITY_DEPOSIT_ID, notes: 'THB 3,000' }],
+            },
+            status: 'pending',
+          },
+        ])
+      );
+
+      await expect(
+        ChangeProposalService.apply('prop-safe', ['item-atomic'])
+      ).rejects.toThrow(/Simulated database write error/i);
+
+      // Existing THB 2,000 condition must NOT be erased!
+      expect(liveConditions.get('bike-atomic-fail')).toEqual([
+        {
+          motorcycle_id: 'bike-atomic-fail',
+          condition_type_id: SECURITY_DEPOSIT_ID,
+          notes: 'THB 2,000',
+        },
+      ]);
+    });
+
+    it('applies the 7-bike MadBike Sathon deposit corrective batch while preserving all 19 rental-price rows', async () => {
+      const madBikeFleet = [
+        {
+          id: '4f35ffbd-6a21-4090-a7d0-94bf6f95f97e',
+          brand: 'Yamaha',
+          model: 'Filano 110',
+          deposit: 'THB 3,000',
+          tiers: [
+            { min_days: 1, max_days: 6, rate_per_day: 200, currency: 'THB' },
+            { min_days: 7, max_days: 29, rate_per_day: 129, currency: 'THB' },
+            { min_days: 30, max_days: null, rate_per_day: 83, currency: 'THB' },
+          ],
+        },
+        {
+          id: '04be528a-fa1b-4cf1-ba31-e7535ef94e6f',
+          brand: 'Honda',
+          model: 'Scoopy i',
+          deposit: 'THB 3,000',
+          tiers: [
+            { min_days: 1, max_days: 6, rate_per_day: 200, currency: 'THB' },
+            { min_days: 7, max_days: 29, rate_per_day: 143, currency: 'THB' },
+            { min_days: 30, max_days: null, rate_per_day: 100, currency: 'THB' },
+          ],
+        },
+        {
+          id: 'f9734329-0b8d-494f-bfba-a3c74986d60e',
+          brand: 'Honda',
+          model: 'Click 125',
+          deposit: 'THB 3,000',
+          tiers: [
+            { min_days: 1, max_days: 6, rate_per_day: 250, currency: 'THB' },
+            { min_days: 7, max_days: 29, rate_per_day: 157, currency: 'THB' },
+            { min_days: 30, max_days: null, rate_per_day: 110, currency: 'THB' },
+          ],
+        },
+        {
+          id: '37dc0cf0-8fa6-4c36-bd61-065845d2a7ad',
+          brand: 'Yamaha',
+          model: 'Grand Filano',
+          deposit: 'THB 3,000',
+          tiers: [
+            { min_days: 1, max_days: 6, rate_per_day: 300, currency: 'THB' },
+            { min_days: 7, max_days: 29, rate_per_day: 214, currency: 'THB' },
+            { min_days: 30, max_days: null, rate_per_day: 150, currency: 'THB' },
+          ],
+        },
+        {
+          id: '92e8db1a-e526-4475-8ac5-a54015c0c988',
+          brand: 'Yamaha',
+          model: 'Aerox 155 ABS',
+          deposit: 'THB 5,000',
+          tiers: [
+            { min_days: 1, max_days: 6, rate_per_day: 400, currency: 'THB' },
+            { min_days: 7, max_days: 29, rate_per_day: 286, currency: 'THB' },
+            { min_days: 30, max_days: null, rate_per_day: 167, currency: 'THB' },
+          ],
+        },
+        {
+          id: '041d2e84-bf4f-4483-b044-16998a3eb63c',
+          brand: 'Yamaha',
+          model: 'NMAX 155 ABS',
+          deposit: 'THB 5,000',
+          tiers: [
+            { min_days: 1, max_days: 6, rate_per_day: 400, currency: 'THB' },
+            { min_days: 7, max_days: 29, rate_per_day: 286, currency: 'THB' },
+            { min_days: 30, max_days: null, rate_per_day: 167, currency: 'THB' },
+          ],
+        },
+        {
+          id: '33d9d4ab-00c5-42de-87bb-b310fc9b1d70',
+          brand: 'Vespa',
+          model: 'Vespa LX125',
+          deposit: 'THB 10,000',
+          tiers: [
+            { min_days: 30, max_days: null, rate_per_day: 183, currency: 'THB' },
+          ],
+        },
+      ];
+
+      // Seed 19 live rental_rate_tiers rows across the 7 bikes
+      const liveRateTiers = new Map<string, any[]>(
+        madBikeFleet.map((b) => [
+          b.id,
+          b.tiers.map((t) => ({ motorcycle_id: b.id, ...t })),
+        ])
+      );
+      const liveConditions = new Map<string, any[]>(madBikeFleet.map((b) => [b.id, []]));
+
+      const itemsData = madBikeFleet.map((b, idx) => ({
+        id: `item-madbike-${idx}`,
+        proposal_id: 'prop-madbike-deposits',
+        entity_type: 'motorcycle',
+        action: 'update',
+        entity_id: b.id,
+        brand_name: b.brand,
+        model_name: b.model,
+        original_data: {
+          brand: b.brand,
+          model: b.model,
+          conditions: [],
+        },
+        proposed_data: {
+          brand: b.brand,
+          model: b.model,
+          conditions: [{ condition_type_id: SECURITY_DEPOSIT_ID, notes: b.deposit }],
+        },
+        diff_summary: null,
+        status: 'pending',
+      }));
+
+      const mockSupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({
+                    data: {
+                      id: 'prop-madbike-deposits',
+                      shop_id: '1a0e00c2-d41c-430f-b6ac-cf17c2879fee',
+                      status: 'pending',
+                    },
+                    error: null,
+                  }),
+                }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ data: itemsData, error: null }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+                in: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'condition_types') {
+            return {
+              select: jest.fn().mockResolvedValue({
+                data: [{ id: SECURITY_DEPOSIT_ID, name: 'Security Deposit' }],
+                error: null,
+              }),
+            };
+          }
+          if (table === 'brands') {
+            return {
+              select: jest.fn().mockReturnValue({
+                ilike: jest.fn((_col: string, name: string) => ({
+                  maybeSingle: jest.fn().mockResolvedValue({
+                    data: { id: `brand-${name.toLowerCase()}` },
+                    error: null,
+                  }),
+                })),
+              }),
+            };
+          }
+          if (table === 'motorcycle_rentals') {
+            return {
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'rental_rate_tiers') {
+            return {
+              delete: jest.fn().mockReturnValue({
+                eq: jest.fn((_col: string, bikeId: string) => {
+                  liveRateTiers.set(bikeId, []);
+                  return Promise.resolve({ error: null });
+                }),
+              }),
+              insert: jest.fn((rows: any[]) => {
+                for (const r of rows) {
+                  const list = liveRateTiers.get(r.motorcycle_id) || [];
+                  list.push(r);
+                  liveRateTiers.set(r.motorcycle_id, list);
+                }
+                return Promise.resolve({ error: null });
+              }),
+            };
+          }
+          if (table === 'motorcycle_conditions') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn((_col: string, bikeId: string) =>
+                  Promise.resolve({
+                    data: [...(liveConditions.get(bikeId) || [])],
+                    error: null,
+                  })
+                ),
+              }),
+              delete: jest.fn().mockReturnValue({
+                eq: jest.fn((_col: string, bikeId: string) => {
+                  liveConditions.set(bikeId, []);
+                  return Promise.resolve({ error: null });
+                }),
+              }),
+              insert: jest.fn((rows: any[]) => {
+                for (const r of rows) {
+                  const list = liveConditions.get(r.motorcycle_id) || [];
+                  list.push(r);
+                  liveConditions.set(r.motorcycle_id, list);
+                }
+                return Promise.resolve({ error: null });
+              }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      const res = await ChangeProposalService.apply(
+        'prop-madbike-deposits',
+        itemsData.map((i) => i.id)
+      );
+
+      expect(res.success).toBe(true);
+      expect(res.appliedCount).toBe(7);
+
+      // Verify all 7 bikes have their exact Security Deposit in motorcycle_conditions
+      for (const bike of madBikeFleet) {
+        expect(liveConditions.get(bike.id)).toEqual([
+          {
+            motorcycle_id: bike.id,
+            condition_type_id: SECURITY_DEPOSIT_ID,
+            notes: bike.deposit,
+          },
+        ]);
+      }
+
+      // Verify all 19 rental-price rows across the 7 bikes are preserved
+      const totalRateRows = Array.from(liveRateTiers.values()).reduce(
+        (sum, tiers) => sum + tiers.length,
+        0
+      );
+      expect(totalRateRows).toBe(19);
+    });
+  });
 });
+
 

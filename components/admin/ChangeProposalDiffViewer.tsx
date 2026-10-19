@@ -112,6 +112,120 @@ function renderRateTiers(
   );
 }
 
+const KNOWN_CONDITION_TYPE_NAMES: Record<string, string> = {
+  '9526b7ae-8c84-45a2-a8ac-c4ecbeea600b': 'Security Deposit',
+};
+
+function resolveConditionName(cond: any): string {
+  const explicitName =
+    cond?.name ?? cond?.condition_type_name ?? cond?.condition_types?.name;
+  if (typeof explicitName === 'string' && explicitName.trim().length > 0) {
+    return explicitName.trim();
+  }
+  const typeId = String(cond?.condition_type_id ?? cond?.conditionTypeId ?? '').trim();
+  if (typeId && KNOWN_CONDITION_TYPE_NAMES[typeId]) {
+    return KNOWN_CONDITION_TYPE_NAMES[typeId];
+  }
+  return 'Security Deposit';
+}
+
+function resolveConditionNotes(cond: any): string | null {
+  const raw = cond?.notes;
+  return raw !== undefined && raw !== null && String(raw).trim().length > 0
+    ? String(raw).trim()
+    : null;
+}
+
+function renderMotorcycleConditionsList(conditions: any[] | undefined) {
+  if (!Array.isArray(conditions) || conditions.length === 0) return null;
+  return (
+    <div className="mt-1 flex gap-2 flex-wrap">
+      {conditions.map((c: any, idx: number) => {
+        const name = resolveConditionName(c);
+        const notes = resolveConditionNotes(c);
+        return (
+          <span
+            key={c?.condition_type_id || idx}
+            className="inline-flex text-xs px-2 py-0.5 rounded border bg-amber-50 text-amber-800 border-amber-200"
+          >
+            {name}: {notes || 'Required'}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+interface MotorcycleConditionDiff {
+  key: string;
+  name: string;
+  oldNotes: string | null;
+  newNotes: string | null;
+}
+
+function computeMotorcycleConditionDiffs(
+  origConditions: any[] | undefined,
+  propConditions: any[] | undefined,
+  summaryConditions: any
+): MotorcycleConditionDiff[] {
+  if (Array.isArray(summaryConditions) && summaryConditions.length > 0) {
+    return summaryConditions.map((c: any, idx: number) => ({
+      key: String(c.condition_type_id || c.name || idx),
+      name: resolveConditionName(c),
+      oldNotes: c.old ?? c.oldNotes ?? null,
+      newNotes: c.new ?? c.newNotes ?? null,
+    }));
+  }
+
+  if (!Array.isArray(propConditions)) {
+    return [];
+  }
+
+  const origList = Array.isArray(origConditions) ? origConditions : [];
+  const origByKey = new Map<string, { name: string; notes: string | null }>();
+  for (const c of origList) {
+    const key = String(c?.condition_type_id ?? c?.conditionTypeId ?? resolveConditionName(c)).trim();
+    if (!key) continue;
+    origByKey.set(key, {
+      name: resolveConditionName(c),
+      notes: resolveConditionNotes(c),
+    });
+  }
+
+  const propByKey = new Map<string, { name: string; notes: string | null }>();
+  for (const c of propConditions) {
+    const key = String(c?.condition_type_id ?? c?.conditionTypeId ?? resolveConditionName(c)).trim();
+    if (!key) continue;
+    propByKey.set(key, {
+      name: resolveConditionName(c),
+      notes: resolveConditionNotes(c),
+    });
+  }
+
+  const allKeys = new Set<string>([...origByKey.keys(), ...propByKey.keys()]);
+  const diffs: MotorcycleConditionDiff[] = [];
+
+  for (const key of allKeys) {
+    const oldEntry = origByKey.get(key);
+    const newEntry = propByKey.get(key);
+    const oldNotes = oldEntry ? oldEntry.notes : null;
+    const newNotes = newEntry ? newEntry.notes : null;
+    const hadBefore = origByKey.has(key);
+    const hasAfter = propByKey.has(key);
+
+    if (hadBefore !== hasAfter || oldNotes !== newNotes) {
+      diffs.push({
+        key,
+        name: newEntry?.name || oldEntry?.name || 'Security Deposit',
+        oldNotes: hadBefore ? oldNotes : null,
+        newNotes: hasAfter ? newNotes : null,
+      });
+    }
+  }
+
+  return diffs;
+}
+
 function renderPolicyList(title: string, added: string[] = [], removed: string[] = []) {
   if (added.length === 0 && removed.length === 0) return null;
   return (
@@ -612,6 +726,7 @@ export function ChangeProposalDiffViewer({
                       {engineCc != null && <span>Engine: {engineCc}cc</span>}
                     </div>
                     {renderRateTiers(item.proposed_data?.rates, item.proposed_data?.currency, 'emerald')}
+                    {renderMotorcycleConditionsList(item.proposed_data?.conditions)}
                   </div>
                 </div>
               );
@@ -677,6 +792,16 @@ export function ChangeProposalDiffViewer({
                   ? { old: oldSourceUrl ?? null, new: newSourceUrl }
                   : null);
 
+              const conditionDiffs = computeMotorcycleConditionDiffs(
+                orig.conditions,
+                prop.conditions,
+                summary.conditions
+              );
+              const bikeTitle = [item.brand_name, item.model_name]
+                .filter(Boolean)
+                .join(' ')
+                .trim();
+
               return (
                 <div
                   key={item.id}
@@ -735,6 +860,18 @@ export function ChangeProposalDiffViewer({
                           </span>
                         </div>
                       )}
+                      {conditionDiffs.map((condDiff) => (
+                        <div
+                          key={condDiff.key}
+                          className="text-gray-700 flex items-center gap-1.5 flex-wrap font-medium"
+                        >
+                          <span>
+                            {`${bikeTitle} — ${condDiff.name}: ${
+                              condDiff.oldNotes ?? 'not set'
+                            } → ${condDiff.newNotes ?? 'not set'}`}
+                          </span>
+                        </div>
+                      ))}
                       {summary.rates || (item.original_data?.rates && item.proposed_data?.rates) ? (
                         renderRateTiersDiff(
                           summary.rates,
@@ -960,6 +1097,7 @@ export function ChangeProposalDiffViewer({
                           {engineCc != null && <span>Engine: {engineCc}cc</span>}
                         </div>
                         {renderRateTiers(item.proposed_data?.rates, item.proposed_data?.currency, 'gray')}
+                        {renderMotorcycleConditionsList(item.proposed_data?.conditions)}
                       </div>
                     </div>
                   );
