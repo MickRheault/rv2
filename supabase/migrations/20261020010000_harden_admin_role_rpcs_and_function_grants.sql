@@ -11,8 +11,8 @@ DECLARE
   target_user_id UUID;
   admin_exists BOOLEAN;
 BEGIN
+  -- Enforce caller authorization via auth.role() and public.is_admin()
   IF COALESCE(auth.role(), '') <> 'service_role'
-     AND current_user NOT IN ('postgres', 'supabase_admin')
      AND NOT public.is_admin() THEN
     RAISE EXCEPTION 'Unauthorized: admin or service_role required';
   END IF;
@@ -52,8 +52,8 @@ AS $$
 DECLARE
   target_user_id UUID;
 BEGIN
+  -- Enforce caller authorization via auth.role() and public.is_admin()
   IF COALESCE(auth.role(), '') <> 'service_role'
-     AND current_user NOT IN ('postgres', 'supabase_admin')
      AND NOT public.is_admin() THEN
     RAISE EXCEPTION 'Unauthorized: admin or service_role required';
   END IF;
