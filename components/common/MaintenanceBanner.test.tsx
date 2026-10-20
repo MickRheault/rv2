@@ -26,7 +26,7 @@ describe('MaintenanceBanner', () => {
       const statusBanner = screen.getByRole('status')
       expect(statusBanner).toHaveAttribute('aria-live', 'polite')
       expect(statusBanner).toHaveTextContent(
-        'Scheduled Maintenance: We are currently upgrading our database infrastructure. Live search and AI chat may be temporarily unavailable for the next 24 hours.'
+        'Scheduled Maintenance (October 20–21, 2026): We are currently upgrading our database infrastructure. Live search and AI chat will be back online by October 21, 2026.'
       )
     }
   )

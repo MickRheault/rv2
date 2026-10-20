@@ -1,8 +1,8 @@
 import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline'
 
-export const MAINTENANCE_NOTICE_LABEL = 'Scheduled Maintenance:'
+export const MAINTENANCE_NOTICE_LABEL = 'Scheduled Maintenance (October 20–21, 2026):'
 export const MAINTENANCE_NOTICE_BODY =
-  'We are currently upgrading our database infrastructure. Live search and AI chat may be temporarily unavailable for the next 24 hours.'
+  'We are currently upgrading our database infrastructure. Live search and AI chat will be back online by October 21, 2026.'
 
 export function isMaintenanceBannerEnabled(): boolean {
   return process.env.NEXT_PUBLIC_MAINTENANCE_MODE?.trim().toLowerCase() !== 'false'

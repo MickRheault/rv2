@@ -31,7 +31,7 @@ describe('AppLayout', () => {
     )
 
     expect(screen.getByRole('status')).toHaveTextContent(
-      /Scheduled Maintenance: We are currently upgrading our database infrastructure/i
+      /Scheduled Maintenance \(October 20–21, 2026\): We are currently upgrading our database infrastructure/i
     )
     expect(screen.getByTestId('mock-header')).toBeInTheDocument()
     expect(screen.getByTestId('mock-footer')).toBeInTheDocument()
@@ -50,7 +50,7 @@ describe('AppLayout', () => {
     expect(screen.queryByTestId('mock-header')).not.toBeInTheDocument()
     expect(screen.queryByTestId('mock-footer')).not.toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent(
-      /Scheduled Maintenance: We are currently upgrading our database infrastructure/i
+      /Scheduled Maintenance \(October 20–21, 2026\): We are currently upgrading our database infrastructure/i
     )
     expect(screen.getByTestId('mock-cookie-banner')).toBeInTheDocument()
     expect(screen.getByTestId('child-content')).toBeInTheDocument()
