@@ -24,19 +24,38 @@ export function parseLocationFromUrl(slug: string): string {
 }
 
 /**
- * Generate the new location-based shop URL
+ * Generate the canonical relative motorcycle URL
+ */
+export function getMotorcycleUrl(id: string): string {
+  return `/motorcycle/${id}`
+}
+
+/**
+ * Generate the location-based shop URL
  */
 export function getShopUrl(shop: ShopWithDetails | ShopWithMotorcycles | any): string {
-  if (!shop?.cities?.provinces?.countries?.name || !shop?.cities?.name) {
+  const slug = shop?.slug || shop?.id
+  const countryName = shop?.cities?.provinces?.countries?.name
+  const citySlug = shop?.cities?.slug || (shop?.cities?.name ? formatLocationForUrl(shop.cities.name) : '')
+
+  if (!countryName || !citySlug) {
     // Fallback to slug-only format if location data is missing
-    return `/shop/${shop.slug}`
+    return `/shop/${slug}`
   }
 
-  const country = formatLocationForUrl(shop.cities.provinces.countries.name)
-  const city = formatLocationForUrl(shop.cities.name)
-  const slug = shop.slug
+  const country = formatLocationForUrl(countryName)
 
-  return `/shop/${country}/${city}/${slug}`
+  return `/shop/${country}/${citySlug}/${slug}`
+}
+
+/**
+ * Generate the location-based shop URL only when full shop slug and location hierarchy are present
+ */
+export function getOptionalShopUrl(shop: ShopWithDetails | ShopWithMotorcycles | any): string | undefined {
+  if (!shop?.slug || !shop?.cities?.provinces?.countries?.name || !(shop?.cities?.slug || shop?.cities?.name)) {
+    return undefined
+  }
+  return getShopUrl(shop)
 }
 
 /**

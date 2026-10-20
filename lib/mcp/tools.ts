@@ -8,7 +8,7 @@ import { shopService } from '@/services/shops';
 import { brandService } from '@/services/brands';
 import { categoryService } from '@/services/categories';
 import { locationService } from '@/services/locations';
-import { getShopUrl } from '@/lib/utils/urls';
+import { getMotorcycleUrl, getOptionalShopUrl, getShopUrl } from '@/lib/utils/urls';
 import type { ChatCompletionTool } from 'openai/resources/chat/completions';
 
 // ============================================
@@ -185,6 +185,10 @@ async function resolveCountryCode(countryName: string): Promise<string | null> {
 // Tool Executor
 // ============================================
 
+function getYearTo(record: { year_to?: number | null }): number | null {
+    return record.year_to ?? null;
+}
+
 export interface ToolResult {
     success: boolean;
     data?: unknown;
@@ -240,9 +244,7 @@ export async function executeTool(
                     total: result.total,
                     motorcycles: result.motorcycles.map(m => {
                         const shop = m.rental_shops;
-                        const shopUrl = shop?.slug && shop.cities?.name && shop.cities?.provinces?.countries?.name
-                            ? getShopUrl(shop)
-                            : undefined;
+                        const shopUrl = getOptionalShopUrl(shop);
 
                         // Get price from the direct daily rate or first tier.
                         let dailyRate = m.rental_rate_per_day;
@@ -263,10 +265,10 @@ export async function executeTool(
 
                         return {
                             id: m.id,
-                            url: `/motorcycle/${m.id}`,
+                            url: getMotorcycleUrl(m.id),
                             model: m.model,
                             year: m.year,
-                            year_to: (m as any).year_to ?? null,
+                            year_to: getYearTo(m),
                             brand: m.brands?.name,
                             category: m.categories?.name,
                             dailyRate,
@@ -286,11 +288,14 @@ export async function executeTool(
                 if (!motorcycle) {
                     return { success: false, error: 'Motorcycle not found' };
                 }
+                const shopUrl = getOptionalShopUrl(motorcycle.rental_shops);
                 return {
                     success: true,
                     data: {
                         ...motorcycle,
-                        year_to: (motorcycle as any).year_to ?? null,
+                        url: getMotorcycleUrl(motorcycle.id),
+                        ...(shopUrl ? { shopUrl } : {}),
+                        year_to: getYearTo(motorcycle),
                     },
                 };
             }
@@ -329,15 +334,9 @@ export async function executeTool(
                             } | null;
                         } | null;
                     }) => {
-                        // Build URL: /shop/{country}/{city}/{slug}
-                        const countryName = s.cities?.provinces?.countries?.name?.toLowerCase().replace(/\s+/g, '-') || '';
-                        const citySlug = s.cities?.slug || s.cities?.name?.toLowerCase().replace(/\s+/g, '-') || '';
-                        const shopSlug = s.slug || s.id;
-                        const url = countryName && citySlug ? `/shop/${countryName}/${citySlug}/${shopSlug}` : `/shop/${shopSlug}`;
-
                         return {
                             id: s.id,
-                            url,
+                            url: getShopUrl(s),
                             name: s.provider_name,
                             rating: s.rating,
                             reviewCount: s.review_count,
@@ -353,7 +352,13 @@ export async function executeTool(
                 if (!shop) {
                     return { success: false, error: 'Shop not found' };
                 }
-                return { success: true, data: shop };
+                return {
+                    success: true,
+                    data: {
+                        ...shop,
+                        url: getShopUrl(shop),
+                    },
+                };
             }
 
             // Brands

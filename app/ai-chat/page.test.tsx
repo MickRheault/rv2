@@ -7,7 +7,42 @@ const originalSecret = process.env.AI_CHAT_ACCESS_SECRET;
 
 jest.mock('react-markdown', () => ({
     __esModule: true,
-    default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    default: ({
+        children,
+        components,
+    }: {
+        children: React.ReactNode;
+        components?: { a?: React.ComponentType<{ href?: string; children?: React.ReactNode }> };
+    }) => {
+        if (typeof children !== 'string') return <div>{children}</div>;
+        const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+        const parts: React.ReactNode[] = [];
+        let lastIndex = 0;
+        let match: RegExpExecArray | null;
+        while ((match = linkRegex.exec(children)) !== null) {
+            if (match.index > lastIndex) {
+                parts.push(children.slice(lastIndex, match.index));
+            }
+            const [, label, href] = match;
+            const Anchor = components?.a;
+            parts.push(
+                Anchor ? (
+                    <Anchor key={match.index} href={href}>
+                        {label}
+                    </Anchor>
+                ) : (
+                    <a key={match.index} href={href}>
+                        {label}
+                    </a>
+                )
+            );
+            lastIndex = match.index + match[0].length;
+        }
+        if (lastIndex < children.length) {
+            parts.push(children.slice(lastIndex));
+        }
+        return <div>{parts.length > 0 ? parts : children}</div>;
+    },
 }));
 jest.mock('next/navigation', () => ({ useSearchParams: jest.fn() }));
 
@@ -292,5 +327,31 @@ it('completes the ?q= initial query under React StrictMode without losing the re
     expect(screen.getAllByText('Find scooters in Bangkok')).toHaveLength(1);
 });
 
+it('normalizes hallucinated or absolute domains on /motorcycle/ and /shop/ links to relative paths while preserving genuine external links', async () => {
+    delete process.env.AI_CHAT_ACCESS_SECRET;
+    jest.mocked(fetch).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: async () =>
+            JSON.stringify({
+                response:
+                    '1. [Honda PCX 160](https://www.globalmoto.com/motorcycle/474ae1b4-c952-42ef-b5d3-b84ef9020898) - Shop: [Mike Rentals](https://www.globalmoto.com/shop/thailand/bangkok/mikes-rentals) - [Tourism Info](https://www.tourismthailand.org/articles)',
+            }),
+    } as Response);
 
+    const { container } = render(<ChatPage />);
+    fireEvent.change(screen.getByPlaceholderText('Ask about motorcycles, shops, or locations...'), {
+        target: { value: 'Show me Honda PCX in Bangkok' },
+    });
+    fireEvent.submit(container.querySelector('form')!);
+
+    const bikeLink = await screen.findByRole('link', { name: 'Honda PCX 160' });
+    expect(bikeLink).toHaveAttribute('href', '/motorcycle/474ae1b4-c952-42ef-b5d3-b84ef9020898');
+
+    const shopLink = screen.getByRole('link', { name: 'Mike Rentals' });
+    expect(shopLink).toHaveAttribute('href', '/shop/thailand/bangkok/mikes-rentals');
+
+    const externalLink = screen.getByRole('link', { name: 'Tourism Info' });
+    expect(externalLink).toHaveAttribute('href', 'https://www.tourismthailand.org/articles');
+});
 
