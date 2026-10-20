@@ -3,6 +3,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { Database } from '@/lib/supabase/database.types';
 import type { AppPermission } from '@/types/admin';
+import { isSoftDeletedUser } from '@/lib/auth/admin-auth';
 import { validateApiKey, type ApiKeyType } from './api-key-auth';
 
 export interface AuthResult {
@@ -98,6 +99,10 @@ export async function requireAuth(
 
         if (userError || !user) {
             return { authorized: false, error: 'Invalid or expired token' };
+        }
+
+        if (isSoftDeletedUser(user)) {
+            return { authorized: false, error: 'User account is disabled' };
         }
 
         // If a specific permission is required, check it

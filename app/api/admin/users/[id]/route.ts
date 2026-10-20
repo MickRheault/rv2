@@ -3,70 +3,8 @@ export const revalidate = 0
 export const fetchCache = 'force-no-store'
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { getBearerAdminCaller } from '@/lib/auth/admin-auth';
 import { usersService, UpdateUserRequest } from '@/services/users';
-
-/**
- * Check if the current user is an admin using Authorization header
- */
-async function isAdmin(request: NextRequest): Promise<boolean> {
-  try {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('No authorization header found');
-      return false;
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    
-    // Create supabase client with the token
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) { return cookieStore.get(name)?.value },
-          set(name: string, value: string, options: CookieOptions) {
-            try { cookieStore.set({ name, value, ...options }) } catch {}
-          },
-          remove(name: string, options: CookieOptions) {
-            try { cookieStore.set({ name, value: '', ...options }) } catch {}
-          },
-        },
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      }
-    );
-
-    // Check user with the provided token
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
-    if (userError || !user) {
-      console.log('No authenticated user found with token:', userError?.message);
-      return false;
-    }
-
-    // Use the authorize RPC to check for system.manage permission
-    const { data: authorized, error } = await supabase.rpc('authorize', {
-      requested_permission: 'system.manage'
-    });
-
-    if (error) {
-      console.log('Error in authorize RPC:', error);
-      return false;
-    }
-
-    return authorized === true;
-  } catch (error) {
-    console.error('Error checking admin status:', error);
-    return false;
-  }
-}
 
 /**
  * GET /api/admin/users/[id] - Get a specific user
@@ -76,9 +14,8 @@ export async function GET(
   segmentData: { params: Promise<{ id: string }> }
 ) {
   try {
-    const params = await segmentData.params
-    // Check admin authorization
-    const authorized = await isAdmin(request);
+    const params = await segmentData.params;
+    const { authorized } = await getBearerAdminCaller(request);
     if (!authorized) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -108,10 +45,9 @@ export async function PUT(
   segmentData: { params: Promise<{ id: string }> }
 ) {
   try {
-    const params = await segmentData.params
-    // Check admin authorization
-    const authorized = await isAdmin(request);
-    if (!authorized) {
+    const params = await segmentData.params;
+    const { authorized, user: callerUser } = await getBearerAdminCaller(request);
+    if (!authorized || !callerUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -142,6 +78,13 @@ export async function PUT(
 
     // Update role if provided
     if (body.role && body.role !== existingUser.role) {
+      if (callerUser.id === id) {
+        return NextResponse.json(
+          { error: 'Cannot modify your own role' },
+          { status: 400 }
+        );
+      }
+
       const roleResult = await usersService.updateUserRole(id, body.role);
       if (!roleResult.success) {
         return NextResponse.json(
@@ -178,10 +121,9 @@ export async function DELETE(
   segmentData: { params: Promise<{ id: string }> }
 ) {
   try {
-    const params = await segmentData.params
-    // Check admin authorization
-    const authorized = await isAdmin(request);
-    if (!authorized) {
+    const params = await segmentData.params;
+    const { authorized, user: callerUser } = await getBearerAdminCaller(request);
+    if (!authorized || !callerUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -193,26 +135,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Prevent self-deletion for safety
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) { return cookieStore.get(name)?.value },
-          set(name: string, value: string, options: CookieOptions) {
-            try { cookieStore.set({ name, value, ...options }) } catch {}
-          },
-          remove(name: string, options: CookieOptions) {
-            try { cookieStore.set({ name, value: '', ...options }) } catch {}
-          },
-        },
-      }
-    );
-
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
-    if (currentUser?.id === id) {
+    // Prevent self-deletion using the verified Bearer-authenticated caller identity
+    if (callerUser.id === id) {
       return NextResponse.json(
         { error: 'Cannot delete your own account' },
         { status: 400 }

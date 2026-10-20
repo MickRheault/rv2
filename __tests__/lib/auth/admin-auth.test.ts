@@ -82,6 +82,28 @@ describe('admin-auth isAuthorizedAdmin', () => {
     const authorized = await isAuthorizedAdmin();
     expect(authorized).toBe(false);
   });
+
+  it('rejects soft-deleted users immediately before checking RPCs (#176)', async () => {
+    const mockGetUser = jest.fn().mockResolvedValue({
+      data: {
+        user: {
+          id: 'deleted-admin-id',
+          user_metadata: { deleted: true },
+          app_metadata: { deleted: true },
+        },
+      },
+      error: null,
+    });
+    const mockRpc = jest.fn().mockResolvedValue({ data: true });
+    (createClient as jest.Mock).mockResolvedValue({
+      auth: { getUser: mockGetUser },
+      rpc: mockRpc,
+    });
+
+    const authorized = await isAuthorizedAdmin();
+    expect(authorized).toBe(false);
+    expect(mockRpc).not.toHaveBeenCalled();
+  });
 });
 
 describe('Admin Role Management RPC Security Hardening (#166)', () => {
@@ -141,4 +163,68 @@ describe('Admin Role Management RPC Security Hardening (#166)', () => {
     );
   });
 });
+
+describe('Live RBAC & Admin User Lifecycle Hardening (#176)', () => {
+  const fs = require('fs');
+  const path = require('path');
+
+  it('recreates authorize and is_admin in migration to check live user_roles and exclude soft-deleted/banned users', () => {
+    const migrationPath = path.join(
+      process.cwd(),
+      'supabase/migrations/20261020030000_enforce_live_rbac_in_authorize_and_is_admin.sql'
+    );
+    expect(fs.existsSync(migrationPath)).toBe(true);
+    const sql = fs.readFileSync(migrationPath, 'utf8');
+
+    // Must recreate authorize and is_admin with SECURITY DEFINER and pinned search_path
+    expect(sql).toMatch(/CREATE OR REPLACE FUNCTION public\.authorize\(requested_permission public\.app_permission\)/i);
+    expect(sql).toMatch(/CREATE OR REPLACE FUNCTION public\.is_admin\(\)/i);
+    expect(sql).toMatch(/SECURITY DEFINER/i);
+    expect(sql).toMatch(/SET search_path = public, extensions/i);
+
+    // Must not trust stale JWT user_role claim
+    expect(sql).not.toMatch(/auth\.jwt\(\)\s*->>\s*'user_role'/i);
+
+    // Must join public.user_roles and auth.users to verify live role and non-deleted/non-banned status
+    expect(sql).toMatch(/FROM public\.role_permissions\s+rp[\s\S]*?JOIN public\.user_roles\s+ur[\s\S]*?JOIN auth\.users\s+u/i);
+    expect(sql).toMatch(/raw_user_meta_data->>'deleted'/i);
+    expect(sql).toMatch(/raw_app_meta_data->>'deleted'/i);
+    expect(sql).toMatch(/banned_until/i);
+  });
+
+  it('UsersService.deleteUser sets ban_duration and role=user in metadata, and updateUserRole syncs auth metadata', () => {
+    const usersServiceSource = fs.readFileSync(
+      path.join(process.cwd(), 'services/users.ts'),
+      'utf8'
+    );
+
+    expect(usersServiceSource).toMatch(/ban_duration:\s*'876000h'/);
+    expect(usersServiceSource).toMatch(/app_metadata:\s*\{\s*deleted:\s*true,\s*role:\s*'user'\s*\}/);
+    expect(usersServiceSource).toMatch(
+      /updateUserById\(userId,\s*\{\s*app_metadata:\s*\{\s*role:\s*newRole\s*\},\s*user_metadata:\s*\{\s*role:\s*newRole\s*\}\s*\}\)/
+    );
+  });
+
+  it('requireAuth and admin users routes reject soft-deleted callers and forbid self-role modification', () => {
+    const adminAuthSource = fs.readFileSync(
+      path.join(process.cwd(), 'lib/auth/admin-auth.ts'),
+      'utf8'
+    );
+    const middlewareSource = fs.readFileSync(
+      path.join(process.cwd(), 'lib/api/middleware.ts'),
+      'utf8'
+    );
+    const adminUserRouteSource = fs.readFileSync(
+      path.join(process.cwd(), 'app/api/admin/users/[id]/route.ts'),
+      'utf8'
+    );
+
+    expect(adminAuthSource).toMatch(/isSoftDeletedUser\(user\)/);
+    expect(middlewareSource).toMatch(/isSoftDeletedUser\(user\)/);
+    expect(adminUserRouteSource).toMatch(/getBearerAdminCaller\(request\)/);
+    expect(adminUserRouteSource).toMatch(/Cannot modify your own role/);
+    expect(adminUserRouteSource).toMatch(/Cannot delete your own account/);
+  });
+});
+
 

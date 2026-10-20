@@ -185,6 +185,15 @@ export class UsersService {
         return { success: false, error: error.message };
       }
 
+      const { error: metadataError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+        app_metadata: { role: newRole },
+        user_metadata: { role: newRole }
+      });
+
+      if (metadataError) {
+        console.warn('Updated user_roles but failed to sync auth metadata:', metadataError.message);
+      }
+
       return { success: true };
     } catch (error) {
       console.error('Error updating user role:', error);
@@ -201,14 +210,17 @@ export class UsersService {
   async deleteUser(userId: string): Promise<{ success: boolean; error?: string }> {
     try {
       const supabaseAdmin = getSupabaseAdmin();
-      // Soft delete by updating user metadata to mark as deleted
+      // Soft delete by banning the Auth account and updating user metadata to mark as deleted
       const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+        ban_duration: '876000h',
         user_metadata: { 
           deleted: true, 
-          deleted_at: new Date().toISOString() 
+          deleted_at: new Date().toISOString(),
+          role: 'user'
         },
         app_metadata: { 
-          deleted: true 
+          deleted: true,
+          role: 'user'
         }
       });
 
