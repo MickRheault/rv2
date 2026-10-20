@@ -119,9 +119,31 @@ export class FlaggedContentService {
       status: 'pending' as const,
     };
 
-    const { data: result, error } = await supabase
+    const insertQuery = supabase
       .from('flagged_content')
-      .insert([flaggedContentData] as any)
+      .insert([flaggedContentData] as any);
+
+    if (!userId) {
+      const { error } = await insertQuery;
+      if (error) {
+        console.error('Error creating flagged content:', error);
+        throw new Error(`Failed to create flagged content: ${error.message}`);
+      }
+
+      return {
+        id: '',
+        ...flaggedContentData,
+        admin_notes: null,
+        reviewed_by_admin_id: null,
+        applied_by_admin_id: null,
+        created_at: new Date().toISOString(),
+        reviewed_at: null,
+        applied_at: null,
+        is_verified: false,
+      } as FlaggedContent;
+    }
+
+    const { data: result, error } = await insertQuery
       .select('*')
       .single();
 
