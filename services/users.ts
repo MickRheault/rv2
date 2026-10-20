@@ -1,12 +1,16 @@
 import 'server-only'
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { isSoftDeletedUser } from '@/lib/auth/admin-auth';
 import { Database } from '@/lib/supabase/database.types';
+
+/** Duration (100 years) used to ban soft-deleted accounts in Supabase Auth */
+export const SOFT_DELETE_BAN_DURATION = '876000h';
 
 // Lazily initialized admin client to avoid requiring keys at build time
 let supabaseAdminSingleton: SupabaseClient<Database> | null = null;
 
 function getSupabaseAdmin(): SupabaseClient<Database> {
-  if (supabaseAdminSingleton) return supabaseAdminSingleton;
+  if (supabaseAdminSingleton && process.env.NODE_ENV !== 'test') return supabaseAdminSingleton;
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -185,6 +189,15 @@ export class UsersService {
         return { success: false, error: error.message };
       }
 
+      const { error: metadataError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+        app_metadata: { role: newRole },
+        user_metadata: { role: newRole }
+      });
+
+      if (metadataError) {
+        console.warn('Updated user_roles but failed to sync auth metadata:', metadataError.message);
+      }
+
       return { success: true };
     } catch (error) {
       console.error('Error updating user role:', error);
@@ -201,14 +214,17 @@ export class UsersService {
   async deleteUser(userId: string): Promise<{ success: boolean; error?: string }> {
     try {
       const supabaseAdmin = getSupabaseAdmin();
-      // Soft delete by updating user metadata to mark as deleted
+      // Soft delete by banning the Auth account and updating user metadata to mark as deleted
       const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+        ban_duration: SOFT_DELETE_BAN_DURATION,
         user_metadata: { 
           deleted: true, 
-          deleted_at: new Date().toISOString() 
+          deleted_at: new Date().toISOString(),
+          role: 'user'
         },
         app_metadata: { 
-          deleted: true 
+          deleted: true,
+          role: 'user'
         }
       });
 
@@ -295,7 +311,7 @@ export class UsersService {
    */
   private getUserStatus(user: any): 'active' | 'inactive' | 'invited' {
     // Check if user is soft deleted
-    if (user.user_metadata?.deleted || user.app_metadata?.deleted) {
+    if (isSoftDeletedUser(user)) {
       return 'inactive';
     }
 
