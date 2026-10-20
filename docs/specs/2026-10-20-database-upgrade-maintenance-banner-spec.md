@@ -15,7 +15,7 @@ Add a non-blocking, accessible top announcement banner ([`components/common/Main
      `"Scheduled Maintenance: We are currently upgrading our database infrastructure. Live search and AI chat may be temporarily unavailable for the next 24 hours."`
 2. **Placement in [`components/common/AppLayout.tsx`](file:///Users/mick/workspace/personal/rv2/components/common/AppLayout.tsx)**:
    - On standard routes, render `<MaintenanceBanner />` immediately above `<Header />`.
-   - On standalone `/ai-chat` routes, render `<MaintenanceBanner />` at the top of the `h-screen h-[100dvh] overflow-hidden flex flex-col` wrapper above `{children}` so the chat viewport remains `flex-1` without overflowing.
+   - On standalone `/ai-chat` routes, render `<MaintenanceBanner />` (`shrink-0`) at the top of the `h-screen h-[100dvh] overflow-hidden flex flex-col` wrapper above `{children}` so the chat container shrinks to fit the remaining viewport height without overflowing.
 3. **Environment Variable Control (`NEXT_PUBLIC_MAINTENANCE_MODE`)**:
    - Active by default when `process.env.NEXT_PUBLIC_MAINTENANCE_MODE` is unset, empty, or any value other than `'false'` (case-insensitive, trimmed).
    - Setting `NEXT_PUBLIC_MAINTENANCE_MODE=false` hides the banner (`returns null`).

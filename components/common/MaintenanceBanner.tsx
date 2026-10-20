@@ -1,5 +1,3 @@
-'use client'
-
 import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline'
 
 export const MAINTENANCE_NOTICE_LABEL = 'Scheduled Maintenance:'

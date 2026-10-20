@@ -1,25 +1,25 @@
 import { render, screen } from '@testing-library/react'
 import MaintenanceBanner from './MaintenanceBanner'
 
+function setMaintenanceModeEnv(value: string | undefined) {
+  if (value === undefined) {
+    delete process.env.NEXT_PUBLIC_MAINTENANCE_MODE
+  } else {
+    process.env.NEXT_PUBLIC_MAINTENANCE_MODE = value
+  }
+}
+
 describe('MaintenanceBanner', () => {
   const originalEnv = process.env.NEXT_PUBLIC_MAINTENANCE_MODE
 
   afterEach(() => {
-    if (originalEnv === undefined) {
-      delete process.env.NEXT_PUBLIC_MAINTENANCE_MODE
-    } else {
-      process.env.NEXT_PUBLIC_MAINTENANCE_MODE = originalEnv
-    }
+    setMaintenanceModeEnv(originalEnv)
   })
 
   it.each([undefined, '', 'true', '1'])(
     'renders the scheduled database upgrade banner by default when NEXT_PUBLIC_MAINTENANCE_MODE is %s',
     (envValue) => {
-      if (envValue === undefined) {
-        delete process.env.NEXT_PUBLIC_MAINTENANCE_MODE
-      } else {
-        process.env.NEXT_PUBLIC_MAINTENANCE_MODE = envValue
-      }
+      setMaintenanceModeEnv(envValue)
 
       render(<MaintenanceBanner />)
 
@@ -34,7 +34,7 @@ describe('MaintenanceBanner', () => {
   it.each(['false', 'FALSE', '  false  '])(
     'hides the banner when NEXT_PUBLIC_MAINTENANCE_MODE is %s',
     (envValue) => {
-      process.env.NEXT_PUBLIC_MAINTENANCE_MODE = envValue
+      setMaintenanceModeEnv(envValue)
 
       const { container } = render(<MaintenanceBanner />)
 
