@@ -76,15 +76,16 @@ export async function PUT(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    // Forbid self-role modification regardless of whether the target role matches existingUser.role
+    if (body.role && callerUser.id === id) {
+      return NextResponse.json(
+        { error: 'Cannot modify your own role' },
+        { status: 400 }
+      );
+    }
+
     // Update role if provided
     if (body.role && body.role !== existingUser.role) {
-      if (callerUser.id === id) {
-        return NextResponse.json(
-          { error: 'Cannot modify your own role' },
-          { status: 400 }
-        );
-      }
-
       const roleResult = await usersService.updateUserRole(id, body.role);
       if (!roleResult.success) {
         return NextResponse.json(

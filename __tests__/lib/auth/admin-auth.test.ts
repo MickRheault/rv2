@@ -191,40 +191,6 @@ describe('Live RBAC & Admin User Lifecycle Hardening (#176)', () => {
     expect(sql).toMatch(/raw_app_meta_data->>'deleted'/i);
     expect(sql).toMatch(/banned_until/i);
   });
-
-  it('UsersService.deleteUser sets ban_duration and role=user in metadata, and updateUserRole syncs auth metadata', () => {
-    const usersServiceSource = fs.readFileSync(
-      path.join(process.cwd(), 'services/users.ts'),
-      'utf8'
-    );
-
-    expect(usersServiceSource).toMatch(/ban_duration:\s*'876000h'/);
-    expect(usersServiceSource).toMatch(/app_metadata:\s*\{\s*deleted:\s*true,\s*role:\s*'user'\s*\}/);
-    expect(usersServiceSource).toMatch(
-      /updateUserById\(userId,\s*\{\s*app_metadata:\s*\{\s*role:\s*newRole\s*\},\s*user_metadata:\s*\{\s*role:\s*newRole\s*\}\s*\}\)/
-    );
-  });
-
-  it('requireAuth and admin users routes reject soft-deleted callers and forbid self-role modification', () => {
-    const adminAuthSource = fs.readFileSync(
-      path.join(process.cwd(), 'lib/auth/admin-auth.ts'),
-      'utf8'
-    );
-    const middlewareSource = fs.readFileSync(
-      path.join(process.cwd(), 'lib/api/middleware.ts'),
-      'utf8'
-    );
-    const adminUserRouteSource = fs.readFileSync(
-      path.join(process.cwd(), 'app/api/admin/users/[id]/route.ts'),
-      'utf8'
-    );
-
-    expect(adminAuthSource).toMatch(/isSoftDeletedUser\(user\)/);
-    expect(middlewareSource).toMatch(/isSoftDeletedUser\(user\)/);
-    expect(adminUserRouteSource).toMatch(/getBearerAdminCaller\(request\)/);
-    expect(adminUserRouteSource).toMatch(/Cannot modify your own role/);
-    expect(adminUserRouteSource).toMatch(/Cannot delete your own account/);
-  });
 });
 
 

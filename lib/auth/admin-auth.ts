@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 import type { User } from '@supabase/supabase-js';
+import { extractBearerToken, createAuthenticatedClient } from '@/lib/api/middleware';
 import { createClient } from '@/lib/supabase/server';
 
 /**
@@ -32,39 +31,12 @@ export async function getBearerAdminCaller(
   request: NextRequest
 ): Promise<{ authorized: boolean; user: User | null }> {
   try {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const token = extractBearerToken(request);
+    if (!token) {
       return { authorized: false, user: null };
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-          set(name: string, value: string, options: CookieOptions) {
-            try {
-              cookieStore.set({ name, value, ...options });
-            } catch {}
-          },
-          remove(name: string, options: CookieOptions) {
-            try {
-              cookieStore.set({ name, value: '', ...options });
-            } catch {}
-          },
-        },
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      }
-    );
+    const supabase = await createAuthenticatedClient(token);
 
     const {
       data: { user },
@@ -75,7 +47,7 @@ export async function getBearerAdminCaller(
       return { authorized: false, user: null };
     }
 
-    const { data: authorized, error } = await supabase.rpc('authorize', {
+    const { data: authorized, error } = await (supabase as any).rpc('authorize', {
       requested_permission: 'system.manage',
     });
 
