@@ -62,6 +62,8 @@ describe('HeroDiscoveryCard & Homepage Hero', () => {
     expect(screen.getByRole('button', { name: /List adventure bikes in Chiang Mai/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /What brands are available\?/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Show me shops in Phuket/i })).toBeInTheDocument()
+    expect(screen.queryByText(/Ride the world!/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Discover rental shops and compare their bikes\./i)).not.toBeInTheDocument()
   })
 
   it('navigates to /ai-chat?q=... when submitting a prompt via the Ask AI button', () => {
