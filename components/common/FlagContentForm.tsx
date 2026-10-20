@@ -83,17 +83,6 @@ export const FlagContentForm: React.FC<FlagContentFormProps> = ({
           filtered[field] = data[field];
         }
       });
-      
-      // Add brand name if available
-      if (data.brands?.name) {
-        filtered.brand_name = data.brands.name;
-      }
-      
-      // Add category name if available
-      if (data.categories?.name) {
-        filtered.category_name = data.categories.name;
-      }
-      
     } else if (type === 'rental_shop') {
       // Extract only editable rental shop fields
       const shopFields = [
@@ -111,17 +100,6 @@ export const FlagContentForm: React.FC<FlagContentFormProps> = ({
           filtered[field] = data[field];
         }
       });
-      
-      // Add location information if available
-      if (data.cities?.name) {
-        filtered.city_name = data.cities.name;
-      }
-      if (data.cities?.provinces?.name) {
-        filtered.province_name = data.cities.provinces.name;
-      }
-      if (data.cities?.provinces?.countries?.name) {
-        filtered.country_name = data.cities.provinces.countries.name;
-      }
     }
     
     return filtered;
