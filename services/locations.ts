@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase/client'
 import { Database } from '@/lib/supabase/database.types'
+import { REFERENCE_CACHE_TTL_MS } from './shops'
 
 type Country = Database['public']['Tables']['countries']['Row']
 type Province = Database['public']['Tables']['provinces']['Row']
@@ -68,9 +69,16 @@ export function toCityWithCounts(city: any): CityWithCounts {
   }
 }
 
+let cachedCountries: { value: Country[]; expiresAt: number } | null = null
+
 export const locationService = {
-  // Get all countries
+  // Get all countries (memoized with TTL once non-empty)
   async getCountries() {
+    const now = Date.now()
+    if (cachedCountries && cachedCountries.expiresAt > now) {
+      return [...cachedCountries.value]
+    }
+
     const { data, error } = await supabase
       .from('countries')
       .select('*')
@@ -81,7 +89,14 @@ export const locationService = {
       throw error
     }
 
-    return data as Country[]
+    const countries = (data || []) as Country[]
+    if (countries.length > 0) {
+      cachedCountries = {
+        value: countries,
+        expiresAt: now + REFERENCE_CACHE_TTL_MS,
+      }
+    }
+    return [...countries]
   },
 
   // Get country with provinces and cities
@@ -411,24 +426,14 @@ export const locationService = {
   // Get country by name (for dynamic routing)
   async getCountryByName(countryName: string) {
     // Convert country name slug to search term (e.g., "new-zealand" -> "new zealand")
-    const searchName = countryName.replace(/-/g, ' ')
+    const searchName = countryName.replace(/-/g, ' ').trim().toLowerCase()
 
-    const { data, error } = await supabase
-      .from('countries')
-      .select('*')
-      .ilike('name', searchName)
-      .single()
+    const countries = await this.getCountries()
+    const match = countries.find(
+      (c) => c.name?.trim().toLowerCase() === searchName
+    )
 
-    if (error) {
-      if (error.code === 'PGRST116') {
-        // No rows returned
-        return null
-      }
-      console.error('Error fetching country by name:', error)
-      throw error
-    }
-
-    return data as Country
+    return match ?? null
   },
 
   // Get city by name within a specific country (for dynamic routing)

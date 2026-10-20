@@ -88,14 +88,64 @@ export interface ShopSearchFilters {
 // Define active business statuses that should be visible on the platform
 export const ACTIVE_BUSINESS_STATUSES = ['OPERATIONAL', 'operational', 'active', 'ACTIVE'];
 
-// Helper function to get active business status IDs
-async function getActiveBusinessStatusIds(): Promise<number[]> {
+export const REFERENCE_CACHE_TTL_MS = 5 * 60 * 1000
+
+let cachedActiveBusinessStatusIds: { value: number[]; expiresAt: number } | null = null
+
+export const MOTORCYCLE_LISTING_BASE_COLUMNS = `
+  id,
+  shop_id,
+  brand_id,
+  category_id,
+  model,
+  year,
+  year_to,
+  engine_capacity_cc,
+  rental_rate_per_day,
+  rental_rate_currency,
+  availability_status,
+  created_at,
+  updated_at
+`
+
+export const MOTORCYCLE_LISTING_RATE_TIERS_COLUMNS = `
+  id,
+  motorcycle_id,
+  min_days,
+  max_days,
+  rate_per_day,
+  currency
+`
+
+export const SHOP_MOTORCYCLE_RENTALS_SELECT = `
+  ${MOTORCYCLE_LISTING_BASE_COLUMNS},
+  brands (id, name, country_of_origin),
+  categories (id, name, description),
+  rental_rate_tiers (
+    ${MOTORCYCLE_LISTING_RATE_TIERS_COLUMNS}
+  )
+`
+
+// Helper function to get active business status IDs (memoized with TTL once non-empty)
+export async function getActiveBusinessStatusIds(): Promise<number[]> {
+  const now = Date.now()
+  if (cachedActiveBusinessStatusIds && cachedActiveBusinessStatusIds.expiresAt > now) {
+    return [...cachedActiveBusinessStatusIds.value]
+  }
+
   const { data: activeBusinessStatuses } = await typedSupabase
     .from('business_statuses')
     .select('id')
     .in('status_code', ACTIVE_BUSINESS_STATUSES)
 
-  return activeBusinessStatuses ? (activeBusinessStatuses as any[]).map((status: any) => status.id) : []
+  const ids = activeBusinessStatuses ? (activeBusinessStatuses as any[]).map((status: any) => status.id) : []
+  if (ids.length > 0) {
+    cachedActiveBusinessStatusIds = {
+      value: ids,
+      expiresAt: now + REFERENCE_CACHE_TTL_MS,
+    }
+  }
+  return [...ids]
 }
 
 // Helper function to apply active status filter to a query
@@ -317,12 +367,7 @@ export const shopService = {
         rental_shop_tours (*),
         rental_shop_service_locations (*),
         motorcycle_rentals (
-          *,
-          brands (*),
-          categories (*),
-          rental_rate_tiers (
-            *
-          )
+          ${SHOP_MOTORCYCLE_RENTALS_SELECT}
         )
       `)
       .eq('id', id)
@@ -364,10 +409,7 @@ export const shopService = {
           condition_types (*)
         ),
         motorcycle_rentals (
-          *,
-          brands (*),
-          categories (*),
-          rental_rate_tiers (*)
+          ${SHOP_MOTORCYCLE_RENTALS_SELECT}
         )
       `)
       .eq('slug', slug)
@@ -416,10 +458,7 @@ export const shopService = {
           condition_types (*)
         ),
         motorcycle_rentals (
-          *,
-          brands (*),
-          categories (*),
-          rental_rate_tiers (*)
+          ${SHOP_MOTORCYCLE_RENTALS_SELECT}
         )
       `)
       .eq('slug', slug)
