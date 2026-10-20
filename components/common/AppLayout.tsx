@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation'
 import Header from '@/components/common/Header'
 import Footer from '@/components/common/Footer'
+import MaintenanceBanner from '@/components/common/MaintenanceBanner'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import CookieConsentBanner from '@/components/analytics/CookieConsentBanner'
 
@@ -13,6 +14,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   if (isStandaloneChat) {
     return (
       <div className="h-screen h-[100dvh] overflow-hidden flex flex-col">
+        <MaintenanceBanner />
         <ErrorBoundary level="page" name="Standalone Chat">
           {children}
         </ErrorBoundary>
@@ -23,6 +25,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      <MaintenanceBanner />
       <ErrorBoundary level="section" name="Header">
         <Header />
       </ErrorBoundary>

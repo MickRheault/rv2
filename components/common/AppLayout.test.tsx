@@ -22,7 +22,7 @@ jest.mock('@/components/analytics/CookieConsentBanner', () => ({
 }))
 
 describe('AppLayout', () => {
-  it('renders Header, Footer, and CookieBanner for standard routes', () => {
+  it('renders Header, Footer, CookieBanner, and MaintenanceBanner for standard routes', () => {
     jest.mocked(usePathname).mockReturnValue('/browse')
     render(
       <AppLayout>
@@ -30,13 +30,16 @@ describe('AppLayout', () => {
       </AppLayout>
     )
 
+    expect(screen.getByRole('status')).toHaveTextContent(
+      /Scheduled Maintenance: We are currently upgrading our database infrastructure/i
+    )
     expect(screen.getByTestId('mock-header')).toBeInTheDocument()
     expect(screen.getByTestId('mock-footer')).toBeInTheDocument()
     expect(screen.getByTestId('mock-cookie-banner')).toBeInTheDocument()
     expect(screen.getByTestId('child-content')).toBeInTheDocument()
   })
 
-  it('omits Header and Footer, retains CookieConsentBanner, and avoids landmark nesting on /ai-chat', () => {
+  it('omits Header and Footer, retains MaintenanceBanner and CookieConsentBanner, and avoids landmark nesting on /ai-chat', () => {
     jest.mocked(usePathname).mockReturnValue('/ai-chat')
     render(
       <AppLayout>
@@ -46,6 +49,9 @@ describe('AppLayout', () => {
 
     expect(screen.queryByTestId('mock-header')).not.toBeInTheDocument()
     expect(screen.queryByTestId('mock-footer')).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      /Scheduled Maintenance: We are currently upgrading our database infrastructure/i
+    )
     expect(screen.getByTestId('mock-cookie-banner')).toBeInTheDocument()
     expect(screen.getByTestId('child-content')).toBeInTheDocument()
     
