@@ -119,18 +119,34 @@ export class FlaggedContentService {
       status: 'pending' as const,
     };
 
-    const { data: result, error } = await supabase
+    const insertQuery = supabase
       .from('flagged_content')
-      .insert([flaggedContentData] as any)
-      .select('*')
-      .single();
+      .insert([flaggedContentData] as any);
+
+    const { data: result, error } = userId
+      ? await insertQuery.select('*').single()
+      : await insertQuery;
 
     if (error) {
       console.error('Error creating flagged content:', error);
       throw new Error(`Failed to create flagged content: ${error.message}`);
     }
 
-    return result;
+    if (!userId || !result) {
+      return {
+        id: '',
+        ...flaggedContentData,
+        admin_notes: null,
+        reviewed_by_admin_id: null,
+        applied_by_admin_id: null,
+        created_at: new Date().toISOString(),
+        reviewed_at: null,
+        applied_at: null,
+        is_verified: false,
+      } as FlaggedContent;
+    }
+
+    return result as FlaggedContent;
   }
 
   // Get all flagged content for admin dashboard

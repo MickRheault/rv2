@@ -294,6 +294,113 @@ describe('FlagContentForm & FlaggedContentService Model Year Range Support (#139
       expect(screen.queryByDisplayValue('Adventure')).not.toBeInTheDocument();
       expect(screen.getByDisplayValue('CB500X')).toBeInTheDocument();
     });
+
+    it('inserts anonymous flagged content without chaining .select("*").single() so anon SELECT is not required (#175)', async () => {
+      (supabase.auth.getSession as jest.Mock).mockResolvedValueOnce({ data: { session: null } });
+      const selectMock = jest.fn();
+      const insertMock = jest.fn().mockResolvedValue({ data: null, error: null });
+      (supabase.from as jest.Mock).mockReturnValue({
+        insert: (...args: any[]) => {
+          const res = insertMock(...args);
+          (res as any).select = selectMock;
+          return res;
+        },
+      });
+
+      const created = await FlaggedContentService.createFlaggedContent(
+        {
+          content_type: 'motorcycle',
+          entity_id: 'bike-1',
+          flag_category: 'pricing_error',
+          flag_reason: 'Daily rate is 250 THB',
+          proposed_data: {
+            rental_rate_per_day: 250,
+          },
+          flagged_by_email: 'anon@example.com',
+        },
+        { id: 'bike-1', rental_rate_per_day: 300 }
+      );
+
+      expect(insertMock).toHaveBeenCalledTimes(1);
+      expect(selectMock).not.toHaveBeenCalled();
+      expect(created).toEqual(
+        expect.objectContaining({
+          content_type: 'motorcycle',
+          entity_id: 'bike-1',
+          flagged_by_user_id: null,
+          flagged_by_email: 'anon@example.com',
+          status: 'pending',
+        })
+      );
+    });
+
+    it('chains .select("*").single() when an authenticated user creates flagged content (#175)', async () => {
+      (supabase.auth.getSession as jest.Mock).mockResolvedValueOnce({
+        data: { session: { access_token: 'tok' } },
+      });
+      (supabase.auth.getUser as jest.Mock).mockResolvedValueOnce({
+        data: { user: { id: 'user-42' } },
+        error: null,
+      });
+
+      const singleMock = jest.fn().mockResolvedValue({
+        data: { id: 'flag-auth-1', flagged_by_user_id: 'user-42', status: 'pending' },
+        error: null,
+      });
+      const selectMock = jest.fn().mockReturnValue({ single: singleMock });
+      const insertMock = jest.fn().mockReturnValue({ select: selectMock });
+      (supabase.from as jest.Mock).mockReturnValue({ insert: insertMock });
+
+      const result = await FlaggedContentService.createFlaggedContent(
+        {
+          content_type: 'motorcycle',
+          entity_id: 'bike-1',
+          flag_category: 'pricing_error',
+          flag_reason: 'Rate changed',
+          proposed_data: { rental_rate_per_day: 250 },
+        },
+        { id: 'bike-1', rental_rate_per_day: 300 }
+      );
+
+      expect(selectMock).toHaveBeenCalledWith('*');
+      expect(singleMock).toHaveBeenCalledTimes(1);
+      expect(result.flagged_by_user_id).toBe('user-42');
+    });
+
+    it('revokes anon SELECT on flagged_content and hardens RLS policies in migration (#175)', () => {
+      const fs = require('fs');
+      const path = require('path');
+      const migrationPath = path.join(
+        process.cwd(),
+        'supabase/migrations/20261020020000_revoke_anon_select_and_harden_flagged_content_rls.sql'
+      );
+      expect(fs.existsSync(migrationPath)).toBe(true);
+      const sql = fs.readFileSync(migrationPath, 'utf8');
+
+      // 1. Drop anonymous SELECT policy and revoke SELECT from anon
+      expect(sql).toMatch(
+        /DROP POLICY IF EXISTS "Allow anonymous users to read flagged content" ON public\.flagged_content;/i
+      );
+      expect(sql).toMatch(/REVOKE SELECT ON public\.flagged_content FROM anon;/i);
+      expect(sql).toMatch(/REVOKE SELECT ON public\.flagged_content_changes FROM anon;/i);
+
+      // 2. Scope flagged_content_changes SELECT policy to authenticated only
+      expect(sql).toMatch(
+        /DROP POLICY IF EXISTS "Allow reading flagged content changes" ON public\.flagged_content_changes;/i
+      );
+      expect(sql).toMatch(
+        /CREATE POLICY "Allow reading flagged content changes" ON public\.flagged_content_changes\s+FOR SELECT TO authenticated/i
+      );
+
+      // 3. Enforce flagged_by_user_id binding on INSERT policy
+      expect(sql).toMatch(/auth\.uid\(\) IS NULL AND flagged_by_user_id IS NULL/i);
+      expect(sql).toMatch(/flagged_by_user_id = auth\.uid\(\)/i);
+
+      // 4. Make parse_flagged_content_changes SECURITY DEFINER with pinned search_path
+      expect(sql).toMatch(/CREATE OR REPLACE FUNCTION public\.parse_flagged_content_changes\(\)/i);
+      expect(sql).toMatch(/SECURITY DEFINER/i);
+      expect(sql).toMatch(/SET search_path = public, extensions/i);
+    });
   });
 });
 
