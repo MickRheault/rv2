@@ -123,13 +123,16 @@ export class FlaggedContentService {
       .from('flagged_content')
       .insert([flaggedContentData] as any);
 
-    if (!userId) {
-      const { error } = await insertQuery;
-      if (error) {
-        console.error('Error creating flagged content:', error);
-        throw new Error(`Failed to create flagged content: ${error.message}`);
-      }
+    const { data: result, error } = userId
+      ? await insertQuery.select('*').single()
+      : await insertQuery;
 
+    if (error) {
+      console.error('Error creating flagged content:', error);
+      throw new Error(`Failed to create flagged content: ${error.message}`);
+    }
+
+    if (!userId) {
       return {
         id: '',
         ...flaggedContentData,
@@ -141,15 +144,6 @@ export class FlaggedContentService {
         applied_at: null,
         is_verified: false,
       } as FlaggedContent;
-    }
-
-    const { data: result, error } = await insertQuery
-      .select('*')
-      .single();
-
-    if (error) {
-      console.error('Error creating flagged content:', error);
-      throw new Error(`Failed to create flagged content: ${error.message}`);
     }
 
     return result;
