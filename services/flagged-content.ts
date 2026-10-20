@@ -132,7 +132,7 @@ export class FlaggedContentService {
       throw new Error(`Failed to create flagged content: ${error.message}`);
     }
 
-    if (!userId) {
+    if (!userId || !result) {
       return {
         id: '',
         ...flaggedContentData,
@@ -146,7 +146,7 @@ export class FlaggedContentService {
       } as FlaggedContent;
     }
 
-    return result;
+    return result as FlaggedContent;
   }
 
   // Get all flagged content for admin dashboard
