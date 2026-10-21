@@ -501,7 +501,7 @@ export const motorcycleService = {
       .select(`
         ${MOTORCYCLE_LISTING_BASE_COLUMNS},
         ${buildListingRentalShopsJoin({ innerLocation: true })},
-        brands (id, name, country_of_origin),
+        brands (id, name),
         categories (id, name, description)${featureSelectFragment},
         rental_rate_tiers (
           ${MOTORCYCLE_LISTING_RATE_TIERS_COLUMNS}
@@ -813,7 +813,7 @@ export const motorcycleService = {
       .select(`
         ${MOTORCYCLE_LISTING_BASE_COLUMNS},
         ${buildListingRentalShopsJoin({ innerLocation: false })},
-        brands!inner (id, name, country_of_origin),
+        brands!inner (id, name),
         categories (id, name, description),
         rental_rate_tiers (
           ${MOTORCYCLE_LISTING_RATE_TIERS_COLUMNS}
@@ -840,7 +840,7 @@ export const motorcycleService = {
       .select(`
         ${MOTORCYCLE_LISTING_BASE_COLUMNS},
         ${buildListingRentalShopsJoin({ innerLocation: false })},
-        brands (id, name, country_of_origin),
+        brands (id, name),
         categories (id, name, description),
         rental_rate_tiers (
           ${MOTORCYCLE_LISTING_RATE_TIERS_COLUMNS}
@@ -1333,12 +1333,12 @@ export const motorcycleService = {
     modelName: string,
     excludeId?: string
   ) {
-    let query = typedSupabase
+    let query: any = typedSupabase
       .from('motorcycle_rentals')
       .select(`
         ${MOTORCYCLE_LISTING_BASE_COLUMNS},
         ${buildListingRentalShopsJoin({ innerLocation: true, innerCountry: true })},
-        brands (id, name, country_of_origin),
+        brands (id, name),
         categories (id, name, description),
         rental_rate_tiers (
           ${MOTORCYCLE_LISTING_RATE_TIERS_COLUMNS}
@@ -1363,7 +1363,7 @@ export const motorcycleService = {
       throw error
     }
 
-    return filterAvailableMotorcycles(data as MotorcycleWithDetails[])
+    return filterAvailableMotorcycles(data as any[]) as MotorcycleWithDetails[]
   },
 
   // Get structured filter options with counts based on current filters

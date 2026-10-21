@@ -63,12 +63,18 @@ export interface ShopWithDetails extends RentalShop {
   category_names?: string[]
 }
 
-export interface ShopWithMotorcycles extends ShopWithDetails {
-  motorcycle_rentals: (MotorcycleRental & {
-    brands: Brand | null
-    categories: Category | null
+export type ShopMotorcycleListingItem = Omit<
+  MotorcycleRental,
+  'conditions_details' | 'specifications_details' | 'source_url'
+> &
+  Partial<Pick<MotorcycleRental, 'conditions_details' | 'specifications_details' | 'source_url'>> & {
+    brands: Pick<Brand, 'id' | 'name'> | Brand | null
+    categories: Pick<Category, 'id' | 'name' | 'description'> | Category | null
     rental_rate_tiers: RentalRateTier[]
-  })[]
+  }
+
+export interface ShopWithMotorcycles extends ShopWithDetails {
+  motorcycle_rentals: ShopMotorcycleListingItem[]
 }
 
 export interface ShopSearchFilters {
@@ -119,7 +125,7 @@ export const MOTORCYCLE_LISTING_RATE_TIERS_COLUMNS = `
 
 export const SHOP_MOTORCYCLE_RENTALS_SELECT = `
   ${MOTORCYCLE_LISTING_BASE_COLUMNS},
-  brands (id, name, country_of_origin),
+  brands (id, name),
   categories (id, name, description),
   rental_rate_tiers (
     ${MOTORCYCLE_LISTING_RATE_TIERS_COLUMNS}

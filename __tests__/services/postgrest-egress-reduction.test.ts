@@ -225,6 +225,7 @@ describe('Supabase PostgREST Egress Reduction — Service Layer (#180)', () => {
         expect(selectStr).not.toContain('business_description')
         expect(selectStr).not.toContain('motorcycle_images')
         expect(selectStr).not.toContain('motorcycle_features')
+        expect(selectStr).not.toContain('country_of_origin')
       }
 
       // When features filter is provided, getMotorcycles joins only motorcycle_features(feature_id)
