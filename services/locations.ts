@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase/client'
 import { Database } from '@/lib/supabase/database.types'
-import { REFERENCE_CACHE_TTL_MS } from './shops'
+import { createTtlListCache } from './shops'
 
 type Country = Database['public']['Tables']['countries']['Row']
 type Province = Database['public']['Tables']['provinces']['Row']
@@ -69,34 +69,24 @@ export function toCityWithCounts(city: any): CityWithCounts {
   }
 }
 
-let cachedCountries: { value: Country[]; expiresAt: number } | null = null
+const countriesCache = createTtlListCache<Country>()
 
 export const locationService = {
   // Get all countries (memoized with TTL once non-empty)
   async getCountries() {
-    const now = Date.now()
-    if (cachedCountries && cachedCountries.expiresAt > now) {
-      return [...cachedCountries.value]
-    }
+    return countriesCache.getOrLoad(async () => {
+      const { data, error } = await supabase
+        .from('countries')
+        .select('*')
+        .order('name')
 
-    const { data, error } = await supabase
-      .from('countries')
-      .select('*')
-      .order('name')
-
-    if (error) {
-      console.error('Error fetching countries:', error)
-      throw error
-    }
-
-    const countries = (data || []) as Country[]
-    if (countries.length > 0) {
-      cachedCountries = {
-        value: countries,
-        expiresAt: now + REFERENCE_CACHE_TTL_MS,
+      if (error) {
+        console.error('Error fetching countries:', error)
+        throw error
       }
-    }
-    return [...countries]
+
+      return (data || []) as Country[]
+    })
   },
 
   // Get country with provinces and cities

@@ -96,7 +96,24 @@ export const ACTIVE_BUSINESS_STATUSES = ['OPERATIONAL', 'operational', 'active',
 
 export const REFERENCE_CACHE_TTL_MS = 5 * 60 * 1000
 
-let cachedActiveBusinessStatusIds: { value: number[]; expiresAt: number } | null = null
+export function createTtlListCache<T>(ttlMs: number = REFERENCE_CACHE_TTL_MS) {
+  let entry: { value: T[]; expiresAt: number } | null = null
+  return {
+    async getOrLoad(loader: () => Promise<T[]>): Promise<T[]> {
+      const now = Date.now()
+      if (entry && entry.expiresAt > now) {
+        return [...entry.value]
+      }
+      const items = await loader()
+      if (items.length > 0) {
+        entry = { value: items, expiresAt: now + ttlMs }
+      }
+      return [...items]
+    },
+  }
+}
+
+const activeBusinessStatusIdsCache = createTtlListCache<number>()
 
 export const MOTORCYCLE_LISTING_BASE_COLUMNS = `
   id,
@@ -134,24 +151,16 @@ export const SHOP_MOTORCYCLE_RENTALS_SELECT = `
 
 // Helper function to get active business status IDs (memoized with TTL once non-empty)
 export async function getActiveBusinessStatusIds(): Promise<number[]> {
-  const now = Date.now()
-  if (cachedActiveBusinessStatusIds && cachedActiveBusinessStatusIds.expiresAt > now) {
-    return [...cachedActiveBusinessStatusIds.value]
-  }
+  return activeBusinessStatusIdsCache.getOrLoad(async () => {
+    const { data: activeBusinessStatuses } = await typedSupabase
+      .from('business_statuses')
+      .select('id')
+      .in('status_code', ACTIVE_BUSINESS_STATUSES)
 
-  const { data: activeBusinessStatuses } = await typedSupabase
-    .from('business_statuses')
-    .select('id')
-    .in('status_code', ACTIVE_BUSINESS_STATUSES)
-
-  const ids = activeBusinessStatuses ? (activeBusinessStatuses as any[]).map((status: any) => status.id) : []
-  if (ids.length > 0) {
-    cachedActiveBusinessStatusIds = {
-      value: ids,
-      expiresAt: now + REFERENCE_CACHE_TTL_MS,
-    }
-  }
-  return [...ids]
+    return activeBusinessStatuses
+      ? (activeBusinessStatuses as any[]).map((status: any) => status.id)
+      : []
+  })
 }
 
 // Helper function to apply active status filter to a query

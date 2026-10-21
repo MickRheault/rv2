@@ -5,9 +5,9 @@ import { generateSlug } from '@/lib/utils'
 import {
   MOTORCYCLE_LISTING_BASE_COLUMNS,
   MOTORCYCLE_LISTING_RATE_TIERS_COLUMNS,
-  REFERENCE_CACHE_TTL_MS,
   SHOP_MOTORCYCLE_RENTALS_SELECT,
   applyAvailableMotorcycleFilterSync,
+  createTtlListCache,
   filterAvailableMotorcycles,
   getActiveBusinessStatusIds,
 } from './shops'
@@ -284,8 +284,8 @@ export function filterAndSortMotorcycles<T extends Record<string, any>>(
   })
 }
 
-let cachedBrands: { value: Brand[]; expiresAt: number } | null = null
-let cachedCategories: { value: Category[]; expiresAt: number } | null = null
+const brandsCache = createTtlListCache<Brand>()
+const categoriesCache = createTtlListCache<Category>()
 
 function buildListingRentalShopsJoin(options: {
   innerLocation: boolean
@@ -666,56 +666,36 @@ export const motorcycleService = {
 
   // Get all brands for filters
   async getBrands() {
-    const now = Date.now()
-    if (cachedBrands && cachedBrands.expiresAt > now) {
-      return [...cachedBrands.value]
-    }
+    return brandsCache.getOrLoad(async () => {
+      const { data, error } = await typedSupabase
+        .from('brands')
+        .select('*')
+        .order('name')
 
-    const { data, error } = await typedSupabase
-      .from('brands')
-      .select('*')
-      .order('name')
-
-    if (error) {
-      console.error('Error fetching brands:', error)
-      throw error
-    }
-
-    const brands = (data || []) as Brand[]
-    if (brands.length > 0) {
-      cachedBrands = {
-        value: brands,
-        expiresAt: now + REFERENCE_CACHE_TTL_MS,
+      if (error) {
+        console.error('Error fetching brands:', error)
+        throw error
       }
-    }
-    return [...brands]
+
+      return (data || []) as Brand[]
+    })
   },
 
   // Get all categories for filters
   async getCategories() {
-    const now = Date.now()
-    if (cachedCategories && cachedCategories.expiresAt > now) {
-      return [...cachedCategories.value]
-    }
+    return categoriesCache.getOrLoad(async () => {
+      const { data, error } = await typedSupabase
+        .from('categories')
+        .select('*')
+        .order('name')
 
-    const { data, error } = await typedSupabase
-      .from('categories')
-      .select('*')
-      .order('name')
-
-    if (error) {
-      console.error('Error fetching categories:', error)
-      throw error
-    }
-
-    const categories = (data || []) as Category[]
-    if (categories.length > 0) {
-      cachedCategories = {
-        value: categories,
-        expiresAt: now + REFERENCE_CACHE_TTL_MS,
+      if (error) {
+        console.error('Error fetching categories:', error)
+        throw error
       }
-    }
-    return [...categories]
+
+      return (data || []) as Category[]
+    })
   },
 
   // Get price range for filters
