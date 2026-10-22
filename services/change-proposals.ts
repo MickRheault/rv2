@@ -844,10 +844,41 @@ export class ChangeProposalService {
       throw new Error(`Failed to load proposal items: ${itemsError.message}`);
     }
 
+    let extractionHints: string | null | undefined = undefined;
+    const rawSnapshot = (proposal as any).raw_snapshot;
+    const fallbackCandidates = [
+      (proposal as any).extraction_hints,
+      (proposal as any).extractionHints,
+      rawSnapshot && typeof rawSnapshot === 'object' ? rawSnapshot.extractionHints : undefined,
+      rawSnapshot && typeof rawSnapshot === 'object' ? rawSnapshot.extraction_hints : undefined,
+    ];
+    for (const candidate of fallbackCandidates) {
+      if (typeof candidate === 'string' && candidate.trim().length > 0) {
+        extractionHints = candidate.trim();
+        break;
+      }
+    }
+
+    if ((proposal as any).shop_id) {
+      const configQuery = (supabase.from('shop_agent_configs') as any)
+        ?.select?.('extraction_hints')
+        ?.eq?.('shop_id', (proposal as any).shop_id);
+      if (typeof configQuery?.maybeSingle === 'function') {
+        const { data: agentConfig } = await configQuery.maybeSingle();
+        const configHints = agentConfig?.extraction_hints;
+        if (typeof configHints === 'string' && configHints.trim().length > 0) {
+          extractionHints = configHints.trim();
+        } else if (extractionHints === undefined) {
+          extractionHints = null;
+        }
+      }
+    }
+
     return {
       proposal: {
         ...proposal,
         shop_url: resolveProposalShopUrl((proposal as any).rental_shops),
+        ...(extractionHints !== undefined ? { extraction_hints: extractionHints } : {}),
       },
       items: items || [],
     };

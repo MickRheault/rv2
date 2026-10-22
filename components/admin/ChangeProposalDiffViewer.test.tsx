@@ -734,7 +734,39 @@ describe('ChangeProposalDiffViewer', () => {
     fireEvent.click(screen.getByRole('button', { name: /Unchanged Inventory/i }));
     expect(screen.getByText('Security Deposit: THB 10,000')).toBeInTheDocument();
   });
+
+  it('renders read-only extraction hints in the proposal summary card when present', () => {
+    render(
+      <ChangeProposalDiffViewer
+        proposal={{
+          ...mockProposal,
+          extraction_hints: 'Prices in THB.\nIgnore weekly discounts below 7 days.',
+        }}
+        items={mockItems}
+      />
+    );
+
+    expect(screen.getByText('Extraction Hints')).toBeInTheDocument();
+    const hintsContent = screen.getByText(/Prices in THB\.\s*Ignore weekly discounts below 7 days\./i);
+    expect(hintsContent).toBeInTheDocument();
+    expect(hintsContent).toHaveClass('whitespace-pre-wrap');
+  });
+
+  it('omits extraction hints section when extraction_hints is null, undefined, or whitespace-only', () => {
+    const { rerender } = render(
+      <ChangeProposalDiffViewer proposal={{ ...mockProposal, extraction_hints: null }} items={mockItems} />
+    );
+
+    expect(screen.queryByText('Extraction Hints')).not.toBeInTheDocument();
+
+    rerender(
+      <ChangeProposalDiffViewer proposal={{ ...mockProposal, extraction_hints: '   ' }} items={mockItems} />
+    );
+
+    expect(screen.queryByText('Extraction Hints')).not.toBeInTheDocument();
+  });
 });
+
 
 
 
