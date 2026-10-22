@@ -392,19 +392,19 @@ it('displays playful motorcycle-themed rotating status messages while searching 
         act(() => {
             jest.advanceTimersByTime(AI_CHAT_LOADING_INTERVAL_MS);
         });
-        expect(screen.getByText('Scouting local rental shops...')).toBeInTheDocument();
+        expect(screen.getByText('Revving up the search...')).toBeInTheDocument();
 
         // Advance 2.2s -> 3rd message
         act(() => {
             jest.advanceTimersByTime(AI_CHAT_LOADING_INTERVAL_MS);
         });
-        expect(screen.getByText('Checking daily & weekly rates...')).toBeInTheDocument();
+        expect(screen.getByText('Scanning the garage...')).toBeInTheDocument();
 
         // Advance 2.2s -> 4th message
         act(() => {
             jest.advanceTimersByTime(AI_CHAT_LOADING_INTERVAL_MS);
         });
-        expect(screen.getByText('Mapping out your best rides...')).toBeInTheDocument();
+        expect(screen.getByText('Dialing in your answer...')).toBeInTheDocument();
 
         // Resolve first response -> loading indicator disappears
         await act(async () => {
@@ -416,7 +416,7 @@ it('displays playful motorcycle-themed rotating status messages while searching 
         });
 
         expect(await screen.findByText('Found 3 scooters in Bangkok.')).toBeInTheDocument();
-        expect(screen.queryByText('Mapping out your best rides...')).not.toBeInTheDocument();
+        expect(screen.queryByText('Dialing in your answer...')).not.toBeInTheDocument();
 
         // Start a second query -> resets back to the first message
         fireEvent.change(textarea, { target: { value: 'What about Chiang Mai?' } });

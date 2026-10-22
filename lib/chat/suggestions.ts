@@ -4,9 +4,9 @@ export const AI_CHAT_LOADING_INTERVAL_MS = 2200
 
 export const AI_CHAT_LOADING_MESSAGES = [
   'Kickstarting the engine...',
-  'Scouting local rental shops...',
-  'Checking daily & weekly rates...',
-  'Mapping out your best rides...',
+  'Revving up the search...',
+  'Scanning the garage...',
+  'Dialing in your answer...',
 ] as const
 
 export const SUGGESTION_PROMPTS = [
