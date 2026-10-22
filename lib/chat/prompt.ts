@@ -31,11 +31,15 @@ The official platform domain is globalmotorentals.com, but in markdown links you
 Never prepend any scheme or domain name (such as https://www.globalmoto.com or https://globalmoto.com) to motorcycle or shop links, and never use a placeholder such as "Shop Name" or invent a shop or URL. If shop information or its URL is unavailable, say so and show any known shop name as plain text.
 If no results found, suggest alternatives (different city, category, or price range).`;
 
+const COUNT_QUANTIFIER =
+    '(?:\\d+|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|multiple|many|several)';
+
 const REPETITION_OR_PADDING_PATTERNS: RegExp[] = [
-    /\b(?:repeat|output|write|print|generate|say|type)\b[\s\S]{0,120}\b(?:\d+|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand)\s+times\b/i,
-    /\b(?:\d+|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand)\s+repetitions\b/i,
+    new RegExp(`\\b(?:repeat|output|write|print|generate|say|type)\\b[\\s\\S]{0,120}(?:\\b${COUNT_QUANTIFIER}\\s+times\\b|\\b\\d+x\\b)`, 'i'),
+    new RegExp(`\\b${COUNT_QUANTIFIER}\\s+repetitions\\b`, 'i'),
     /\boutput\s+only\s+(?:those|the)\s+repetitions\b/i,
     /\b(?:layout\s+test|lorem\s+ipsum|placeholder\s+text|dummy\s+text|filler\s+text|padding\s+text)\b/i,
+    /\b(\w+(?:\s+\w+){0,2})(?:\s+\1){4,}\b/i,
 ];
 
 export function isRepetitionOrPaddingPrompt(message: string): boolean {

@@ -29,6 +29,18 @@ function getOpenAI(): OpenAI {
     return openaiClient;
 }
 
+function createChatCompletion(
+    messages: OpenAI.Chat.ChatCompletionMessageParam[],
+    toolChoice: 'auto' | 'none' = 'auto'
+) {
+    return getOpenAI().chat.completions.create({
+        model: 'gpt-4.1-mini',
+        messages,
+        tools: openAITools,
+        tool_choice: toolChoice,
+        max_completion_tokens: MAX_OUTPUT_TOKENS,
+    });
+}
 
 export async function POST(request: NextRequest) {
     const accessSecret = process.env.AI_CHAT_ACCESS_SECRET;
@@ -49,7 +61,7 @@ export async function POST(request: NextRequest) {
     try {
         const { message, conversationHistory = [] } = await request.json();
 
-        if (!message || typeof message !== 'string') {
+        if (!message || typeof message !== 'string' || !message.trim()) {
             return NextResponse.json(
                 { error: 'Message is required' },
                 { status: 400 }
@@ -105,13 +117,7 @@ export async function POST(request: NextRequest) {
         ];
 
         // Call OpenAI with tools
-        let response = await getOpenAI().chat.completions.create({
-            model: 'gpt-4.1-mini',
-            messages,
-            tools: openAITools,
-            tool_choice: 'auto',
-            max_completion_tokens: MAX_OUTPUT_TOKENS,
-        });
+        let response = await createChatCompletion(messages, 'auto');
 
         let assistantMessage = response.choices[0].message;
         const toolCalls: { name: string; args: string; result: string }[] = [];
@@ -124,11 +130,17 @@ export async function POST(request: NextRequest) {
             toolIterations < MAX_TOOL_ITERATIONS &&
             toolCalls.length < MAX_TOTAL_TOOL_CALLS
         ) {
+            const functionToolCalls = assistantMessage.tool_calls.filter(
+                (toolCall): toolCall is OpenAI.Chat.ChatCompletionMessageFunctionToolCall =>
+                    toolCall.type === 'function'
+            );
+            if (functionToolCalls.length === 0) break;
+
             toolIterations++;
             const remainingToolBudget = MAX_TOTAL_TOOL_CALLS - toolCalls.length;
-            const allowedToolCalls = assistantMessage.tool_calls.slice(0, remainingToolBudget);
+            const allowedToolCalls = functionToolCalls.slice(0, remainingToolBudget);
 
-            // Add assistant message with only the allowed tool calls
+            // Add assistant message with only the allowed function tool calls
             messages.push({
                 ...assistantMessage,
                 tool_calls: allowedToolCalls,
@@ -136,9 +148,6 @@ export async function POST(request: NextRequest) {
 
             // Execute each allowed tool call
             for (const toolCall of allowedToolCalls) {
-                // Only handle function-type tool calls
-                if (toolCall.type !== 'function') continue;
-
                 const toolName = toolCall.function.name;
                 const args = JSON.parse(toolCall.function.arguments);
 
@@ -170,13 +179,10 @@ export async function POST(request: NextRequest) {
                 toolCalls.length >= MAX_TOTAL_TOOL_CALLS;
 
             // Get next response from OpenAI
-            response = await getOpenAI().chat.completions.create({
-                model: 'gpt-4.1-mini',
+            response = await createChatCompletion(
                 messages,
-                tools: openAITools,
-                tool_choice: reachedToolCap ? 'none' : 'auto',
-                max_completion_tokens: MAX_OUTPUT_TOKENS,
-            });
+                reachedToolCap ? 'none' : 'auto'
+            );
 
             assistantMessage = response.choices[0].message;
         }
