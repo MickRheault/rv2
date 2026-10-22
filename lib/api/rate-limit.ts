@@ -117,3 +117,10 @@ export function getRateLimitHeaders(
         'X-RateLimit-Reset': String(Math.ceil(resetAt / 1000)),
     };
 }
+
+/**
+ * Clear all in-memory rate limit entries (used for test isolation)
+ */
+export function resetRateLimits(): void {
+    rateLimitStore.clear();
+}

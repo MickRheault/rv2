@@ -3,7 +3,19 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { openAITools, executeTool, formatToolResultForLLM } from '@/lib/mcp/tools';
-import { SYSTEM_PROMPT } from '@/lib/chat/prompt';
+import {
+    CHAT_RATE_LIMIT_MAX_REQUESTS,
+    CHAT_RATE_LIMIT_WINDOW_MS,
+    CHAT_REDIRECT_MESSAGE,
+    MAX_MESSAGE_LENGTH,
+    MAX_OUTPUT_TOKENS,
+    MAX_TOOL_ITERATIONS,
+    MAX_TOTAL_TOOL_CALLS,
+    SYSTEM_PROMPT,
+    isRepetitionOrPaddingPrompt,
+    sanitizeConversationHistory,
+} from '@/lib/chat/prompt';
+import { getRateLimitHeaders, rateLimit } from '@/lib/api/rate-limit';
 import { timingSafeEqual } from 'node:crypto';
 
 // Lazy initialization to avoid build-time failure
@@ -44,10 +56,51 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        if (message.length > MAX_MESSAGE_LENGTH) {
+            return NextResponse.json(
+                { error: `Message must be ${MAX_MESSAGE_LENGTH} characters or fewer` },
+                { status: 400 }
+            );
+        }
+
+        const rateLimitResult = rateLimit(
+            request,
+            CHAT_RATE_LIMIT_MAX_REQUESTS,
+            CHAT_RATE_LIMIT_WINDOW_MS
+        );
+        if (!rateLimitResult.allowed) {
+            const retryAfterSeconds = Math.max(
+                1,
+                Math.ceil((rateLimitResult.resetAt - Date.now()) / 1000)
+            );
+            return NextResponse.json(
+                { error: 'Too many chat requests. Please try again later.' },
+                {
+                    status: 429,
+                    headers: {
+                        ...getRateLimitHeaders(
+                            rateLimitResult.remaining,
+                            rateLimitResult.resetAt,
+                            CHAT_RATE_LIMIT_MAX_REQUESTS
+                        ),
+                        'Retry-After': String(retryAfterSeconds),
+                    },
+                }
+            );
+        }
+
+        if (isRepetitionOrPaddingPrompt(message)) {
+            return NextResponse.json({
+                response: CHAT_REDIRECT_MESSAGE,
+            });
+        }
+
+        const sanitizedHistory = sanitizeConversationHistory(conversationHistory);
+
         // Build messages array
         const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
             { role: 'system', content: SYSTEM_PROMPT },
-            ...conversationHistory,
+            ...sanitizedHistory,
             { role: 'user', content: message },
         ];
 
@@ -57,18 +110,32 @@ export async function POST(request: NextRequest) {
             messages,
             tools: openAITools,
             tool_choice: 'auto',
+            max_completion_tokens: MAX_OUTPUT_TOKENS,
         });
 
         let assistantMessage = response.choices[0].message;
         const toolCalls: { name: string; args: string; result: string }[] = [];
+        let toolIterations = 0;
 
-        // Handle tool calls (loop for multi-step reasoning)
-        while (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
-            // Add assistant message with tool calls
-            messages.push(assistantMessage);
+        // Handle tool calls (loop for multi-step reasoning, bounded by iteration & call limits)
+        while (
+            assistantMessage.tool_calls &&
+            assistantMessage.tool_calls.length > 0 &&
+            toolIterations < MAX_TOOL_ITERATIONS &&
+            toolCalls.length < MAX_TOTAL_TOOL_CALLS
+        ) {
+            toolIterations++;
+            const remainingToolBudget = MAX_TOTAL_TOOL_CALLS - toolCalls.length;
+            const allowedToolCalls = assistantMessage.tool_calls.slice(0, remainingToolBudget);
 
-            // Execute each tool call
-            for (const toolCall of assistantMessage.tool_calls) {
+            // Add assistant message with only the allowed tool calls
+            messages.push({
+                ...assistantMessage,
+                tool_calls: allowedToolCalls,
+            });
+
+            // Execute each allowed tool call
+            for (const toolCall of allowedToolCalls) {
                 // Only handle function-type tool calls
                 if (toolCall.type !== 'function') continue;
 
@@ -98,12 +165,17 @@ export async function POST(request: NextRequest) {
                 });
             }
 
+            const reachedToolCap =
+                toolIterations >= MAX_TOOL_ITERATIONS ||
+                toolCalls.length >= MAX_TOTAL_TOOL_CALLS;
+
             // Get next response from OpenAI
             response = await getOpenAI().chat.completions.create({
                 model: 'gpt-4.1-mini',
                 messages,
                 tools: openAITools,
-                tool_choice: 'auto',
+                tool_choice: reachedToolCap ? 'none' : 'auto',
+                max_completion_tokens: MAX_OUTPUT_TOKENS,
             });
 
             assistantMessage = response.choices[0].message;
