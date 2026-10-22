@@ -42,6 +42,7 @@ export interface DiffViewerProposal {
   source_url: string;
   shop_url?: string;
   extraction_hints?: string | null;
+  extractionHints?: string | null;
   raw_snapshot?: {
     extractionHints?: string | null;
     extraction_hints?: string | null;
@@ -64,11 +65,18 @@ export interface DiffViewerProposal {
 }
 
 function resolveProposalExtractionHints(proposal: DiffViewerProposal): string | null {
-  const raw =
-    proposal.extraction_hints ??
-    proposal.raw_snapshot?.extractionHints ??
-    proposal.raw_snapshot?.extraction_hints;
-  return typeof raw === 'string' && raw.trim().length > 0 ? raw.trim() : null;
+  const candidates = [
+    proposal.extraction_hints,
+    proposal.extractionHints,
+    proposal.raw_snapshot?.extractionHints,
+    proposal.raw_snapshot?.extraction_hints,
+  ];
+  for (const raw of candidates) {
+    if (typeof raw === 'string' && raw.trim().length > 0) {
+      return raw.trim();
+    }
+  }
+  return null;
 }
 
 interface ChangeProposalDiffViewerProps {

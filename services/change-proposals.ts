@@ -846,12 +846,17 @@ export class ChangeProposalService {
 
     let extractionHints: string | null | undefined = undefined;
     const rawSnapshot = (proposal as any).raw_snapshot;
-    const snapshotHints =
-      rawSnapshot && typeof rawSnapshot === 'object'
-        ? rawSnapshot.extractionHints ?? rawSnapshot.extraction_hints
-        : undefined;
-    if (typeof snapshotHints === 'string' && snapshotHints.trim().length > 0) {
-      extractionHints = snapshotHints.trim();
+    const fallbackCandidates = [
+      (proposal as any).extraction_hints,
+      (proposal as any).extractionHints,
+      rawSnapshot && typeof rawSnapshot === 'object' ? rawSnapshot.extractionHints : undefined,
+      rawSnapshot && typeof rawSnapshot === 'object' ? rawSnapshot.extraction_hints : undefined,
+    ];
+    for (const candidate of fallbackCandidates) {
+      if (typeof candidate === 'string' && candidate.trim().length > 0) {
+        extractionHints = candidate.trim();
+        break;
+      }
     }
 
     if ((proposal as any).shop_id) {
