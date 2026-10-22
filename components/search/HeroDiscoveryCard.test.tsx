@@ -54,9 +54,9 @@ describe('HeroDiscoveryCard & Homepage Hero', () => {
     expect(askAiTab).toHaveAttribute('aria-selected', 'true')
     expect(locationTab).toHaveAttribute('aria-selected', 'false')
 
-    expect(
-      screen.getByPlaceholderText('Ask about motorcycles, shops, or locations...')
-    ).toBeInTheDocument()
+    const heroTextarea = screen.getByPlaceholderText('Ask about bikes or shops...')
+    expect(heroTextarea).toBeInTheDocument()
+    expect(heroTextarea).toHaveAttribute('rows', '1')
     expect(screen.getByRole('button', { name: /Ask AI/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Find scooters in Bangkok/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /List adventure bikes in Chiang Mai/i })).toBeInTheDocument()
@@ -69,7 +69,7 @@ describe('HeroDiscoveryCard & Homepage Hero', () => {
   it('navigates to /ai-chat?q=... when submitting a prompt via the Ask AI button', () => {
     render(<HeroDiscoveryCard />)
 
-    const input = screen.getByPlaceholderText('Ask about motorcycles, shops, or locations...')
+    const input = screen.getByPlaceholderText('Ask about bikes or shops...')
     fireEvent.change(input, { target: { value: '  Where can I rent a Honda CRF in Chiang Mai?  ' } })
 
     const submitButton = screen.getByRole('button', { name: /Ask AI/i })
@@ -83,7 +83,7 @@ describe('HeroDiscoveryCard & Homepage Hero', () => {
   it('submits on Enter keypress, allows newline on Shift+Enter, and ignores Enter during IME composition', () => {
     render(<HeroDiscoveryCard />)
 
-    const textarea = screen.getByPlaceholderText('Ask about motorcycles, shops, or locations...')
+    const textarea = screen.getByPlaceholderText('Ask about bikes or shops...')
     fireEvent.change(textarea, { target: { value: 'Find scooters in Bangkok' } })
 
     // Shift+Enter does not submit
@@ -152,8 +152,8 @@ describe('HeroDiscoveryCard & Homepage Hero', () => {
 
     // Switch back to Ask AI tab
     fireEvent.click(screen.getByRole('tab', { name: /Ask AI/i }))
-    expect(
-      screen.getByPlaceholderText('Ask about motorcycles, shops, or locations...')
-    ).toBeInTheDocument()
+    const heroTextarea = screen.getByPlaceholderText('Ask about bikes or shops...')
+    expect(heroTextarea).toBeInTheDocument()
+    expect(heroTextarea).toHaveAttribute('rows', '1')
   })
 })

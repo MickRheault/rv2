@@ -4,7 +4,7 @@ import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { SparklesIcon, MapPinIcon } from '@heroicons/react/24/outline'
 import HeroSearchForm from './HeroSearchForm'
-import { SUGGESTION_PROMPTS } from '@/lib/chat/suggestions'
+import { AI_CHAT_INPUT_PLACEHOLDER, SUGGESTION_PROMPTS } from '@/lib/chat/suggestions'
 import { submitFormOnEnter } from '@/lib/chat/keyboard'
 
 type DiscoveryTab = 'ai' | 'location'
@@ -95,16 +95,16 @@ export default function HeroDiscoveryCard() {
         >
           <form ref={formRef} onSubmit={handleAiSubmit} className="space-y-3">
             <label htmlFor="hero-ai-prompt" className="sr-only">
-              Ask about motorcycles, shops, or locations...
+              {AI_CHAT_INPUT_PLACEHOLDER}
             </label>
             <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-end">
               <textarea
                 id="hero-ai-prompt"
-                rows={2}
+                rows={1}
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask about motorcycles, shops, or locations..."
+                placeholder={AI_CHAT_INPUT_PLACEHOLDER}
                 className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all resize-none text-base leading-normal"
               />
               <button

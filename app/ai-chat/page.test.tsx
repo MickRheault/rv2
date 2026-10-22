@@ -71,7 +71,7 @@ it.each([undefined, '', '   '])('renders usable public chat without an access co
     expect(screen.getByRole('heading', { level: 1, name: 'Motorcycle Rental Assistant (Beta)' })).toBeInTheDocument();
     expect(screen.getByText('Find motorcycles, compare rental shops, and explore rental options.')).toBeInTheDocument();
     expect(screen.queryByText('Access denied')).not.toBeInTheDocument();
-    fireEvent.change(screen.getByPlaceholderText('Ask about motorcycles, shops, or locations...'), {
+    fireEvent.change(screen.getByPlaceholderText('Ask about bikes or shops...'), {
         target: { value: 'Find scooters in Bangkok' },
     });
     fireEvent.submit(container.querySelector('form')!);
@@ -86,7 +86,7 @@ it.each([undefined, '', '   '])('renders usable public chat without an access co
 it('allows old access-code links in public mode without sending their credentials', async () => {
     delete process.env.AI_CHAT_ACCESS_SECRET;
     const { container } = render(<ChatPage />);
-    fireEvent.change(screen.getByPlaceholderText('Ask about motorcycles, shops, or locations...'), {
+    fireEvent.change(screen.getByPlaceholderText('Ask about bikes or shops...'), {
         target: { value: 'Find scooters in Bangkok' },
     });
     fireEvent.submit(container.querySelector('form')!);
@@ -119,17 +119,17 @@ it.each([
 ])('handles HTTP %s responses without exposing a JSON parsing error', async (status, body, message) => {
     jest.mocked(fetch).mockResolvedValue({ ok: status === 200, status, text: async () => body } as Response);
     const { container } = render(<ChatPage />);
-    fireEvent.change(screen.getByPlaceholderText('Ask about motorcycles, shops, or locations...'), {
+    fireEvent.change(screen.getByPlaceholderText('Ask about bikes or shops...'), {
         target: { value: 'Find CRF rentals in Thailand' },
     });
     fireEvent.submit(container.querySelector('form')!);
     expect(await screen.findByText(`Error: ${message}`)).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Ask about motorcycles, shops, or locations...')).toBeEnabled();
+    expect(screen.getByPlaceholderText('Ask about bikes or shops...')).toBeEnabled();
 });
 
 it('sends the user-supplied access code with the chat request', async () => {
     const { container } = render(<ChatPage />);
-    fireEvent.change(screen.getByPlaceholderText('Ask about motorcycles, shops, or locations...'), {
+    fireEvent.change(screen.getByPlaceholderText('Ask about bikes or shops...'), {
         target: { value: 'Find scooters in Bangkok' },
     });
     fireEvent.submit(container.querySelector('form')!);
@@ -158,7 +158,7 @@ it('shows a useful error when the chat server returns an empty response', async 
         text: async () => '',
     } as Response);
     const { container } = render(<ChatPage />);
-    fireEvent.change(screen.getByPlaceholderText('Ask about motorcycles, shops, or locations...'), {
+    fireEvent.change(screen.getByPlaceholderText('Ask about bikes or shops...'), {
         target: { value: 'where can i rent CRF (any models) in thailand' },
     });
     fireEvent.submit(container.querySelector('form')!);
@@ -177,7 +177,7 @@ it('renders the minimal top navigation bar with back link, logo, Beta badge, and
 it('resets conversation and restores prompt suggestions when New Chat is clicked', async () => {
     delete process.env.AI_CHAT_ACCESS_SECRET;
     const { container } = render(<ChatPage />);
-    fireEvent.change(screen.getByPlaceholderText('Ask about motorcycles, shops, or locations...'), {
+    fireEvent.change(screen.getByPlaceholderText('Ask about bikes or shops...'), {
         target: { value: 'Find scooters in Bangkok' },
     });
     fireEvent.submit(container.querySelector('form')!);
@@ -192,7 +192,7 @@ it('resets conversation and restores prompt suggestions when New Chat is clicked
 it('submits on Enter keypress and allows newline on Shift+Enter', async () => {
     delete process.env.AI_CHAT_ACCESS_SECRET;
     render(<ChatPage />);
-    const textarea = screen.getByPlaceholderText('Ask about motorcycles, shops, or locations...');
+    const textarea = screen.getByPlaceholderText('Ask about bikes or shops...');
     
     // Shift+Enter does not submit
     fireEvent.change(textarea, { target: { value: 'First line' } });
@@ -210,7 +210,7 @@ it('submits on Enter keypress and allows newline on Shift+Enter', async () => {
 it('does not submit on Enter when IME is actively composing (e.g. Thai/Japanese input)', () => {
     delete process.env.AI_CHAT_ACCESS_SECRET;
     render(<ChatPage />);
-    const textarea = screen.getByPlaceholderText('Ask about motorcycles, shops, or locations...');
+    const textarea = screen.getByPlaceholderText('Ask about bikes or shops...');
     fireEvent.change(textarea, { target: { value: 'มอเตอร์ไซค์' } });
     
     // Simulate IME composition selection
@@ -227,7 +227,7 @@ it('aborts active in-flight request when New Chat is clicked', async () => {
     });
 
     const { container } = render(<ChatPage />);
-    fireEvent.change(screen.getByPlaceholderText('Ask about motorcycles, shops, or locations...'), {
+    fireEvent.change(screen.getByPlaceholderText('Ask about bikes or shops...'), {
         target: { value: 'Find scooters' },
     });
     fireEvent.submit(container.querySelector('form')!);
@@ -245,7 +245,7 @@ it('provides accessible labels for input and live region for message history', (
     render(<ChatPage />);
     expect(screen.getByRole('log', { name: /Conversation history/i })).toHaveAttribute('aria-live', 'polite');
     expect(screen.getByRole('button', { name: 'Send message' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Ask about motorcycles, shops, or locations...')).toBeInTheDocument();
+    expect(screen.getByLabelText('Ask about bikes or shops...')).toBeInTheDocument();
 });
 
 it('automatically sends the initial prompt from the ?q= query parameter once on load and clears on New Chat without re-sending', async () => {
@@ -340,7 +340,7 @@ it('normalizes hallucinated or absolute domains on /motorcycle/ and /shop/ links
     } as Response);
 
     const { container } = render(<ChatPage />);
-    fireEvent.change(screen.getByPlaceholderText('Ask about motorcycles, shops, or locations...'), {
+    fireEvent.change(screen.getByPlaceholderText('Ask about bikes or shops...'), {
         target: { value: 'Show me Honda PCX in Bangkok' },
     });
     fireEvent.submit(container.querySelector('form')!);

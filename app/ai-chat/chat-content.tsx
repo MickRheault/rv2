@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { ArrowLeftIcon, PlusIcon } from '@heroicons/react/24/outline';
 import ReactMarkdown from 'react-markdown';
-import { SUGGESTION_PROMPTS } from '@/lib/chat/suggestions';
+import { AI_CHAT_INPUT_PLACEHOLDER, SUGGESTION_PROMPTS } from '@/lib/chat/suggestions';
 import { submitFormOnEnter } from '@/lib/chat/keyboard';
 import { normalizeChatHref } from '@/lib/chat/links';
 import './markdown.css';
@@ -310,8 +310,8 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyDown={handleKeyDown}
-                                placeholder="Ask about motorcycles, shops, or locations..."
-                                aria-label="Ask about motorcycles, shops, or locations..."
+                                placeholder={AI_CHAT_INPUT_PLACEHOLDER}
+                                aria-label={AI_CHAT_INPUT_PLACEHOLDER}
                                 className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all shadow-inner resize-none min-h-[48px] max-h-36 leading-normal"
                                 disabled={isLoading}
                             />
