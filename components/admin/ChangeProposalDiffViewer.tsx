@@ -41,6 +41,11 @@ export interface DiffViewerProposal {
   shop_id: string;
   source_url: string;
   shop_url?: string;
+  extraction_hints?: string | null;
+  raw_snapshot?: {
+    extractionHints?: string | null;
+    extraction_hints?: string | null;
+  } | null;
   status: string;
   created_at: string;
   applied_at?: string | null;
@@ -56,6 +61,14 @@ export interface DiffViewerProposal {
       };
     };
   };
+}
+
+function resolveProposalExtractionHints(proposal: DiffViewerProposal): string | null {
+  const raw =
+    proposal.extraction_hints ??
+    proposal.raw_snapshot?.extractionHints ??
+    proposal.raw_snapshot?.extraction_hints;
+  return typeof raw === 'string' && raw.trim().length > 0 ? raw.trim() : null;
 }
 
 interface ChangeProposalDiffViewerProps {
@@ -525,6 +538,7 @@ export function ChangeProposalDiffViewer({
   const resolvedShopUrl =
     proposal.shop_url ||
     (proposal.rental_shops?.slug ? getShopUrl(proposal.rental_shops as any) : undefined);
+  const extractionHints = resolveProposalExtractionHints(proposal);
 
   return (
     <div className="space-y-6">
@@ -600,6 +614,15 @@ export function ChangeProposalDiffViewer({
             )}
           </div>
         </div>
+
+        {extractionHints && (
+          <div className="mt-4 rounded-lg bg-amber-50/70 border border-amber-200 px-3.5 py-2.5">
+            <div className="text-xs font-semibold uppercase tracking-wider text-amber-800 mb-1">
+              Extraction Hints
+            </div>
+            <p className="text-sm text-gray-800 whitespace-pre-wrap">{extractionHints}</p>
+          </div>
+        )}
 
         {/* Action Toolbar */}
         {!isCompleted && pendingActionableItems.length > 0 && (

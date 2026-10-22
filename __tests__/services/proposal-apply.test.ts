@@ -3283,7 +3283,140 @@ describe('Change Proposal Application & Geodata Protection', () => {
       expect(paginatedStageRes.proposal.id).toBe('prop-fatboys-160');
     });
   });
+
+  describe('ChangeProposalService.getProposalById extraction_hints resolution (#188)', () => {
+    it('attaches extraction_hints from shop_agent_configs for the proposal shop_id', async () => {
+      const mockSupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({
+                    data: {
+                      id: 'prop-hints-1',
+                      shop_id: 'shop-hints-1',
+                      source_url: 'https://example.com/fleet',
+                      status: 'pending',
+                      rental_shops: {
+                        id: 'shop-hints-1',
+                        provider_name: 'Hints Moto',
+                        slug: 'hints-moto',
+                        cities: {
+                          name: 'Chiang Mai',
+                          provinces: { countries: { name: 'Thailand' } },
+                        },
+                      },
+                    },
+                    error: null,
+                  }),
+                }),
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  order: jest.fn().mockResolvedValue({
+                    data: [],
+                    error: null,
+                  }),
+                }),
+              }),
+            };
+          }
+          if (table === 'shop_agent_configs') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  maybeSingle: jest.fn().mockResolvedValue({
+                    data: {
+                      extraction_hints: '  Rates are listed in THB; 3000 THB security deposit.  ',
+                    },
+                    error: null,
+                  }),
+                }),
+              }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      const result = await ChangeProposalService.getProposalById('prop-hints-1');
+
+      expect(result.proposal.extraction_hints).toBe(
+        'Rates are listed in THB; 3000 THB security deposit.'
+      );
+    });
+
+    it('falls back to raw_snapshot extractionHints or null when shop_agent_configs has no hints', async () => {
+      const mockSupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({
+                    data: {
+                      id: 'prop-hints-2',
+                      shop_id: 'shop-hints-2',
+                      source_url: 'https://example.com/fleet',
+                      status: 'pending',
+                      raw_snapshot: {
+                        extractionHints: 'Snapshot fallback hint',
+                      },
+                      rental_shops: {
+                        id: 'shop-hints-2',
+                        provider_name: 'Snapshot Moto',
+                      },
+                    },
+                    error: null,
+                  }),
+                }),
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  order: jest.fn().mockResolvedValue({
+                    data: [],
+                    error: null,
+                  }),
+                }),
+              }),
+            };
+          }
+          if (table === 'shop_agent_configs') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  maybeSingle: jest.fn().mockResolvedValue({
+                    data: null,
+                    error: null,
+                  }),
+                }),
+              }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      const result = await ChangeProposalService.getProposalById('prop-hints-2');
+
+      expect(result.proposal.extraction_hints).toBe('Snapshot fallback hint');
+    });
+  });
 });
+
 
 
 
