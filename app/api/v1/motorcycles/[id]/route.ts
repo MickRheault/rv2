@@ -9,6 +9,7 @@ import { rateLimit, getRateLimitHeaders } from '@/lib/api/rate-limit';
 import { motorcycleService } from '@/services/motorcycles';
 import { updateMotorcycleRateTiers } from '@/services/rental-rate-tiers';
 import { parseAndValidateMotorcycleYearPayload } from '@/lib/utils';
+import { purgePublicCache } from '@/lib/cache/purgePublicCache';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -125,6 +126,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             }
         }
 
+        purgePublicCache();
+
         return successResponse(motorcycle);
     } catch (error) {
         console.error('Error updating motorcycle:', error);
@@ -168,6 +171,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         }
 
         await motorcycleService.deleteMotorcycle(id);
+        purgePublicCache();
 
         return successResponse({ deleted: true });
     } catch (error) {

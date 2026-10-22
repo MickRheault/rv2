@@ -7,6 +7,7 @@ import { successResponse, errors } from '@/lib/api/response';
 import { requireAuth } from '@/lib/api/middleware';
 import { rateLimit } from '@/lib/api/rate-limit';
 import { getRentalShopConditions, updateRentalShopConditions } from '@/services/rental-shop-conditions';
+import { purgePublicCache } from '@/lib/cache/purgePublicCache';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -62,6 +63,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         }
 
         const result = await updateRentalShopConditions(id, body.conditions);
+        purgePublicCache();
         return successResponse(result);
     } catch (error) {
         console.error('Error setting shop conditions:', error);

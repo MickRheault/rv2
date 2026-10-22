@@ -276,9 +276,9 @@ describe('Search Location N+1 Elimination (#113)', () => {
     ).toEqual(['m-2', 'm-1', 'm-3'])
   })
 
-  it('configures ISR revalidate = 3600 on app/search/page.tsx and handles rejected prefetches gracefully (#115)', async () => {
+  it('configures ISR revalidate = 86400 on app/search/page.tsx and handles rejected prefetches gracefully (#115, #180)', async () => {
     const searchPageModule = require('@/app/search/page')
-    expect(searchPageModule.revalidate).toBe(3600)
+    expect(searchPageModule.revalidate).toBe(86400)
 
     const { motorcycleService } = require('@/services/motorcycles')
     const popSpy = jest

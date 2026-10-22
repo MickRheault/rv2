@@ -2,7 +2,8 @@
 
 import { NextRequest } from 'next/server';
 import OpenAI from 'openai';
-import { POST, SYSTEM_PROMPT } from './route';
+import { POST } from './route';
+import { SYSTEM_PROMPT } from '@/lib/chat/prompt';
 import { executeTool, formatToolResultForLLM } from '@/lib/mcp/tools';
 
 const mockCreateCompletion = jest.fn();

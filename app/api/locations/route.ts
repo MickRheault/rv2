@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server'
 import { locationService } from '@/services/locations'
+import { PUBLIC_EDGE_CACHE_CONTROL } from '@/lib/cache/purgePublicCache'
 
-// Revalidate every hour (3600 seconds)
-// Next.js will cache this response and auto-regenerate after 1 hour
-export const revalidate = 3600
+// Revalidate every 24 hours (86400 seconds)
+// Next.js will cache this response and auto-regenerate after 24 hours
+export const revalidate = 86400
 
 export async function GET() {
   try {
@@ -38,7 +39,7 @@ export async function GET() {
 
     return NextResponse.json(responseData, {
       headers: {
-        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+        'Cache-Control': PUBLIC_EDGE_CACHE_CONTROL,
       },
     })
   } catch (error) {

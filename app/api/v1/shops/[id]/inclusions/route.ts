@@ -6,6 +6,7 @@ import { NextRequest } from 'next/server';
 import { successResponse, errors } from '@/lib/api/response';
 import { requireAuth } from '@/lib/api/middleware';
 import { rateLimit } from '@/lib/api/rate-limit';
+import { purgePublicCache } from '@/lib/cache/purgePublicCache';
 import { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 
@@ -110,9 +111,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
                 throw new Error(error.message);
             }
 
+            purgePublicCache();
             return successResponse(data);
         }
 
+        purgePublicCache();
         return successResponse([]);
     } catch (error) {
         console.error('Error setting shop inclusions:', error);

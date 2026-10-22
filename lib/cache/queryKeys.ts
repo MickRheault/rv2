@@ -110,38 +110,38 @@ export const getInvalidationPatterns = {
 
 // Cache time constants (in milliseconds)
 export const CACHE_TIMES = {
-  // Static data - cache for 1 hour
-  STATIC: 1000 * 60 * 60,
+  // Static data - cache for 24 hours
+  STATIC: 1000 * 60 * 60 * 24,
   
-  // Semi-static data (brands, categories) - cache for 30 minutes
-  SEMI_STATIC: 1000 * 60 * 30,
+  // Semi-static data (brands, categories) - cache for 24 hours
+  SEMI_STATIC: 1000 * 60 * 60 * 24,
   
-  // Dynamic data (search results) - cache for 5 minutes
-  DYNAMIC: 1000 * 60 * 5,
+  // Dynamic data (search results) - cache for 24 hours
+  DYNAMIC: 1000 * 60 * 60 * 24,
   
   // Real-time data (user favorites) - cache for 1 minute
   REALTIME: 1000 * 60,
   
-  // Stats and aggregations - cache for 15 minutes
-  STATS: 1000 * 60 * 15,
+  // Stats and aggregations - cache for 24 hours
+  STATS: 1000 * 60 * 60 * 24,
 } as const
 
 // Stale time constants (when data is considered stale)
 export const STALE_TIMES = {
-  // Static data stays fresh for 30 minutes
-  STATIC: 1000 * 60 * 30,
+  // Static data stays fresh for 24 hours
+  STATIC: 1000 * 60 * 60 * 24,
   
-  // Semi-static data stays fresh for 15 minutes
-  SEMI_STATIC: 1000 * 60 * 15,
+  // Semi-static data stays fresh for 24 hours
+  SEMI_STATIC: 1000 * 60 * 60 * 24,
   
-  // Dynamic data stays fresh for 2 minutes
-  DYNAMIC: 1000 * 60 * 2,
+  // Dynamic data stays fresh for 24 hours
+  DYNAMIC: 1000 * 60 * 60 * 24,
   
   // Real-time data stays fresh for 30 seconds
   REALTIME: 1000 * 30,
   
-  // Stats stay fresh for 5 minutes
-  STATS: 1000 * 60 * 5,
+  // Stats stay fresh for 24 hours
+  STATS: 1000 * 60 * 60 * 24,
 } as const 
 
 // Enhanced query options factory

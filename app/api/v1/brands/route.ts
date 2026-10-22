@@ -5,6 +5,7 @@ import { successResponse, errors } from '@/lib/api/response';
 import { requireAuth } from '@/lib/api/middleware';
 import { rateLimit, getRateLimitHeaders } from '@/lib/api/rate-limit';
 import { brandService } from '@/services/brands';
+import { purgePublicCache, PUBLIC_EDGE_CACHE_CONTROL } from '@/lib/cache/purgePublicCache';
 
 /**
  * GET /api/v1/brands
@@ -36,8 +37,8 @@ export async function GET(request: NextRequest) {
             response.headers.set(key, value);
         });
 
-        // Cache read-only brands for 1 hour at edge
-        response.headers.set('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
+        // Cache read-only brands for 24 hours at edge
+        response.headers.set('Cache-Control', PUBLIC_EDGE_CACHE_CONTROL);
         response.headers.set('Vary', 'Authorization');
 
         return response;
@@ -79,6 +80,7 @@ export async function POST(request: NextRequest) {
         }
 
         const brand = await brandService.createBrand(body);
+        purgePublicCache();
 
         return successResponse(brand, undefined, 201);
     } catch (error) {

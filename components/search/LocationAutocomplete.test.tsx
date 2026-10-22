@@ -105,4 +105,29 @@ describe('LocationAutocomplete Performance & Caching (#113, #115)', () => {
       expect(searchService.searchLocations).toHaveBeenCalledWith('Chiang', 8)
     })
   })
+
+  it('bypasses initialPopularLocations and clears localStorage when ?nocache=1 is present', async () => {
+    window.localStorage.setItem(
+      POPULAR_LOCATIONS_STORAGE_KEY,
+      JSON.stringify({
+        timestamp: Date.now(),
+        data: mockPopularLocations,
+      })
+    )
+    window.history.pushState({}, '', '/search?nocache=1')
+    ;(searchService.getPopularSearchLocations as jest.Mock).mockResolvedValue([])
+
+    renderWithClient(
+      <LocationAutocomplete
+        onLocationSelect={jest.fn()}
+        initialPopularLocations={mockPopularLocations}
+      />
+    )
+
+    await waitFor(() => {
+      expect(searchService.getPopularSearchLocations).toHaveBeenCalledWith(6)
+    })
+    expect(window.localStorage.getItem(POPULAR_LOCATIONS_STORAGE_KEY)).toBeNull()
+    window.history.pushState({}, '', '/')
+  })
 })

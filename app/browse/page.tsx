@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     'Explore motorcycle rental shops by country and city. Find the best rental locations worldwide.',
 };
 
-export const revalidate = 3600; // Revalidate every 1 hour
+export const revalidate = 86400; // Revalidate every 24 hours
 
 type LocationsByCountry = Record<string, {
   country: { code: string; name: string }

@@ -7,6 +7,7 @@ import { successResponse, errors } from '@/lib/api/response';
 import { requireAuth } from '@/lib/api/middleware';
 import { rateLimit, getRateLimitHeaders } from '@/lib/api/rate-limit';
 import { categoryService } from '@/services/categories';
+import { purgePublicCache } from '@/lib/cache/purgePublicCache';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -86,6 +87,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         }
 
         const category = await categoryService.updateCategory(id, body);
+        purgePublicCache();
 
         return successResponse(category);
     } catch (error) {
@@ -122,6 +124,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         }
 
         await categoryService.deleteCategory(id);
+        purgePublicCache();
 
         return successResponse({ deleted: true });
     } catch (error) {

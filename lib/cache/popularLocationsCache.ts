@@ -1,15 +1,30 @@
 import { LocationSearchResult } from '@/services/search'
 import { FilterOptions } from '@/services/motorcycles'
 
+export const CLIENT_CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
+
 export const POPULAR_LOCATIONS_STORAGE_KEY = 'rv2:popular-locations:v1'
-export const POPULAR_LOCATIONS_TTL_MS = 30 * 60 * 1000 // 30 minutes
+export const POPULAR_LOCATIONS_TTL_MS = CLIENT_CACHE_TTL_MS
 
 export const FILTER_OPTIONS_STORAGE_KEY = 'rv2:filter-options:v1'
-export const FILTER_OPTIONS_TTL_MS = 5 * 60 * 1000 // 5 minutes
+export const FILTER_OPTIONS_TTL_MS = CLIENT_CACHE_TTL_MS
+
+export const LOCATION_SUGGESTIONS_TTL_MS = CLIENT_CACHE_TTL_MS
 
 export interface CachedStorageEntry<T> {
   timestamp: number
   data: T
+}
+
+export function shouldBypassClientCache(): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    const params = new URLSearchParams(window.location?.search || '')
+    const nocache = params.get('nocache')
+    return nocache === '1' || nocache === 'true'
+  } catch {
+    return false
+  }
 }
 
 function readStorageEntry<T>(
@@ -19,6 +34,10 @@ function readStorageEntry<T>(
 ): CachedStorageEntry<T> | undefined {
   if (typeof window === 'undefined') return undefined
   try {
+    if (shouldBypassClientCache()) {
+      window.localStorage.removeItem(key)
+      return undefined
+    }
     const raw = window.localStorage.getItem(key)
     if (!raw) return undefined
     const parsed = JSON.parse(raw) as CachedStorageEntry<unknown>
@@ -38,6 +57,10 @@ function readStorageEntry<T>(
 function writeStorageEntry<T>(key: string, data: T): void {
   if (typeof window === 'undefined') return
   try {
+    if (shouldBypassClientCache()) {
+      window.localStorage.removeItem(key)
+      return
+    }
     const payload: CachedStorageEntry<T> = {
       timestamp: Date.now(),
       data

@@ -13,7 +13,7 @@ import CountryContentWrapper from '@/components/content/CountryContentWrapper'
 import { generateMetadata as generateSEOMetadata } from '@/lib/seo/config'
 
 // Revalidate country pages periodically to pick up new content sections
-export const revalidate = 3600 // Revalidate every 1 hour
+export const revalidate = 86400 // Revalidate every 24 hours
 
 const getCountryByName = cache(async (country: string) => {
   return locationService.getCountryByName(country)

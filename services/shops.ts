@@ -94,11 +94,24 @@ export interface ShopSearchFilters {
 // Define active business statuses that should be visible on the platform
 export const ACTIVE_BUSINESS_STATUSES = ['OPERATIONAL', 'operational', 'active', 'ACTIVE'];
 
-export const REFERENCE_CACHE_TTL_MS = 5 * 60 * 1000
+export const REFERENCE_CACHE_TTL_MS = 24 * 60 * 60 * 1000
+
+const registeredCacheClearers = new Set<() => void>()
+
+export function clearAllTtlCaches(): void {
+  for (const clear of registeredCacheClearers) {
+    clear()
+  }
+}
 
 export function createTtlListCache<T>(ttlMs: number = REFERENCE_CACHE_TTL_MS) {
   let entry: { value: T[]; expiresAt: number } | null = null
+  const clear = () => {
+    entry = null
+  }
+  registeredCacheClearers.add(clear)
   return {
+    clear,
     async getOrLoad(loader: () => Promise<T[]>): Promise<T[]> {
       const now = Date.now()
       if (entry && entry.expiresAt > now) {

@@ -2,6 +2,11 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { searchService, LocationBasedSearchFilters, LocationSearchResult } from '@/services/search'
 import { filterAndSortMotorcycles, MotorcycleWithDetails } from '@/services/motorcycles'
+import {
+  POPULAR_LOCATIONS_TTL_MS,
+  LOCATION_SUGGESTIONS_TTL_MS,
+} from '@/lib/cache/popularLocationsCache'
+import { STALE_TIMES } from '@/lib/cache/queryKeys'
 import { debounce } from '@/lib/utils'
 
 export interface UseLocationSearchOptions {
@@ -139,7 +144,7 @@ export function useLocationSearch(options: UseLocationSearchOptions = {}): Locat
       }
     },
     enabled: hasSearched || (enableAutoSearch && hasActiveCriteria), // Keep enabled once searched or when auto-search conditions are met
-    staleTime: isMotorcycleOnly ? 5 * 60 * 1000 : undefined,
+    staleTime: isMotorcycleOnly ? STALE_TIMES.DYNAMIC : undefined,
     refetchOnWindowFocus: isMotorcycleOnly ? false : undefined
   })
 
@@ -409,14 +414,14 @@ export function useLocationAutocomplete(initialQuery = '') {
     queryKey: ['location-autocomplete', query],
     queryFn: () => searchService.searchLocations(query, 8),
     enabled: isOpen && query.length >= 2,
-    staleTime: 5 * 60 * 1000
+    staleTime: LOCATION_SUGGESTIONS_TTL_MS
   })
 
   const { data: popularLocations = [] } = useQuery({
     queryKey: ['popular-locations-autocomplete'],
     queryFn: () => searchService.getPopularSearchLocations(6),
     enabled: isOpen,
-    staleTime: 30 * 60 * 1000
+    staleTime: POPULAR_LOCATIONS_TTL_MS
   })
 
   const displaySuggestions = query.length >= 2 ? suggestions : popularLocations

@@ -1,11 +1,21 @@
 import React from 'react'
 import { render, screen } from '@testing-library/react'
-import MotorcycleRouterPage from '@/app/motorcycle/[...slug]/page'
-import MotorcycleHubPage from '@/app/motorcycle/page'
+import MotorcycleRouterPage, { revalidate as motorcycleRouterRevalidate } from '@/app/motorcycle/[...slug]/page'
+import MotorcycleHubPage, { revalidate as motorcycleHubRevalidate } from '@/app/motorcycle/page'
+import { revalidate as locationsApiRevalidate } from '@/app/api/locations/route'
 import { middleware } from '@/middleware'
 import { motorcycleService } from '@/services/motorcycles'
 import { locationService } from '@/services/locations'
+import { clearAllTtlCaches } from '@/services/shops'
 import { createServerClient } from '@supabase/ssr'
+import {
+  POPULAR_LOCATIONS_TTL_MS,
+  FILTER_OPTIONS_TTL_MS,
+  readCachedPopularLocationsEntry,
+  writeCachedPopularLocations,
+} from '@/lib/cache/popularLocationsCache'
+import { purgePublicCache } from '@/lib/cache/purgePublicCache'
+import { revalidatePath } from 'next/cache'
 
 const mockLinkCalls: Array<Record<string, any>> = []
 
@@ -64,6 +74,15 @@ jest.mock('@/components/motorcycle/MotorcycleCityList', () => ({
 jest.mock('@/components/location/LocationHeroBanner', () => ({
   __esModule: true,
   default: ({ locationName }: any) => <div data-testid="hero-banner">{locationName}</div>,
+}))
+
+jest.mock('next/cache', () => ({
+  revalidatePath: jest.fn(),
+}))
+
+jest.mock('@/services/shops', () => ({
+  ...jest.requireActual('@/services/shops'),
+  clearAllTtlCaches: jest.fn(),
 }))
 
 jest.mock('@/services/motorcycles', () => ({
@@ -270,6 +289,42 @@ describe('App Route & Middleware Egress Mitigations (#180)', () => {
       await middleware(authenticatedReq)
       expect(createServerClient).toHaveBeenCalledTimes(1)
       expect(mockGetUser).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('24-hour TTLs, ?nocache=1 client bypass, and purgePublicCache', () => {
+    it('exports revalidate = 86400 (24 hours) on public ISR routes', () => {
+      expect(motorcycleRouterRevalidate).toBe(86400)
+      expect(motorcycleHubRevalidate).toBe(86400)
+      expect(locationsApiRevalidate).toBe(86400)
+    })
+
+    it('standardizes client localStorage TTLs to 24 hours and skips/clears cache when ?nocache=1 is in URL', () => {
+      expect(POPULAR_LOCATIONS_TTL_MS).toBe(24 * 60 * 60 * 1000)
+      expect(FILTER_OPTIONS_TTL_MS).toBe(24 * 60 * 60 * 1000)
+
+      writeCachedPopularLocations([
+        {
+          type: 'city',
+          id: 'city-1',
+          name: 'Chiang Mai',
+          fullName: 'Chiang Mai, Thailand',
+          shopCount: 10,
+          motorcycleCount: 50,
+        },
+      ])
+      expect(readCachedPopularLocationsEntry()?.data).toHaveLength(1)
+
+      window.history.pushState({}, '', '/search?nocache=1')
+      expect(readCachedPopularLocationsEntry()).toBeUndefined()
+      window.history.pushState({}, '', '/')
+      expect(readCachedPopularLocationsEntry()).toBeUndefined()
+    })
+
+    it('purges in-memory reference caches and calls revalidatePath("/", "layout") via purgePublicCache', () => {
+      purgePublicCache()
+      expect(clearAllTtlCaches).toHaveBeenCalledTimes(1)
+      expect(revalidatePath).toHaveBeenCalledWith('/', 'layout')
     })
   })
 })
