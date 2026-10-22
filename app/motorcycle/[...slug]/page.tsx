@@ -140,13 +140,12 @@ async function renderMotorcycleDetails(id: string) {
         let countryName = ''
         try {
             if ((motorcycle as any).model && (motorcycle as any).brand_id && (motorcycle as any).rental_shops?.cities?.provinces?.country_code) {
-                const sameModels = await motorcycleService.getSameModelMotorcyclesInCountry(
+                sameModelCount = await motorcycleService.getSameModelCountInCountry(
                     (motorcycle as any).rental_shops.cities.provinces.country_code,
                     (motorcycle as any).brand_id,
                     (motorcycle as any).model,
                     (motorcycle as any).id
                 )
-                sameModelCount = sameModels.length
                 countryName = (motorcycle as any).rental_shops.cities.provinces.countries?.name || ''
             }
         } catch (err) {
@@ -245,24 +244,26 @@ const getSameModelData = cache(async (countrySlug: string, modelSlug: string) =>
         const brandSlug = generateSlug(matchingBrand.name)
         const modelNameSlug = modelSlug.slice(brandSlug.length + 1) // Remove "brand-"
 
-        const brandBikesInCountry = await motorcycleService.getSameModelMotorcyclesInCountry(
-            countryData.code,
+        const resolvedModelName = await motorcycleService.resolveModelNameBySlug(
             matchingBrand.id,
-            "%"
+            matchingBrand.name,
+            modelSlug
         )
 
-        // Filter in memory for model match
-        motorcycles = brandBikesInCountry.filter(bike => {
-            const bikeSlug = generateSlug(`${bike.brands?.name} ${bike.model}`)
-            return bikeSlug === modelSlug
-        })
+        if (resolvedModelName) {
+            motorcycles = await motorcycleService.getSameModelMotorcyclesInCountry(
+                countryData.code,
+                matchingBrand.id,
+                resolvedModelName
+            )
+        }
 
         if (motorcycles.length > 0) {
             displayBrandName = motorcycles[0].brands?.name || matchingBrand.name
-            displayModelName = motorcycles[0].model || modelNameSlug
+            displayModelName = motorcycles[0].model || resolvedModelName || modelNameSlug
         } else {
             displayBrandName = matchingBrand.name
-            displayModelName = formatLocationName(modelNameSlug)
+            displayModelName = resolvedModelName || formatLocationName(modelNameSlug)
         }
     } else {
         return null

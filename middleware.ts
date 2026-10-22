@@ -10,13 +10,22 @@ export async function middleware(request: NextRequest) {
     })
 
     try {
+        const allCookies = request.cookies.getAll()
+        const hasSupabaseAuthCookie = allCookies.some(({ name }) =>
+            name.startsWith('sb-')
+        )
+
+        if (!hasSupabaseAuthCookie) {
+            return response
+        }
+
         const supabase = createServerClient<any>(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
             {
                 cookies: {
                     getAll() {
-                        return request.cookies.getAll()
+                        return allCookies
                     },
                     setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
                         cookiesToSet.forEach(({ name, value, options }) => {

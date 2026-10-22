@@ -1,10 +1,15 @@
 import { supabase } from '@/lib/supabase/client'
 import { Database } from '@/lib/supabase/database.types'
 import { SupabaseClient } from '@supabase/supabase-js'
+import { generateSlug } from '@/lib/utils'
 import {
-  ACTIVE_BUSINESS_STATUSES,
+  MOTORCYCLE_LISTING_BASE_COLUMNS,
+  MOTORCYCLE_LISTING_RATE_TIERS_COLUMNS,
+  SHOP_MOTORCYCLE_RENTALS_SELECT,
   applyAvailableMotorcycleFilterSync,
-  filterAvailableMotorcycles
+  createTtlListCache,
+  filterAvailableMotorcycles,
+  getActiveBusinessStatusIds,
 } from './shops'
 
 const typedSupabase = supabase as unknown as SupabaseClient<Database>
@@ -279,24 +284,39 @@ export function filterAndSortMotorcycles<T extends Record<string, any>>(
   })
 }
 
-let cachedActiveBusinessStatusIds: number[] | null = null
+const brandsCache = createTtlListCache<Brand>()
+const categoriesCache = createTtlListCache<Category>()
 
-// Helper function to get active business status IDs for motorcycles (memoized once non-empty)
-async function getActiveBusinessStatusIdsForMotorcycles(): Promise<number[]> {
-  if (cachedActiveBusinessStatusIds) {
-    return cachedActiveBusinessStatusIds
-  }
-
-  const { data: activeBusinessStatuses } = await typedSupabase
-    .from('business_statuses')
-    .select('id')
-    .in('status_code', ACTIVE_BUSINESS_STATUSES)
-
-  const ids = activeBusinessStatuses ? activeBusinessStatuses.map(status => status.id) : []
-  if (ids.length > 0) {
-    cachedActiveBusinessStatusIds = ids
-  }
-  return ids
+function buildListingRentalShopsJoin(options: {
+  innerLocation: boolean
+  innerCountry?: boolean
+}): string {
+  const locJoin = options.innerLocation ? '!inner' : ''
+  const countryJoin = options.innerCountry ? '!inner' : ''
+  return `rental_shops!inner (
+          id,
+          slug,
+          provider_name,
+          full_address,
+          city_id,
+          rating,
+          review_count,
+          business_status_id,
+          cities${locJoin} (
+            id,
+            name,
+            province_id,
+            provinces${locJoin} (
+              id,
+              name,
+              country_code,
+              countries${countryJoin} (
+                code,
+                name
+              )
+            )
+          )
+        )`
 }
 
 // Helper function to apply active shop status filter to motorcycle queries
@@ -417,7 +437,7 @@ export const motorcycleService = {
         )
       `)
 
-    const activeStatusIds = await getActiveBusinessStatusIdsForMotorcycles()
+    const activeStatusIds = await getActiveBusinessStatusIds()
     query = applyLocationAndActiveShopFiltersSync(
       query,
       { cityId, provinceId, countryCode },
@@ -468,39 +488,28 @@ export const motorcycleService = {
       offset = 0
     } = filters
 
+    const featureSelectFragment =
+      features && features.length > 0
+        ? `,
+        motorcycle_features (
+          feature_id
+        )`
+        : ''
+
     let query = typedSupabase
       .from('motorcycle_rentals')
       .select(`
-        *,
-        rental_shops!inner (
-          *,
-          cities!inner (
-            *,
-            provinces!inner (
-              *,
-              countries (*)
-            )
-          ),
-          business_statuses (*)
-        ),
-        brands (*),
-        categories (*),
-        motorcycle_features (
-          feature_id,
-          motorcycle_id,
-          features (*)
-        ),
-        motorcycle_images (
-          *,
-          images (*)
-        ),
+        ${MOTORCYCLE_LISTING_BASE_COLUMNS},
+        ${buildListingRentalShopsJoin({ innerLocation: true })},
+        brands (id, name),
+        categories (id, name, description)${featureSelectFragment},
         rental_rate_tiers (
-          *
+          ${MOTORCYCLE_LISTING_RATE_TIERS_COLUMNS}
         )
       `, { count: 'exact' })
 
     // Apply location and active shop status filters synchronously
-    const activeStatusIds = await getActiveBusinessStatusIdsForMotorcycles()
+    const activeStatusIds = await getActiveBusinessStatusIds()
     query = applyLocationAndActiveShopFiltersSync(
       query,
       { cityId, provinceId, countryCode },
@@ -647,12 +656,7 @@ export const motorcycleService = {
     }
 
     // Check if motorcycle's shop is active
-    const { data: activeBusinessStatuses } = await typedSupabase
-      .from('business_statuses')
-      .select('id')
-      .in('status_code', ACTIVE_BUSINESS_STATUSES)
-
-    const activeStatusIds = activeBusinessStatuses ? activeBusinessStatuses.map(status => status.id) : []
+    const activeStatusIds = await getActiveBusinessStatusIds()
     if (activeStatusIds.length === 0 || !(data as any)?.rental_shops?.business_status_id || !activeStatusIds.includes((data as any).rental_shops.business_status_id)) {
       throw new Error('Motorcycle not found or not available')
     }
@@ -662,32 +666,36 @@ export const motorcycleService = {
 
   // Get all brands for filters
   async getBrands() {
-    const { data, error } = await typedSupabase
-      .from('brands')
-      .select('*')
-      .order('name')
+    return brandsCache.getOrLoad(async () => {
+      const { data, error } = await typedSupabase
+        .from('brands')
+        .select('*')
+        .order('name')
 
-    if (error) {
-      console.error('Error fetching brands:', error)
-      throw error
-    }
+      if (error) {
+        console.error('Error fetching brands:', error)
+        throw error
+      }
 
-    return data as Brand[]
+      return (data || []) as Brand[]
+    })
   },
 
   // Get all categories for filters
   async getCategories() {
-    const { data, error } = await typedSupabase
-      .from('categories')
-      .select('*')
-      .order('name')
+    return categoriesCache.getOrLoad(async () => {
+      const { data, error } = await typedSupabase
+        .from('categories')
+        .select('*')
+        .order('name')
 
-    if (error) {
-      console.error('Error fetching categories:', error)
-      throw error
-    }
+      if (error) {
+        console.error('Error fetching categories:', error)
+        throw error
+      }
 
-    return data as Category[]
+      return (data || []) as Category[]
+    })
   },
 
   // Get price range for filters
@@ -759,18 +767,7 @@ export const motorcycleService = {
   async getMotorcyclesByShop(shopId: string, limit?: number) {
     let query = typedSupabase
       .from('motorcycle_rentals')
-      .select(`
-        *,
-        brands (*),
-        categories (*),
-        motorcycle_images (
-          *,
-          images (*)
-        ),
-        rental_rate_tiers (
-          *
-        )
-      `)
+      .select(SHOP_MOTORCYCLE_RENTALS_SELECT)
       .eq('shop_id', shopId)
 
     query = applyAvailableMotorcycleFilterSync(query).order('created_at', { ascending: false })
@@ -794,21 +791,12 @@ export const motorcycleService = {
     let query: any = typedSupabase
       .from('motorcycle_rentals')
       .select(`
-        *,
-        rental_shops!inner (
-          *,
-          cities (
-            *,
-            provinces (
-              *,
-              countries (*)
-            )
-          )
-        ),
-        brands!inner (*),
-        categories (*),
+        ${MOTORCYCLE_LISTING_BASE_COLUMNS},
+        ${buildListingRentalShopsJoin({ innerLocation: false })},
+        brands!inner (id, name),
+        categories (id, name, description),
         rental_rate_tiers (
-          *
+          ${MOTORCYCLE_LISTING_RATE_TIERS_COLUMNS}
         )
       `)
       .or(`model.ilike.%${searchQuery}%,brands.name.ilike.%${searchQuery}%`)
@@ -830,21 +818,12 @@ export const motorcycleService = {
     let query: any = typedSupabase
       .from('motorcycle_rentals')
       .select(`
-        *,
-        rental_shops!inner (
-          *,
-          cities (
-            *,
-            provinces (
-              *,
-              countries (*)
-            )
-          )
-        ),
-        brands (*),
-        categories (*),
+        ${MOTORCYCLE_LISTING_BASE_COLUMNS},
+        ${buildListingRentalShopsJoin({ innerLocation: false })},
+        brands (id, name),
+        categories (id, name, description),
         rental_rate_tiers (
-          *
+          ${MOTORCYCLE_LISTING_RATE_TIERS_COLUMNS}
         )
       `)
       .not('rental_rate_per_day', 'is', null)
@@ -1006,7 +985,7 @@ export const motorcycleService = {
 
   // Get all active motorcycles for the hub page
   async getAllMotorcyclesForHub() {
-    const activeStatusIds = await getActiveBusinessStatusIdsForMotorcycles()
+    const activeStatusIds = await getActiveBusinessStatusIds()
 
     let query = typedSupabase
       .from('motorcycle_rentals')
@@ -1240,6 +1219,93 @@ export const motorcycleService = {
     }
   },
 
+  // Resolve canonical model name for a brand from a brand+model slug
+  async resolveModelNameBySlug(
+    brandId: string,
+    brandName: string,
+    modelSlug: string
+  ): Promise<string | null> {
+    const query = applyAvailableMotorcycleFilterSync(
+      typedSupabase
+        .from('motorcycle_rentals')
+        .select('model, availability_status')
+        .eq('brand_id', brandId)
+    )
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error('Error resolving model name by slug:', error)
+      throw error
+    }
+
+    const availableRows = filterAvailableMotorcycles(data as any[])
+    const countsByModel = new Map<string, number>()
+    for (const row of availableRows) {
+      const model = (row as any)?.model
+      if (typeof model === 'string' && model.trim().length > 0) {
+        if (generateSlug(`${brandName} ${model}`) === modelSlug) {
+          countsByModel.set(model, (countsByModel.get(model) || 0) + 1)
+        }
+      }
+    }
+
+    let bestModel: string | null = null
+    let bestCount = 0
+    for (const [model, count] of countsByModel.entries()) {
+      if (count > bestCount) {
+        bestModel = model
+        bestCount = count
+      }
+    }
+
+    return bestModel
+  },
+
+  // Get exact count of motorcycles of the same model in the same country (HEAD query)
+  async getSameModelCountInCountry(
+    countryCode: string,
+    brandId: string,
+    modelName: string,
+    excludeId?: string
+  ): Promise<number> {
+    let query = typedSupabase
+      .from('motorcycle_rentals')
+      .select(
+        `
+        id,
+        rental_shops!inner (
+          business_status_id,
+          cities!inner (
+            provinces!inner (
+              country_code
+            )
+          )
+        )
+      `,
+        { count: 'exact', head: true }
+      )
+      .eq('rental_shops.cities.provinces.country_code', countryCode)
+      .eq('brand_id', brandId)
+      .ilike('model', modelName)
+
+    if (excludeId) {
+      query = query.neq('id', excludeId)
+    }
+
+    const activeStatusIds = await getActiveBusinessStatusIds()
+    query = applyActiveShopStatusFilterSync(query, activeStatusIds)
+
+    const { count, error } = await query
+
+    if (error) {
+      console.error('Error counting same model motorcycles:', error)
+      throw error
+    }
+
+    return count ?? 0
+  },
+
   // Get motorcycles of the same model in the same country
   async getSameModelMotorcyclesInCountry(
     countryCode: string,
@@ -1247,34 +1313,15 @@ export const motorcycleService = {
     modelName: string,
     excludeId?: string
   ) {
-    let query = typedSupabase
+    let query: any = typedSupabase
       .from('motorcycle_rentals')
       .select(`
-        *,
-        rental_shops!inner (
-          *,
-          cities!inner (
-            *,
-            provinces!inner (
-              *,
-              countries!inner (*)
-            )
-          ),
-          business_statuses (*)
-        ),
-        brands (*),
-        categories (*),
-        motorcycle_features (
-          feature_id,
-          motorcycle_id,
-          features (*)
-        ),
-        motorcycle_images (
-          *,
-          images (*)
-        ),
+        ${MOTORCYCLE_LISTING_BASE_COLUMNS},
+        ${buildListingRentalShopsJoin({ innerLocation: true, innerCountry: true })},
+        brands (id, name),
+        categories (id, name, description),
         rental_rate_tiers (
-          *
+          ${MOTORCYCLE_LISTING_RATE_TIERS_COLUMNS}
         )
       `)
       .eq('rental_shops.cities.provinces.country_code', countryCode)
@@ -1286,7 +1333,7 @@ export const motorcycleService = {
     }
 
     // Filter by active shop status
-    const activeStatusIds = await getActiveBusinessStatusIdsForMotorcycles()
+    const activeStatusIds = await getActiveBusinessStatusIds()
     query = applyActiveShopStatusFilterSync(query, activeStatusIds)
 
     const { data, error } = await query
@@ -1296,7 +1343,7 @@ export const motorcycleService = {
       throw error
     }
 
-    return filterAvailableMotorcycles(data as MotorcycleWithDetails[])
+    return filterAvailableMotorcycles(data as any[]) as MotorcycleWithDetails[]
   },
 
   // Get structured filter options with counts based on current filters

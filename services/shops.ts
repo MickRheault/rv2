@@ -63,12 +63,18 @@ export interface ShopWithDetails extends RentalShop {
   category_names?: string[]
 }
 
-export interface ShopWithMotorcycles extends ShopWithDetails {
-  motorcycle_rentals: (MotorcycleRental & {
-    brands: Brand | null
-    categories: Category | null
+export type ShopMotorcycleListingItem = Omit<
+  MotorcycleRental,
+  'conditions_details' | 'specifications_details' | 'source_url'
+> &
+  Partial<Pick<MotorcycleRental, 'conditions_details' | 'specifications_details' | 'source_url'>> & {
+    brands: Pick<Brand, 'id' | 'name'> | Brand | null
+    categories: Pick<Category, 'id' | 'name' | 'description'> | Category | null
     rental_rate_tiers: RentalRateTier[]
-  })[]
+  }
+
+export interface ShopWithMotorcycles extends ShopWithDetails {
+  motorcycle_rentals: ShopMotorcycleListingItem[]
 }
 
 export interface ShopSearchFilters {
@@ -88,14 +94,73 @@ export interface ShopSearchFilters {
 // Define active business statuses that should be visible on the platform
 export const ACTIVE_BUSINESS_STATUSES = ['OPERATIONAL', 'operational', 'active', 'ACTIVE'];
 
-// Helper function to get active business status IDs
-async function getActiveBusinessStatusIds(): Promise<number[]> {
-  const { data: activeBusinessStatuses } = await typedSupabase
-    .from('business_statuses')
-    .select('id')
-    .in('status_code', ACTIVE_BUSINESS_STATUSES)
+export const REFERENCE_CACHE_TTL_MS = 5 * 60 * 1000
 
-  return activeBusinessStatuses ? (activeBusinessStatuses as any[]).map((status: any) => status.id) : []
+export function createTtlListCache<T>(ttlMs: number = REFERENCE_CACHE_TTL_MS) {
+  let entry: { value: T[]; expiresAt: number } | null = null
+  return {
+    async getOrLoad(loader: () => Promise<T[]>): Promise<T[]> {
+      const now = Date.now()
+      if (entry && entry.expiresAt > now) {
+        return [...entry.value]
+      }
+      const items = await loader()
+      if (items.length > 0) {
+        entry = { value: items, expiresAt: now + ttlMs }
+      }
+      return [...items]
+    },
+  }
+}
+
+const activeBusinessStatusIdsCache = createTtlListCache<number>()
+
+export const MOTORCYCLE_LISTING_BASE_COLUMNS = `
+  id,
+  shop_id,
+  brand_id,
+  category_id,
+  model,
+  year,
+  year_to,
+  engine_capacity_cc,
+  rental_rate_per_day,
+  rental_rate_currency,
+  availability_status,
+  created_at,
+  updated_at
+`
+
+export const MOTORCYCLE_LISTING_RATE_TIERS_COLUMNS = `
+  id,
+  motorcycle_id,
+  min_days,
+  max_days,
+  rate_per_day,
+  currency
+`
+
+export const SHOP_MOTORCYCLE_RENTALS_SELECT = `
+  ${MOTORCYCLE_LISTING_BASE_COLUMNS},
+  brands (id, name),
+  categories (id, name, description),
+  rental_rate_tiers (
+    ${MOTORCYCLE_LISTING_RATE_TIERS_COLUMNS}
+  )
+`
+
+// Helper function to get active business status IDs (memoized with TTL once non-empty)
+export async function getActiveBusinessStatusIds(): Promise<number[]> {
+  return activeBusinessStatusIdsCache.getOrLoad(async () => {
+    const { data: activeBusinessStatuses } = await typedSupabase
+      .from('business_statuses')
+      .select('id')
+      .in('status_code', ACTIVE_BUSINESS_STATUSES)
+
+    return activeBusinessStatuses
+      ? (activeBusinessStatuses as any[]).map((status: any) => status.id)
+      : []
+  })
 }
 
 // Helper function to apply active status filter to a query
@@ -317,12 +382,7 @@ export const shopService = {
         rental_shop_tours (*),
         rental_shop_service_locations (*),
         motorcycle_rentals (
-          *,
-          brands (*),
-          categories (*),
-          rental_rate_tiers (
-            *
-          )
+          ${SHOP_MOTORCYCLE_RENTALS_SELECT}
         )
       `)
       .eq('id', id)
@@ -364,10 +424,7 @@ export const shopService = {
           condition_types (*)
         ),
         motorcycle_rentals (
-          *,
-          brands (*),
-          categories (*),
-          rental_rate_tiers (*)
+          ${SHOP_MOTORCYCLE_RENTALS_SELECT}
         )
       `)
       .eq('slug', slug)
@@ -416,10 +473,7 @@ export const shopService = {
           condition_types (*)
         ),
         motorcycle_rentals (
-          *,
-          brands (*),
-          categories (*),
-          rental_rate_tiers (*)
+          ${SHOP_MOTORCYCLE_RENTALS_SELECT}
         )
       `)
       .eq('slug', slug)
