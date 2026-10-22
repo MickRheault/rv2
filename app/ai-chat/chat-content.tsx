@@ -6,7 +6,12 @@ import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { ArrowLeftIcon, PlusIcon } from '@heroicons/react/24/outline';
 import ReactMarkdown from 'react-markdown';
-import { AI_CHAT_INPUT_PLACEHOLDER, SUGGESTION_PROMPTS } from '@/lib/chat/suggestions';
+import {
+    AI_CHAT_INPUT_PLACEHOLDER,
+    AI_CHAT_LOADING_INTERVAL_MS,
+    AI_CHAT_LOADING_MESSAGES,
+    SUGGESTION_PROMPTS,
+} from '@/lib/chat/suggestions';
 import { submitFormOnEnter } from '@/lib/chat/keyboard';
 import { normalizeChatHref } from '@/lib/chat/links';
 import './markdown.css';
@@ -26,12 +31,28 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
 
     const formRef = useRef<HTMLFormElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
     const autoSentQueryRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (!isLoading) {
+            setLoadingMessageIndex(0);
+            return;
+        }
+
+        const intervalId = setInterval(() => {
+            setLoadingMessageIndex((prev) =>
+                prev < AI_CHAT_LOADING_MESSAGES.length - 1 ? prev + 1 : prev
+            );
+        }, AI_CHAT_LOADING_INTERVAL_MS);
+
+        return () => clearInterval(intervalId);
+    }, [isLoading]);
 
     const submitPrompt = useCallback(async (
         userMessage: string,
@@ -289,10 +310,19 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
                         {isLoading && (
                             <div className="flex flex-col items-start">
                                 <div className="text-xs text-gray-500 mb-1 px-1">🤖 Assistant</div>
-                                <div className="bg-white border border-gray-100 rounded-2xl rounded-bl-none px-5 py-4 shadow-sm flex items-center space-x-2">
-                                    <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce"></div>
-                                    <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                                    <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                                <div
+                                    role="status"
+                                    aria-live="polite"
+                                    className="bg-white border border-gray-100 rounded-2xl rounded-bl-none px-5 py-4 shadow-sm flex items-center gap-3"
+                                >
+                                    <div className="flex items-center space-x-1.5" aria-hidden="true">
+                                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                                    </div>
+                                    <span className="text-sm text-gray-600 font-medium animate-pulse">
+                                        {AI_CHAT_LOADING_MESSAGES[loadingMessageIndex]}
+                                    </span>
                                 </div>
                             </div>
                         )}

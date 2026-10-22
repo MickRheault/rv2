@@ -1,7 +1,8 @@
 import { StrictMode } from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useSearchParams } from 'next/navigation';
 import ChatPage from './page';
+import { AI_CHAT_LOADING_INTERVAL_MS } from '@/lib/chat/suggestions';
 
 const originalSecret = process.env.AI_CHAT_ACCESS_SECRET;
 
@@ -354,4 +355,85 @@ it('normalizes hallucinated or absolute domains on /motorcycle/ and /shop/ links
     const externalLink = screen.getByRole('link', { name: 'Tourism Info' });
     expect(externalLink).toHaveAttribute('href', 'https://www.tourismthailand.org/articles');
 });
+
+it('displays playful motorcycle-themed rotating status messages while searching and resets when finished', async () => {
+    jest.useFakeTimers();
+    try {
+        delete process.env.AI_CHAT_ACCESS_SECRET;
+
+        let resolveFirstFetch!: (value: Response) => void;
+        let resolveSecondFetch!: (value: Response) => void;
+
+        jest.mocked(fetch)
+            .mockImplementationOnce(
+                () =>
+                    new Promise<Response>((resolve) => {
+                        resolveFirstFetch = resolve;
+                    })
+            )
+            .mockImplementationOnce(
+                () =>
+                    new Promise<Response>((resolve) => {
+                        resolveSecondFetch = resolve;
+                    })
+            );
+
+        const { container } = render(<ChatPage />);
+        const textarea = screen.getByPlaceholderText('Ask about bikes or shops...');
+        const form = container.querySelector('form')!;
+
+        fireEvent.change(textarea, { target: { value: 'Find scooters in Bangkok' } });
+        fireEvent.submit(form);
+
+        // Initial loading message appears immediately
+        expect(screen.getByText('Kickstarting the engine...')).toBeInTheDocument();
+
+        // Advance 2.2s -> 2nd message
+        act(() => {
+            jest.advanceTimersByTime(AI_CHAT_LOADING_INTERVAL_MS);
+        });
+        expect(screen.getByText('Revving up the search...')).toBeInTheDocument();
+
+        // Advance 2.2s -> 3rd message
+        act(() => {
+            jest.advanceTimersByTime(AI_CHAT_LOADING_INTERVAL_MS);
+        });
+        expect(screen.getByText('Scanning the garage...')).toBeInTheDocument();
+
+        // Advance 2.2s -> 4th message
+        act(() => {
+            jest.advanceTimersByTime(AI_CHAT_LOADING_INTERVAL_MS);
+        });
+        expect(screen.getByText('Dialing in your answer...')).toBeInTheDocument();
+
+        // Resolve first response -> loading indicator disappears
+        await act(async () => {
+            resolveFirstFetch({
+                ok: true,
+                status: 200,
+                text: async () => JSON.stringify({ response: 'Found 3 scooters in Bangkok.' }),
+            } as Response);
+        });
+
+        expect(await screen.findByText('Found 3 scooters in Bangkok.')).toBeInTheDocument();
+        expect(screen.queryByText('Dialing in your answer...')).not.toBeInTheDocument();
+
+        // Start a second query -> resets back to the first message
+        fireEvent.change(textarea, { target: { value: 'What about Chiang Mai?' } });
+        fireEvent.submit(form);
+        expect(screen.getByText('Kickstarting the engine...')).toBeInTheDocument();
+
+        await act(async () => {
+            resolveSecondFetch({
+                ok: true,
+                status: 200,
+                text: async () => JSON.stringify({ response: 'Found 5 bikes in Chiang Mai.' }),
+            } as Response);
+        });
+        expect(await screen.findByText('Found 5 bikes in Chiang Mai.')).toBeInTheDocument();
+    } finally {
+        jest.useRealTimers();
+    }
+});
+
 
