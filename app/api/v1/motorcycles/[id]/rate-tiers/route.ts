@@ -7,6 +7,7 @@ import { successResponse, errors } from '@/lib/api/response';
 import { requireAuth } from '@/lib/api/middleware';
 import { rateLimit, getRateLimitHeaders } from '@/lib/api/rate-limit';
 import { updateMotorcycleRateTiers } from '@/services/rental-rate-tiers';
+import { purgePublicCache } from '@/lib/cache/purgePublicCache';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -49,6 +50,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         }));
 
         const updatedTiers = await updateMotorcycleRateTiers(id, tiersToInsert);
+        purgePublicCache();
 
         return successResponse({ rate_tiers: updatedTiers });
     } catch (error) {

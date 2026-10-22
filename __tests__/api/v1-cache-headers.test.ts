@@ -40,7 +40,7 @@ describe('API v1 Edge Cache Headers (Issue #85)', () => {
     const res = await getLocations(req);
 
     expect(res.status).toBe(200);
-    expect(res.headers.get('Cache-Control')).toBe('public, s-maxage=3600, stale-while-revalidate=86400');
+    expect(res.headers.get('Cache-Control')).toBe('public, s-maxage=86400, stale-while-revalidate=604800');
     expect(res.headers.get('Vary')).toBe('Authorization');
   });
 
@@ -49,7 +49,7 @@ describe('API v1 Edge Cache Headers (Issue #85)', () => {
     const res = await getBrands(req);
 
     expect(res.status).toBe(200);
-    expect(res.headers.get('Cache-Control')).toBe('public, s-maxage=3600, stale-while-revalidate=86400');
+    expect(res.headers.get('Cache-Control')).toBe('public, s-maxage=86400, stale-while-revalidate=604800');
     expect(res.headers.get('Vary')).toBe('Authorization');
   });
 
@@ -58,7 +58,7 @@ describe('API v1 Edge Cache Headers (Issue #85)', () => {
     const res = await getCategories(req);
 
     expect(res.status).toBe(200);
-    expect(res.headers.get('Cache-Control')).toBe('public, s-maxage=3600, stale-while-revalidate=86400');
+    expect(res.headers.get('Cache-Control')).toBe('public, s-maxage=86400, stale-while-revalidate=604800');
     expect(res.headers.get('Vary')).toBe('Authorization');
   });
 });

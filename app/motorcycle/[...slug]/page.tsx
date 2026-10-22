@@ -15,7 +15,7 @@ import { generateMetadata as generateSEOMetadata, generateMotorcycleSEO } from '
 import { StructuredData, generateEnhancedMotorcycleSchema } from '@/lib/seo/structured-data'
 import { generateSlug, formatLocationName } from '@/lib/utils'
 
-export const revalidate = 3600 // Revalidate every 1 hour
+export const revalidate = 86400 // Revalidate every 24 hours
 
 const getMotorcycleById = cache(async (id: string) => {
     return motorcycleService.getMotorcycleById(id)

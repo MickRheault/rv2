@@ -11,6 +11,7 @@ import {
 import { requireAuth } from '@/lib/api/middleware';
 import { rateLimit, getRateLimitHeaders } from '@/lib/api/rate-limit';
 import { shopService } from '@/services/shops';
+import { purgePublicCache } from '@/lib/cache/purgePublicCache';
 
 /**
  * GET /api/v1/shops
@@ -100,6 +101,7 @@ export async function POST(request: NextRequest) {
         }
 
         const shop = await shopService.createShop(body);
+        purgePublicCache();
 
         return successResponse(shop, undefined, 201);
     } catch (error: any) {

@@ -8,7 +8,7 @@ import { generateMetadata as generateSEOMetadata, generateShopSEO } from '@/lib/
 import { StructuredData, generateRentalShopSchema, generateRentalServiceSchema, generateTourSchema, generateEnhancedMotorcycleSchema } from '@/lib/seo/structured-data'
 import { parseShopLocation, validateShopLocation } from '@/lib/utils/urls'
 
-export const revalidate = 3600 // Revalidate every 1 hour
+export const revalidate = 86400 // Revalidate every 24 hours
 
 const getShopByLocationAndSlug = cache(async (countryName: string, cityName: string, slug: string) => {
   return shopService.getShopByLocationAndSlug(countryName, cityName, slug)

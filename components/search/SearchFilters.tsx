@@ -23,6 +23,7 @@ import {
 } from '@/components/ui'
 import { motorcycleService, FilterOptions } from '@/services/motorcycles'
 import { LocationBasedSearchFilters } from '@/services/search'
+import { FILTER_OPTIONS_TTL_MS } from '@/lib/cache/popularLocationsCache'
 
 interface SearchFiltersProps {
   filters: LocationBasedSearchFilters
@@ -111,7 +112,7 @@ export default function SearchFilters({
       provinceId: filters.provinceId,
       countryCode: filters.countryCode
     }),
-    staleTime: 5 * 60 * 1000 // 5 minutes
+    staleTime: FILTER_OPTIONS_TTL_MS
   })
 
   // Toggle panel

@@ -3,7 +3,7 @@
  */
 
 import { motorcycleService } from '@/services/motorcycles'
-import { shopService, REFERENCE_CACHE_TTL_MS } from '@/services/shops'
+import { shopService, REFERENCE_CACHE_TTL_MS, clearAllTtlCaches } from '@/services/shops'
 import { locationService } from '@/services/locations'
 import { supabase } from '@/lib/supabase/client'
 
@@ -435,6 +435,34 @@ describe('Supabase PostgREST Egress Reduction — Service Layer (#180)', () => {
       expect(all).toHaveLength(2)
       expect(missing).toBeNull()
       expect(countriesCalls).toBe(1)
+    })
+
+    it('standardizes REFERENCE_CACHE_TTL_MS to 24 hours (86,400,000 ms) and clears caches via clearAllTtlCaches()', async () => {
+      expect(REFERENCE_CACHE_TTL_MS).toBe(24 * 60 * 60 * 1000)
+
+      let countriesCalls = 0
+      ;(supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === 'countries') {
+          countriesCalls += 1
+          return {
+            select: jest.fn().mockReturnValue({
+              order: jest.fn().mockResolvedValue({
+                data: [{ code: 'TH', name: 'Thailand' }],
+                error: null,
+              }),
+            }),
+          }
+        }
+        throw new Error(`Unexpected table: ${table}`)
+      })
+
+      await locationService.getCountries()
+      await locationService.getCountries()
+      expect(countriesCalls).toBe(1)
+
+      clearAllTtlCaches()
+      await locationService.getCountries()
+      expect(countriesCalls).toBe(2)
     })
   })
 })

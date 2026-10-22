@@ -14,6 +14,8 @@ import { Input, Spinner, Card } from '@/components/ui'
 import { searchService, LocationSearchResult } from '@/services/search'
 import {
   POPULAR_LOCATIONS_TTL_MS,
+  LOCATION_SUGGESTIONS_TTL_MS,
+  shouldBypassClientCache,
   readCachedPopularLocationsEntry,
   writeCachedPopularLocations
 } from '@/lib/cache/popularLocationsCache'
@@ -53,10 +55,14 @@ export default function LocationAutocomplete({
 
   // Resolve initial popular locations and timestamp from server props or client localStorage TTL cache
   const resolvedInitialEntry = useMemo(() => {
+    const cachedEntry = readCachedPopularLocationsEntry()
+    if (shouldBypassClientCache()) {
+      return undefined
+    }
     if (initialPopularLocations?.length) {
       return { data: initialPopularLocations, timestamp: Date.now() }
     }
-    return readCachedPopularLocationsEntry()
+    return cachedEntry
   }, [initialPopularLocations])
 
   useEffect(() => {
@@ -70,7 +76,7 @@ export default function LocationAutocomplete({
     queryKey: ['location-suggestions', query],
     queryFn: () => searchService.searchLocations(query, 8),
     enabled: isOpen && query.length >= 2,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: LOCATION_SUGGESTIONS_TTL_MS,
     refetchOnWindowFocus: false
   })
 
@@ -86,7 +92,7 @@ export default function LocationAutocomplete({
     initialDataUpdatedAt: resolvedInitialEntry?.timestamp,
     enabled: showPopularLocations,
     staleTime: POPULAR_LOCATIONS_TTL_MS,
-    gcTime: 60 * 60 * 1000,
+    gcTime: POPULAR_LOCATIONS_TTL_MS,
     refetchOnWindowFocus: false
   })
 

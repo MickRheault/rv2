@@ -5,7 +5,7 @@ import { generateMetadata as generateSEOMetadata, PAGE_CONFIGS } from '@/lib/seo
 import { searchService } from '@/services/search'
 import { motorcycleService } from '@/services/motorcycles'
 
-export const revalidate = 3600
+export const revalidate = 86400
 
 export const metadata: Metadata = generateSEOMetadata(PAGE_CONFIGS.search)
 

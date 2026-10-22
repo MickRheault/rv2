@@ -14,6 +14,7 @@ import { rateLimit, getRateLimitHeaders } from '@/lib/api/rate-limit';
 import { motorcycleService } from '@/services/motorcycles';
 import { updateMotorcycleRateTiers } from '@/services/rental-rate-tiers';
 import { parseAndValidateMotorcycleYearPayload } from '@/lib/utils';
+import { purgePublicCache } from '@/lib/cache/purgePublicCache';
 
 /**
  * GET /api/v1/motorcycles
@@ -142,6 +143,8 @@ export async function POST(request: NextRequest) {
                 // We still return the created motorcycle, but could append a warning
             }
         }
+
+        purgePublicCache();
 
         return successResponse(motorcycle, undefined, 201);
     } catch (error) {

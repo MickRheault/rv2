@@ -11,6 +11,7 @@ import {
   hasLocationFilter
 } from '@/services/motorcycles'
 import {
+  shouldBypassClientCache,
   readCachedFilterOptionsEntry,
   writeCachedFilterOptions
 } from '@/lib/cache/popularLocationsCache'
@@ -101,8 +102,10 @@ export default function SearchPageContent({
   })
 
   const cachedFilterOptions = useMemo(() => {
+    const cached = readCachedFilterOptionsEntry()?.data
+    if (shouldBypassClientCache()) return undefined
     if (initialFilterOptions) return initialFilterOptions
-    return readCachedFilterOptionsEntry()?.data
+    return cached
   }, [initialFilterOptions])
 
   useEffect(() => {

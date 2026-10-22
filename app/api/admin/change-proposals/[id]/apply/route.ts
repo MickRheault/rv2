@@ -4,6 +4,7 @@ export const maxDuration = 60;
 import { NextRequest, NextResponse } from 'next/server';
 import { ChangeProposalService } from '@/services/change-proposals';
 import { isAuthorizedAdmin } from '@/lib/auth/admin-auth';
+import { purgePublicCache } from '@/lib/cache/purgePublicCache';
 
 /**
  * POST /api/admin/change-proposals/:id/apply
@@ -36,6 +37,7 @@ export async function POST(
     }
 
     const result = await ChangeProposalService.apply(id, approvedItemIds);
+    purgePublicCache();
 
     return NextResponse.json(result, { status: 200 });
   } catch (error: any) {
