@@ -3,7 +3,19 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { openAITools, executeTool, formatToolResultForLLM } from '@/lib/mcp/tools';
-import { SYSTEM_PROMPT } from '@/lib/chat/prompt';
+import {
+    CHAT_RATE_LIMIT_MAX_REQUESTS,
+    CHAT_RATE_LIMIT_WINDOW_MS,
+    CHAT_REDIRECT_MESSAGE,
+    MAX_MESSAGE_LENGTH,
+    MAX_OUTPUT_TOKENS,
+    MAX_TOOL_ITERATIONS,
+    MAX_TOTAL_TOOL_CALLS,
+    SYSTEM_PROMPT,
+    isRepetitionOrPaddingPrompt,
+    sanitizeConversationHistory,
+} from '@/lib/chat/prompt';
+import { getRateLimitHeaders, rateLimit } from '@/lib/api/rate-limit';
 import { timingSafeEqual } from 'node:crypto';
 
 // Lazy initialization to avoid build-time failure
@@ -17,6 +29,18 @@ function getOpenAI(): OpenAI {
     return openaiClient;
 }
 
+function createChatCompletion(
+    messages: OpenAI.Chat.ChatCompletionMessageParam[],
+    toolChoice: 'auto' | 'none' = 'auto'
+) {
+    return getOpenAI().chat.completions.create({
+        model: 'gpt-4.1-mini',
+        messages,
+        tools: openAITools,
+        tool_choice: toolChoice,
+        max_completion_tokens: MAX_OUTPUT_TOKENS,
+    });
+}
 
 export async function POST(request: NextRequest) {
     const accessSecret = process.env.AI_CHAT_ACCESS_SECRET;
@@ -37,41 +61,93 @@ export async function POST(request: NextRequest) {
     try {
         const { message, conversationHistory = [] } = await request.json();
 
-        if (!message || typeof message !== 'string') {
+        if (!message || typeof message !== 'string' || !message.trim()) {
             return NextResponse.json(
                 { error: 'Message is required' },
                 { status: 400 }
             );
         }
 
+        if (message.length > MAX_MESSAGE_LENGTH) {
+            return NextResponse.json(
+                { error: `Message must be ${MAX_MESSAGE_LENGTH} characters or fewer` },
+                { status: 400 }
+            );
+        }
+
+        const rateLimitResult = rateLimit(
+            request,
+            CHAT_RATE_LIMIT_MAX_REQUESTS,
+            CHAT_RATE_LIMIT_WINDOW_MS
+        );
+        if (!rateLimitResult.allowed) {
+            const retryAfterSeconds = Math.max(
+                1,
+                Math.ceil((rateLimitResult.resetAt - Date.now()) / 1000)
+            );
+            return NextResponse.json(
+                { error: 'Too many chat requests. Please try again later.' },
+                {
+                    status: 429,
+                    headers: {
+                        ...getRateLimitHeaders(
+                            rateLimitResult.remaining,
+                            rateLimitResult.resetAt,
+                            CHAT_RATE_LIMIT_MAX_REQUESTS
+                        ),
+                        'Retry-After': String(retryAfterSeconds),
+                    },
+                }
+            );
+        }
+
+        if (isRepetitionOrPaddingPrompt(message)) {
+            return NextResponse.json({
+                response: CHAT_REDIRECT_MESSAGE,
+            });
+        }
+
+        const sanitizedHistory = sanitizeConversationHistory(conversationHistory);
+
         // Build messages array
         const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
             { role: 'system', content: SYSTEM_PROMPT },
-            ...conversationHistory,
+            ...sanitizedHistory,
             { role: 'user', content: message },
         ];
 
         // Call OpenAI with tools
-        let response = await getOpenAI().chat.completions.create({
-            model: 'gpt-4.1-mini',
-            messages,
-            tools: openAITools,
-            tool_choice: 'auto',
-        });
+        let response = await createChatCompletion(messages, 'auto');
 
         let assistantMessage = response.choices[0].message;
         const toolCalls: { name: string; args: string; result: string }[] = [];
+        let toolIterations = 0;
 
-        // Handle tool calls (loop for multi-step reasoning)
-        while (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
-            // Add assistant message with tool calls
-            messages.push(assistantMessage);
+        // Handle tool calls (loop for multi-step reasoning, bounded by iteration & call limits)
+        while (
+            assistantMessage.tool_calls &&
+            assistantMessage.tool_calls.length > 0 &&
+            toolIterations < MAX_TOOL_ITERATIONS &&
+            toolCalls.length < MAX_TOTAL_TOOL_CALLS
+        ) {
+            const functionToolCalls = assistantMessage.tool_calls.filter(
+                (toolCall): toolCall is OpenAI.Chat.ChatCompletionMessageFunctionToolCall =>
+                    toolCall.type === 'function'
+            );
+            if (functionToolCalls.length === 0) break;
 
-            // Execute each tool call
-            for (const toolCall of assistantMessage.tool_calls) {
-                // Only handle function-type tool calls
-                if (toolCall.type !== 'function') continue;
+            toolIterations++;
+            const remainingToolBudget = MAX_TOTAL_TOOL_CALLS - toolCalls.length;
+            const allowedToolCalls = functionToolCalls.slice(0, remainingToolBudget);
 
+            // Add assistant message with only the allowed function tool calls
+            messages.push({
+                ...assistantMessage,
+                tool_calls: allowedToolCalls,
+            });
+
+            // Execute each allowed tool call
+            for (const toolCall of allowedToolCalls) {
                 const toolName = toolCall.function.name;
                 const args = JSON.parse(toolCall.function.arguments);
 
@@ -98,13 +174,15 @@ export async function POST(request: NextRequest) {
                 });
             }
 
+            const reachedToolCap =
+                toolIterations >= MAX_TOOL_ITERATIONS ||
+                toolCalls.length >= MAX_TOTAL_TOOL_CALLS;
+
             // Get next response from OpenAI
-            response = await getOpenAI().chat.completions.create({
-                model: 'gpt-4.1-mini',
+            response = await createChatCompletion(
                 messages,
-                tools: openAITools,
-                tool_choice: 'auto',
-            });
+                reachedToolCap ? 'none' : 'auto'
+            );
 
             assistantMessage = response.choices[0].message;
         }
