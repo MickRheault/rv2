@@ -92,7 +92,119 @@ export interface ShopSearchFilters {
 }
 
 // Define active business statuses that should be visible on the platform
-export const ACTIVE_BUSINESS_STATUSES = ['OPERATIONAL', 'operational', 'active', 'ACTIVE'];
+export const ACTIVE_BUSINESS_STATUSES = [
+  'OPERATIONAL',
+  'operational',
+  'Operational',
+  'active',
+  'ACTIVE',
+  'Active',
+];
+
+const ACTIVE_BUSINESS_STATUS_SET = new Set(
+  ACTIVE_BUSINESS_STATUSES.map((status) => status.toLowerCase())
+);
+
+export interface ShopBusinessStatusLike {
+  business_status_id?: number | null;
+  business_statuses?:
+    | { status_code?: string | null }
+    | Array<{ status_code?: string | null }>
+    | null;
+  business_status?: string | { status_code?: string | null } | null;
+  status_code?: string | null;
+}
+
+export function isActiveBusinessStatusCode(
+  statusCode: string | null | undefined
+): boolean {
+  if (typeof statusCode !== 'string') return false;
+  const normalized = statusCode.trim().toLowerCase();
+  return normalized.length > 0 && ACTIVE_BUSINESS_STATUS_SET.has(normalized);
+}
+
+export function extractShopBusinessStatusCode(
+  shopOrStatus: ShopBusinessStatusLike | string | null | undefined
+): string | null {
+  if (!shopOrStatus) return null;
+  if (typeof shopOrStatus === 'string') return shopOrStatus;
+
+  const target = Array.isArray(shopOrStatus) ? shopOrStatus[0] : shopOrStatus;
+  if (!target || typeof target !== 'object') return null;
+
+  if (typeof target.status_code === 'string') {
+    return target.status_code;
+  }
+
+  const statusesRel = target.business_statuses;
+  if (Array.isArray(statusesRel)) {
+    const firstCode = statusesRel[0]?.status_code;
+    if (typeof firstCode === 'string') return firstCode;
+  } else if (statusesRel && typeof statusesRel === 'object') {
+    if (typeof statusesRel.status_code === 'string') {
+      return statusesRel.status_code;
+    }
+  }
+
+  const statusProp = target.business_status;
+  if (typeof statusProp === 'string') {
+    return statusProp;
+  }
+  if (
+    statusProp &&
+    typeof statusProp === 'object' &&
+    typeof statusProp.status_code === 'string'
+  ) {
+    return statusProp.status_code;
+  }
+
+  return null;
+}
+
+export function isShopBusinessStatusActive(
+  shopOrStatus: ShopBusinessStatusLike | string | null | undefined,
+  activeStatusIds?: number[]
+): boolean {
+  if (!shopOrStatus) return false;
+
+  const statusCode = extractShopBusinessStatusCode(shopOrStatus);
+  if (statusCode !== null) {
+    if (!isActiveBusinessStatusCode(statusCode)) {
+      return false;
+    }
+    if (
+      activeStatusIds !== undefined &&
+      typeof shopOrStatus === 'object' &&
+      !Array.isArray(shopOrStatus)
+    ) {
+      if (typeof shopOrStatus.business_status_id === 'number') {
+        return (
+          activeStatusIds.length > 0 &&
+          activeStatusIds.includes(shopOrStatus.business_status_id)
+        );
+      }
+    }
+    return true;
+  }
+
+  if (
+    activeStatusIds !== undefined &&
+    typeof shopOrStatus === 'object' &&
+    !Array.isArray(shopOrStatus) &&
+    shopOrStatus.business_statuses === undefined &&
+    shopOrStatus.business_status === undefined &&
+    typeof shopOrStatus.business_status_id === 'number'
+  ) {
+    return (
+      activeStatusIds.length > 0 &&
+      activeStatusIds.includes(shopOrStatus.business_status_id)
+    );
+  }
+
+  return false;
+}
+
+export const isEligibleShopBusinessStatus = isShopBusinessStatusActive;
 
 export const REFERENCE_CACHE_TTL_MS = 24 * 60 * 60 * 1000
 
@@ -408,7 +520,7 @@ export const shopService = {
 
     // Apply active status filter - check if shop is active before returning
     const activeStatusIds = await getActiveBusinessStatusIds()
-    if (activeStatusIds.length === 0 || !(data as any)?.business_status_id || !activeStatusIds.includes((data as any).business_status_id)) {
+    if (!isShopBusinessStatusActive(data as any, activeStatusIds)) {
       throw new Error('Shop not found or not available')
     }
 
@@ -450,7 +562,7 @@ export const shopService = {
 
     // Apply active status filter - check if shop is active before returning
     const activeStatusIds = await getActiveBusinessStatusIds()
-    if (activeStatusIds.length === 0 || !(data as any)?.business_status_id || !activeStatusIds.includes((data as any).business_status_id)) {
+    if (!isShopBusinessStatusActive(data as any, activeStatusIds)) {
       throw new Error('Shop not found or not available')
     }
 
@@ -518,7 +630,7 @@ export const shopService = {
 
     // Apply active status filter - check if shop is active before returning
     const activeStatusIds = await getActiveBusinessStatusIds()
-    if (activeStatusIds.length === 0 || !(data as any)?.business_status_id || !activeStatusIds.includes((data as any).business_status_id)) {
+    if (!isShopBusinessStatusActive(data as any, activeStatusIds)) {
       throw new Error('Shop not found or not available')
     }
 
