@@ -7,11 +7,7 @@ import {
   LearnedAgentConfig,
   sanitizeLearnedConfig,
 } from '@/services/shop-agent-configs';
-import {
-  ACTIVE_BUSINESS_STATUSES,
-  isActiveBusinessStatusCode,
-  isShopBusinessStatusActive,
-} from '@/services/shops';
+import { isShopBusinessStatusActive } from '@/services/shops';
 
 export const CADENCE_DAYS: Record<number, number> = {
   1: 7,   // Tier 1: Weekly (High-priority / active inventory)
@@ -144,34 +140,9 @@ export class TaskSchedulerService {
       return [];
     }
 
-    let activeStatusIds: number[] | undefined;
-    const needsStatusIdLookup = configs.some((cfg) => {
-      const shop = Array.isArray(cfg.rental_shops) ? cfg.rental_shops[0] : (cfg.rental_shops as any);
-      return (
-        shop &&
-        typeof shop === 'object' &&
-        typeof shop.business_status_id === 'number' &&
-        shop.business_statuses === undefined &&
-        shop.business_status === undefined &&
-        shop.status_code === undefined
-      );
-    });
-
-    if (needsStatusIdLookup) {
-      const statusesTable = (supabase.from('business_statuses') as any);
-      if (statusesTable?.select) {
-        const { data: activeStatuses } = await statusesTable
-          .select('id, status_code')
-          .in('status_code', ACTIVE_BUSINESS_STATUSES);
-        activeStatusIds = (activeStatuses || [])
-          .filter((s: any) => !s.status_code || isActiveBusinessStatusCode(s.status_code))
-          .map((s: any) => s.id);
-      }
-    }
-
     // Filter by public shop business status eligibility and optional shopId before scoring/limits
     const eligibleConfigs = configs
-      .filter((config) => isShopBusinessStatusActive((config as any).rental_shops, activeStatusIds))
+      .filter((config) => isShopBusinessStatusActive((config as any).rental_shops))
       .filter((config) => (options.shopId ? config.shop_id === options.shopId : true));
 
     if (eligibleConfigs.length === 0) {

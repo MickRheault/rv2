@@ -111,8 +111,6 @@ export interface ShopBusinessStatusLike {
     | { status_code?: string | null }
     | Array<{ status_code?: string | null }>
     | null;
-  business_status?: string | { status_code?: string | null } | null;
-  status_code?: string | null;
 }
 
 export function isActiveBusinessStatusCode(
@@ -124,87 +122,70 @@ export function isActiveBusinessStatusCode(
 }
 
 export function extractShopBusinessStatusCode(
-  shopOrStatus: ShopBusinessStatusLike | string | null | undefined
+  shop:
+    | ShopBusinessStatusLike
+    | ShopBusinessStatusLike[]
+    | null
+    | undefined
 ): string | null {
-  if (!shopOrStatus) return null;
-  if (typeof shopOrStatus === 'string') return shopOrStatus;
-
-  const target = Array.isArray(shopOrStatus) ? shopOrStatus[0] : shopOrStatus;
+  const target = Array.isArray(shop) ? shop[0] : shop;
   if (!target || typeof target !== 'object') return null;
-
-  if (typeof target.status_code === 'string') {
-    return target.status_code;
-  }
 
   const statusesRel = target.business_statuses;
   if (Array.isArray(statusesRel)) {
     const firstCode = statusesRel[0]?.status_code;
-    if (typeof firstCode === 'string') return firstCode;
-  } else if (statusesRel && typeof statusesRel === 'object') {
-    if (typeof statusesRel.status_code === 'string') {
-      return statusesRel.status_code;
-    }
+    return typeof firstCode === 'string' ? firstCode : null;
   }
-
-  const statusProp = target.business_status;
-  if (typeof statusProp === 'string') {
-    return statusProp;
-  }
-  if (
-    statusProp &&
-    typeof statusProp === 'object' &&
-    typeof statusProp.status_code === 'string'
-  ) {
-    return statusProp.status_code;
+  if (statusesRel && typeof statusesRel === 'object') {
+    return typeof statusesRel.status_code === 'string'
+      ? statusesRel.status_code
+      : null;
   }
 
   return null;
 }
 
 export function isShopBusinessStatusActive(
-  shopOrStatus: ShopBusinessStatusLike | string | null | undefined,
+  shop:
+    | ShopBusinessStatusLike
+    | ShopBusinessStatusLike[]
+    | null
+    | undefined,
   activeStatusIds?: number[]
 ): boolean {
-  if (!shopOrStatus) return false;
+  const target = Array.isArray(shop) ? shop[0] : shop;
+  if (!target || typeof target !== 'object') return false;
 
-  const statusCode = extractShopBusinessStatusCode(shopOrStatus);
+  const statusCode = extractShopBusinessStatusCode(target);
   if (statusCode !== null) {
     if (!isActiveBusinessStatusCode(statusCode)) {
       return false;
     }
     if (
       activeStatusIds !== undefined &&
-      typeof shopOrStatus === 'object' &&
-      !Array.isArray(shopOrStatus)
+      typeof target.business_status_id === 'number'
     ) {
-      if (typeof shopOrStatus.business_status_id === 'number') {
-        return (
-          activeStatusIds.length > 0 &&
-          activeStatusIds.includes(shopOrStatus.business_status_id)
-        );
-      }
+      return (
+        activeStatusIds.length > 0 &&
+        activeStatusIds.includes(target.business_status_id)
+      );
     }
     return true;
   }
 
   if (
     activeStatusIds !== undefined &&
-    typeof shopOrStatus === 'object' &&
-    !Array.isArray(shopOrStatus) &&
-    shopOrStatus.business_statuses === undefined &&
-    shopOrStatus.business_status === undefined &&
-    typeof shopOrStatus.business_status_id === 'number'
+    target.business_statuses === undefined &&
+    typeof target.business_status_id === 'number'
   ) {
     return (
       activeStatusIds.length > 0 &&
-      activeStatusIds.includes(shopOrStatus.business_status_id)
+      activeStatusIds.includes(target.business_status_id)
     );
   }
 
   return false;
 }
-
-export const isEligibleShopBusinessStatus = isShopBusinessStatusActive;
 
 export const REFERENCE_CACHE_TTL_MS = 24 * 60 * 60 * 1000
 

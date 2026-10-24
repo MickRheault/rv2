@@ -21,14 +21,15 @@ Enforce a read-time shop business status eligibility filter on `GET /api/agent/t
 
 - **Shared Business Status Eligibility Helper**:
   - Expand `ACTIVE_BUSINESS_STATUSES` in the shop service module to include `'Operational'` and `'Active'` alongside `'OPERATIONAL'`, `'operational'`, `'active'`, and `'ACTIVE'`.
-  - Export shared helpers (`isActiveBusinessStatusCode`, `extractShopBusinessStatusCode`, `isShopBusinessStatusActive` / `isEligibleShopBusinessStatus`) that evaluate a status code string or a shop record (with joined `business_statuses` or `business_status_id`) case-insensitively against the active business status set (`operational` / `active`), returning `false` for `Inactive`, `Temporarily Closed`, `Permanently Closed`, missing/null statuses, or any other non-eligible status.
+  - Export shared helpers (`isActiveBusinessStatusCode`, `extractShopBusinessStatusCode`, `isShopBusinessStatusActive`) that evaluate a status code string or a shop record (with joined `business_statuses` or `business_status_id`) case-insensitively against the active business status set (`operational` / `active`), returning `false` for `Inactive`, `Temporarily Closed`, `Permanently Closed`, missing/null statuses, or any other non-eligible status.
   - Reuse `isShopBusinessStatusActive` in public shop and motorcycle read checks as well as in the task scheduler.
 - **Read-Time Eligibility Filtering in Task Scheduler**:
   - Join `business_status_id` and `business_statuses (id, status_code)` inside the `rental_shops!inner` projection when loading enabled `shop_agent_configs` in `TaskSchedulerService.getDueTasks`.
   - Filter out configs whose associated shop fails `isShopBusinessStatusActive` (and apply optional `shopId` filtering) before computing Urgency Scores, applying `minUrgency` thresholds, sorting, and slicing to `limit`.
   - Return `[]` immediately when no eligible configs remain, preserving the existing `{ success: true, count: tasks.length, tasks }` HTTP `200` response shape in `GET /api/agent/tasks`.
-- **Non-Destructive Read-Time Filter**:
+- **Non-Destructive Read-Time Filter & Domain Glossary**:
   - Do not mutate or deactivate `shop_agent_configs` rows or alter `crawl_runs` history when a shop's business status is non-eligible. Restoring a shop's status to `Operational` or `Active` makes its existing task eligible on the next read.
+  - Clarify `Shop Agent Config` in `CONTEXT.md` so agent scheduling enablement (`is_active`) and the rental shop's public business status (`Operational` or `Active`) are clearly distinguished.
 
 ## Testing Decisions
 
