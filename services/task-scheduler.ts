@@ -7,6 +7,7 @@ import {
   LearnedAgentConfig,
   sanitizeLearnedConfig,
 } from '@/services/shop-agent-configs';
+import { isShopBusinessStatusActive } from '@/services/shops';
 
 export const CADENCE_DAYS: Record<number, number> = {
   1: 7,   // Tier 1: Weekly (High-priority / active inventory)
@@ -121,7 +122,12 @@ export class TaskSchedulerService {
           provider_name,
           business_description,
           phone,
-          website
+          website,
+          business_status_id,
+          business_statuses (
+            id,
+            status_code
+          )
         )
       `)
       .eq('is_active', true);
@@ -131,6 +137,15 @@ export class TaskSchedulerService {
     }
 
     if (!configs || configs.length === 0) {
+      return [];
+    }
+
+    // Filter by public shop business status eligibility and optional shopId before scoring/limits
+    const eligibleConfigs = configs
+      .filter((config) => isShopBusinessStatusActive((config as any).rental_shops))
+      .filter((config) => (options.shopId ? config.shop_id === options.shopId : true));
+
+    if (eligibleConfigs.length === 0) {
       return [];
     }
 
@@ -148,8 +163,7 @@ export class TaskSchedulerService {
 
     // 3. Compute Urgency Score and sort descending
     const now = new Date();
-    const scoredConfigs = configs
-      .filter((config) => (options.shopId ? config.shop_id === options.shopId : true))
+    const scoredConfigs = eligibleConfigs
       .map((config) => {
         const score = calculateUrgencyScore(config.last_run_at, config.created_at, config.tier, now);
         return {

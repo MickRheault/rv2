@@ -92,7 +92,100 @@ export interface ShopSearchFilters {
 }
 
 // Define active business statuses that should be visible on the platform
-export const ACTIVE_BUSINESS_STATUSES = ['OPERATIONAL', 'operational', 'active', 'ACTIVE'];
+export const ACTIVE_BUSINESS_STATUSES = [
+  'OPERATIONAL',
+  'operational',
+  'Operational',
+  'active',
+  'ACTIVE',
+  'Active',
+];
+
+const ACTIVE_BUSINESS_STATUS_SET = new Set(
+  ACTIVE_BUSINESS_STATUSES.map((status) => status.toLowerCase())
+);
+
+export interface ShopBusinessStatusLike {
+  business_status_id?: number | null;
+  business_statuses?:
+    | { status_code?: string | null }
+    | Array<{ status_code?: string | null }>
+    | null;
+}
+
+export function isActiveBusinessStatusCode(
+  statusCode: string | null | undefined
+): boolean {
+  if (typeof statusCode !== 'string') return false;
+  const normalized = statusCode.trim().toLowerCase();
+  return normalized.length > 0 && ACTIVE_BUSINESS_STATUS_SET.has(normalized);
+}
+
+export function extractShopBusinessStatusCode(
+  shop:
+    | ShopBusinessStatusLike
+    | ShopBusinessStatusLike[]
+    | null
+    | undefined
+): string | null {
+  const target = Array.isArray(shop) ? shop[0] : shop;
+  if (!target || typeof target !== 'object') return null;
+
+  const statusesRel = target.business_statuses;
+  if (Array.isArray(statusesRel)) {
+    const firstCode = statusesRel[0]?.status_code;
+    return typeof firstCode === 'string' ? firstCode : null;
+  }
+  if (statusesRel && typeof statusesRel === 'object') {
+    return typeof statusesRel.status_code === 'string'
+      ? statusesRel.status_code
+      : null;
+  }
+
+  return null;
+}
+
+export function isShopBusinessStatusActive(
+  shop:
+    | ShopBusinessStatusLike
+    | ShopBusinessStatusLike[]
+    | null
+    | undefined,
+  activeStatusIds?: number[]
+): boolean {
+  const target = Array.isArray(shop) ? shop[0] : shop;
+  if (!target || typeof target !== 'object') return false;
+
+  const statusCode = extractShopBusinessStatusCode(target);
+  if (statusCode !== null) {
+    if (!isActiveBusinessStatusCode(statusCode)) {
+      return false;
+    }
+    if (
+      activeStatusIds !== undefined &&
+      typeof target.business_status_id === 'number'
+    ) {
+      return (
+        activeStatusIds.length > 0 &&
+        activeStatusIds.includes(target.business_status_id)
+      );
+    }
+    return true;
+  }
+
+  if (
+    activeStatusIds !== undefined &&
+    target.business_statuses === undefined &&
+    typeof target.business_status_id === 'number'
+  ) {
+    return (
+      activeStatusIds.length > 0 &&
+      activeStatusIds.includes(target.business_status_id)
+    );
+  }
+
+  return false;
+}
 
 export const REFERENCE_CACHE_TTL_MS = 24 * 60 * 60 * 1000
 
@@ -408,7 +501,7 @@ export const shopService = {
 
     // Apply active status filter - check if shop is active before returning
     const activeStatusIds = await getActiveBusinessStatusIds()
-    if (activeStatusIds.length === 0 || !(data as any)?.business_status_id || !activeStatusIds.includes((data as any).business_status_id)) {
+    if (!isShopBusinessStatusActive(data as any, activeStatusIds)) {
       throw new Error('Shop not found or not available')
     }
 
@@ -450,7 +543,7 @@ export const shopService = {
 
     // Apply active status filter - check if shop is active before returning
     const activeStatusIds = await getActiveBusinessStatusIds()
-    if (activeStatusIds.length === 0 || !(data as any)?.business_status_id || !activeStatusIds.includes((data as any).business_status_id)) {
+    if (!isShopBusinessStatusActive(data as any, activeStatusIds)) {
       throw new Error('Shop not found or not available')
     }
 
@@ -518,7 +611,7 @@ export const shopService = {
 
     // Apply active status filter - check if shop is active before returning
     const activeStatusIds = await getActiveBusinessStatusIds()
-    if (activeStatusIds.length === 0 || !(data as any)?.business_status_id || !activeStatusIds.includes((data as any).business_status_id)) {
+    if (!isShopBusinessStatusActive(data as any, activeStatusIds)) {
       throw new Error('Shop not found or not available')
     }
 

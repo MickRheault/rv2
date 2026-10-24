@@ -6,6 +6,11 @@ import { NextRequest } from 'next/server';
 import { GET } from '@/app/api/agent/tasks/route';
 import { POST } from '@/app/api/agent/tasks/[id]/status/route';
 import { TaskSchedulerService } from '@/services/task-scheduler';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
+
+jest.mock('@/lib/supabase/admin', () => ({
+  getSupabaseAdmin: jest.fn(),
+}));
 
 jest.mock('@/services/task-scheduler', () => ({
   TaskSchedulerService: {
@@ -99,6 +104,236 @@ describe('Agent Tasks API Endpoints', () => {
       expect(TaskSchedulerService.getDueTasks).toHaveBeenCalledWith({
         limit: 1,
         shopId: 'shop-42',
+      });
+    });
+
+    it('returns HTTP 200 with count: 0 and tasks: [] for a direct shopId request on an excluded Inactive shop', async () => {
+      const inactiveShopId = 'cca7fb21-743c-4ba8-beaa-be07ae92ef07';
+      (TaskSchedulerService.getDueTasks as jest.Mock).mockResolvedValue([]);
+
+      const request = new NextRequest(
+        `http://localhost:3000/api/agent/tasks?shopId=${inactiveShopId}`,
+        {
+          headers: {
+            authorization: 'Bearer valid-agent-key-secret',
+          },
+        }
+      );
+
+      const response = await GET(request);
+      expect(response.status).toBe(200);
+      const json = await response.json();
+      expect(json).toEqual({
+        success: true,
+        count: 0,
+        tasks: [],
+      });
+      expect(TaskSchedulerService.getDueTasks).toHaveBeenCalledWith({
+        limit: 10,
+        shopId: inactiveShopId,
+      });
+    });
+
+    it('filters out non-eligible shop statuses end-to-end across queue selection and explicit shopId requests, and restores eligibility when status returns to Operational/Active', async () => {
+      const { TaskSchedulerService: ActualScheduler } = jest.requireActual('@/services/task-scheduler');
+      (TaskSchedulerService.getDueTasks as jest.Mock).mockImplementation((opts) =>
+        ActualScheduler.getDueTasks(opts)
+      );
+
+      const mrScooterId = 'cca7fb21-743c-4ba8-beaa-be07ae92ef07';
+      let mrScooterStatus = 'Inactive';
+
+      (getSupabaseAdmin as jest.Mock).mockImplementation(() => ({
+        from: jest.fn((table: string) => {
+          if (table === 'shop_agent_configs') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: 'task-mr-scooter',
+                      shop_id: mrScooterId,
+                      tier: 1,
+                      source_url: 'https://mrscooterbangkok.com/',
+                      extraction_hints: 'Bangkok rates',
+                      is_active: true,
+                      last_run_at: '2025-01-01T00:00:00Z',
+                      created_at: '2025-01-01T00:00:00Z',
+                      consecutive_errors: 0,
+                      rental_shops: {
+                        id: mrScooterId,
+                        provider_name: 'Mr. Scooter Rentals Bangkok',
+                        business_description: null,
+                        phone: null,
+                        website: 'https://mrscooterbangkok.com/',
+                        business_status_id: mrScooterStatus === 'Inactive' ? 2 : 1,
+                        business_statuses: {
+                          id: mrScooterStatus === 'Inactive' ? 2 : 1,
+                          status_code: mrScooterStatus,
+                        },
+                      },
+                    },
+                    {
+                      id: 'task-temp-closed',
+                      shop_id: 'shop-temp',
+                      tier: 1,
+                      source_url: 'https://temp.example.com/',
+                      extraction_hints: null,
+                      is_active: true,
+                      last_run_at: '2025-01-01T00:00:00Z',
+                      created_at: '2025-01-01T00:00:00Z',
+                      consecutive_errors: 0,
+                      rental_shops: {
+                        id: 'shop-temp',
+                        provider_name: 'Temp Closed Shop',
+                        business_description: null,
+                        phone: null,
+                        website: 'https://temp.example.com/',
+                        business_status_id: 3,
+                        business_statuses: { id: 3, status_code: 'Temporarily Closed' },
+                      },
+                    },
+                    {
+                      id: 'task-perm-closed',
+                      shop_id: 'shop-perm',
+                      tier: 1,
+                      source_url: 'https://perm.example.com/',
+                      extraction_hints: null,
+                      is_active: true,
+                      last_run_at: '2025-01-01T00:00:00Z',
+                      created_at: '2025-01-01T00:00:00Z',
+                      consecutive_errors: 0,
+                      rental_shops: {
+                        id: 'shop-perm',
+                        provider_name: 'Perm Closed Shop',
+                        business_description: null,
+                        phone: null,
+                        website: 'https://perm.example.com/',
+                        business_status_id: 4,
+                        business_statuses: { id: 4, status_code: 'Permanently Closed' },
+                      },
+                    },
+                    {
+                      id: 'task-missing',
+                      shop_id: 'shop-missing',
+                      tier: 1,
+                      source_url: 'https://missing.example.com/',
+                      extraction_hints: null,
+                      is_active: true,
+                      last_run_at: '2025-01-01T00:00:00Z',
+                      created_at: '2025-01-01T00:00:00Z',
+                      consecutive_errors: 0,
+                      rental_shops: {
+                        id: 'shop-missing',
+                        provider_name: 'Missing Status Shop',
+                        business_description: null,
+                        phone: null,
+                        website: 'https://missing.example.com/',
+                        business_status_id: null,
+                        business_statuses: null,
+                      },
+                    },
+                    {
+                      id: 'task-active-1',
+                      shop_id: 'shop-active-1',
+                      tier: 2,
+                      source_url: 'https://active1.example.com/',
+                      extraction_hints: null,
+                      is_active: true,
+                      last_run_at: '2026-08-01T00:00:00Z',
+                      created_at: '2026-01-01T00:00:00Z',
+                      consecutive_errors: 0,
+                      rental_shops: {
+                        id: 'shop-active-1',
+                        provider_name: 'Active Shop 1',
+                        business_description: null,
+                        phone: null,
+                        website: 'https://active1.example.com/',
+                        business_status_id: 1,
+                        business_statuses: { id: 1, status_code: 'OPERATIONAL' },
+                      },
+                    },
+                  ],
+                  error: null,
+                }),
+              }),
+            };
+          }
+          if (table === 'brands') {
+            return {
+              select: jest.fn().mockReturnValue({
+                order: jest.fn().mockResolvedValue({ data: [{ name: 'Honda' }], error: null }),
+              }),
+            };
+          }
+          if (table === 'motorcycle_rentals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                in: jest.fn().mockReturnValue({
+                  or: jest.fn().mockResolvedValue({ data: [], error: null }),
+                }),
+              }),
+            };
+          }
+          if (table === 'condition_types') {
+            return {
+              select: jest.fn().mockReturnValue({
+                order: jest.fn().mockResolvedValue({ data: [], error: null }),
+              }),
+            };
+          }
+          if (table === 'rental_shop_inclusions' || table === 'rental_shop_conditions') {
+            return {
+              select: jest.fn().mockReturnValue({
+                in: jest.fn().mockResolvedValue({ data: [], error: null }),
+              }),
+            };
+          }
+          return {};
+        }),
+      }));
+
+      // 1. Direct shopId request for Mr. Scooter Rentals Bangkok while Inactive -> 200, count: 0, tasks: []
+      const directInactiveReq = new NextRequest(
+        `http://localhost:3000/api/agent/tasks?shopId=${mrScooterId}`,
+        { headers: { authorization: 'Bearer valid-agent-key-secret' } }
+      );
+      const directInactiveRes = await GET(directInactiveReq);
+      expect(directInactiveRes.status).toBe(200);
+      expect(await directInactiveRes.json()).toEqual({
+        success: true,
+        count: 0,
+        tasks: [],
+      });
+
+      // 2. Normal queue request with limit=1 -> excluded shops do not consume limit or inflate count
+      const queueReq = new NextRequest('http://localhost:3000/api/agent/tasks?limit=1', {
+        headers: { authorization: 'Bearer valid-agent-key-secret' },
+      });
+      const queueRes = await GET(queueReq);
+      expect(queueRes.status).toBe(200);
+      const queueBody = await queueRes.json();
+      expect(queueBody.success).toBe(true);
+      expect(queueBody.count).toBe(1);
+      expect(queueBody.tasks).toHaveLength(1);
+      expect(queueBody.tasks[0].shopId).toBe('shop-active-1');
+
+      // 3. Restore Mr. Scooter Rentals Bangkok to Active -> task is eligible again without recreating config
+      mrScooterStatus = 'Active';
+      const directRestoredReq = new NextRequest(
+        `http://localhost:3000/api/agent/tasks?shopId=${mrScooterId}`,
+        { headers: { authorization: 'Bearer valid-agent-key-secret' } }
+      );
+      const directRestoredRes = await GET(directRestoredReq);
+      expect(directRestoredRes.status).toBe(200);
+      const directRestoredBody = await directRestoredRes.json();
+      expect(directRestoredBody.success).toBe(true);
+      expect(directRestoredBody.count).toBe(1);
+      expect(directRestoredBody.tasks[0]).toMatchObject({
+        taskId: 'task-mr-scooter',
+        shopId: mrScooterId,
+        providerName: 'Mr. Scooter Rentals Bangkok',
+        extractionHints: 'Bangkok rates',
       });
     });
   });

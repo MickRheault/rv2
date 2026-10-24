@@ -10,6 +10,7 @@ import {
   createTtlListCache,
   filterAvailableMotorcycles,
   getActiveBusinessStatusIds,
+  isShopBusinessStatusActive,
 } from './shops'
 
 const typedSupabase = supabase as unknown as SupabaseClient<Database>
@@ -657,7 +658,7 @@ export const motorcycleService = {
 
     // Check if motorcycle's shop is active
     const activeStatusIds = await getActiveBusinessStatusIds()
-    if (activeStatusIds.length === 0 || !(data as any)?.rental_shops?.business_status_id || !activeStatusIds.includes((data as any).rental_shops.business_status_id)) {
+    if (!isShopBusinessStatusActive((data as any)?.rental_shops, activeStatusIds)) {
       throw new Error('Motorcycle not found or not available')
     }
 

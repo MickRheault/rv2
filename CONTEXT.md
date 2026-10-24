@@ -13,7 +13,7 @@ An explicit proposed action (`add`, `update`, `delist`, or `unchanged`) submitte
 _Avoid_: Heuristic diff item, patch row, mutation entry
 
 **Shop Agent Config**:
-Per-shop configuration defining target source URL, crawl cadence tier (Tier 1 = weekly, Tier 2 = monthly, Tier 3 = bi-monthly), extraction hints, and active status for automated ingestion agents.
+Per-shop configuration defining target source URL, crawl cadence tier (Tier 1 = weekly, Tier 2 = monthly, Tier 3 = bi-monthly), extraction hints, and agent scheduling enablement for automated ingestion agents. A shop's task is eligible to be scheduled only when its Shop Agent Config is enabled and the rental shop itself has a publicly visible business status (`Operational` or `Active`).
 _Avoid_: Crawler config, scraper settings
 
 **Urgency Score**:
