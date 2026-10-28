@@ -29,6 +29,9 @@ export async function GET(
       ...data,
     });
   } catch (error: any) {
+    if (error?.name === 'ProposalItemValidationError') {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     console.error(`Error fetching proposal ${id}:`, error);
     return NextResponse.json(
       { error: error.message || 'Failed to fetch proposal details' },

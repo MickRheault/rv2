@@ -5,6 +5,8 @@
 import {
   validateGeodataImmutability,
   GeodataImmutabilityError,
+  ProposalItemValidationError,
+  StaleCategoryStateError,
   ChangeProposalService,
 } from '@/services/change-proposals';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
@@ -309,6 +311,14 @@ describe('Change Proposal Application & Geodata Protection', () => {
 
       const mockSupabase = {
         from: jest.fn((table: string) => {
+          if (table === 'categories') {
+            return {
+              select: jest.fn().mockResolvedValue({
+                data: [{ id: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737', name: 'Scooter' }],
+                error: null,
+              }),
+            };
+          }
           if (table === 'change_proposals') {
             return {
               select: jest.fn().mockReturnValue({
@@ -373,6 +383,14 @@ describe('Change Proposal Application & Geodata Protection', () => {
 
       const mockSupabase = {
         from: jest.fn((table: string) => {
+          if (table === 'categories') {
+            return {
+              select: jest.fn().mockResolvedValue({
+                data: [{ id: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737', name: 'Scooter' }],
+                error: null,
+              }),
+            };
+          }
           if (table === 'change_proposals') {
             return {
               insert: insertProposalMock,
@@ -381,6 +399,14 @@ describe('Change Proposal Application & Geodata Protection', () => {
           if (table === 'change_proposal_items') {
             return {
               insert: insertItemsMock,
+            };
+          }
+          if (table === 'categories') {
+            return {
+              select: jest.fn().mockResolvedValue({
+                data: [{ id: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737', name: 'Scooter' }],
+                error: null,
+              }),
             };
           }
           return {};
@@ -407,7 +433,11 @@ describe('Change Proposal Application & Geodata Protection', () => {
             action: 'add',
             brandName: 'Honda',
             modelName: 'Forza 350',
-            proposedData: { year: 2024, rates: [{ minDays: 1, maxDays: 6, ratePerDay: 700 }] },
+            proposedData: {
+              categoryId: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737',
+              year: 2024,
+              rates: [{ minDays: 1, maxDays: 6, ratePerDay: 700 }],
+            },
           },
         ],
       });
@@ -446,6 +476,14 @@ describe('Change Proposal Application & Geodata Protection', () => {
 
       const mockSupabase = {
         from: jest.fn((table: string) => {
+          if (table === 'categories') {
+            return {
+              select: jest.fn().mockResolvedValue({
+                data: [{ id: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737', name: 'Scooter' }],
+                error: null,
+              }),
+            };
+          }
           if (table === 'change_proposals') {
             return {
               insert: jest.fn((payload) => {
@@ -575,6 +613,14 @@ describe('Change Proposal Application & Geodata Protection', () => {
 
       const mockSupabase = {
         from: jest.fn((table: string) => {
+          if (table === 'categories') {
+            return {
+              select: jest.fn().mockResolvedValue({
+                data: [{ id: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737', name: 'Scooter' }],
+                error: null,
+              }),
+            };
+          }
           if (table === 'change_proposals') {
             return {
               select: jest.fn().mockReturnValue({
@@ -632,6 +678,7 @@ describe('Change Proposal Application & Geodata Protection', () => {
           proposed_data: {
             brand: 'Honda',
             modelName: 'ADV 160',
+            categoryId: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737',
             engineCapacity: 157,
             modelYear: 2024,
             rates: [
@@ -651,6 +698,14 @@ describe('Change Proposal Application & Geodata Protection', () => {
 
       const mockSupabase = {
         from: jest.fn((table: string) => {
+          if (table === 'categories') {
+            return {
+              select: jest.fn().mockResolvedValue({
+                data: [{ id: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737', name: 'Scooter' }],
+                error: null,
+              }),
+            };
+          }
           if (table === 'change_proposals') {
             return {
               select: jest.fn().mockReturnValue({
@@ -1041,6 +1096,14 @@ describe('Change Proposal Application & Geodata Protection', () => {
 
       const mockSupabase = {
         from: jest.fn((table: string) => {
+          if (table === 'categories') {
+            return {
+              select: jest.fn().mockResolvedValue({
+                data: [{ id: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737', name: 'Scooter' }],
+                error: null,
+              }),
+            };
+          }
           if (table === 'change_proposals') {
             return {
               insert: jest.fn((payload) => ({
@@ -1072,6 +1135,14 @@ describe('Change Proposal Application & Geodata Protection', () => {
               }),
             };
           }
+          if (table === 'categories') {
+            return {
+              select: jest.fn().mockResolvedValue({
+                data: [{ id: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737', name: 'Scooter' }],
+                error: null,
+              }),
+            };
+          }
           return {};
         }),
       };
@@ -1089,7 +1160,10 @@ describe('Change Proposal Application & Geodata Protection', () => {
               action: 'add',
               brandName: 'Honda',
               modelName: 'PCX',
-              proposedData: { rates: [{ minDays: 1, ratePerDay: 15, currency: 'USD' }] },
+              proposedData: {
+                categoryId: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737',
+                rates: [{ minDays: 1, ratePerDay: 15, currency: 'USD' }],
+              },
             },
           ],
         })
@@ -1123,6 +1197,14 @@ describe('Change Proposal Application & Geodata Protection', () => {
 
       const mockSupabase = {
         from: jest.fn((table: string) => {
+          if (table === 'categories') {
+            return {
+              select: jest.fn().mockResolvedValue({
+                data: [{ id: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737', name: 'Scooter' }],
+                error: null,
+              }),
+            };
+          }
           if (table === 'change_proposals') {
             return {
               insert: jest.fn((payload) => ({
@@ -1216,6 +1298,14 @@ describe('Change Proposal Application & Geodata Protection', () => {
 
       const mockSupabase = {
         from: jest.fn((table: string) => {
+          if (table === 'categories') {
+            return {
+              select: jest.fn().mockResolvedValue({
+                data: [{ id: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737', name: 'Scooter' }],
+                error: null,
+              }),
+            };
+          }
           if (table === 'change_proposals') {
             return {
               select: jest.fn().mockReturnValue({
@@ -1334,6 +1424,14 @@ describe('Change Proposal Application & Geodata Protection', () => {
 
       const mockSupabase = {
         from: jest.fn((table: string) => {
+          if (table === 'categories') {
+            return {
+              select: jest.fn().mockResolvedValue({
+                data: [{ id: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737', name: 'Scooter' }],
+                error: null,
+              }),
+            };
+          }
           if (table === 'change_proposals') {
             return {
               select: jest.fn().mockReturnValue({
@@ -1402,6 +1500,7 @@ describe('Change Proposal Application & Geodata Protection', () => {
           proposed_data: {
             brand: 'Honda',
             modelName: 'Click 125',
+            categoryId: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737',
             year: 2015,
             year_to: 2020,
             engineCapacityCc: 125,
@@ -1433,6 +1532,14 @@ describe('Change Proposal Application & Geodata Protection', () => {
 
       const mockApplySupabase = {
         from: jest.fn((table: string) => {
+          if (table === 'categories') {
+            return {
+              select: jest.fn().mockResolvedValue({
+                data: [{ id: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737', name: 'Scooter' }],
+                error: null,
+              }),
+            };
+          }
           if (table === 'change_proposals') {
             return {
               select: jest.fn().mockReturnValue({
@@ -1562,6 +1669,14 @@ describe('Change Proposal Application & Geodata Protection', () => {
 
       const mockSupabase = {
         from: jest.fn((table: string) => {
+          if (table === 'categories') {
+            return {
+              select: jest.fn().mockResolvedValue({
+                data: [{ id: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737', name: 'Scooter' }],
+                error: null,
+              }),
+            };
+          }
           if (table === 'change_proposals') {
             return {
               select: jest.fn().mockReturnValue({
@@ -1725,6 +1840,14 @@ describe('Change Proposal Application & Geodata Protection', () => {
 
       const mockSupabase = {
         from: jest.fn((table: string) => {
+          if (table === 'categories') {
+            return {
+              select: jest.fn().mockResolvedValue({
+                data: [{ id: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737', name: 'Scooter' }],
+                error: null,
+              }),
+            };
+          }
           if (table === 'change_proposals') {
             return {
               select: jest.fn().mockReturnValue({
@@ -1811,6 +1934,14 @@ describe('Change Proposal Application & Geodata Protection', () => {
 
       const mockSupabase = {
         from: jest.fn((table: string) => {
+          if (table === 'categories') {
+            return {
+              select: jest.fn().mockResolvedValue({
+                data: [{ id: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737', name: 'Scooter' }],
+                error: null,
+              }),
+            };
+          }
           if (table === 'change_proposals') {
             return {
               select: jest.fn().mockReturnValue({
@@ -1955,6 +2086,7 @@ describe('Change Proposal Application & Geodata Protection', () => {
           proposed_data: {
             brand: 'Honda',
             modelName: 'Click 160',
+            categoryId: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737',
             year: 2024,
             rates: [{ minDays: 1, ratePerDay: 350, currency: 'THB' }],
           },
@@ -2269,6 +2401,7 @@ describe('Change Proposal Application & Geodata Protection', () => {
           proposed_data: {
             brand: 'Honda',
             modelName: 'Lead 125',
+            categoryId: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737',
             year: 2024,
             rates: [{ minDays: 1, ratePerDay: 300, currency: 'THB' }],
             conditions: [{ condition_type_id: SECURITY_DEPOSIT_ID, notes: 'THB 3,000' }],
@@ -2323,6 +2456,14 @@ describe('Change Proposal Application & Geodata Protection', () => {
 
       const mockSupabase = {
         from: jest.fn((table: string) => {
+          if (table === 'categories') {
+            return {
+              select: jest.fn().mockResolvedValue({
+                data: [{ id: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737', name: 'Scooter' }],
+                error: null,
+              }),
+            };
+          }
           if (table === 'change_proposals') {
             return {
               select: jest.fn().mockReturnValue({
@@ -2350,6 +2491,14 @@ describe('Change Proposal Application & Geodata Protection', () => {
             return {
               select: jest.fn().mockResolvedValue({
                 data: [{ id: SECURITY_DEPOSIT_ID, name: 'Security Deposit' }],
+                error: null,
+              }),
+            };
+          }
+          if (table === 'categories') {
+            return {
+              select: jest.fn().mockResolvedValue({
+                data: [{ id: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737', name: 'Scooter' }],
                 error: null,
               }),
             };
@@ -2652,6 +2801,7 @@ describe('Change Proposal Application & Geodata Protection', () => {
                       proposed_data: {
                         brand: 'Honda',
                         modelName: 'Lead 125',
+                        categoryId: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737',
                         year: 2024,
                         rates: [{ minDays: 1, ratePerDay: 300, currency: 'THB' }],
                         conditions: [{ condition_type_id: SECURITY_DEPOSIT_ID, notes: 'THB 3,000' }],
@@ -2664,10 +2814,26 @@ describe('Change Proposal Application & Geodata Protection', () => {
               }),
             };
           }
+          if (table === 'categories') {
+            return {
+              select: jest.fn().mockResolvedValue({
+                data: [{ id: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737', name: 'Scooter' }],
+                error: null,
+              }),
+            };
+          }
           if (table === 'condition_types') {
             return {
               select: jest.fn().mockResolvedValue({
                 data: [{ id: SECURITY_DEPOSIT_ID, name: 'Security Deposit' }],
+                error: null,
+              }),
+            };
+          }
+          if (table === 'categories') {
+            return {
+              select: jest.fn().mockResolvedValue({
+                data: [{ id: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737', name: 'Scooter' }],
                 error: null,
               }),
             };
@@ -2838,6 +3004,14 @@ describe('Change Proposal Application & Geodata Protection', () => {
 
       const mockSupabase = {
         from: jest.fn((table: string) => {
+          if (table === 'categories') {
+            return {
+              select: jest.fn().mockResolvedValue({
+                data: [{ id: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737', name: 'Scooter' }],
+                error: null,
+              }),
+            };
+          }
           if (table === 'change_proposals') {
             return {
               select: jest.fn().mockReturnValue({
@@ -2872,6 +3046,14 @@ describe('Change Proposal Application & Geodata Protection', () => {
             return {
               select: jest.fn().mockResolvedValue({
                 data: [{ id: SECURITY_DEPOSIT_ID, name: 'Security Deposit' }],
+                error: null,
+              }),
+            };
+          }
+          if (table === 'categories') {
+            return {
+              select: jest.fn().mockResolvedValue({
+                data: [{ id: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737', name: 'Scooter' }],
                 error: null,
               }),
             };
@@ -3288,6 +3470,14 @@ describe('Change Proposal Application & Geodata Protection', () => {
     it('attaches extraction_hints from shop_agent_configs for the proposal shop_id', async () => {
       const mockSupabase = {
         from: jest.fn((table: string) => {
+          if (table === 'categories') {
+            return {
+              select: jest.fn().mockResolvedValue({
+                data: [{ id: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737', name: 'Scooter' }],
+                error: null,
+              }),
+            };
+          }
           if (table === 'change_proposals') {
             return {
               select: jest.fn().mockReturnValue({
@@ -3356,6 +3546,14 @@ describe('Change Proposal Application & Geodata Protection', () => {
     it('falls back to raw_snapshot extractionHints or null when shop_agent_configs has no hints', async () => {
       const mockSupabase = {
         from: jest.fn((table: string) => {
+          if (table === 'categories') {
+            return {
+              select: jest.fn().mockResolvedValue({
+                data: [{ id: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737', name: 'Scooter' }],
+                error: null,
+              }),
+            };
+          }
           if (table === 'change_proposals') {
             return {
               select: jest.fn().mockReturnValue({
@@ -3413,6 +3611,1191 @@ describe('Change Proposal Application & Geodata Protection', () => {
       const result = await ChangeProposalService.getProposalById('prop-hints-2');
 
       expect(result.proposal.extraction_hints).toBe('Snapshot fallback hint');
+    });
+  });
+
+  describe('Motorcycle Categories in Change Proposals (#197)', () => {
+    const PATOY_SHOP_ID = '7ae96506-52b3-4211-8032-672fa6122da6';
+    const SCOOTER_CATEGORY_ID = '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737';
+    const ADVENTURE_CATEGORY_ID = 'c375e3d9-e4df-4e09-8688-e7b26e78861c';
+    const SECURITY_DEPOSIT_ID = '9526b7ae-8c84-45a2-a8ac-c4ecbeea600b';
+
+    it('AT1: stages, reads back, and applies PATOY Honda Forza 350 addition with Scooter categoryId and exact-duration rates', async () => {
+      const stagedProposals: any[] = [];
+      const stagedItems: any[] = [];
+      const insertedMotorcycles: any[] = [];
+      const insertedRateTiers: any[] = [];
+
+      const mockSupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'categories') {
+            return {
+              select: jest.fn(() => ({
+                in: jest.fn((_col: string, ids: string[]) =>
+                  Promise.resolve({
+                    data: [
+                      { id: SCOOTER_CATEGORY_ID, name: 'Scooter' },
+                      { id: ADVENTURE_CATEGORY_ID, name: 'Adventure' },
+                    ].filter((c) => ids.includes(c.id)),
+                    error: null,
+                  })
+                ),
+              })),
+            };
+          }
+          if (table === 'change_proposals') {
+            return {
+              insert: jest.fn((payload: any) => {
+                const record = { id: 'prop-patoy-forza-350', ...payload };
+                stagedProposals.push(record);
+                return {
+                  select: jest.fn().mockReturnValue({
+                    single: jest.fn().mockResolvedValue({ data: record, error: null }),
+                  }),
+                };
+              }),
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockImplementation(async () => ({
+                    data: stagedProposals[0],
+                    error: null,
+                  })),
+                }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              insert: jest.fn((rows: any[]) => {
+                rows.forEach((r, i) =>
+                  stagedItems.push({
+                    id: `patoy-item-${i + 1}`,
+                    ...r,
+                  })
+                );
+                return Promise.resolve({ error: null });
+              }),
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn(() => ({
+                  order: jest.fn().mockImplementation(async () => ({
+                    data: [...stagedItems],
+                    error: null,
+                  })),
+                  then: (resolve: any) => resolve({ data: [...stagedItems], error: null }),
+                })),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+                in: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'brands') {
+            return {
+              select: jest.fn().mockReturnValue({
+                ilike: jest.fn().mockReturnValue({
+                  maybeSingle: jest.fn().mockResolvedValue({
+                    data: { id: 'brand-honda-uuid' },
+                    error: null,
+                  }),
+                }),
+              }),
+            };
+          }
+          if (table === 'motorcycle_rentals') {
+            return {
+              insert: jest.fn((payload: any) => {
+                insertedMotorcycles.push(payload);
+                return {
+                  select: jest.fn().mockReturnValue({
+                    single: jest.fn().mockResolvedValue({
+                      data: { id: 'bike-patoy-forza-350' },
+                      error: null,
+                    }),
+                  }),
+                };
+              }),
+            };
+          }
+          if (table === 'rental_rate_tiers') {
+            return {
+              insert: jest.fn((rows: any[]) => {
+                insertedRateTiers.push(...rows);
+                return Promise.resolve({ error: null });
+              }),
+            };
+          }
+          if (table === 'shop_agent_configs') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+                }),
+              }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      // 1. Stage the PATOY Honda Forza 350 addition
+      const stageResult = await ChangeProposalService.createProposalFromItems({
+        shopId: PATOY_SHOP_ID,
+        sourceUrl: 'https://www.motorbikerentbangkok.com/product/honda-forza-350/',
+        items: [
+          {
+            entityType: 'motorcycle',
+            action: 'add',
+            entityId: null,
+            brandName: 'Honda',
+            modelName: 'Forza 350',
+            originalData: null,
+            proposedData: {
+              brand: 'Honda',
+              model: 'Forza 350',
+              sourceUrl: 'https://www.motorbikerentbangkok.com/product/honda-forza-350/',
+              categoryId: SCOOTER_CATEGORY_ID,
+              currency: 'THB',
+              rates: [
+                { minDays: 1, maxDays: 1, ratePerDay: 1200, currency: 'THB' },
+                { minDays: 7, maxDays: 7, ratePerDay: 714.29, currency: 'THB' },
+                { minDays: 30, maxDays: 30, ratePerDay: 466.67, currency: 'THB' },
+              ],
+            },
+          },
+        ],
+      });
+
+      expect(stageResult.proposal.id).toBe('prop-patoy-forza-350');
+      expect(stagedItems).toHaveLength(1);
+      expect(stagedItems[0].proposed_data).toMatchObject({
+        categoryId: SCOOTER_CATEGORY_ID,
+        categoryName: 'Scooter',
+      });
+
+      // 2. Detail read retains categoryId and enriches categoryName
+      const detail = await ChangeProposalService.getProposalById('prop-patoy-forza-350');
+      expect(detail.items[0].proposed_data).toMatchObject({
+        categoryId: SCOOTER_CATEGORY_ID,
+        categoryName: 'Scooter',
+      });
+
+      // 3. Apply persists category_id and exact-duration rate tiers
+      const applyResult = await ChangeProposalService.apply('prop-patoy-forza-350', [
+        'patoy-item-1',
+      ]);
+      expect(applyResult.success).toBe(true);
+      expect(insertedMotorcycles).toHaveLength(1);
+      expect(insertedMotorcycles[0]).toEqual(
+        expect.objectContaining({
+          shop_id: PATOY_SHOP_ID,
+          brand_id: 'brand-honda-uuid',
+          model: 'Forza 350',
+          category_id: SCOOTER_CATEGORY_ID,
+          rental_rate_per_day: 1200,
+          rental_rate_currency: 'THB',
+          availability_status: 'available',
+        })
+      );
+      expect(insertedRateTiers).toEqual([
+        {
+          motorcycle_id: 'bike-patoy-forza-350',
+          min_days: 1,
+          max_days: 1,
+          rate_per_day: 1200,
+          currency: 'THB',
+        },
+        {
+          motorcycle_id: 'bike-patoy-forza-350',
+          min_days: 7,
+          max_days: 7,
+          rate_per_day: 714.29,
+          currency: 'THB',
+        },
+        {
+          motorcycle_id: 'bike-patoy-forza-350',
+          min_days: 30,
+          max_days: 30,
+          rate_per_day: 466.67,
+          currency: 'THB',
+        },
+      ]);
+    });
+
+    it('AT2 & AT3: applies category-only update in place without touching rates/conditions, ignores diffSummary category override, and preserves category when omitted', async () => {
+      const updatedMotorcycles: Array<{ id: string; payload: any }> = [];
+      let rateTierMutations = 0;
+      let conditionMutations = 0;
+
+      const liveMotorcycles = new Map<string, { id: string; shop_id: string; category_id: string | null }>([
+        [
+          'bike-cat-update',
+          { id: 'bike-cat-update', shop_id: PATOY_SHOP_ID, category_id: SCOOTER_CATEGORY_ID },
+        ],
+        [
+          'bike-cat-preserve-nonnull',
+          { id: 'bike-cat-preserve-nonnull', shop_id: PATOY_SHOP_ID, category_id: SCOOTER_CATEGORY_ID },
+        ],
+        [
+          'bike-cat-preserve-null',
+          { id: 'bike-cat-preserve-null', shop_id: PATOY_SHOP_ID, category_id: null },
+        ],
+      ]);
+
+      const itemsData = [
+        {
+          id: 'item-cat-only-update',
+          proposal_id: 'prop-cat-update',
+          entity_type: 'motorcycle',
+          action: 'update',
+          entity_id: 'bike-cat-update',
+          brand_name: 'Honda',
+          model_name: 'CB500X',
+          original_data: {
+            brand: 'Honda',
+            model: 'CB500X',
+            categoryId: SCOOTER_CATEGORY_ID,
+            categoryName: 'Scooter',
+          },
+          proposed_data: {
+            brand: 'Honda',
+            model: 'CB500X',
+            categoryId: ADVENTURE_CATEGORY_ID,
+            categoryName: 'Adventure',
+          },
+          // diffSummary is explanatory and must NOT override proposed_data.categoryId
+          diff_summary: {
+            categoryId: {
+              old: SCOOTER_CATEGORY_ID,
+              new: '00000000-0000-4000-8000-000000000999',
+            },
+          },
+          status: 'pending',
+        },
+        {
+          id: 'item-omit-cat-nonnull',
+          proposal_id: 'prop-cat-update',
+          entity_type: 'motorcycle',
+          action: 'update',
+          entity_id: 'bike-cat-preserve-nonnull',
+          brand_name: 'Honda',
+          model_name: 'Click 160',
+          original_data: {
+            brand: 'Honda',
+            model: 'Click 160',
+            categoryId: SCOOTER_CATEGORY_ID,
+            year: 2023,
+          },
+          proposed_data: {
+            brand: 'Honda',
+            model: 'Click 160',
+            year: 2024,
+          },
+          status: 'pending',
+        },
+        {
+          id: 'item-omit-cat-null',
+          proposal_id: 'prop-cat-update',
+          entity_type: 'motorcycle',
+          action: 'update',
+          entity_id: 'bike-cat-preserve-null',
+          brand_name: 'Honda',
+          model_name: 'Wave 110i',
+          original_data: {
+            brand: 'Honda',
+            model: 'Wave 110i',
+            categoryId: null,
+            year: 2022,
+          },
+          proposed_data: {
+            brand: 'Honda',
+            model: 'Wave 110i',
+            year: 2023,
+          },
+          status: 'pending',
+        },
+      ];
+
+      const mockSupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'categories') {
+            return {
+              select: jest.fn(() => ({
+                in: jest.fn((_col: string, ids: string[]) =>
+                  Promise.resolve({
+                    data: [
+                      { id: SCOOTER_CATEGORY_ID, name: 'Scooter' },
+                      { id: ADVENTURE_CATEGORY_ID, name: 'Adventure' },
+                    ].filter((c) => ids.includes(c.id)),
+                    error: null,
+                  })
+                ),
+              })),
+            };
+          }
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({
+                    data: { id: 'prop-cat-update', shop_id: PATOY_SHOP_ID, status: 'pending' },
+                    error: null,
+                  }),
+                }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ data: itemsData, error: null }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+                in: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'motorcycle_rentals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                in: jest.fn((_col: string, ids: string[]) =>
+                  Promise.resolve({
+                    data: ids.map((id) => liveMotorcycles.get(id)).filter(Boolean),
+                    error: null,
+                  })
+                ),
+              }),
+              update: jest.fn((payload: any) => ({
+                eq: jest.fn((_col: string, id: string) => {
+                  updatedMotorcycles.push({ id, payload });
+                  const current = liveMotorcycles.get(id);
+                  if (current && 'category_id' in payload) {
+                    current.category_id = payload.category_id;
+                  }
+                  return Promise.resolve({ error: null });
+                }),
+              })),
+            };
+          }
+          if (table === 'rental_rate_tiers') {
+            return {
+              delete: jest.fn(() => {
+                rateTierMutations++;
+                return { eq: jest.fn().mockResolvedValue({ error: null }) };
+              }),
+              insert: jest.fn(() => {
+                rateTierMutations++;
+                return Promise.resolve({ error: null });
+              }),
+            };
+          }
+          if (table === 'motorcycle_conditions') {
+            return {
+              delete: jest.fn(() => {
+                conditionMutations++;
+                return { eq: jest.fn().mockResolvedValue({ error: null }) };
+              }),
+              insert: jest.fn(() => {
+                conditionMutations++;
+                return Promise.resolve({ error: null });
+              }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      const res = await ChangeProposalService.apply(
+        'prop-cat-update',
+        itemsData.map((i) => i.id)
+      );
+
+      expect(res.success).toBe(true);
+      expect(res.appliedCount).toBe(3);
+
+      // 1. Category-only update writes ONLY { category_id: ADVENTURE_CATEGORY_ID } on the same ID
+      expect(updatedMotorcycles[0]).toEqual({
+        id: 'bike-cat-update',
+        payload: { category_id: ADVENTURE_CATEGORY_ID },
+      });
+      // Rates and conditions were not touched
+      expect(rateTierMutations).toBe(0);
+      expect(conditionMutations).toBe(0);
+
+      // 2. Updates omitting categoryId do NOT include category_id in update payload
+      expect(updatedMotorcycles[1]).toEqual({
+        id: 'bike-cat-preserve-nonnull',
+        payload: { year: 2024, year_to: null },
+      });
+      expect(updatedMotorcycles[1].payload).not.toHaveProperty('category_id');
+      expect(liveMotorcycles.get('bike-cat-preserve-nonnull')?.category_id).toBe(SCOOTER_CATEGORY_ID);
+
+      expect(updatedMotorcycles[2]).toEqual({
+        id: 'bike-cat-preserve-null',
+        payload: { year: 2023, year_to: null },
+      });
+      expect(updatedMotorcycles[2].payload).not.toHaveProperty('category_id');
+      expect(liveMotorcycles.get('bike-cat-preserve-null')?.category_id).toBeNull();
+    });
+
+    it('AT4 & AT5: rejects missing, null, empty, malformed, unknown, or conflicting categoryId/category_id before any DB writes, and normalizes category_id alias', async () => {
+      let proposalInsertCount = 0;
+      let itemInsertCount = 0;
+      const stagedItems: any[] = [];
+
+      const mockSupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'categories') {
+            return {
+              select: jest.fn(() => ({
+                in: jest.fn((_col: string, ids: string[]) =>
+                  Promise.resolve({
+                    data: [{ id: SCOOTER_CATEGORY_ID, name: 'Scooter' }].filter((c) =>
+                      ids.includes(c.id)
+                    ),
+                    error: null,
+                  })
+                ),
+              })),
+            };
+          }
+          if (table === 'motorcycle_rentals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                in: jest.fn().mockResolvedValue({
+                  data: [{ id: 'bike-existing-1', shop_id: PATOY_SHOP_ID }],
+                  error: null,
+                }),
+              }),
+            };
+          }
+          if (table === 'change_proposals') {
+            return {
+              insert: jest.fn((payload: any) => {
+                proposalInsertCount++;
+                return {
+                  select: jest.fn().mockReturnValue({
+                    single: jest.fn().mockResolvedValue({
+                      data: { id: 'prop-alias-norm', ...payload },
+                      error: null,
+                    }),
+                  }),
+                };
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              insert: jest.fn((rows: any[]) => {
+                itemInsertCount++;
+                stagedItems.push(...rows);
+                return Promise.resolve({ error: null });
+              }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      // 1. Missing categoryId on add
+      await expect(
+        ChangeProposalService.createProposalFromItems({
+          shopId: PATOY_SHOP_ID,
+          sourceUrl: 'https://www.motorbikerentbangkok.com/',
+          items: [
+            {
+              entityType: 'motorcycle',
+              action: 'add',
+              brandName: 'Honda',
+              modelName: 'Forza 350',
+              proposedData: {
+                rates: [{ minDays: 1, maxDays: 1, ratePerDay: 1200, currency: 'THB' }],
+              },
+            },
+          ],
+        })
+      ).rejects.toThrow(/categoryId is required when adding a motorcycle/i);
+
+      // 2. Explicit null categoryId on add and update
+      for (const action of ['add', 'update'] as const) {
+        await expect(
+          ChangeProposalService.createProposalFromItems({
+            shopId: PATOY_SHOP_ID,
+            sourceUrl: 'https://www.motorbikerentbangkok.com/',
+            items: [
+              {
+                entityType: 'motorcycle',
+                action,
+                entityId: action === 'update' ? 'bike-existing-1' : null,
+                brandName: 'Honda',
+                modelName: 'Forza 350',
+                proposedData: { categoryId: null },
+              },
+            ],
+          })
+        ).rejects.toThrow(/categoryId cannot be (null|empty)/i);
+      }
+
+      // 3. Empty string categoryId
+      await expect(
+        ChangeProposalService.createProposalFromItems({
+          shopId: PATOY_SHOP_ID,
+          sourceUrl: 'https://www.motorbikerentbangkok.com/',
+          items: [
+            {
+              entityType: 'motorcycle',
+              action: 'add',
+              brandName: 'Honda',
+              modelName: 'Forza 350',
+              proposedData: { categoryId: '   ' },
+            },
+          ],
+        })
+      ).rejects.toThrow(/categoryId must be a non-empty UUID string/i);
+
+      // 4. Malformed UUID
+      await expect(
+        ChangeProposalService.createProposalFromItems({
+          shopId: PATOY_SHOP_ID,
+          sourceUrl: 'https://www.motorbikerentbangkok.com/',
+          items: [
+            {
+              entityType: 'motorcycle',
+              action: 'add',
+              brandName: 'Honda',
+              modelName: 'Forza 350',
+              proposedData: { categoryId: 'Scooter' },
+            },
+          ],
+        })
+      ).rejects.toThrow(/malformed UUID/i);
+
+      // 5. Unknown category UUID
+      await expect(
+        ChangeProposalService.createProposalFromItems({
+          shopId: PATOY_SHOP_ID,
+          sourceUrl: 'https://www.motorbikerentbangkok.com/',
+          items: [
+            {
+              entityType: 'motorcycle',
+              action: 'add',
+              brandName: 'Honda',
+              modelName: 'Forza 350',
+              proposedData: { categoryId: 'ffffffff-ffff-4fff-8fff-ffffffffffff' },
+            },
+          ],
+        })
+      ).rejects.toThrow(/unknown categoryId 'ffffffff-ffff-4fff-8fff-ffffffffffff'/i);
+
+      // 6. Conflicting categoryId and category_id alias
+      await expect(
+        ChangeProposalService.createProposalFromItems({
+          shopId: PATOY_SHOP_ID,
+          sourceUrl: 'https://www.motorbikerentbangkok.com/',
+          items: [
+            {
+              entityType: 'motorcycle',
+              action: 'add',
+              brandName: 'Honda',
+              modelName: 'Forza 350',
+              proposedData: {
+                categoryId: SCOOTER_CATEGORY_ID,
+                category_id: ADVENTURE_CATEGORY_ID,
+              },
+            },
+          ],
+        })
+      ).rejects.toThrow(/conflicting categoryId/i);
+
+      // Verify zero DB mutations occurred for all invalid requests
+      expect(proposalInsertCount).toBe(0);
+      expect(itemInsertCount).toBe(0);
+
+      // 7. Valid category_id alias is normalized to canonical categoryId
+      const aliasRes = await ChangeProposalService.createProposalFromItems({
+        shopId: PATOY_SHOP_ID,
+        sourceUrl: 'https://www.motorbikerentbangkok.com/',
+        items: [
+          {
+            entityType: 'motorcycle',
+            action: 'add',
+            brandName: 'Honda',
+            modelName: 'Forza 350',
+            proposedData: {
+              category_id: SCOOTER_CATEGORY_ID,
+              rates: [{ minDays: 1, maxDays: 1, ratePerDay: 1200, currency: 'THB' }],
+            },
+          },
+        ],
+      });
+
+      expect(aliasRes.proposal.id).toBe('prop-alias-norm');
+      expect(stagedItems).toHaveLength(1);
+      expect(stagedItems[0].proposed_data.categoryId).toBe(SCOOTER_CATEGORY_ID);
+      expect(stagedItems[0].proposed_data.categoryName).toBe('Scooter');
+      expect(stagedItems[0].proposed_data).not.toHaveProperty('category_id');
+    });
+
+    it('AT6 & AT8: revalidates categoryId at approval, supports >100 row catalog pagination, rejects deleted category or legacy add without categoryId, and allows legacy update omitting categoryId', async () => {
+      // Build a 150-row catalog where Scooter sits at index 140 (> 100)
+      const catalog150 = Array.from({ length: 150 }, (_, idx) => {
+        if (idx === 140) {
+          return { id: SCOOTER_CATEGORY_ID, name: 'Scooter' };
+        }
+        return {
+          id: `00000000-0000-4000-8000-${String(idx + 1).padStart(12, '0')}`,
+          name: `Category #${idx + 1}`,
+        };
+      });
+
+      let catalogRows = [...catalog150];
+      let motorcycleInserts = 0;
+
+      const createApplyMock = (items: any[]) => ({
+        from: jest.fn((table: string) => {
+          if (table === 'categories') {
+            return {
+              select: jest.fn(() => ({
+                // Test range pagination fallback beyond 100 rows
+                range: jest.fn((from: number, to: number) =>
+                  Promise.resolve({
+                    data: catalogRows.slice(from, to + 1),
+                    error: null,
+                  })
+                ),
+              })),
+            };
+          }
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({
+                    data: { id: 'prop-revalidate', shop_id: PATOY_SHOP_ID, status: 'pending' },
+                    error: null,
+                  }),
+                }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ data: items, error: null }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+                in: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'brands') {
+            return {
+              select: jest.fn().mockReturnValue({
+                ilike: jest.fn().mockReturnValue({
+                  maybeSingle: jest.fn().mockResolvedValue({
+                    data: { id: 'brand-honda' },
+                    error: null,
+                  }),
+                }),
+              }),
+            };
+          }
+          if (table === 'motorcycle_rentals') {
+            return {
+              insert: jest.fn(() => {
+                motorcycleInserts++;
+                return {
+                  select: jest.fn().mockReturnValue({
+                    single: jest.fn().mockResolvedValue({
+                      data: { id: 'bike-inserted' },
+                      error: null,
+                    }),
+                  }),
+                };
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          return {};
+        }),
+      });
+
+      // 1. Valid category at index 140 (> 100) succeeds via pagination
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(
+        createApplyMock([
+          {
+            id: 'item-paginated-add',
+            proposal_id: 'prop-revalidate',
+            entity_type: 'motorcycle',
+            action: 'add',
+            entity_id: null,
+            brand_name: 'Honda',
+            model_name: 'Forza 350',
+            proposed_data: {
+              brand: 'Honda',
+              model: 'Forza 350',
+              categoryId: SCOOTER_CATEGORY_ID,
+            },
+            status: 'pending',
+          },
+        ])
+      );
+      const okRes = await ChangeProposalService.apply('prop-revalidate', ['item-paginated-add']);
+      expect(okRes.success).toBe(true);
+      expect(motorcycleInserts).toBe(1);
+
+      // 2. Category removed from catalog after staging fails approval before any motorcycle insert
+      catalogRows = catalog150.filter((c) => c.id !== SCOOTER_CATEGORY_ID);
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(
+        createApplyMock([
+          {
+            id: 'item-deleted-cat-add',
+            proposal_id: 'prop-revalidate',
+            entity_type: 'motorcycle',
+            action: 'add',
+            entity_id: null,
+            brand_name: 'Honda',
+            model_name: 'Forza 350',
+            proposed_data: {
+              brand: 'Honda',
+              model: 'Forza 350',
+              categoryId: SCOOTER_CATEGORY_ID,
+            },
+            status: 'pending',
+          },
+        ])
+      );
+      await expect(
+        ChangeProposalService.apply('prop-revalidate', ['item-deleted-cat-add'])
+      ).rejects.toThrow(ProposalItemValidationError);
+      expect(motorcycleInserts).toBe(1); // No new insert performed
+
+      // 3. Legacy add item missing categoryId fails explicitly at approval
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(
+        createApplyMock([
+          {
+            id: 'item-legacy-add-no-cat',
+            proposal_id: 'prop-revalidate',
+            entity_type: 'motorcycle',
+            action: 'add',
+            entity_id: null,
+            brand_name: 'Honda',
+            model_name: 'Forza 350',
+            proposed_data: {
+              brand: 'Honda',
+              model: 'Forza 350',
+            },
+            status: 'pending',
+          },
+        ])
+      );
+      await expect(
+        ChangeProposalService.apply('prop-revalidate', ['item-legacy-add-no-cat'])
+      ).rejects.toThrow(/categoryId is required when adding a motorcycle/i);
+      expect(motorcycleInserts).toBe(1);
+    });
+
+    it('AT7: enforces stale-state protection on explicit category updates (both non-null and null originalData.categoryId) while allowing non-category updates when category changed concurrently', async () => {
+      const liveCategoryByBike = new Map<string, string | null>([
+        ['bike-concurrent-1', ADVENTURE_CATEGORY_ID],
+        ['bike-concurrent-from-null', SCOOTER_CATEGORY_ID],
+        ['bike-rate-only-update', ADVENTURE_CATEGORY_ID],
+      ]);
+      const updatedPayloads: Array<{ id: string; payload: any }> = [];
+
+      const createStaleTestSupabase = (items: any[]) => ({
+        from: jest.fn((table: string) => {
+          if (table === 'categories') {
+            return {
+              select: jest.fn().mockResolvedValue({
+                data: [
+                  { id: SCOOTER_CATEGORY_ID, name: 'Scooter' },
+                  { id: ADVENTURE_CATEGORY_ID, name: 'Adventure' },
+                ],
+                error: null,
+              }),
+            };
+          }
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({
+                    data: { id: 'prop-stale-cat', shop_id: PATOY_SHOP_ID, status: 'pending' },
+                    error: null,
+                  }),
+                }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ data: items, error: null }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+                in: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'motorcycle_rentals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn((_col: string, id: string) => ({
+                  maybeSingle: jest.fn().mockResolvedValue({
+                    data: {
+                      id,
+                      shop_id: PATOY_SHOP_ID,
+                      category_id: liveCategoryByBike.get(id) ?? null,
+                    },
+                    error: null,
+                  }),
+                })),
+                in: jest.fn((_col: string, ids: string[]) =>
+                  Promise.resolve({
+                    data: ids.map((id) => ({
+                      id,
+                      shop_id: PATOY_SHOP_ID,
+                      category_id: liveCategoryByBike.get(id) ?? null,
+                    })),
+                    error: null,
+                  })
+                ),
+              }),
+              update: jest.fn((payload: any) => ({
+                eq: jest.fn((_col: string, id: string) => {
+                  updatedPayloads.push({ id, payload });
+                  return Promise.resolve({ error: null });
+                }),
+              })),
+            };
+          }
+          return {};
+        }),
+      });
+
+      // 1. Stale non-null originalData.categoryId fails with StaleCategoryStateError
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(
+        createStaleTestSupabase([
+          {
+            id: 'item-stale-nonnull',
+            proposal_id: 'prop-stale-cat',
+            entity_type: 'motorcycle',
+            action: 'update',
+            entity_id: 'bike-concurrent-1',
+            brand_name: 'Honda',
+            model_name: 'CB500X',
+            original_data: { categoryId: SCOOTER_CATEGORY_ID },
+            proposed_data: { categoryId: SCOOTER_CATEGORY_ID },
+            status: 'pending',
+          },
+        ])
+      );
+      await expect(
+        ChangeProposalService.apply('prop-stale-cat', ['item-stale-nonnull'])
+      ).rejects.toThrow(StaleCategoryStateError);
+      expect(updatedPayloads).toHaveLength(0);
+
+      // 2. Stale null originalData.categoryId fails when bike was categorized concurrently
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(
+        createStaleTestSupabase([
+          {
+            id: 'item-stale-null',
+            proposal_id: 'prop-stale-cat',
+            entity_type: 'motorcycle',
+            action: 'update',
+            entity_id: 'bike-concurrent-from-null',
+            brand_name: 'Honda',
+            model_name: 'Forza 350',
+            original_data: { categoryId: null },
+            proposed_data: { categoryId: ADVENTURE_CATEGORY_ID },
+            status: 'pending',
+          },
+        ])
+      );
+      await expect(
+        ChangeProposalService.apply('prop-stale-cat', ['item-stale-null'])
+      ).rejects.toThrow(StaleCategoryStateError);
+      expect(updatedPayloads).toHaveLength(0);
+
+      // 3. Update omitting categoryId succeeds even if live category changed concurrently
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(
+        createStaleTestSupabase([
+          {
+            id: 'item-non-cat-update',
+            proposal_id: 'prop-stale-cat',
+            entity_type: 'motorcycle',
+            action: 'update',
+            entity_id: 'bike-rate-only-update',
+            brand_name: 'Honda',
+            model_name: 'CB500X',
+            original_data: { categoryId: SCOOTER_CATEGORY_ID, year: 2023 },
+            proposed_data: { year: 2024 },
+            status: 'pending',
+          },
+        ])
+      );
+      const okRes = await ChangeProposalService.apply('prop-stale-cat', ['item-non-cat-update']);
+      expect(okRes.success).toBe(true);
+      expect(updatedPayloads).toEqual([
+        { id: 'bike-rate-only-update', payload: { year: 2024, year_to: null } },
+      ]);
+    });
+
+    it('AT9 & AT10: delist/unchanged items succeed without category, and retrying a partially applied proposal does not duplicate Forza 350 or reset its category', async () => {
+      const insertedMotorcycles: any[] = [];
+      const updatedMotorcycles: Array<{ id: string; payload: any }> = [];
+
+      const itemsData = [
+        {
+          id: 'item-applied-forza-350',
+          proposal_id: 'prop-patoy-retry',
+          entity_type: 'motorcycle',
+          action: 'add',
+          entity_id: null,
+          brand_name: 'Honda',
+          model_name: 'Forza 350',
+          proposed_data: {
+            brand: 'Honda',
+            model: 'Forza 350',
+            categoryId: SCOOTER_CATEGORY_ID,
+            rates: [{ minDays: 1, maxDays: 1, ratePerDay: 1200, currency: 'THB' }],
+          },
+          status: 'applied',
+        },
+        {
+          id: 'item-pending-delist-forza-300',
+          proposal_id: 'prop-patoy-retry',
+          entity_type: 'motorcycle',
+          action: 'delist',
+          entity_id: '68ec4f78-4154-4cb6-abcb-646a5ab4d6cd',
+          brand_name: 'Honda',
+          model_name: 'Forza 300',
+          original_data: null,
+          proposed_data: { availability_status: 'unavailable' },
+          status: 'pending',
+        },
+        {
+          id: 'item-unchanged-pcx',
+          proposal_id: 'prop-patoy-retry',
+          entity_type: 'motorcycle',
+          action: 'unchanged',
+          entity_id: 'bike-pcx-160',
+          brand_name: 'Honda',
+          model_name: 'PCX 160',
+          original_data: null,
+          proposed_data: { year: 2024 },
+          status: 'applied',
+        },
+      ];
+
+      const mockSupabase = {
+        from: jest.fn((table: string) => {
+          if (table === 'categories') {
+            return {
+              select: jest.fn().mockResolvedValue({
+                data: [{ id: SCOOTER_CATEGORY_ID, name: 'Scooter' }],
+                error: null,
+              }),
+            };
+          }
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({
+                    data: { id: 'prop-patoy-retry', shop_id: PATOY_SHOP_ID, status: 'pending' },
+                    error: null,
+                  }),
+                }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ data: itemsData, error: null }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({ error: null }),
+                in: jest.fn().mockResolvedValue({ error: null }),
+              }),
+            };
+          }
+          if (table === 'motorcycle_rentals') {
+            return {
+              insert: jest.fn((payload: any) => {
+                insertedMotorcycles.push(payload);
+                return {
+                  select: jest.fn().mockReturnValue({
+                    single: jest.fn().mockResolvedValue({ data: { id: 'dup-bike' }, error: null }),
+                  }),
+                };
+              }),
+              update: jest.fn((payload: any) => ({
+                eq: jest.fn((_col: string, id: string) => {
+                  updatedMotorcycles.push({ id, payload });
+                  return Promise.resolve({ error: null });
+                }),
+              })),
+            };
+          }
+          return {};
+        }),
+      };
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(mockSupabase);
+
+      const res = await ChangeProposalService.apply('prop-patoy-retry', [
+        'item-applied-forza-350',
+        'item-pending-delist-forza-300',
+      ]);
+
+      expect(res.success).toBe(true);
+      expect(res.appliedCount).toBe(1);
+      // Already-applied Forza 350 is NOT re-inserted
+      expect(insertedMotorcycles).toHaveLength(0);
+      // Delist item updates only availability_status without requiring categoryId
+      expect(updatedMotorcycles).toEqual([
+        {
+          id: '68ec4f78-4154-4cb6-abcb-646a5ab4d6cd',
+          payload: { availability_status: 'unavailable' },
+        },
+      ]);
+    });
+
+    it('AT11: getProposalById resolves categoryName for known IDs, preserves null for legacy uncategorized originalData, and throws ProposalItemValidationError on unknown categoryId', async () => {
+      const createDetailMock = (items: any[]) => ({
+        from: jest.fn((table: string) => {
+          if (table === 'categories') {
+            return {
+              select: jest.fn(() => ({
+                in: jest.fn((_col: string, ids: string[]) =>
+                  Promise.resolve({
+                    data: [
+                      { id: SCOOTER_CATEGORY_ID, name: 'Scooter' },
+                      { id: ADVENTURE_CATEGORY_ID, name: 'Adventure' },
+                    ].filter((c) => ids.includes(c.id)),
+                    error: null,
+                  })
+                ),
+              })),
+            };
+          }
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({
+                    data: {
+                      id: 'prop-detail-cat',
+                      shop_id: PATOY_SHOP_ID,
+                      status: 'pending',
+                      rental_shops: { id: PATOY_SHOP_ID, provider_name: 'PATOY' },
+                    },
+                    error: null,
+                  }),
+                }),
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  order: jest.fn().mockResolvedValue({ data: items, error: null }),
+                }),
+              }),
+            };
+          }
+          if (table === 'shop_agent_configs') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+                }),
+              }),
+            };
+          }
+          return {};
+        }),
+      });
+
+      // 1. Known category IDs resolve categoryName and legacy null original_data.categoryId stays null
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(
+        createDetailMock([
+          {
+            id: 'item-legacy-null-to-scooter',
+            proposal_id: 'prop-detail-cat',
+            entity_type: 'motorcycle',
+            action: 'update',
+            entity_id: 'bike-1',
+            brand_name: 'Honda',
+            model_name: 'Forza 350',
+            original_data: { categoryId: null },
+            proposed_data: { categoryId: SCOOTER_CATEGORY_ID },
+            status: 'pending',
+          },
+        ])
+      );
+
+      const detail = await ChangeProposalService.getProposalById('prop-detail-cat');
+      expect(detail.items[0].original_data).toEqual({
+        categoryId: null,
+        categoryName: null,
+      });
+      expect(detail.items[0].proposed_data).toEqual({
+        categoryId: SCOOTER_CATEGORY_ID,
+        categoryName: 'Scooter',
+      });
+
+      // 2. Unknown category ID in stored item throws ProposalItemValidationError instead of blank review
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(
+        createDetailMock([
+          {
+            id: 'item-corrupt-cat',
+            proposal_id: 'prop-detail-cat',
+            entity_type: 'motorcycle',
+            action: 'add',
+            entity_id: null,
+            brand_name: 'Honda',
+            model_name: 'Forza 350',
+            original_data: null,
+            proposed_data: { categoryId: 'ffffffff-ffff-4fff-8fff-ffffffffffff' },
+            status: 'pending',
+          },
+        ])
+      );
+
+      await expect(ChangeProposalService.getProposalById('prop-detail-cat')).rejects.toThrow(
+        ProposalItemValidationError
+      );
     });
   });
 });
