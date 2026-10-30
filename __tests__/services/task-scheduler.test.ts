@@ -105,6 +105,7 @@ describe('TaskSchedulerService', () => {
       overrides: {
         brands?: any[];
         motorcycles?: any[];
+        categories?: any[];
         conditionTypes?: any[];
         inclusions?: any[];
         conditions?: any[];
@@ -146,6 +147,21 @@ describe('TaskSchedulerService', () => {
               select: jest.fn().mockReturnValue({
                 order: jest.fn().mockResolvedValue({
                   data: overrides.conditionTypes ?? [],
+                  error: null,
+                }),
+              }),
+            };
+          }
+          if (table === 'categories') {
+            return {
+              select: jest.fn().mockReturnValue({
+                order: jest.fn().mockResolvedValue({
+                  data: overrides.categories ?? [
+                    {
+                      id: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737',
+                      name: 'Scooter',
+                    },
+                  ],
                   error: null,
                 }),
               }),
@@ -252,11 +268,19 @@ describe('TaskSchedulerService', () => {
           name: 'Security Deposit',
         },
       ]);
+      expect(tasks[0].categories).toEqual([
+        {
+          id: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737',
+          name: 'Scooter',
+        },
+      ]);
       expect(tasks[0].existingInventory).toEqual([
         {
           id: 'bike-1',
           brand: 'Yamaha',
           model: 'PG-1',
+          categoryId: null,
+          categoryName: null,
           year: 2024,
           year_to: 2026,
           engineCapacityCc: 115,
@@ -546,6 +570,100 @@ describe('TaskSchedulerService', () => {
         tier: 1,
         lastRunAt: '2026-09-15T00:00:00Z',
       });
+    });
+
+    it('exposes categoryId and categoryName for categorized and legacy uncategorized motorcycles (#197)', async () => {
+      const SCOOTER_CATEGORY_ID = '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737';
+      const ADVENTURE_CATEGORY_ID = 'c375e3d9-e4df-4e09-8688-e7b26e78861c';
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(
+        createSchedulerSupabaseMock(
+          [
+            {
+              id: 'task-patoy',
+              shop_id: '7ae96506-52b3-4211-8032-672fa6122da6',
+              tier: 1,
+              source_url: 'https://www.motorbikerentbangkok.com/',
+              extraction_hints: null,
+              is_active: true,
+              last_run_at: '2026-10-01T00:00:00Z',
+              created_at: '2026-01-01T00:00:00Z',
+              consecutive_errors: 0,
+              rental_shops: {
+                id: '7ae96506-52b3-4211-8032-672fa6122da6',
+                provider_name: 'PATOY Motorbike Rent Bangkok',
+                business_status_id: 1,
+                business_statuses: { id: 1, status_code: 'Operational' },
+              },
+            },
+          ],
+          {
+            categories: [
+              { id: ADVENTURE_CATEGORY_ID, name: 'Adventure' },
+              { id: SCOOTER_CATEGORY_ID, name: 'Scooter' },
+            ],
+            motorcycles: [
+              {
+                id: 'bike-forza-350',
+                shop_id: '7ae96506-52b3-4211-8032-672fa6122da6',
+                model: 'Forza 350',
+                category_id: SCOOTER_CATEGORY_ID,
+                categories: { id: SCOOTER_CATEGORY_ID, name: 'Scooter' },
+                year: 2024,
+                year_to: null,
+                engine_capacity_cc: 350,
+                availability_status: 'available',
+                source_url: 'https://www.motorbikerentbangkok.com/product/honda-forza-350/',
+                brands: { name: 'Honda' },
+                rental_rate_tiers: [
+                  { min_days: 1, max_days: 1, rate_per_day: 1200, currency: 'THB' },
+                ],
+                motorcycle_conditions: [],
+              },
+              {
+                id: 'bike-legacy-null',
+                shop_id: '7ae96506-52b3-4211-8032-672fa6122da6',
+                model: 'Wave 110i',
+                category_id: null,
+                categories: null,
+                year: null,
+                year_to: null,
+                engine_capacity_cc: 110,
+                availability_status: 'available',
+                source_url: null,
+                brands: { name: 'Honda' },
+                rental_rate_tiers: [],
+                motorcycle_conditions: [],
+              },
+            ],
+          }
+        )
+      );
+
+      const tasks = await TaskSchedulerService.getDueTasks({
+        shopId: '7ae96506-52b3-4211-8032-672fa6122da6',
+      });
+      expect(tasks).toHaveLength(1);
+      expect(tasks[0].categories).toEqual([
+        { id: ADVENTURE_CATEGORY_ID, name: 'Adventure' },
+        { id: SCOOTER_CATEGORY_ID, name: 'Scooter' },
+      ]);
+      expect(tasks[0].existingInventory).toEqual([
+        expect.objectContaining({
+          id: 'bike-forza-350',
+          brand: 'Honda',
+          model: 'Forza 350',
+          categoryId: SCOOTER_CATEGORY_ID,
+          categoryName: 'Scooter',
+        }),
+        expect.objectContaining({
+          id: 'bike-legacy-null',
+          brand: 'Honda',
+          model: 'Wave 110i',
+          categoryId: null,
+          categoryName: null,
+        }),
+      ]);
     });
   });
 });

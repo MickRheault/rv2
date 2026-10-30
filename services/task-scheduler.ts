@@ -25,6 +25,8 @@ export interface ExistingInventoryBike {
   id: string;
   brand: string;
   model: string;
+  categoryId: string | null;
+  categoryName: string | null;
   year: number | null;
   year_to: number | null;
   engineCapacityCc: number | null;
@@ -59,6 +61,7 @@ export interface AgentTask {
   urgencyScore: number;
   lastRunAt: string | null;
   canonicalBrands: string[];
+  categories: Array<{ id: string; name: string }>;
   conditionTypes: Array<{ id: string; name: string }>;
   knownModels: Array<{ brand: string; modelName: string }>;
   existingInventory: ExistingInventoryBike[];
@@ -192,6 +195,7 @@ export class TaskSchedulerService {
       .select(`
         id,
         shop_id,
+        category_id,
         model,
         year,
         year_to,
@@ -199,6 +203,10 @@ export class TaskSchedulerService {
         availability_status,
         source_url,
         brands (
+          name
+        ),
+        categories (
+          id,
           name
         ),
         rental_rate_tiers (
@@ -224,7 +232,16 @@ export class TaskSchedulerService {
 
     const inclusionsTable = (supabase.from('rental_shop_inclusions') as any);
     const conditionsTable = (supabase.from('rental_shop_conditions') as any);
+    const categoriesTable = (supabase.from('categories') as any);
     const conditionTypesTable = (supabase.from('condition_types') as any);
+
+    let categoriesQuery: Promise<any> = Promise.resolve({ data: [] });
+    if (categoriesTable?.select) {
+      const sel = categoriesTable.select('id, name');
+      categoriesQuery = typeof sel?.order === 'function'
+        ? sel.order('name', { ascending: true })
+        : Promise.resolve(sel);
+    }
 
     let conditionTypesQuery: Promise<any> = Promise.resolve({ data: [] });
     if (conditionTypesTable?.select) {
@@ -234,7 +251,7 @@ export class TaskSchedulerService {
         : Promise.resolve(sel);
     }
 
-    const [bikesRes, inclusionsRes, conditionsRes, conditionTypesRes] = await Promise.all([
+    const [bikesRes, inclusionsRes, conditionsRes, categoriesRes, conditionTypesRes] = await Promise.all([
       bikesQuery,
       inclusionsTable?.select
         ? inclusionsTable.select('shop_id, inclusion_text').in('shop_id', shopIds)
@@ -242,12 +259,22 @@ export class TaskSchedulerService {
       conditionsTable?.select
         ? conditionsTable.select('shop_id, condition_value').in('shop_id', shopIds)
         : Promise.resolve({ data: [] }),
+      categoriesQuery,
       conditionTypesQuery,
     ]);
 
     const allBikes = bikesRes?.data || [];
     const allInclusions = inclusionsRes?.data || [];
     const allConditions = conditionsRes?.data || [];
+    const categories: Array<{ id: string; name: string }> = (categoriesRes?.data || []).map(
+      (cat: any) => ({
+        id: cat.id,
+        name: cat.name,
+      })
+    );
+    const categoryNameById = new Map<string, string>(
+      categories.map((cat) => [cat.id, cat.name])
+    );
     const conditionTypes: Array<{ id: string; name: string }> = (conditionTypesRes?.data || []).map(
       (ct: any) => ({
         id: ct.id,
@@ -290,6 +317,20 @@ export class TaskSchedulerService {
           knownModelsMap.set(key, { brand: brandName, modelName });
         }
 
+        const rawCategoryId = bike.category_id ?? bike.categories?.id ?? null;
+        const categoryId =
+          typeof rawCategoryId === 'string' && rawCategoryId.trim().length > 0
+            ? rawCategoryId.trim()
+            : null;
+        const rawCategoryName =
+          bike.categories?.name ??
+          (categoryId ? categoryNameById.get(categoryId) : null) ??
+          null;
+        const categoryName =
+          categoryId && typeof rawCategoryName === 'string' && rawCategoryName.trim().length > 0
+            ? rawCategoryName.trim()
+            : null;
+
         const bikeConditions: ExistingInventoryBikeCondition[] = (
           bike.motorcycle_conditions || []
         ).map((mc: any) => ({
@@ -302,6 +343,8 @@ export class TaskSchedulerService {
           id: bike.id,
           brand: brandName,
           model: modelName,
+          categoryId,
+          categoryName,
           year: bike.year ?? null,
           year_to: bike.year_to ?? null,
           engineCapacityCc: bike.engine_capacity_cc ?? null,
@@ -335,6 +378,7 @@ export class TaskSchedulerService {
         urgencyScore: cfg.urgencyScore,
         lastRunAt: cfg.last_run_at,
         canonicalBrands,
+        categories,
         conditionTypes,
         knownModels: Array.from(knownModelsMap.values()),
         existingInventory,

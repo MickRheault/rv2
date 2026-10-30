@@ -349,5 +349,87 @@ describe('POST /api/agent/change-proposals', () => {
       error: "Item at index 0 contains unknown condition_type_id 'invalid-uuid' in proposedData.conditions.",
     });
   });
+
+  it('stages motorcycle add/update items containing categoryId and returns 400 on missing or invalid categoryId (#197)', async () => {
+    const SCOOTER_CATEGORY_ID = '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737';
+
+    (ChangeProposalService.createProposalFromItems as jest.Mock).mockResolvedValueOnce({
+      proposal: { id: 'prop-patoy-197', status: 'pending' },
+      summaryCounts: { add: 1, update: 0, delist: 0, unchanged: 0 },
+      itemsCount: 1,
+    });
+
+    const patoyAddItem = [
+      {
+        entityType: 'motorcycle',
+        action: 'add',
+        entityId: null,
+        brandName: 'Honda',
+        modelName: 'Forza 350',
+        originalData: null,
+        proposedData: {
+          brand: 'Honda',
+          model: 'Forza 350',
+          sourceUrl: 'https://www.motorbikerentbangkok.com/product/honda-forza-350/',
+          categoryId: SCOOTER_CATEGORY_ID,
+          currency: 'THB',
+          rates: [
+            { minDays: 1, maxDays: 1, ratePerDay: 1200, currency: 'THB' },
+            { minDays: 7, maxDays: 7, ratePerDay: 714.29, currency: 'THB' },
+            { minDays: 30, maxDays: 30, ratePerDay: 466.67, currency: 'THB' },
+          ],
+        },
+      },
+    ];
+
+    const validReq = new NextRequest('http://localhost:3000/api/agent/change-proposals', {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer secret-agent-key',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        shopId: '7ae96506-52b3-4211-8032-672fa6122da6',
+        sourceUrl: 'https://www.motorbikerentbangkok.com/product/honda-forza-350/',
+        items: patoyAddItem,
+      }),
+    });
+
+    const validRes = await POST(validReq);
+    expect(validRes.status).toBe(201);
+
+    (ChangeProposalService.createProposalFromItems as jest.Mock).mockRejectedValueOnce(
+      new ProposalItemValidationError(
+        "Item at index 0 (field 'categoryId'): categoryId is required when adding a motorcycle."
+      )
+    );
+
+    const missingCatReq = new NextRequest('http://localhost:3000/api/agent/change-proposals', {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer secret-agent-key',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        shopId: '7ae96506-52b3-4211-8032-672fa6122da6',
+        sourceUrl: 'https://www.motorbikerentbangkok.com/product/honda-forza-350/',
+        items: [
+          {
+            entityType: 'motorcycle',
+            action: 'add',
+            brandName: 'Honda',
+            modelName: 'Forza 350',
+            proposedData: {},
+          },
+        ],
+      }),
+    });
+
+    const missingCatRes = await POST(missingCatReq);
+    expect(missingCatRes.status).toBe(400);
+    expect(await missingCatRes.json()).toEqual({
+      error: "Item at index 0 (field 'categoryId'): categoryId is required when adding a motorcycle.",
+    });
+  });
 });
 

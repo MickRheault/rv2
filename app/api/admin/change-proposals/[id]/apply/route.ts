@@ -47,7 +47,10 @@ export async function POST(
     ) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
-    if (error?.name === 'StaleConditionStateError') {
+    if (
+      error?.name === 'StaleConditionStateError' ||
+      error?.name === 'StaleCategoryStateError'
+    ) {
       return NextResponse.json({ error: error.message }, { status: 409 });
     }
     console.error(`Error applying change proposal ${id}:`, error);

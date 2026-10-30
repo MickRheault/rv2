@@ -470,6 +470,118 @@ describe('ChangeProposalsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Confirmed Unchanged Inventory/i }));
     expect(screen.getByText('Year: 2018-2022')).toBeInTheDocument();
   });
+
+  it('renders Category name and UUID on add, old -> new Category transitions (including Uncategorized null) on update, and error badges for unknown category IDs (#197)', async () => {
+    const { ChangeProposalDiffViewer } = await import(
+      '@/components/admin/ChangeProposalDiffViewer'
+    );
+
+    const SCOOTER_ID = '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737';
+    const ADVENTURE_ID = 'c375e3d9-e4df-4e09-8688-e7b26e78861c';
+    const UNKNOWN_ID = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
+
+    render(
+      <ChangeProposalDiffViewer
+        proposal={{
+          id: 'prop-cat-review',
+          shop_id: '7ae96506-52b3-4211-8032-672fa6122da6',
+          source_url: 'https://www.motorbikerentbangkok.com/product/honda-forza-350/',
+          status: 'pending',
+          created_at: '2026-10-28T12:00:00Z',
+          rental_shops: {
+            provider_name: 'PATOY Motorbike Rent Bangkok',
+            slug: 'patoy-motorbike-rent-bangkok',
+          },
+        }}
+        items={[
+          {
+            id: 'item-add-forza',
+            proposal_id: 'prop-cat-review',
+            entity_type: 'motorcycle',
+            action: 'add',
+            entity_id: null,
+            brand_name: 'Honda',
+            model_name: 'Forza 350',
+            original_data: null,
+            proposed_data: {
+              categoryId: SCOOTER_ID,
+              categoryName: 'Scooter',
+              rates: [
+                { minDays: 1, maxDays: 1, ratePerDay: 1200, currency: 'THB' },
+                { minDays: 7, maxDays: 7, ratePerDay: 714.29, currency: 'THB' },
+                { minDays: 30, maxDays: 30, ratePerDay: 466.67, currency: 'THB' },
+              ],
+            },
+            diff_summary: null,
+            status: 'pending',
+          },
+          {
+            id: 'item-update-cat',
+            proposal_id: 'prop-cat-review',
+            entity_type: 'motorcycle',
+            action: 'update',
+            entity_id: 'bike-cb500x',
+            brand_name: 'Honda',
+            model_name: 'CB500X',
+            original_data: {
+              categoryId: SCOOTER_ID,
+              categoryName: 'Scooter',
+            },
+            proposed_data: {
+              categoryId: ADVENTURE_ID,
+              categoryName: 'Adventure',
+            },
+            diff_summary: null,
+            status: 'pending',
+          },
+          {
+            id: 'item-update-from-null',
+            proposal_id: 'prop-cat-review',
+            entity_type: 'motorcycle',
+            action: 'update',
+            entity_id: 'bike-wave',
+            brand_name: 'Honda',
+            model_name: 'Wave 110i',
+            original_data: {
+              categoryId: null,
+              categoryName: null,
+            },
+            proposed_data: {
+              categoryId: SCOOTER_ID,
+              categoryName: 'Scooter',
+            },
+            diff_summary: null,
+            status: 'pending',
+          },
+          {
+            id: 'item-unknown-cat',
+            proposal_id: 'prop-cat-review',
+            entity_type: 'motorcycle',
+            action: 'add',
+            entity_id: null,
+            brand_name: 'Honda',
+            model_name: 'Mystery Bike',
+            original_data: null,
+            proposed_data: {
+              categoryId: UNKNOWN_ID,
+            },
+            diff_summary: null,
+            status: 'pending',
+          },
+        ]}
+      />
+    );
+
+    expect(
+      screen.getByText(`Category: Scooter (${SCOOTER_ID})`)
+    ).toBeInTheDocument();
+    expect(screen.getAllByText(`Scooter (${SCOOTER_ID})`).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText(`Adventure (${ADVENTURE_ID})`)).toBeInTheDocument();
+    expect(screen.getByText('Uncategorized (null)')).toBeInTheDocument();
+    expect(
+      screen.getByText(`Category Error: Unknown category ID (${UNKNOWN_ID})`)
+    ).toBeInTheDocument();
+  });
 });
 
 

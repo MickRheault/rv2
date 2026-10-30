@@ -160,5 +160,45 @@ describe('POST /api/admin/change-proposals/[id]/apply', () => {
     expect(res409.status).toBe(409);
     expect((await res409.json()).error).toMatch(/Stale motorcycle conditions/i);
   });
+
+  it('returns 400 on category ProposalItemValidationError and 409 on StaleCategoryStateError (#197)', async () => {
+    const catValidationErr = new Error(
+      "Item 'item-cat-1' (field 'categoryId'): Invalid categoryId 'bad-cat-id': category does not exist in categories catalog."
+    );
+    catValidationErr.name = 'ProposalItemValidationError';
+    (ChangeProposalService.apply as jest.Mock).mockRejectedValueOnce(catValidationErr);
+
+    const req400 = new NextRequest(
+      'http://localhost:3000/api/admin/change-proposals/prop-1/apply',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ approvedItemIds: ['item-cat-1'] }),
+      }
+    );
+
+    const res400 = await POST(req400, { params: Promise.resolve({ id: 'prop-1' }) });
+    expect(res400.status).toBe(400);
+    expect((await res400.json()).error).toMatch(/Invalid categoryId/i);
+
+    const staleCatErr = new Error(
+      'Stale motorcycle category detected for motorcycle bike-1 (item item-cat-1): expected original category_id null, found 77dd1ffd-a4e4-49ac-91fc-59d7d0a35737.'
+    );
+    staleCatErr.name = 'StaleCategoryStateError';
+    (ChangeProposalService.apply as jest.Mock).mockRejectedValueOnce(staleCatErr);
+
+    const req409 = new NextRequest(
+      'http://localhost:3000/api/admin/change-proposals/prop-1/apply',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ approvedItemIds: ['item-cat-1'] }),
+      }
+    );
+
+    const res409 = await POST(req409, { params: Promise.resolve({ id: 'prop-1' }) });
+    expect(res409.status).toBe(409);
+    expect((await res409.json()).error).toMatch(/Stale motorcycle category/i);
+  });
 });
 

@@ -38,6 +38,227 @@ export class StaleConditionStateError extends Error {
   }
 }
 
+export class StaleCategoryStateError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'StaleCategoryStateError';
+  }
+}
+
+export interface CategoryCatalogEntry {
+  id: string;
+  name: string;
+}
+
+export interface CategoryCatalog {
+  byId: Map<string, CategoryCatalogEntry>;
+  loadedFromDb: boolean;
+}
+
+export interface ExtractedCategoryField {
+  provided: boolean;
+  rawValue: unknown;
+  normalizedId: string | null;
+}
+
+const CATEGORIES_PAGE_SIZE = 500;
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function hasExplicitCategoryField(rawObj: unknown): boolean {
+  if (!rawObj || typeof rawObj !== 'object' || Array.isArray(rawObj)) {
+    return false;
+  }
+  const record = rawObj as Record<string, any>;
+  const hasCamel =
+    Object.prototype.hasOwnProperty.call(record, 'categoryId') &&
+    record.categoryId !== undefined;
+  const hasSnake =
+    Object.prototype.hasOwnProperty.call(record, 'category_id') &&
+    record.category_id !== undefined;
+  return hasCamel || hasSnake;
+}
+
+export function extractAndValidateCategorySyntax(
+  rawObj: unknown,
+  options: {
+    itemLabel: string;
+    fieldName?: string;
+    required: boolean;
+    allowNull: boolean;
+  }
+): ExtractedCategoryField {
+  const fieldName = options.fieldName || 'categoryId';
+  if (!rawObj || typeof rawObj !== 'object' || Array.isArray(rawObj)) {
+    if (options.required) {
+      throw new ProposalItemValidationError(
+        `Item ${options.itemLabel} (field '${fieldName}'): ${fieldName} is required when adding a motorcycle.`
+      );
+    }
+    return { provided: false, rawValue: undefined, normalizedId: null };
+  }
+
+  const record = rawObj as Record<string, any>;
+  const hasCamel =
+    Object.prototype.hasOwnProperty.call(record, 'categoryId') &&
+    record.categoryId !== undefined;
+  const hasSnake =
+    Object.prototype.hasOwnProperty.call(record, 'category_id') &&
+    record.category_id !== undefined;
+
+  if (hasCamel && hasSnake) {
+    const camelVal = record.categoryId;
+    const snakeVal = record.category_id;
+    const bothNull = camelVal === null && snakeVal === null;
+    const bothSameString =
+      typeof camelVal === 'string' &&
+      typeof snakeVal === 'string' &&
+      camelVal.trim().toLowerCase() === snakeVal.trim().toLowerCase();
+    if (!bothNull && !bothSameString) {
+      throw new ProposalItemValidationError(
+        `Item ${options.itemLabel} (field '${fieldName}'): conflicting categoryId ('${String(
+          camelVal
+        )}') and category_id ('${String(snakeVal)}') values.`
+      );
+    }
+  }
+
+  if (!hasCamel && !hasSnake) {
+    if (options.required) {
+      throw new ProposalItemValidationError(
+        `Item ${options.itemLabel} (field '${fieldName}'): ${fieldName} is required when adding a motorcycle.`
+      );
+    }
+    return { provided: false, rawValue: undefined, normalizedId: null };
+  }
+
+  const rawValue = hasCamel ? record.categoryId : record.category_id;
+
+  if (rawValue === null) {
+    if (options.allowNull) {
+      return { provided: true, rawValue: null, normalizedId: null };
+    }
+    throw new ProposalItemValidationError(
+      `Item ${options.itemLabel} (field '${fieldName}'): ${fieldName} cannot be null.`
+    );
+  }
+
+  if (typeof rawValue !== 'string' || rawValue.trim().length === 0) {
+    throw new ProposalItemValidationError(
+      `Item ${options.itemLabel} (field '${fieldName}'): ${fieldName} must be a non-empty UUID string.`
+    );
+  }
+
+  const trimmed = rawValue.trim();
+  if (!UUID_REGEX.test(trimmed)) {
+    throw new ProposalItemValidationError(
+      `Item ${options.itemLabel} (field '${fieldName}'): invalid ${fieldName} '${trimmed}' (malformed UUID).`
+    );
+  }
+
+  return { provided: true, rawValue: trimmed, normalizedId: trimmed };
+}
+
+export function collectRequestedCategoryIds(
+  items: ConditionBearingItem[] = []
+): string[] {
+  const idSet = new Set<string>();
+  for (const item of items) {
+    if (item?.entity_type && item.entity_type !== 'motorcycle') continue;
+    for (const dataObj of [item?.proposed_data, item?.original_data]) {
+      if (!dataObj || typeof dataObj !== 'object' || Array.isArray(dataObj)) continue;
+      const record = dataObj as Record<string, any>;
+      const raw =
+        record.categoryId !== undefined ? record.categoryId : record.category_id;
+      if (typeof raw === 'string') {
+        const trimmed = raw.trim();
+        if (UUID_REGEX.test(trimmed)) {
+          idSet.add(trimmed);
+        }
+      }
+    }
+  }
+  return Array.from(idSet);
+}
+
+async function loadCategoryCatalog(
+  supabase: any,
+  items: ConditionBearingItem[] = []
+): Promise<CategoryCatalog> {
+  const byId = new Map<string, CategoryCatalogEntry>();
+  const requestedIds = collectRequestedCategoryIds(items);
+  if (items.length > 0 && requestedIds.length === 0) {
+    return { byId, loadedFromDb: true };
+  }
+
+  const consumeCatalogResponse = (res: any): any[] => {
+    if (res?.error) {
+      throw new Error(`Failed to load categories catalog: ${res.error.message}`);
+    }
+    const rows = res?.data || [];
+    for (const row of rows) {
+      if (row?.id && row?.name) {
+        const entry = { id: String(row.id), name: String(row.name) };
+        byId.set(entry.id.toLowerCase(), entry);
+      }
+    }
+    return rows;
+  };
+
+  const table = supabase?.from?.('categories');
+  if (table?.select) {
+    const initialQuery = table.select('id, name');
+    let usedInitialQuery = false;
+
+    if (requestedIds.length > 0 && typeof initialQuery?.in === 'function') {
+      for (let i = 0; i < requestedIds.length; i += CATEGORIES_PAGE_SIZE) {
+        const chunk = requestedIds.slice(i, i + CATEGORIES_PAGE_SIZE);
+        const query = !usedInitialQuery ? initialQuery : table.select('id, name');
+        usedInitialQuery = true;
+        consumeCatalogResponse(await query.in('id', chunk));
+      }
+      return { byId, loadedFromDb: true };
+    }
+
+    const pageStartQuery = !usedInitialQuery ? initialQuery : table.select('id, name');
+    usedInitialQuery = true;
+
+    if (typeof pageStartQuery?.range === 'function') {
+      let offset = 0;
+      let currentQuery = pageStartQuery;
+      while (true) {
+        const rows = consumeCatalogResponse(
+          await currentQuery.range(offset, offset + CATEGORIES_PAGE_SIZE - 1)
+        );
+        if (rows.length < CATEGORIES_PAGE_SIZE) {
+          break;
+        }
+        offset += rows.length;
+        currentQuery = table.select('id, name');
+      }
+      return { byId, loadedFromDb: true };
+    }
+
+    consumeCatalogResponse(await Promise.resolve(pageStartQuery));
+    return { byId, loadedFromDb: true };
+  }
+
+  return { byId, loadedFromDb: false };
+}
+
+function normalizeCanonicalCategoryObject(
+  dataObj: Record<string, any>,
+  categoryId: string | null,
+  categoryName?: string | null
+): Record<string, any> {
+  const next = { ...dataObj };
+  delete next.category_id;
+  next.categoryId = categoryId;
+  if (categoryName !== undefined) {
+    next.categoryName = categoryName;
+  }
+  return next;
+}
+
 export interface MotorcycleConditionProposalEntry {
   condition_type_id: string;
   name: string;
@@ -281,6 +502,13 @@ function normalizeProposedMotorcycle(rawBike: Record<string, any>) {
   const brand = String(rawBike.brand || rawBike.brandName || rawBike.brand_name || '').trim();
   const modelName = String(rawBike.modelName || rawBike.model_name || rawBike.model || '').trim();
 
+  const rawCategoryId =
+    rawBike.categoryId !== undefined ? rawBike.categoryId : rawBike.category_id;
+  const categoryId =
+    typeof rawCategoryId === 'string' && rawCategoryId.trim().length > 0
+      ? rawCategoryId.trim()
+      : null;
+
   const rawCc = rawBike.engineCapacityCc ?? rawBike.engineCapacity ?? rawBike.engine_capacity_cc;
   const parsedCc = rawCc !== undefined && rawCc !== null ? Number(rawCc) : null;
   const engineCapacityCc = parsedCc !== null && !isNaN(parsedCc) ? parsedCc : null;
@@ -301,6 +529,7 @@ function normalizeProposedMotorcycle(rawBike: Record<string, any>) {
   return {
     brand,
     modelName,
+    categoryId,
     year,
     year_to,
     engineCapacityCc,
@@ -606,14 +835,68 @@ export class ChangeProposalService {
         );
       }
 
+      const itemLabel = entityId ? `at index ${index} (${entityId})` : `at index ${index}`;
+      let normalizedProposedData: Record<string, any> = { ...proposedData };
+      let normalizedOriginalData: Record<string, any> | null = originalData
+        ? { ...originalData }
+        : null;
+
+      if (entityType === 'motorcycle') {
+        if (action === 'add' || action === 'update') {
+          const extractedProposedCat = extractAndValidateCategorySyntax(proposedData, {
+            itemLabel,
+            fieldName: 'categoryId',
+            required: action === 'add',
+            allowNull: false,
+          });
+          if (extractedProposedCat.provided && extractedProposedCat.normalizedId) {
+            normalizedProposedData = normalizeCanonicalCategoryObject(
+              normalizedProposedData,
+              extractedProposedCat.normalizedId
+            );
+          }
+        } else if (hasExplicitCategoryField(proposedData)) {
+          const extractedInformationalCat = extractAndValidateCategorySyntax(proposedData, {
+            itemLabel,
+            fieldName: 'categoryId',
+            required: false,
+            allowNull: true,
+          });
+          if (extractedInformationalCat.provided) {
+            normalizedProposedData = normalizeCanonicalCategoryObject(
+              normalizedProposedData,
+              extractedInformationalCat.normalizedId
+            );
+          }
+        }
+
+        if (normalizedOriginalData && hasExplicitCategoryField(normalizedOriginalData)) {
+          const extractedOrigCat = extractAndValidateCategorySyntax(normalizedOriginalData, {
+            itemLabel,
+            fieldName: 'originalData.categoryId',
+            required: false,
+            allowNull: true,
+          });
+          if (extractedOrigCat.provided) {
+            normalizedOriginalData = normalizeCanonicalCategoryObject(
+              normalizedOriginalData,
+              extractedOrigCat.normalizedId,
+              extractedOrigCat.normalizedId === null
+                ? normalizedOriginalData.categoryName ?? null
+                : undefined
+            );
+          }
+        }
+      }
+
       return {
         entity_type: entityType,
         action,
         entity_id: entityId,
         brand_name: brandName,
         model_name: modelName,
-        original_data: originalData,
-        proposed_data: proposedData,
+        original_data: normalizedOriginalData,
+        proposed_data: normalizedProposedData,
         diff_summary: diffSummary,
         status: (isActionableProposalAction(action) ? 'pending' : 'applied') as 'pending' | 'applied',
       };
@@ -630,6 +913,63 @@ export class ChangeProposalService {
     const initialProposalStatus = hasMutableItems ? 'pending' : 'applied';
 
     const supabase = getSupabaseAdmin();
+
+    // Validate and enrich motorcycle categoryId against categories catalog if present on any item
+    const hasMotorcycleCategories = normalizedItems.some(
+      (i) =>
+        i.entity_type === 'motorcycle' &&
+        (hasExplicitCategoryField(i.proposed_data) || hasExplicitCategoryField(i.original_data))
+    );
+    if (hasMotorcycleCategories) {
+      const categoryCatalog = await loadCategoryCatalog(supabase, normalizedItems);
+      for (let index = 0; index < normalizedItems.length; index++) {
+        const item = normalizedItems[index];
+        if (item.entity_type !== 'motorcycle') continue;
+        const itemLabel = item.entity_id ? `at index ${index} (${item.entity_id})` : `at index ${index}`;
+
+        if (item.proposed_data && hasExplicitCategoryField(item.proposed_data)) {
+          const propCatId = item.proposed_data.categoryId as string | null;
+          if (propCatId !== null) {
+            const matched = categoryCatalog.byId.get(propCatId.toLowerCase());
+            if (!matched) {
+              if (item.action === 'add' || item.action === 'update') {
+                throw new ProposalItemValidationError(
+                  `Item ${itemLabel} (field 'categoryId'): unknown categoryId '${propCatId}' (not found in categories catalog).`
+                );
+              }
+            } else {
+              item.proposed_data = normalizeCanonicalCategoryObject(
+                item.proposed_data,
+                matched.id,
+                matched.name
+              );
+            }
+          }
+        }
+
+        if (item.original_data && hasExplicitCategoryField(item.original_data)) {
+          const origCatId = item.original_data.categoryId as string | null;
+          if (origCatId === null) {
+            item.original_data = normalizeCanonicalCategoryObject(item.original_data, null, null);
+          } else {
+            const matched = categoryCatalog.byId.get(origCatId.toLowerCase());
+            if (!matched) {
+              if (item.action === 'add' || item.action === 'update') {
+                throw new ProposalItemValidationError(
+                  `Item ${itemLabel} (field 'originalData.categoryId'): unknown categoryId '${origCatId}' (not found in categories catalog).`
+                );
+              }
+            } else {
+              item.original_data = normalizeCanonicalCategoryObject(
+                item.original_data,
+                matched.id,
+                matched.name
+              );
+            }
+          }
+        }
+      }
+    }
 
     // Validate and normalize motorcycle-level conditions if present on any item
     const hasMotorcycleConditions = normalizedItems.some(
@@ -844,6 +1184,91 @@ export class ChangeProposalService {
       throw new Error(`Failed to load proposal items: ${itemsError.message}`);
     }
 
+    const enrichedItems = (items || []).map((item: any) => ({ ...item }));
+    const hasCategoryBearingItems = enrichedItems.some(
+      (i) =>
+        i.entity_type === 'motorcycle' &&
+        (hasExplicitCategoryField(i.proposed_data) || hasExplicitCategoryField(i.original_data))
+    );
+    if (hasCategoryBearingItems) {
+      const categoryCatalog = await loadCategoryCatalog(supabase, enrichedItems);
+      for (const item of enrichedItems) {
+        if (item.entity_type !== 'motorcycle') continue;
+
+        if (item.proposed_data && hasExplicitCategoryField(item.proposed_data)) {
+          const extracted = extractAndValidateCategorySyntax(item.proposed_data, {
+            itemLabel: `'${item.id}'`,
+            fieldName: 'categoryId',
+            required: false,
+            allowNull: item.action === 'delist' || item.action === 'unchanged',
+          });
+          if (extracted.provided) {
+            if (extracted.normalizedId === null) {
+              item.proposed_data = normalizeCanonicalCategoryObject(item.proposed_data, null, null);
+            } else {
+              const matched = categoryCatalog.byId.get(extracted.normalizedId.toLowerCase());
+              if (matched) {
+                item.proposed_data = normalizeCanonicalCategoryObject(
+                  item.proposed_data,
+                  matched.id,
+                  matched.name
+                );
+              } else if (
+                categoryCatalog.loadedFromDb &&
+                (item.action === 'add' || item.action === 'update')
+              ) {
+                throw new ProposalItemValidationError(
+                  `Item '${item.id}' (field 'categoryId'): unknown categoryId '${extracted.normalizedId}' (not found in categories catalog).`
+                );
+              } else {
+                item.proposed_data = normalizeCanonicalCategoryObject(
+                  item.proposed_data,
+                  extracted.normalizedId,
+                  item.proposed_data.categoryName ?? undefined
+                );
+              }
+            }
+          }
+        }
+
+        if (item.original_data && hasExplicitCategoryField(item.original_data)) {
+          const extractedOrig = extractAndValidateCategorySyntax(item.original_data, {
+            itemLabel: `'${item.id}'`,
+            fieldName: 'originalData.categoryId',
+            required: false,
+            allowNull: true,
+          });
+          if (extractedOrig.provided) {
+            if (extractedOrig.normalizedId === null) {
+              item.original_data = normalizeCanonicalCategoryObject(item.original_data, null, null);
+            } else {
+              const matched = categoryCatalog.byId.get(extractedOrig.normalizedId.toLowerCase());
+              if (matched) {
+                item.original_data = normalizeCanonicalCategoryObject(
+                  item.original_data,
+                  matched.id,
+                  matched.name
+                );
+              } else if (
+                categoryCatalog.loadedFromDb &&
+                (item.action === 'add' || item.action === 'update')
+              ) {
+                throw new ProposalItemValidationError(
+                  `Item '${item.id}' (field 'originalData.categoryId'): unknown categoryId '${extractedOrig.normalizedId}' (not found in categories catalog).`
+                );
+              } else {
+                item.original_data = normalizeCanonicalCategoryObject(
+                  item.original_data,
+                  extractedOrig.normalizedId,
+                  item.original_data.categoryName ?? undefined
+                );
+              }
+            }
+          }
+        }
+      }
+    }
+
     let extractionHints: string | null | undefined = undefined;
     const rawSnapshot = (proposal as any).raw_snapshot;
     const fallbackCandidates = [
@@ -880,7 +1305,7 @@ export class ChangeProposalService {
         shop_url: resolveProposalShopUrl((proposal as any).rental_shops),
         ...(extractionHints !== undefined ? { extraction_hints: extractionHints } : {}),
       },
-      items: items || [],
+      items: enrichedItems,
     };
   }
 
@@ -929,7 +1354,18 @@ export class ChangeProposalService {
     );
     const approvedItems = pendingMutableItems.filter((i) => approvedSet.has(i.id));
 
-    // 3. Validate geodata immutability, motorcycle conditions, and before-state freshness across all approved items
+    // 3. Validate geodata immutability, motorcycle categories, motorcycle conditions, and before-state freshness across all approved items
+    const hasApprovedBikeCategories = approvedItems.some(
+      (i) =>
+        i.entity_type === 'motorcycle' &&
+        (i.action === 'add' ||
+          (i.action === 'update' && hasExplicitCategoryField(i.proposed_data)))
+    );
+    const categoryCatalog: CategoryCatalog = hasApprovedBikeCategories
+      ? await loadCategoryCatalog(supabase, approvedItems)
+      : { byId: new Map(), loadedFromDb: false };
+    const validatedCategoryByItemId = new Map<string, string>();
+
     const hasApprovedBikeConditions = approvedItems.some(
       (i) => i.entity_type === 'motorcycle' && (i.proposed_data as any)?.conditions !== undefined
     );
@@ -949,6 +1385,80 @@ export class ChangeProposalService {
     for (const item of approvedItems) {
       validateGeodataImmutability(item.proposed_data as any);
       if (item.entity_type === 'motorcycle') {
+        if (
+          item.action === 'add' ||
+          (item.action === 'update' && hasExplicitCategoryField(item.proposed_data))
+        ) {
+          const itemLabel = `'${item.id}'${item.entity_id ? ` (${item.entity_id})` : ''}`;
+          const extractedProposedCategory = extractAndValidateCategorySyntax(item.proposed_data, {
+            itemLabel,
+            fieldName: 'categoryId',
+            required: item.action === 'add',
+            allowNull: false,
+          });
+
+          if (extractedProposedCategory.provided && extractedProposedCategory.normalizedId) {
+            const matchedCat = categoryCatalog.byId.get(
+              extractedProposedCategory.normalizedId.toLowerCase()
+            );
+            if (!matchedCat) {
+              throw new ProposalItemValidationError(
+                `Item ${itemLabel} (field 'categoryId'): unknown categoryId '${extractedProposedCategory.normalizedId}' (not found in categories catalog).`
+              );
+            }
+            validatedCategoryByItemId.set(item.id, matchedCat.id);
+          }
+
+          if (
+            item.action === 'update' &&
+            item.entity_id &&
+            extractedProposedCategory.provided &&
+            extractedProposedCategory.normalizedId
+          ) {
+            const origBike = (item.original_data as Record<string, any>) || {};
+            if (hasExplicitCategoryField(origBike)) {
+              const extractedOrigCategory = extractAndValidateCategorySyntax(origBike, {
+                itemLabel,
+                fieldName: 'originalData.categoryId',
+                required: false,
+                allowNull: true,
+              });
+              const mrTable = supabase.from('motorcycle_rentals') as any;
+              const liveRentalRes =
+                (await mrTable
+                  ?.select?.('id, category_id')
+                  ?.eq?.('id', item.entity_id)
+                  ?.maybeSingle?.()) || { data: null, error: null };
+
+              if (liveRentalRes?.error) {
+                throw new Error(
+                  `Failed to read existing motorcycle category: ${liveRentalRes.error.message}`
+                );
+              }
+
+              if (liveRentalRes?.data) {
+                const liveCategoryId =
+                  typeof liveRentalRes.data.category_id === 'string' &&
+                  liveRentalRes.data.category_id.trim().length > 0
+                    ? liveRentalRes.data.category_id.trim().toLowerCase()
+                    : null;
+                const expectedOrigCategoryId = extractedOrigCategory.normalizedId
+                  ? extractedOrigCategory.normalizedId.toLowerCase()
+                  : null;
+                if (liveCategoryId !== expectedOrigCategoryId) {
+                  throw new StaleCategoryStateError(
+                    `Stale motorcycle category for motorcycle '${item.entity_id}': live database category_id ('${String(
+                      liveRentalRes.data.category_id ?? null
+                    )}') diverged from proposal original_data.categoryId ('${String(
+                      extractedOrigCategory.normalizedId
+                    )}').`
+                  );
+                }
+              }
+            }
+          }
+        }
+
         const rawConditions = (item.proposed_data as any)?.conditions;
         if (rawConditions !== undefined) {
           const validated = normalizeAndValidateMotorcycleConditions(
@@ -1002,6 +1512,7 @@ export class ChangeProposalService {
 
       if (item.entity_type === 'motorcycle') {
         const normalizedBike = normalizeProposedMotorcycle(proposed);
+        const validatedCategoryId = validatedCategoryByItemId.get(item.id);
         const normalizedConditions = validatedConditionsByItemId.get(item.id);
         const primaryTier = normalizedBike.rates?.[0];
         const primaryRate =
@@ -1022,6 +1533,7 @@ export class ChangeProposalService {
             .insert({
               shop_id: proposal.shop_id,
               brand_id: brandId,
+              category_id: validatedCategoryId,
               model: item.model_name || normalizedBike.modelName || 'Motorcycle',
               year: normalizedBike.year ?? null,
               year_to: normalizedBike.year_to ?? null,
@@ -1082,7 +1594,7 @@ export class ChangeProposalService {
             itemDiffSummary.brand?.new || normalizedBike.brand || item.brand_name;
           if (
             itemDiffSummary.brand ||
-            normalizedBike.brand ||
+            (normalizedBike.brand && (!origBrand || normalizedBike.brand !== origBrand)) ||
             (item.brand_name && origBrand && item.brand_name !== origBrand)
           ) {
             const brandId = await resolveOrCreateBrandId(supabase, targetBrandName, brandCache);
@@ -1095,12 +1607,16 @@ export class ChangeProposalService {
             itemDiffSummary.model?.new || normalizedBike.modelName || item.model_name;
           if (
             itemDiffSummary.model ||
-            normalizedBike.modelName ||
+            (normalizedBike.modelName && (!origModel || normalizedBike.modelName !== origModel)) ||
             (item.model_name && origModel && item.model_name !== origModel)
           ) {
             if (targetModelName) {
               updatePayload.model = targetModelName;
             }
+          }
+
+          if (validatedCategoryId !== undefined) {
+            updatePayload.category_id = validatedCategoryId;
           }
 
           if (normalizedBike.year !== undefined && normalizedBike.year !== null) {

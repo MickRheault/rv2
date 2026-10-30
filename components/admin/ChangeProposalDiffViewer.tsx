@@ -95,6 +95,68 @@ function getModelYear(data: any): string | null {
   return data && typeof data === 'object' ? formatMotorcycleYear(data) : null;
 }
 
+interface CategoryDisplayInfo {
+  provided: boolean;
+  id: string | null;
+  name: string | null;
+  isUnknown: boolean;
+  label: string;
+}
+
+function resolveCategoryDisplay(data: any): CategoryDisplayInfo {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    return {
+      provided: false,
+      id: null,
+      name: null,
+      isUnknown: false,
+      label: 'Uncategorized (null)',
+    };
+  }
+  const hasCamel =
+    Object.prototype.hasOwnProperty.call(data, 'categoryId') && data.categoryId !== undefined;
+  const hasSnake =
+    Object.prototype.hasOwnProperty.call(data, 'category_id') && data.category_id !== undefined;
+  if (!hasCamel && !hasSnake) {
+    return {
+      provided: false,
+      id: null,
+      name: null,
+      isUnknown: false,
+      label: 'Uncategorized (null)',
+    };
+  }
+  const rawId = hasCamel ? data.categoryId : data.category_id;
+  if (rawId === null) {
+    return {
+      provided: true,
+      id: null,
+      name: null,
+      isUnknown: false,
+      label: 'Uncategorized (null)',
+    };
+  }
+  const id = typeof rawId === 'string' && rawId.trim().length > 0 ? rawId.trim() : String(rawId);
+  const rawName = data.categoryName ?? data.category_name ?? data.categories?.name ?? null;
+  const name = typeof rawName === 'string' && rawName.trim().length > 0 ? rawName.trim() : null;
+  if (!name) {
+    return {
+      provided: true,
+      id,
+      name: null,
+      isUnknown: true,
+      label: `Unknown category ID (${id})`,
+    };
+  }
+  return {
+    provided: true,
+    id,
+    name,
+    isUnknown: false,
+    label: `${name} (${id})`,
+  };
+}
+
 function getRateAmount(tier: any): number {
   const val = tier?.ratePerDay ?? tier?.dailyRate ?? tier?.rate_per_day ?? tier?.daily_rate;
   return val != null && !isNaN(Number(val)) ? Number(val) : 0;
@@ -698,6 +760,7 @@ export function ChangeProposalDiffViewer({
             {addItems.map((item) => {
               const year = getModelYear(item.proposed_data);
               const engineCc = getEngineCapacity(item.proposed_data);
+              const catInfo = resolveCategoryDisplay(item.proposed_data);
 
               return (
                 <div
@@ -715,7 +778,17 @@ export function ChangeProposalDiffViewer({
                       </span>
                       {renderItemDecisionBadge(item.status)}
                     </div>
-                    <div className="text-xs text-gray-500 flex gap-4 mt-0.5">
+                    <div className="text-xs text-gray-500 flex gap-4 mt-0.5 flex-wrap">
+                      {catInfo.provided &&
+                        (catInfo.isUnknown || !catInfo.id ? (
+                          <span className="text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded font-semibold">
+                            Category Error: Unknown category ID ({catInfo.id ?? 'null'})
+                          </span>
+                        ) : (
+                          <span>
+                            Category: {catInfo.name} ({catInfo.id})
+                          </span>
+                        ))}
                       {year != null && <span>Year: {year}</span>}
                       {engineCc != null && <span>Engine: {engineCc}cc</span>}
                     </div>
@@ -786,6 +859,20 @@ export function ChangeProposalDiffViewer({
                   ? { old: oldSourceUrl ?? null, new: newSourceUrl }
                   : null);
 
+              const origCat = resolveCategoryDisplay(orig);
+              const propCat = resolveCategoryDisplay(prop);
+              const hasCategoryUpdate =
+                propCat.provided &&
+                (propCat.isUnknown ||
+                  (origCat.provided && origCat.id !== null && origCat.isUnknown) ||
+                  !origCat.provided ||
+                  origCat.id !== propCat.id);
+              const hasCategoryError =
+                propCat.provided &&
+                (propCat.isUnknown ||
+                  !propCat.id ||
+                  (origCat.provided && origCat.id !== null && origCat.isUnknown));
+
               const conditionDiffs = computeMotorcycleConditionDiffs(
                 orig.conditions,
                 prop.conditions,
@@ -814,6 +901,28 @@ export function ChangeProposalDiffViewer({
                       {engineCc != null && <span>Engine: {engineCc}cc</span>}
                     </div>
                     <div className="mt-2 space-y-2 text-xs">
+                      {hasCategoryUpdate &&
+                        (hasCategoryError ? (
+                          <div className="text-red-700 bg-red-50 border border-red-200 px-2 py-1 rounded flex items-center gap-1.5 flex-wrap font-semibold">
+                            <span>
+                              Category Error:{' '}
+                              {propCat.isUnknown || !propCat.id
+                                ? `Unknown category ID (${propCat.id ?? 'null'})`
+                                : `Unknown original category ID (${origCat.id})`}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="text-gray-600 flex items-center gap-1.5 flex-wrap">
+                            <span className="font-medium text-gray-800">Category:</span>{' '}
+                            <span className="line-through text-red-500 font-medium">
+                              {origCat.label}
+                            </span>{' '}
+                            →{' '}
+                            <span className="text-emerald-600 font-semibold">
+                              {propCat.label}
+                            </span>
+                          </div>
+                        ))}
                       {brandDiff && (
                         <div className="text-gray-600 flex items-center gap-1.5">
                           <span className="font-medium text-gray-800">Brand:</span>{' '}
