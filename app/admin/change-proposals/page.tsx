@@ -26,6 +26,7 @@ interface ProposalSummaryItem {
     add: number;
     update: number;
     delist: number;
+    unchanged?: number;
   };
   createdAt: string;
   reviewedAt?: string | null;
@@ -389,7 +390,7 @@ export default function ChangeProposalsPage() {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               {prop.summaryCounts.add > 0 && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
                                   +{prop.summaryCounts.add} new
                                 </span>
                               )}
@@ -403,9 +404,15 @@ export default function ChangeProposalsPage() {
                                   -{prop.summaryCounts.delist} delisted
                                 </span>
                               )}
+                              {(prop.summaryCounts.unchanged ?? 0) > 0 && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                  ={prop.summaryCounts.unchanged} unchanged
+                                </span>
+                              )}
                               {prop.summaryCounts.add === 0 &&
                                 prop.summaryCounts.update === 0 &&
-                                prop.summaryCounts.delist === 0 && (
+                                prop.summaryCounts.delist === 0 &&
+                                (prop.summaryCounts.unchanged ?? 0) === 0 && (
                                   <span className="text-xs text-gray-400">No changes detected</span>
                                 )}
                             </div>

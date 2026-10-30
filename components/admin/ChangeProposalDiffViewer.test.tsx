@@ -188,23 +188,23 @@ describe('ChangeProposalDiffViewer', () => {
 
     render(<ChangeProposalDiffViewer proposal={mockProposal} items={mixedItems} />);
 
-    // Unchanged section header is collapsed by default
+    // Unchanged section header is expanded by default (#199) so unchanged bikes are immediately visible in green
     const unchangedToggle = screen.getByRole('button', {
       name: /Confirmed Unchanged Inventory \(1\)/i,
     });
-    expect(unchangedToggle).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByText('Yamaha Grand Filano')).not.toBeInTheDocument();
-
-    // Expanding shows the unchanged inventory details
-    fireEvent.click(unchangedToggle);
     expect(unchangedToggle).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByText('Yamaha Grand Filano')).toBeInTheDocument();
     expect(screen.getByText(/1\+ days: ฿350\/day/i)).toBeInTheDocument();
 
-    // Collapsing again hides the unchanged inventory details
+    // Collapsing hides the unchanged inventory details
     fireEvent.click(unchangedToggle);
     expect(unchangedToggle).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByText('Yamaha Grand Filano')).not.toBeInTheDocument();
+
+    // Expanding again restores the unchanged inventory details
+    fireEvent.click(unchangedToggle);
+    expect(unchangedToggle).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Yamaha Grand Filano')).toBeInTheDocument();
 
     // Toolbar count should only show 1 actionable item
     expect(screen.getByText(/1 of 1 items selected/i)).toBeInTheDocument();
@@ -727,12 +727,16 @@ describe('ChangeProposalDiffViewer', () => {
 
     render(<ChangeProposalDiffViewer proposal={mockProposal} items={conditionUpdateItems} />);
 
-    expect(
-      screen.getByText('Honda Click 125 — Security Deposit: not set → THB 3,000')
-    ).toBeInTheDocument();
+    const depositLabel = screen.getByText('Honda Click 125 — Security Deposit:');
+    expect(depositLabel.parentElement).toHaveTextContent(
+      'Honda Click 125 — Security Deposit:not set→THB 3,000'
+    );
+    expect(screen.getByText('THB 3,000').className).toContain('text-blue-700');
 
-    fireEvent.click(screen.getByRole('button', { name: /Unchanged Inventory/i }));
-    expect(screen.getByText('Security Deposit: THB 10,000')).toBeInTheDocument();
+    // Unchanged inventory is expanded by default (#199) and renders condition in green
+    const unchangedCond = screen.getByText('Security Deposit: THB 10,000');
+    expect(unchangedCond).toBeInTheDocument();
+    expect(unchangedCond.parentElement?.className).toContain('bg-emerald-100');
   });
 
   it('renders read-only extraction hints in the proposal summary card when present', () => {

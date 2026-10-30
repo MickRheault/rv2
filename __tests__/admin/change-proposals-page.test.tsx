@@ -466,7 +466,10 @@ describe('ChangeProposalsPage', () => {
     expect(screen.getByText('2020')).toBeInTheDocument();
     expect(screen.getByText('2015-2020')).toBeInTheDocument();
 
-    // Expand unchanged inventory and verify formatted year range
+    // Confirmed Unchanged Inventory is expanded by default (#199) and toggles cleanly
+    expect(screen.getByText('Year: 2018-2022')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Confirmed Unchanged Inventory/i }));
+    expect(screen.queryByText('Year: 2018-2022')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Confirmed Unchanged Inventory/i }));
     expect(screen.getByText('Year: 2018-2022')).toBeInTheDocument();
   });
@@ -581,6 +584,253 @@ describe('ChangeProposalsPage', () => {
     expect(
       screen.getByText(`Category Error: Unknown category ID (${UNKNOWN_ID})`)
     ).toBeInTheDocument();
+  });
+
+  it('displays all unchanged fields, rate tiers, conditions, shop policies, and fleet inventory prominently in green while reserving blue/indigo/red for mutations (#199)', async () => {
+    const { ChangeProposalDiffViewer } = await import(
+      '@/components/admin/ChangeProposalDiffViewer'
+    );
+
+    const SCOOTER_ID = '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737';
+    const DEPOSIT_ID = '9526b7ae-8c84-45a2-a8ac-c4ecbeea600b';
+    const LICENSE_ID = '11111111-1111-4111-8111-111111111111';
+
+    render(
+      <ChangeProposalDiffViewer
+        proposal={{
+          id: 'prop-green-unchanged-199',
+          shop_id: 'shop-199',
+          source_url: 'https://example-shop.com/fleet',
+          status: 'pending',
+          created_at: '2026-10-30T12:00:00Z',
+          rental_shops: {
+            provider_name: 'Bangkok Moto Hub',
+            slug: 'bangkok-moto-hub',
+          },
+        }}
+        items={[
+          {
+            id: 'item-add-199',
+            proposal_id: 'prop-green-unchanged-199',
+            entity_type: 'motorcycle',
+            action: 'add',
+            entity_id: null,
+            brand_name: 'Yamaha',
+            model_name: 'XMAX 300',
+            original_data: null,
+            proposed_data: {
+              categoryId: SCOOTER_ID,
+              categoryName: 'Scooter',
+              year: 2024,
+              engineCapacityCc: 292,
+              rates: [{ minDays: 1, maxDays: 6, ratePerDay: 900, currency: 'THB' }],
+            },
+            diff_summary: null,
+            status: 'pending',
+          },
+          {
+            id: 'item-update-199',
+            proposal_id: 'prop-green-unchanged-199',
+            entity_type: 'motorcycle',
+            action: 'update',
+            entity_id: 'bike-pcx-199',
+            brand_name: 'Honda',
+            model_name: 'PCX 160',
+            // Partial original_data: relies on baseline_data for untouched year/sourceUrl
+            original_data: {
+              categoryId: SCOOTER_ID,
+              categoryName: 'Scooter',
+              engineCapacityCc: 157,
+              rates: [
+                { minDays: 1, maxDays: 6, ratePerDay: 350, currency: 'THB' },
+                { minDays: 7, maxDays: 29, ratePerDay: 300, currency: 'THB' },
+              ],
+              conditions: [
+                {
+                  condition_type_id: DEPOSIT_ID,
+                  name: 'Security Deposit',
+                  notes: '3000 THB',
+                },
+                {
+                  condition_type_id: LICENSE_ID,
+                  name: 'International Driving Permit',
+                  notes: 'Required',
+                },
+              ],
+            },
+            proposed_data: {
+              // Only daily rate and deposit changed; weekly rate, category, engine, year, sourceUrl, and IDP condition did not change
+              rates: [
+                { minDays: 1, maxDays: 6, ratePerDay: 400, currency: 'THB' },
+                { minDays: 7, maxDays: 29, ratePerDay: 300, currency: 'THB' },
+                { minDays: 30, maxDays: null, ratePerDay: 220, currency: 'THB' },
+              ],
+              conditions: [
+                {
+                  condition_type_id: DEPOSIT_ID,
+                  name: 'Security Deposit',
+                  notes: '5000 THB',
+                },
+                {
+                  condition_type_id: LICENSE_ID,
+                  name: 'International Driving Permit',
+                  notes: 'Required',
+                },
+              ],
+            },
+            baseline_data: {
+              brand: 'Honda',
+              model: 'PCX 160',
+              categoryId: SCOOTER_ID,
+              categoryName: 'Scooter',
+              year: 2023,
+              year_to: null,
+              engineCapacityCc: 157,
+              sourceUrl: 'https://example-shop.com/bikes/pcx-160',
+            },
+            diff_summary: null,
+            status: 'pending',
+          },
+          {
+            id: 'item-shop-199',
+            proposal_id: 'prop-green-unchanged-199',
+            entity_type: 'rental_shop',
+            action: 'update',
+            entity_id: 'shop-199',
+            brand_name: null,
+            model_name: null,
+            original_data: {
+              phone: '+66 81 000 0000',
+              inclusions: ['2 Helmets', 'Phone Holder'],
+              conditions: ['Passport Copy', 'Minimum Age 20'],
+            },
+            proposed_data: {
+              phone: '+66 81 999 9999',
+              inclusions: ['2 Helmets', 'Phone Holder', 'Raincoat'],
+              conditions: ['Passport Copy'],
+            },
+            baseline_data: {
+              business_description: 'Trusted scooter rentals in central Bangkok',
+              phone: '+66 81 000 0000',
+              website: 'https://example-shop.com',
+              inclusions: ['2 Helmets', 'Phone Holder'],
+              conditions: ['Passport Copy', 'Minimum Age 20'],
+            },
+            diff_summary: null,
+            status: 'pending',
+          },
+          {
+            id: 'item-unchanged-199',
+            proposal_id: 'prop-green-unchanged-199',
+            entity_type: 'motorcycle',
+            action: 'unchanged',
+            entity_id: 'bike-click-199',
+            brand_name: 'Honda',
+            model_name: 'Click 125i',
+            original_data: null,
+            proposed_data: {
+              categoryId: SCOOTER_ID,
+              categoryName: 'Scooter',
+              year: 2022,
+              engineCapacityCc: 125,
+              sourceUrl: 'https://example-shop.com/bikes/click-125i',
+              rates: [{ minDays: 1, maxDays: 6, ratePerDay: 250, currency: 'THB' }],
+              conditions: [
+                {
+                  condition_type_id: DEPOSIT_ID,
+                  name: 'Security Deposit',
+                  notes: '2000 THB',
+                },
+              ],
+            },
+            diff_summary: null,
+            status: 'applied',
+          },
+        ]}
+      />
+    );
+
+    // 1. Summary header reserves emerald green for Unchanged and uses indigo for +New
+    const newHeaderPill = screen.getByText('+1 New');
+    expect(newHeaderPill.className).toContain('bg-indigo-50');
+    expect(newHeaderPill.className).not.toContain('emerald');
+
+    const unchangedHeaderPill = screen.getByText('=1 Unchanged');
+    expect(unchangedHeaderPill.className).toContain('bg-emerald-50');
+
+    // + New Bike badge is indigo, not emerald
+    const newBikeBadge = screen.getByText('+ New Bike');
+    expect(newBikeBadge.className).toContain('bg-indigo-100');
+    expect(newBikeBadge.className).not.toContain('emerald');
+
+    // 2. Updated motorcycle card shows all unchanged specs & conditions in green
+    const unchangedSpecsBox = screen.getByTestId('unchanged-specs-item-update-199');
+    expect(unchangedSpecsBox.className).toContain('bg-emerald-50');
+    expect(unchangedSpecsBox).toHaveTextContent(`Category:Scooter (${SCOOTER_ID})`);
+    expect(unchangedSpecsBox).toHaveTextContent('Brand:Honda');
+    expect(unchangedSpecsBox).toHaveTextContent('Model:PCX 160');
+    expect(unchangedSpecsBox).toHaveTextContent('Year:2023');
+    expect(unchangedSpecsBox).toHaveTextContent('Engine:157cc');
+    expect(unchangedSpecsBox).toHaveTextContent(
+      'Source URL:https://example-shop.com/bikes/pcx-160'
+    );
+    expect(unchangedSpecsBox).toHaveTextContent('International Driving Permit:Required');
+
+    // Changed deposit condition uses blue target pill, not emerald
+    const newDepositVal = screen.getByText('5000 THB');
+    expect(newDepositVal.className).toContain('text-blue-700');
+    expect(newDepositVal.className).not.toContain('emerald');
+
+    // Dynamically paired rate tiers: modified (blue), unchanged (emerald), added (indigo)
+    const modifiedRateVal = screen.getByText('฿400/day');
+    expect(modifiedRateVal.className).toContain('text-blue-700');
+
+    const unchangedWeeklyRate = screen.getByText('฿300/day').closest('div')!;
+    expect(unchangedWeeklyRate.className).toContain('bg-emerald-50');
+    expect(unchangedWeeklyRate).toHaveTextContent('7-29 days:');
+    expect(unchangedWeeklyRate).toHaveTextContent('✓ Unchanged');
+
+    const addedMonthlyRate = screen.getByText('฿220/day').closest('div')!;
+    expect(addedMonthlyRate.className).toContain('bg-indigo-50');
+    expect(addedMonthlyRate).toHaveTextContent('+ Added');
+
+    // 3. Shop profile card shows unchanged Description & Website in green and unchanged policies in green
+    const unchangedShopBox = screen.getByTestId('unchanged-shop-fields-item-shop-199');
+    expect(unchangedShopBox.className).toContain('bg-emerald-50');
+    expect(unchangedShopBox).toHaveTextContent(
+      'Description:Trusted scooter rentals in central Bangkok'
+    );
+    expect(unchangedShopBox).toHaveTextContent('Website:https://example-shop.com');
+
+    const changedPhoneVal = screen.getByText('+66 81 999 9999');
+    expect(changedPhoneVal.className).toContain('text-blue-700');
+
+    const unchangedHelmetRow = screen.getByText('2 Helmets').closest('div')!;
+    expect(unchangedHelmetRow.className).toContain('bg-emerald-50');
+    expect(unchangedHelmetRow).toHaveTextContent('✓ Unchanged');
+
+    const addedRaincoatRow = screen.getByText('Raincoat').closest('div')!;
+    expect(addedRaincoatRow.className).toContain('bg-indigo-50');
+    expect(addedRaincoatRow).toHaveTextContent('+ Added');
+
+    const removedMinAgeRow = screen.getByText('Minimum Age 20').closest('div')!;
+    expect(removedMinAgeRow.className).toContain('bg-red-50');
+    expect(removedMinAgeRow).toHaveTextContent('- Removed');
+
+    const unchangedPassportRow = screen.getByText('Passport Copy').closest('div')!;
+    expect(unchangedPassportRow.className).toContain('bg-emerald-50');
+    expect(unchangedPassportRow).toHaveTextContent('✓ Unchanged');
+
+    // 4. Confirmed Unchanged Inventory is expanded by default with green styling and full metadata
+    expect(screen.getByText('✓ All Matched')).toBeInTheDocument();
+    expect(screen.getByText('Click 125i', { exact: false })).toBeInTheDocument();
+    expect(screen.getByText('Year: 2022')).toBeInTheDocument();
+    expect(screen.getByText('Engine: 125cc')).toBeInTheDocument();
+    expect(
+      screen.getByText('Source URL: https://example-shop.com/bikes/click-125i')
+    ).toBeInTheDocument();
+    const unchangedBikeRate = screen.getByText('1-6 days: ฿250/day').parentElement!;
+    expect(unchangedBikeRate.className).toContain('bg-emerald-100');
   });
 });
 
