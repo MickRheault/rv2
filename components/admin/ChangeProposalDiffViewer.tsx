@@ -638,7 +638,7 @@ function renderRateTiersDiff(
                   </span>
                   <span className="line-through text-red-500 font-medium">
                     {symbol}
-                    {tier.oldRate}
+                    {tier.oldRate}/day
                   </span>
                   <span className="text-gray-400">→</span>
                   <span className="text-blue-700 font-bold">
