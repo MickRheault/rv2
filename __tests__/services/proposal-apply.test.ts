@@ -4797,6 +4797,194 @@ describe('Change Proposal Application & Geodata Protection', () => {
         ProposalItemValidationError
       );
     });
+
+    it('non-destructively hydrates baseline_data on motorcycle and rental_shop items without overwriting original_data (#199)', async () => {
+      const SCOOTER_ID = '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737';
+      const DEPOSIT_ID = '9526b7ae-8c84-45a2-a8ac-c4ecbeea600b';
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue({
+        from: jest.fn((table: string) => {
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({
+                    data: {
+                      id: 'prop-baseline-199',
+                      shop_id: 'shop-199',
+                      status: 'pending',
+                      rental_shops: { id: 'shop-199', provider_name: 'Bangkok Moto Hub', slug: 'bangkok-moto-hub' },
+                    },
+                    error: null,
+                  }),
+                }),
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  order: jest.fn().mockResolvedValue({
+                    data: [
+                      {
+                        id: 'item-partial-bike',
+                        proposal_id: 'prop-baseline-199',
+                        entity_type: 'motorcycle',
+                        action: 'update',
+                        entity_id: 'bike-199',
+                        brand_name: 'Honda',
+                        model_name: 'PCX 160',
+                        original_data: { categoryId: null },
+                        proposed_data: { categoryId: SCOOTER_ID },
+                        status: 'pending',
+                      },
+                      {
+                        id: 'item-partial-shop',
+                        proposal_id: 'prop-baseline-199',
+                        entity_type: 'rental_shop',
+                        action: 'update',
+                        entity_id: 'shop-199',
+                        brand_name: null,
+                        model_name: null,
+                        original_data: { phone: '+66 80 111 1111' },
+                        proposed_data: { phone: '+66 80 222 2222' },
+                        status: 'pending',
+                      },
+                    ],
+                    error: null,
+                  }),
+                }),
+              }),
+            };
+          }
+          if (table === 'categories') {
+            return {
+              select: jest.fn().mockReturnValue({
+                in: jest.fn().mockResolvedValue({
+                  data: [{ id: SCOOTER_ID, name: 'Scooter' }],
+                  error: null,
+                }),
+              }),
+            };
+          }
+          if (table === 'motorcycle_rentals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                in: jest.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: 'bike-199',
+                      category_id: null,
+                      model: 'PCX 160',
+                      year: 2023,
+                      year_to: null,
+                      engine_capacity_cc: 157,
+                      source_url: 'https://example-shop.com/pcx-160',
+                      brands: { name: 'Honda' },
+                      categories: null,
+                      rental_rate_tiers: [
+                        { min_days: 7, max_days: 29, rate_per_day: 300, currency: 'THB' },
+                        { min_days: 1, max_days: 6, rate_per_day: 350, currency: 'THB' },
+                      ],
+                      motorcycle_conditions: [
+                        {
+                          condition_type_id: DEPOSIT_ID,
+                          notes: '3000 THB',
+                          condition_types: { id: DEPOSIT_ID, name: 'Security Deposit' },
+                        },
+                      ],
+                    },
+                  ],
+                  error: null,
+                }),
+              }),
+            };
+          }
+          if (table === 'rental_shops') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  maybeSingle: jest.fn().mockResolvedValue({
+                    data: {
+                      business_description: 'Central scooter rentals',
+                      phone: '+66 80 111 1111',
+                      website: 'https://example-shop.com',
+                    },
+                    error: null,
+                  }),
+                }),
+              }),
+            };
+          }
+          if (table === 'rental_shop_inclusions') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({
+                  data: [{ inclusion_text: '2 Helmets' }, { inclusion_text: 'Phone Holder' }],
+                  error: null,
+                }),
+              }),
+            };
+          }
+          if (table === 'rental_shop_conditions') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({
+                  data: [{ condition_value: 'Passport Copy' }],
+                  error: null,
+                }),
+              }),
+            };
+          }
+          return {};
+        }),
+      });
+
+      const detail = await ChangeProposalService.getProposalById('prop-baseline-199');
+
+      // Stored original_data and proposed_data are untouched
+      expect(detail.items[0].original_data).toEqual({
+        categoryId: null,
+        categoryName: null,
+      });
+      expect(detail.items[0].proposed_data).toEqual({
+        categoryId: SCOOTER_ID,
+        categoryName: 'Scooter',
+      });
+
+      // Hydrated baseline_data exposes all untouched live fields, sorted rate tiers, and conditions
+      expect(detail.items[0].baseline_data).toEqual({
+        brand: 'Honda',
+        model: 'PCX 160',
+        categoryId: null,
+        categoryName: null,
+        year: 2023,
+        year_to: null,
+        engineCapacityCc: 157,
+        sourceUrl: 'https://example-shop.com/pcx-160',
+        rates: [
+          { minDays: 1, maxDays: 6, ratePerDay: 350, currency: 'THB' },
+          { minDays: 7, maxDays: 29, ratePerDay: 300, currency: 'THB' },
+        ],
+        conditions: [
+          {
+            condition_type_id: DEPOSIT_ID,
+            name: 'Security Deposit',
+            notes: '3000 THB',
+          },
+        ],
+      });
+
+      expect(detail.items[1].original_data).toEqual({ phone: '+66 80 111 1111' });
+      expect(detail.items[1].baseline_data).toEqual({
+        business_description: 'Central scooter rentals',
+        phone: '+66 80 111 1111',
+        website: 'https://example-shop.com',
+        inclusions: ['2 Helmets', 'Phone Holder'],
+        conditions: ['Passport Copy'],
+      });
+    });
   });
 });
 

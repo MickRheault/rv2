@@ -1269,6 +1269,145 @@ export class ChangeProposalService {
       }
     }
 
+    // Non-destructively hydrate baseline_data for motorcycle (with entity_id) and rental_shop items
+    // so partial update proposals still display all untouched fields, rate tiers, and policies in review.
+    const bikeEntityIds = Array.from(
+      new Set(
+        enrichedItems
+          .filter(
+            (i) =>
+              i.entity_type === 'motorcycle' &&
+              typeof i.entity_id === 'string' &&
+              i.entity_id.trim().length > 0
+          )
+          .map((i) => i.entity_id as string)
+      )
+    );
+    if (bikeEntityIds.length > 0) {
+      const bikesQuery = (supabase.from('motorcycle_rentals') as any)
+        ?.select?.(`
+          id,
+          category_id,
+          model,
+          year,
+          year_to,
+          engine_capacity_cc,
+          source_url,
+          brands ( name ),
+          categories ( id, name ),
+          rental_rate_tiers ( min_days, max_days, rate_per_day, currency ),
+          motorcycle_conditions (
+            condition_type_id,
+            notes,
+            condition_types ( id, name )
+          )
+        `)
+        ?.in?.('id', bikeEntityIds);
+      if (bikesQuery && typeof bikesQuery.then === 'function') {
+        const { data: liveBikes } = await bikesQuery;
+        if (Array.isArray(liveBikes) && liveBikes.length > 0) {
+          const liveById = new Map<string, any>(liveBikes.map((b: any) => [b.id, b]));
+          for (const item of enrichedItems) {
+            if (item.entity_type !== 'motorcycle' || !item.entity_id) continue;
+            const liveBike = liveById.get(item.entity_id);
+            if (!liveBike) continue;
+
+            const rawCategoryId = liveBike.category_id ?? liveBike.categories?.id ?? null;
+            const categoryId =
+              typeof rawCategoryId === 'string' && rawCategoryId.trim().length > 0
+                ? rawCategoryId.trim()
+                : null;
+            const rawCategoryName = liveBike.categories?.name ?? null;
+            const categoryName =
+              categoryId && typeof rawCategoryName === 'string' && rawCategoryName.trim().length > 0
+                ? rawCategoryName.trim()
+                : null;
+            const sortedTiers = [...(liveBike.rental_rate_tiers || [])].sort(
+              (a: any, b: any) => (a.min_days ?? 1) - (b.min_days ?? 1)
+            );
+
+            item.baseline_data = {
+              brand: liveBike.brands?.name ?? item.brand_name ?? null,
+              model: liveBike.model ?? item.model_name ?? null,
+              categoryId,
+              categoryName,
+              year: liveBike.year ?? null,
+              year_to: liveBike.year_to ?? null,
+              engineCapacityCc: liveBike.engine_capacity_cc ?? null,
+              sourceUrl: liveBike.source_url ?? null,
+              rates: sortedTiers.map((r: any) => ({
+                minDays: r.min_days,
+                maxDays: r.max_days ?? null,
+                ratePerDay: r.rate_per_day,
+                currency: r.currency || 'THB',
+              })),
+              conditions: (liveBike.motorcycle_conditions || []).map((mc: any) => ({
+                condition_type_id: mc.condition_type_id,
+                name: resolveConditionName(mc),
+                notes: resolveConditionNotes(mc),
+              })),
+            };
+          }
+        }
+      }
+    }
+
+    const hasShopItems = enrichedItems.some((i) => i.entity_type === 'rental_shop');
+    if (hasShopItems && (proposal as any).shop_id) {
+      const targetShopId = (proposal as any).shop_id;
+      const shopBaselineQuery = (supabase.from('rental_shops') as any)
+        ?.select?.('business_description, phone, website')
+        ?.eq?.('id', targetShopId);
+      const inclusionsQuery = (supabase.from('rental_shop_inclusions') as any)
+        ?.select?.('inclusion_text')
+        ?.eq?.('shop_id', targetShopId);
+      const conditionsQuery = (supabase.from('rental_shop_conditions') as any)
+        ?.select?.('condition_value')
+        ?.eq?.('shop_id', targetShopId);
+
+      const [shopRes, incRes, condRes] = await Promise.all([
+        typeof shopBaselineQuery?.maybeSingle === 'function'
+          ? shopBaselineQuery.maybeSingle()
+          : typeof shopBaselineQuery?.single === 'function'
+          ? shopBaselineQuery.single()
+          : Promise.resolve(null),
+        inclusionsQuery && typeof inclusionsQuery.then === 'function'
+          ? inclusionsQuery
+          : Promise.resolve(null),
+        conditionsQuery && typeof conditionsQuery.then === 'function'
+          ? conditionsQuery
+          : Promise.resolve(null),
+      ]);
+
+      const shopRow = shopRes?.data ?? null;
+      const incRows = Array.isArray(incRes?.data) ? incRes.data : null;
+      const condRows = Array.isArray(condRes?.data) ? condRes.data : null;
+
+      if (shopRow || incRows || condRows) {
+        const shopBaseline: Record<string, any> = {};
+        if (shopRow) {
+          shopBaseline.business_description = shopRow.business_description ?? null;
+          shopBaseline.phone = shopRow.phone ?? null;
+          shopBaseline.website = shopRow.website ?? null;
+        }
+        if (incRows) {
+          shopBaseline.inclusions = incRows
+            .map((r: any) => r?.inclusion_text)
+            .filter((v: any): v is string => typeof v === 'string' && v.trim().length > 0);
+        }
+        if (condRows) {
+          shopBaseline.conditions = condRows
+            .map((r: any) => r?.condition_value)
+            .filter((v: any): v is string => typeof v === 'string' && v.trim().length > 0);
+        }
+        for (const item of enrichedItems) {
+          if (item.entity_type === 'rental_shop') {
+            item.baseline_data = { ...shopBaseline };
+          }
+        }
+      }
+    }
+
     let extractionHints: string | null | undefined = undefined;
     const rawSnapshot = (proposal as any).raw_snapshot;
     const fallbackCandidates = [

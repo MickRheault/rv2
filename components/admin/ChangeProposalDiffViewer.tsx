@@ -25,13 +25,19 @@ import { getShopUrl } from '@/lib/utils/urls';
 export interface DiffViewerItem {
   id: string;
   proposal_id: string;
-  entity_type: 'motorcycle' | 'rental_shop' | 'rental_rate_tier' | 'motorcycle_condition' | 'rental_shop_inclusion';
+  entity_type:
+    | 'motorcycle'
+    | 'rental_shop'
+    | 'rental_rate_tier'
+    | 'motorcycle_condition'
+    | 'rental_shop_inclusion';
   action: 'add' | 'update' | 'delist' | 'unchanged';
   entity_id: string | null;
   brand_name: string | null;
   model_name: string | null;
   original_data: any;
   proposed_data: any;
+  baseline_data?: any;
   diff_summary: any;
   status: 'pending' | 'approved' | 'rejected' | 'applied';
 }
@@ -165,13 +171,16 @@ function getRateAmount(tier: any): number {
 function renderRateTiers(
   rates: any[] | undefined,
   defaultCurrency?: string,
-  variant: 'emerald' | 'blue' | 'gray' | 'red' = 'emerald',
-  strikeThrough = false
+  variant: 'emerald' | 'indigo' | 'blue' | 'gray' | 'red' = 'indigo',
+  strikeThrough = false,
+  showUnchangedCheck = false
 ) {
   if (!rates || !Array.isArray(rates) || rates.length === 0) return null;
   const colorClasses =
     variant === 'emerald'
-      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+      ? 'bg-emerald-100/80 text-emerald-900 border-emerald-300 font-medium'
+      : variant === 'indigo'
+      ? 'bg-indigo-50 text-indigo-800 border-indigo-200'
       : variant === 'blue'
       ? 'bg-blue-50 text-blue-800 border-blue-200'
       : variant === 'red'
@@ -188,11 +197,18 @@ function renderRateTiers(
         return (
           <span
             key={idx}
-            className={`inline-flex text-xs px-2 py-0.5 rounded border ${colorClasses} ${
+            className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded border ${colorClasses} ${
               strikeThrough ? 'line-through' : ''
             }`}
           >
-            {min}{max ? `-${max}` : '+'} days: {symbol}{rateAmount}/day
+            <span>
+              {min}
+              {max ? `-${max}` : '+'} days: {symbol}
+              {rateAmount}/day
+            </span>
+            {showUnchangedCheck && (
+              <span className="text-[10px] font-bold text-emerald-700">✓</span>
+            )}
           </span>
         );
       })}
@@ -200,8 +216,16 @@ function renderRateTiers(
   );
 }
 
-function renderMotorcycleConditionsList(conditions: any[] | undefined) {
+function renderMotorcycleConditionsList(
+  conditions: any[] | undefined,
+  variant: 'amber' | 'emerald' = 'amber'
+) {
   if (!Array.isArray(conditions) || conditions.length === 0) return null;
+  const colorClasses =
+    variant === 'emerald'
+      ? 'bg-emerald-100/80 text-emerald-900 border-emerald-300 font-medium'
+      : 'bg-amber-50 text-amber-800 border-amber-200';
+
   return (
     <div className="mt-1 flex gap-2 flex-wrap">
       {conditions.map((c: any, idx: number) => {
@@ -210,9 +234,14 @@ function renderMotorcycleConditionsList(conditions: any[] | undefined) {
         return (
           <span
             key={c?.condition_type_id || idx}
-            className="inline-flex text-xs px-2 py-0.5 rounded border bg-amber-50 text-amber-800 border-amber-200"
+            className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded border ${colorClasses}`}
           >
-            {name}: {notes || 'Required'}
+            <span>
+              {name}: {notes || 'Required'}
+            </span>
+            {variant === 'emerald' && (
+              <span className="text-[10px] font-bold text-emerald-700">✓</span>
+            )}
           </span>
         );
       })}
@@ -227,29 +256,65 @@ interface MotorcycleConditionDiff {
   newNotes: string | null;
 }
 
-function computeMotorcycleConditionDiffs(
+interface UnchangedMotorcycleCondition {
+  key: string;
+  name: string;
+  notes: string | null;
+}
+
+function computeMotorcycleConditionsBreakdown(
   origConditions: any[] | undefined,
   propConditions: any[] | undefined,
   summaryConditions: any
-): MotorcycleConditionDiff[] {
+): {
+  changed: MotorcycleConditionDiff[];
+  unchanged: UnchangedMotorcycleCondition[];
+} {
+  const origByKey = toConditionDisplayMap(Array.isArray(origConditions) ? origConditions : []);
+
   if (Array.isArray(summaryConditions) && summaryConditions.length > 0) {
-    return summaryConditions.map((c: any, idx: number) => ({
+    const changed: MotorcycleConditionDiff[] = summaryConditions.map((c: any, idx: number) => ({
       key: String(c.condition_type_id || c.name || idx),
       name: resolveConditionName(c),
       oldNotes: c.old ?? c.oldNotes ?? null,
       newNotes: c.new ?? c.newNotes ?? null,
     }));
+    const changedKeys = new Set(changed.map((c) => c.key));
+    const changedNames = new Set(changed.map((c) => c.name));
+    const propByKey = Array.isArray(propConditions) ? toConditionDisplayMap(propConditions) : null;
+    const unchanged: UnchangedMotorcycleCondition[] = [];
+
+    for (const [key, origEntry] of origByKey.entries()) {
+      if (changedKeys.has(key) || changedNames.has(origEntry.name)) continue;
+      if (!propByKey || (propByKey.has(key) && propByKey.get(key)!.notes === origEntry.notes)) {
+        unchanged.push({
+          key,
+          name: origEntry.name,
+          notes: origEntry.notes,
+        });
+      }
+    }
+
+    return { changed, unchanged };
   }
 
+  // Omitted proposed conditions preserve all existing motorcycle conditions unchanged
   if (!Array.isArray(propConditions)) {
-    return [];
+    const unchanged: UnchangedMotorcycleCondition[] = [];
+    for (const [key, origEntry] of origByKey.entries()) {
+      unchanged.push({
+        key,
+        name: origEntry.name,
+        notes: origEntry.notes,
+      });
+    }
+    return { changed: [], unchanged };
   }
 
-  const origByKey = toConditionDisplayMap(Array.isArray(origConditions) ? origConditions : []);
   const propByKey = toConditionDisplayMap(propConditions);
-
   const allKeys = new Set<string>([...origByKey.keys(), ...propByKey.keys()]);
-  const diffs: MotorcycleConditionDiff[] = [];
+  const changed: MotorcycleConditionDiff[] = [];
+  const unchanged: UnchangedMotorcycleCondition[] = [];
 
   for (const key of allKeys) {
     const oldEntry = origByKey.get(key);
@@ -258,37 +323,66 @@ function computeMotorcycleConditionDiffs(
     const newNotes = newEntry ? newEntry.notes : null;
     const hadBefore = origByKey.has(key);
     const hasAfter = propByKey.has(key);
+    const resolvedName = newEntry?.name || oldEntry?.name || 'Security Deposit';
 
     if (hadBefore !== hasAfter || oldNotes !== newNotes) {
-      diffs.push({
+      changed.push({
         key,
-        name: newEntry?.name || oldEntry?.name || 'Security Deposit',
+        name: resolvedName,
         oldNotes: hadBefore ? oldNotes : null,
         newNotes: hasAfter ? newNotes : null,
+      });
+    } else if (hadBefore && hasAfter) {
+      unchanged.push({
+        key,
+        name: resolvedName,
+        notes: newNotes,
       });
     }
   }
 
-  return diffs;
+  return { changed, unchanged };
 }
 
-function renderPolicyList(title: string, added: string[] = [], removed: string[] = []) {
-  if (added.length === 0 && removed.length === 0) return null;
+function renderPolicyList(
+  title: string,
+  added: string[] = [],
+  removed: string[] = [],
+  unchanged: string[] = []
+) {
+  if (added.length === 0 && removed.length === 0 && unchanged.length === 0) return null;
   return (
-    <div className="mt-2.5 pt-2 border-t border-gray-100 space-y-1">
+    <div className="mt-2.5 pt-2 border-t border-gray-100 space-y-1.5">
       <span className="font-semibold text-gray-900 block mb-1">{title}:</span>
       {added.map((text: string, idx: number) => (
-        <div key={`add-${idx}`} className="flex items-center gap-1.5 text-emerald-700 font-medium">
-          <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1 rounded uppercase tracking-wider">
+        <div
+          key={`add-${idx}`}
+          className="flex items-center gap-1.5 text-indigo-900 bg-indigo-50/70 border border-indigo-200 rounded px-2 py-1 font-medium"
+        >
+          <span className="bg-indigo-100 text-indigo-800 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
             + Added
           </span>
           <span>{text}</span>
         </div>
       ))}
       {removed.map((text: string, idx: number) => (
-        <div key={`rem-${idx}`} className="flex items-center gap-1.5 text-red-600 line-through">
-          <span className="bg-red-100 text-red-800 text-[10px] font-bold px-1 rounded uppercase tracking-wider no-underline">
+        <div
+          key={`rem-${idx}`}
+          className="flex items-center gap-1.5 text-red-700 bg-red-50/70 border border-red-200 rounded px-2 py-1 line-through"
+        >
+          <span className="bg-red-100 text-red-800 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider no-underline">
             - Removed
+          </span>
+          <span>{text}</span>
+        </div>
+      ))}
+      {unchanged.map((text: string, idx: number) => (
+        <div
+          key={`unchanged-${idx}`}
+          className="flex items-center gap-1.5 text-emerald-900 bg-emerald-50 border border-emerald-300 rounded px-2 py-1 font-medium"
+        >
+          <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+            ✓ Unchanged
           </span>
           <span>{text}</span>
         </div>
@@ -297,34 +391,240 @@ function renderPolicyList(title: string, added: string[] = [], removed: string[]
   );
 }
 
+interface NormalizedRateTier {
+  minDays: number;
+  maxDays: number | null;
+  rate: number;
+  currency: string;
+}
+
+function normalizeRateTierEntry(tier: any, defaultCurrency?: string): NormalizedRateTier {
+  const rawMin = tier?.minDays ?? tier?.min_days ?? 1;
+  const minDays = !isNaN(Number(rawMin)) ? Number(rawMin) : 1;
+  const rawMax = tier?.maxDays ?? tier?.max_days ?? null;
+  const maxDays = rawMax != null && !isNaN(Number(rawMax)) ? Number(rawMax) : null;
+  const rate = getRateAmount(tier);
+  const currency = String(tier?.currency || defaultCurrency || 'THB').toUpperCase();
+  return { minDays, maxDays, rate, currency };
+}
+
+function computeDynamicTiersDiff(
+  oldList: any[] | undefined,
+  newList: any[] | undefined,
+  defaultCurrency?: string,
+  treatUnpairedNewAsUnchanged = false
+): any[] | null {
+  if (newList === undefined) {
+    if (!Array.isArray(oldList) || oldList.length === 0) return null;
+    return oldList
+      .map((r) => normalizeRateTierEntry(r, defaultCurrency))
+      .sort(
+        (a, b) =>
+          a.minDays - b.minDays ||
+          (a.maxDays ?? Number.MAX_SAFE_INTEGER) - (b.maxDays ?? Number.MAX_SAFE_INTEGER)
+      )
+      .map((t) => ({
+        status: 'unchanged',
+        minDays: t.minDays,
+        maxDays: t.maxDays,
+        oldRate: t.rate,
+        newRate: t.rate,
+        currency: t.currency,
+      }));
+  }
+
+  if (!Array.isArray(oldList)) {
+    if (treatUnpairedNewAsUnchanged && newList.length > 0) {
+      return newList
+        .map((r) => normalizeRateTierEntry(r, defaultCurrency))
+        .sort(
+          (a, b) =>
+            a.minDays - b.minDays ||
+            (a.maxDays ?? Number.MAX_SAFE_INTEGER) - (b.maxDays ?? Number.MAX_SAFE_INTEGER)
+        )
+        .map((t) => ({
+          status: 'unchanged',
+          minDays: t.minDays,
+          maxDays: t.maxDays,
+          oldRate: t.rate,
+          newRate: t.rate,
+          currency: t.currency,
+        }));
+    }
+    return null;
+  }
+
+  if (oldList.length === 0 && newList.length === 0) return null;
+
+  const oldNormalized = oldList.map((r) => normalizeRateTierEntry(r, defaultCurrency));
+  const newNormalized = newList.map((r) => normalizeRateTierEntry(r, defaultCurrency));
+  const usedOld = new Set<number>();
+  const usedNew = new Set<number>();
+  const result: any[] = [];
+
+  // 1. Pair exact (minDays, maxDays, currency) matches
+  for (let nIdx = 0; nIdx < newNormalized.length; nIdx++) {
+    const n = newNormalized[nIdx];
+    const oIdx = oldNormalized.findIndex(
+      (o, idx) =>
+        !usedOld.has(idx) &&
+        o.minDays === n.minDays &&
+        o.maxDays === n.maxDays &&
+        o.currency === n.currency
+    );
+    if (oIdx === -1) continue;
+    usedOld.add(oIdx);
+    usedNew.add(nIdx);
+    const o = oldNormalized[oIdx];
+    const delta = Number((n.rate - o.rate).toFixed(2));
+    if (Math.abs(delta) < 0.005) {
+      result.push({
+        status: 'unchanged',
+        minDays: n.minDays,
+        maxDays: n.maxDays,
+        oldRate: o.rate,
+        newRate: n.rate,
+        currency: n.currency,
+      });
+    } else {
+      result.push({
+        status: 'modified',
+        minDays: n.minDays,
+        maxDays: n.maxDays,
+        oldRate: o.rate,
+        newRate: n.rate,
+        delta,
+        percentage: o.rate > 0 ? (delta / o.rate) * 100 : 0,
+        currency: n.currency,
+      });
+    }
+  }
+
+  // 2. Pair remaining (minDays, currency) matches where maxDays changed
+  for (let nIdx = 0; nIdx < newNormalized.length; nIdx++) {
+    if (usedNew.has(nIdx)) continue;
+    const n = newNormalized[nIdx];
+    const oIdx = oldNormalized.findIndex(
+      (o, idx) => !usedOld.has(idx) && o.minDays === n.minDays && o.currency === n.currency
+    );
+    if (oIdx === -1) continue;
+    usedOld.add(oIdx);
+    usedNew.add(nIdx);
+    const o = oldNormalized[oIdx];
+    const delta = Number((n.rate - o.rate).toFixed(2));
+    if (Math.abs(delta) < 0.005) {
+      result.push({
+        status: 'duration_modified',
+        minDays: n.minDays,
+        oldMaxDays: o.maxDays,
+        maxDays: n.maxDays,
+        oldRate: o.rate,
+        newRate: n.rate,
+        currency: n.currency,
+      });
+    } else {
+      result.push({
+        status: 'modified',
+        minDays: n.minDays,
+        oldMaxDays: o.maxDays,
+        maxDays: n.maxDays,
+        oldRate: o.rate,
+        newRate: n.rate,
+        delta,
+        percentage: o.rate > 0 ? (delta / o.rate) * 100 : 0,
+        currency: n.currency,
+      });
+    }
+  }
+
+  // 3. Remaining proposed tiers are added
+  for (let nIdx = 0; nIdx < newNormalized.length; nIdx++) {
+    if (usedNew.has(nIdx)) continue;
+    const n = newNormalized[nIdx];
+    result.push({
+      status: 'added',
+      minDays: n.minDays,
+      maxDays: n.maxDays,
+      newRate: n.rate,
+      currency: n.currency,
+    });
+  }
+
+  // 4. Remaining original tiers are removed
+  for (let oIdx = 0; oIdx < oldNormalized.length; oIdx++) {
+    if (usedOld.has(oIdx)) continue;
+    const o = oldNormalized[oIdx];
+    result.push({
+      status: 'removed',
+      minDays: o.minDays,
+      maxDays: o.maxDays,
+      oldRate: o.rate,
+      currency: o.currency,
+    });
+  }
+
+  return result.sort(
+    (a, b) =>
+      a.minDays - b.minDays ||
+      (a.maxDays ?? Number.MAX_SAFE_INTEGER) - (b.maxDays ?? Number.MAX_SAFE_INTEGER)
+  );
+}
+
 function renderRateTiersDiff(
   ratesDiff: any,
   originalRates?: any[],
   proposedRates?: any[],
-  defaultCurrency?: string
+  defaultCurrency?: string,
+  hasPrecomputedSummary = false
 ) {
-  const tiersDiff: any[] = ratesDiff?.tiersDiff || [];
+  const precomputedTiers: any[] = Array.isArray(ratesDiff?.tiersDiff) ? ratesDiff.tiersDiff : [];
+  const oldSource =
+    originalRates !== undefined
+      ? originalRates
+      : Array.isArray(ratesDiff?.old)
+      ? ratesDiff.old
+      : undefined;
+  const newSource =
+    proposedRates !== undefined
+      ? proposedRates
+      : Array.isArray(ratesDiff?.new)
+      ? ratesDiff.new
+      : undefined;
 
-  if (tiersDiff.length > 0) {
+  const tiersDiff =
+    precomputedTiers.length > 0
+      ? precomputedTiers
+      : computeDynamicTiersDiff(
+          oldSource,
+          newSource,
+          defaultCurrency,
+          hasPrecomputedSummary && !ratesDiff
+        );
+
+  if (tiersDiff && tiersDiff.length > 0) {
     return (
       <div className="mt-2 space-y-1.5">
-        <div className="text-xs font-semibold text-gray-700">Rate Tier Changes:</div>
+        <div className="text-xs font-semibold text-gray-700">Rate Tiers:</div>
         <div className="flex flex-col gap-1.5">
           {tiersDiff.map((tier: any, idx: number) => {
             const symbol = getCurrencySymbol(tier.currency || defaultCurrency || 'THB');
             const duration = `${tier.minDays}${tier.maxDays ? `-${tier.maxDays}` : '+'} days`;
 
             if (tier.status === 'modified') {
-              const delta = tier.delta ?? (tier.newRate - tier.oldRate);
-              const percentage = tier.percentage ?? (tier.oldRate > 0 ? (delta / tier.oldRate) * 100 : 0);
+              const delta = tier.delta ?? tier.newRate - tier.oldRate;
+              const percentage =
+                tier.percentage ?? (tier.oldRate > 0 ? (delta / tier.oldRate) * 100 : 0);
               const isIncrease = delta >= 0;
-              const hasDurationChange = tier.oldMaxDays !== undefined && tier.oldMaxDays !== tier.maxDays;
-              const oldDuration = `${tier.minDays}${tier.oldMaxDays ? `-${tier.oldMaxDays}` : '+'} days`;
+              const hasDurationChange =
+                tier.oldMaxDays !== undefined && tier.oldMaxDays !== tier.maxDays;
+              const oldDuration = `${tier.minDays}${
+                tier.oldMaxDays ? `-${tier.oldMaxDays}` : '+'
+              } days`;
 
               return (
                 <div
                   key={idx}
-                  className="flex items-center gap-2 text-xs bg-gray-50 border border-gray-200 rounded-lg p-2"
+                  className="flex items-center gap-2 text-xs bg-blue-50/50 border border-blue-200 rounded-lg p-2"
                 >
                   <span className="font-medium text-gray-700 min-w-[75px]">
                     {hasDurationChange ? (
@@ -337,15 +637,17 @@ function renderRateTiersDiff(
                     )}
                   </span>
                   <span className="line-through text-red-500 font-medium">
-                    {symbol}{tier.oldRate}
+                    {symbol}
+                    {tier.oldRate}
                   </span>
                   <span className="text-gray-400">→</span>
-                  <span className="text-emerald-700 font-bold">
-                    {symbol}{tier.newRate}/day
+                  <span className="text-blue-700 font-bold">
+                    {symbol}
+                    {tier.newRate}/day
                   </span>
                   <span
                     className={`ml-auto text-[11px] px-1.5 py-0.5 rounded font-semibold ${
-                      isIncrease ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'
+                      isIncrease ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
                     }`}
                   >
                     {isIncrease ? `+${symbol}${delta}` : `-${symbol}${Math.abs(delta)}`} (
@@ -356,7 +658,9 @@ function renderRateTiersDiff(
             }
 
             if (tier.status === 'duration_modified') {
-              const oldDuration = `${tier.minDays}${tier.oldMaxDays ? `-${tier.oldMaxDays}` : '+'} days`;
+              const oldDuration = `${tier.minDays}${
+                tier.oldMaxDays ? `-${tier.oldMaxDays}` : '+'
+              } days`;
               return (
                 <div
                   key={idx}
@@ -367,7 +671,8 @@ function renderRateTiersDiff(
                     <span className="text-gray-400">→</span> {duration}:
                   </span>
                   <span className="text-gray-900 font-bold">
-                    {symbol}{tier.newRate}/day
+                    {symbol}
+                    {tier.newRate}/day
                   </span>
                   <span className="ml-auto bg-amber-100 text-amber-800 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
                     Duration Updated
@@ -380,11 +685,14 @@ function renderRateTiersDiff(
               return (
                 <div
                   key={idx}
-                  className="flex items-center gap-2 text-xs bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg p-2"
+                  className="flex items-center gap-2 text-xs bg-indigo-50 border border-indigo-200 text-indigo-900 rounded-lg p-2"
                 >
                   <span className="font-medium min-w-[75px]">{duration}:</span>
-                  <span className="font-bold">{symbol}{tier.newRate}/day</span>
-                  <span className="ml-auto bg-emerald-200 text-emerald-900 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                  <span className="font-bold">
+                    {symbol}
+                    {tier.newRate}/day
+                  </span>
+                  <span className="ml-auto bg-indigo-100 text-indigo-800 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
                     + Added
                   </span>
                 </div>
@@ -398,7 +706,10 @@ function renderRateTiersDiff(
                   className="flex items-center gap-2 text-xs bg-red-50 border border-red-200 text-red-700 rounded-lg p-2 line-through"
                 >
                   <span className="font-medium min-w-[75px]">{duration}:</span>
-                  <span>{symbol}{tier.oldRate}/day</span>
+                  <span>
+                    {symbol}
+                    {tier.oldRate}/day
+                  </span>
                   <span className="ml-auto bg-red-200 text-red-900 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider no-underline">
                     - Removed
                   </span>
@@ -409,11 +720,16 @@ function renderRateTiersDiff(
             return (
               <div
                 key={idx}
-                className="flex items-center gap-2 text-xs bg-gray-50 border border-gray-100 text-gray-600 rounded-lg p-1.5"
+                className="flex items-center gap-2 text-xs bg-emerald-50 border border-emerald-300 text-emerald-900 rounded-lg p-2"
               >
-                <span className="min-w-[75px]">{duration}:</span>
-                <span>{symbol}{tier.newRate}/day</span>
-                <span className="ml-auto text-[10px] text-gray-400 font-medium">Unchanged</span>
+                <span className="font-medium min-w-[75px]">{duration}:</span>
+                <span className="font-semibold">
+                  {symbol}
+                  {tier.newRate ?? tier.oldRate}/day
+                </span>
+                <span className="ml-auto bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                  ✓ Unchanged
+                </span>
               </div>
             );
           })}
@@ -422,25 +738,11 @@ function renderRateTiersDiff(
     );
   }
 
-  // Fallback: If no precomputed tiersDiff, pair original and proposed rates dynamically
-  const oldTiers = originalRates || ratesDiff?.old || [];
-  const newTiers = proposedRates || ratesDiff?.new || [];
+  if (Array.isArray(newSource) && newSource.length > 0) {
+    return renderRateTiers(newSource, defaultCurrency, 'blue');
+  }
 
-  if (oldTiers.length === 0 && newTiers.length === 0) return null;
-
-  return (
-    <div className="mt-2 space-y-1 text-xs">
-      <div className="font-semibold text-gray-700">Rates Comparison:</div>
-      <div className="flex items-center gap-2">
-        <span className="text-gray-500 min-w-[45px]">Before:</span>
-        {renderRateTiers(oldTiers, defaultCurrency, 'red', true)}
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="text-gray-500 min-w-[45px]">After:</span>
-        {renderRateTiers(newTiers, defaultCurrency, 'emerald')}
-      </div>
-    </div>
-  );
+  return null;
 }
 
 export async function submitProposalDecision(
@@ -481,7 +783,7 @@ export async function submitProposalDecision(
 function renderItemDecisionBadge(status: DiffViewerItem['status']) {
   if (status === 'applied') {
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800">
+      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-100 text-indigo-800">
         ✓ Applied
       </span>
     );
@@ -512,7 +814,8 @@ export function ChangeProposalDiffViewer({
   );
   const [isApplying, setIsApplying] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
-  const [isUnchangedExpanded, setIsUnchangedExpanded] = useState(false);
+  // Expanded by default (#199) so unchanged inventory is immediately visible in green during review
+  const [isUnchangedExpanded, setIsUnchangedExpanded] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -597,10 +900,7 @@ export function ChangeProposalDiffViewer({
     if (isCompleted || item.status !== 'pending') return null;
     return (
       <div className="pt-1">
-        <Checkbox
-          checked={selectedIds.has(item.id)}
-          onChange={() => toggleItem(item.id)}
-        />
+        <Checkbox checked={selectedIds.has(item.id)} onChange={() => toggleItem(item.id)} />
       </div>
     );
   };
@@ -658,7 +958,7 @@ export function ChangeProposalDiffViewer({
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">
               +{addItems.length} New
             </span>
             <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
@@ -667,7 +967,7 @@ export function ChangeProposalDiffViewer({
             <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
               -{delistItems.length} Delisted
             </span>
-            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
+            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300">
               ={unchangedItems.length} Unchanged
             </span>
             {!isCompleted && (
@@ -708,7 +1008,7 @@ export function ChangeProposalDiffViewer({
                 {selectedIds.size} of {pendingActionableItems.length} items selected
               </span>
               {appliedActionableItems.length > 0 && (
-                <span className="text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                <span className="text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full">
                   {appliedActionableItems.length} already applied
                 </span>
               )}
@@ -751,7 +1051,7 @@ export function ChangeProposalDiffViewer({
       {addItems.length > 0 && (
         <Card>
           <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
-            <PlusCircleIcon className="w-5 h-5 text-emerald-600" />
+            <PlusCircleIcon className="w-5 h-5 text-indigo-600" />
             <h3 className="text-base font-semibold text-gray-900">
               New Motorcycles to Add ({addItems.length})
             </h3>
@@ -773,7 +1073,7 @@ export function ChangeProposalDiffViewer({
                       <div className="font-semibold text-gray-900">
                         {item.brand_name} {item.model_name}
                       </div>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-100 text-indigo-800">
                         + New Bike
                       </span>
                       {renderItemDecisionBadge(item.status)}
@@ -792,8 +1092,12 @@ export function ChangeProposalDiffViewer({
                       {year != null && <span>Year: {year}</span>}
                       {engineCc != null && <span>Engine: {engineCc}cc</span>}
                     </div>
-                    {renderRateTiers(item.proposed_data?.rates, item.proposed_data?.currency, 'emerald')}
-                    {renderMotorcycleConditionsList(item.proposed_data?.conditions)}
+                    {renderRateTiers(
+                      item.proposed_data?.rates,
+                      item.proposed_data?.currency,
+                      'indigo'
+                    )}
+                    {renderMotorcycleConditionsList(item.proposed_data?.conditions, 'amber')}
                   </div>
                 </div>
               );
@@ -813,71 +1117,173 @@ export function ChangeProposalDiffViewer({
           </div>
           <div className="divide-y divide-gray-100">
             {updateItems.map((item) => {
-              const year = getModelYear(item.proposed_data);
-              const engineCc = getEngineCapacity(item.proposed_data);
               const summary = item.diff_summary || {};
+              const hasPrecomputedSummary =
+                Boolean(item.diff_summary) &&
+                typeof item.diff_summary === 'object' &&
+                Object.keys(item.diff_summary).length > 0;
               const orig = item.original_data || {};
               const prop = item.proposed_data || {};
+              const base = item.baseline_data || {};
+              const allowBaseForMutated = item.status === 'pending';
 
-              const oldBrand = orig.brand ?? orig.brandName ?? orig.brand_name;
-              const newBrand = prop.brand ?? prop.brandName ?? prop.brand_name ?? item.brand_name;
+              const propBrandRaw = prop.brand ?? prop.brandName ?? prop.brand_name;
+              const origBrandRaw =
+                orig.brand ??
+                orig.brandName ??
+                orig.brand_name ??
+                (allowBaseForMutated || propBrandRaw === undefined ? base.brand : undefined);
+              const oldBrand = origBrandRaw ?? item.brand_name;
+              const newBrand = propBrandRaw ?? oldBrand ?? item.brand_name;
               const brandDiff =
                 summary.brand ||
-                (oldBrand && newBrand && oldBrand !== newBrand
-                  ? { old: oldBrand, new: newBrand }
+                (origBrandRaw && propBrandRaw && origBrandRaw !== propBrandRaw
+                  ? { old: origBrandRaw, new: propBrandRaw }
                   : null);
 
-              const oldModel = orig.model ?? orig.modelName ?? orig.model_name;
-              const newModel = prop.model ?? prop.modelName ?? prop.model_name ?? item.model_name;
+              const propModelRaw = prop.model ?? prop.modelName ?? prop.model_name;
+              const origModelRaw =
+                orig.model ??
+                orig.modelName ??
+                orig.model_name ??
+                (allowBaseForMutated || propModelRaw === undefined ? base.model : undefined);
+              const oldModel = origModelRaw ?? item.model_name;
+              const newModel = propModelRaw ?? oldModel ?? item.model_name;
               const modelDiff =
                 summary.model ||
-                (oldModel && newModel && oldModel !== newModel
-                  ? { old: oldModel, new: newModel }
+                (origModelRaw && propModelRaw && origModelRaw !== propModelRaw
+                  ? { old: origModelRaw, new: propModelRaw }
                   : null);
 
-              const oldYear = getModelYear(orig);
-              const newYear = getModelYear(prop);
+              const origHasExplicitYear =
+                Object.prototype.hasOwnProperty.call(orig, 'year') ||
+                Object.prototype.hasOwnProperty.call(orig, 'year_to') ||
+                Object.prototype.hasOwnProperty.call(orig, 'yearTo');
+              const propYear = getModelYear(prop);
+              const origYear =
+                getModelYear(orig) ??
+                (!origHasExplicitYear && (allowBaseForMutated || propYear == null)
+                  ? getModelYear(base)
+                  : null);
               const yearDiff =
                 summary.year ||
-                (oldYear && newYear && oldYear !== newYear
-                  ? { old: oldYear, new: newYear }
+                (origYear && propYear && origYear !== propYear
+                  ? { old: origYear, new: propYear }
+                  : origHasExplicitYear && origYear == null && propYear != null
+                  ? { old: '(none)', new: propYear }
                   : null);
 
-              const oldCc = getEngineCapacity(orig);
-              const newCc = getEngineCapacity(prop);
+              const origHasExplicitCc =
+                Object.prototype.hasOwnProperty.call(orig, 'engineCapacityCc') ||
+                Object.prototype.hasOwnProperty.call(orig, 'engineCapacity') ||
+                Object.prototype.hasOwnProperty.call(orig, 'engine_capacity_cc');
+              const propCc = getEngineCapacity(prop);
+              const origCc =
+                getEngineCapacity(orig) ??
+                (!origHasExplicitCc && (allowBaseForMutated || propCc == null)
+                  ? getEngineCapacity(base)
+                  : null);
               const engineCcDiff =
                 summary.engine_capacity_cc ||
-                (oldCc != null && newCc != null && oldCc !== newCc
-                  ? { old: oldCc, new: newCc }
+                (origCc != null && propCc != null && origCc !== propCc
+                  ? { old: origCc, new: propCc }
+                  : origHasExplicitCc && origCc == null && propCc != null
+                  ? { old: '(none)', new: propCc }
                   : null);
 
-              const oldSourceUrl = orig.source_url ?? orig.sourceUrl;
-              const newSourceUrl = prop.source_url ?? prop.sourceUrl;
+              const origHasExplicitSourceUrl =
+                Object.prototype.hasOwnProperty.call(orig, 'source_url') ||
+                Object.prototype.hasOwnProperty.call(orig, 'sourceUrl');
+              const propSourceUrl = prop.source_url ?? prop.sourceUrl;
+              const origSourceUrl =
+                orig.source_url ??
+                orig.sourceUrl ??
+                (!origHasExplicitSourceUrl && (allowBaseForMutated || propSourceUrl === undefined)
+                  ? base.source_url ?? base.sourceUrl
+                  : undefined);
               const sourceUrlDiff =
                 summary.source_url ||
-                (newSourceUrl && oldSourceUrl !== newSourceUrl
-                  ? { old: oldSourceUrl ?? null, new: newSourceUrl }
+                (propSourceUrl && origSourceUrl !== propSourceUrl
+                  ? { old: origSourceUrl ?? null, new: propSourceUrl }
                   : null);
 
               const origCat = resolveCategoryDisplay(orig);
               const propCat = resolveCategoryDisplay(prop);
+              const baseCat = resolveCategoryDisplay(base);
+              const effectiveOrigCat = origCat.provided
+                ? origCat
+                : allowBaseForMutated || !propCat.provided
+                ? baseCat
+                : origCat;
+
               const hasCategoryUpdate =
                 propCat.provided &&
                 (propCat.isUnknown ||
-                  (origCat.provided && origCat.id !== null && origCat.isUnknown) ||
-                  !origCat.provided ||
-                  origCat.id !== propCat.id);
+                  (effectiveOrigCat.provided &&
+                    effectiveOrigCat.id !== null &&
+                    effectiveOrigCat.isUnknown) ||
+                  !effectiveOrigCat.provided ||
+                  effectiveOrigCat.id !== propCat.id);
               const hasCategoryError =
-                propCat.provided &&
-                (propCat.isUnknown ||
-                  !propCat.id ||
-                  (origCat.provided && origCat.id !== null && origCat.isUnknown));
+                (propCat.provided && (propCat.isUnknown || !propCat.id)) ||
+                (effectiveOrigCat.provided &&
+                  effectiveOrigCat.id !== null &&
+                  effectiveOrigCat.isUnknown);
 
-              const conditionDiffs = computeMotorcycleConditionDiffs(
-                orig.conditions,
-                prop.conditions,
-                summary.conditions
-              );
+              const effectiveOrigConditions =
+                orig.conditions !== undefined
+                  ? orig.conditions
+                  : allowBaseForMutated || prop.conditions === undefined
+                  ? base.conditions
+                  : undefined;
+
+              const { changed: conditionDiffs, unchanged: unchangedConditions } =
+                computeMotorcycleConditionsBreakdown(
+                  effectiveOrigConditions,
+                  prop.conditions,
+                  summary.conditions
+                );
+
+              const unchangedSpecs: Array<{ label: string; value: string }> = [];
+              if (!hasCategoryUpdate && !hasCategoryError) {
+                if (propCat.provided) {
+                  unchangedSpecs.push({ label: 'Category', value: propCat.label });
+                } else if (effectiveOrigCat.provided) {
+                  unchangedSpecs.push({ label: 'Category', value: effectiveOrigCat.label });
+                }
+              }
+              if (!brandDiff && (newBrand || oldBrand)) {
+                unchangedSpecs.push({ label: 'Brand', value: String(newBrand || oldBrand) });
+              }
+              if (!modelDiff && (newModel || oldModel)) {
+                unchangedSpecs.push({ label: 'Model', value: String(newModel || oldModel) });
+              }
+              if (!yearDiff) {
+                const unchangedYear = propYear ?? origYear;
+                if (unchangedYear != null) {
+                  unchangedSpecs.push({ label: 'Year', value: unchangedYear });
+                }
+              }
+              if (!engineCcDiff) {
+                const unchangedCc = propCc ?? origCc;
+                if (unchangedCc != null) {
+                  unchangedSpecs.push({ label: 'Engine', value: `${unchangedCc}cc` });
+                }
+              }
+              if (!sourceUrlDiff) {
+                const unchangedSourceUrl = propSourceUrl ?? origSourceUrl;
+                if (typeof unchangedSourceUrl === 'string' && unchangedSourceUrl.trim().length > 0) {
+                  unchangedSpecs.push({ label: 'Source URL', value: unchangedSourceUrl.trim() });
+                }
+              }
+
+              const effectiveOrigRates =
+                orig.rates !== undefined
+                  ? orig.rates
+                  : allowBaseForMutated || prop.rates === undefined
+                  ? base.rates
+                  : undefined;
+
               const bikeTitle = [item.brand_name, item.model_name]
                 .filter(Boolean)
                 .join(' ')
@@ -896,59 +1302,84 @@ export function ChangeProposalDiffViewer({
                       </div>
                       {renderItemDecisionBadge(item.status)}
                     </div>
-                    <div className="text-xs text-gray-500 flex gap-4 mt-0.5">
-                      {year != null && <span>Year: {year}</span>}
-                      {engineCc != null && <span>Engine: {engineCc}cc</span>}
-                    </div>
+                    {(Boolean(yearDiff && propYear != null) ||
+                      Boolean(engineCcDiff && propCc != null)) && (
+                      <div className="text-xs text-gray-500 flex gap-4 mt-0.5">
+                        {Boolean(yearDiff) && propYear != null && <span>Year: {propYear}</span>}
+                        {Boolean(engineCcDiff) && propCc != null && (
+                          <span>Engine: {propCc}cc</span>
+                        )}
+                      </div>
+                    )}
                     <div className="mt-2 space-y-2 text-xs">
-                      {hasCategoryUpdate &&
+                      {(hasCategoryUpdate || hasCategoryError) &&
                         (hasCategoryError ? (
                           <div className="text-red-700 bg-red-50 border border-red-200 px-2 py-1 rounded flex items-center gap-1.5 flex-wrap font-semibold">
                             <span>
                               Category Error:{' '}
-                              {propCat.isUnknown || !propCat.id
+                              {propCat.provided && (propCat.isUnknown || !propCat.id)
                                 ? `Unknown category ID (${propCat.id ?? 'null'})`
-                                : `Unknown original category ID (${origCat.id})`}
+                                : `Unknown original category ID (${effectiveOrigCat.id})`}
                             </span>
                           </div>
                         ) : (
                           <div className="text-gray-600 flex items-center gap-1.5 flex-wrap">
                             <span className="font-medium text-gray-800">Category:</span>{' '}
                             <span className="line-through text-red-500 font-medium">
-                              {origCat.label}
+                              {effectiveOrigCat.label}
                             </span>{' '}
                             →{' '}
-                            <span className="text-emerald-600 font-semibold">
+                            <span className="text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded font-semibold">
                               {propCat.label}
                             </span>
                           </div>
                         ))}
                       {brandDiff && (
-                        <div className="text-gray-600 flex items-center gap-1.5">
+                        <div className="text-gray-600 flex items-center gap-1.5 flex-wrap">
                           <span className="font-medium text-gray-800">Brand:</span>{' '}
-                          <span className="line-through text-red-500 font-medium">{brandDiff.old}</span> →{' '}
-                          <span className="text-emerald-600 font-semibold">{brandDiff.new}</span>
+                          <span className="line-through text-red-500 font-medium">
+                            {brandDiff.old}
+                          </span>{' '}
+                          →{' '}
+                          <span className="text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded font-semibold">
+                            {brandDiff.new}
+                          </span>
                         </div>
                       )}
                       {modelDiff && (
-                        <div className="text-gray-600 flex items-center gap-1.5">
+                        <div className="text-gray-600 flex items-center gap-1.5 flex-wrap">
                           <span className="font-medium text-gray-800">Model:</span>{' '}
-                          <span className="line-through text-red-500 font-medium">{modelDiff.old}</span> →{' '}
-                          <span className="text-emerald-600 font-semibold">{modelDiff.new}</span>
+                          <span className="line-through text-red-500 font-medium">
+                            {modelDiff.old}
+                          </span>{' '}
+                          →{' '}
+                          <span className="text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded font-semibold">
+                            {modelDiff.new}
+                          </span>
                         </div>
                       )}
                       {yearDiff && (
-                        <div className="text-gray-600 flex items-center gap-1.5">
+                        <div className="text-gray-600 flex items-center gap-1.5 flex-wrap">
                           <span className="font-medium text-gray-800">Year:</span>{' '}
-                          <span className="line-through text-red-500 font-medium">{yearDiff.old}</span> →{' '}
-                          <span className="text-emerald-600 font-semibold">{yearDiff.new}</span>
+                          <span className="line-through text-red-500 font-medium">
+                            {yearDiff.old}
+                          </span>{' '}
+                          →{' '}
+                          <span className="text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded font-semibold">
+                            {yearDiff.new}
+                          </span>
                         </div>
                       )}
                       {engineCcDiff && (
-                        <div className="text-gray-600 flex items-center gap-1.5">
+                        <div className="text-gray-600 flex items-center gap-1.5 flex-wrap">
                           <span className="font-medium text-gray-800">Engine:</span>{' '}
-                          <span className="line-through text-red-500 font-medium">{engineCcDiff.old}cc</span> →{' '}
-                          <span className="text-emerald-600 font-semibold">{engineCcDiff.new}cc</span>
+                          <span className="line-through text-red-500 font-medium">
+                            {engineCcDiff.old === '(none)' ? '(none)' : `${engineCcDiff.old}cc`}
+                          </span>{' '}
+                          →{' '}
+                          <span className="text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded font-semibold">
+                            {engineCcDiff.new}cc
+                          </span>
                         </div>
                       )}
                       {sourceUrlDiff && (
@@ -958,7 +1389,7 @@ export function ChangeProposalDiffViewer({
                             {sourceUrlDiff.old || '(none)'}
                           </span>{' '}
                           →{' '}
-                          <span className="text-emerald-600 font-semibold">
+                          <span className="text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded font-semibold break-all">
                             {sourceUrlDiff.new}
                           </span>
                         </div>
@@ -968,22 +1399,63 @@ export function ChangeProposalDiffViewer({
                           key={condDiff.key}
                           className="text-gray-700 flex items-center gap-1.5 flex-wrap font-medium"
                         >
-                          <span>
-                            {`${bikeTitle} — ${condDiff.name}: ${
-                              condDiff.oldNotes ?? 'not set'
-                            } → ${condDiff.newNotes ?? 'not set'}`}
+                          <span className="font-medium text-gray-800">
+                            {bikeTitle} — {condDiff.name}:
+                          </span>
+                          <span className="line-through text-red-500">
+                            {condDiff.oldNotes ?? 'not set'}
+                          </span>
+                          <span className="text-gray-400">→</span>
+                          <span className="text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded font-semibold">
+                            {condDiff.newNotes ?? 'not set'}
                           </span>
                         </div>
                       ))}
-                      {summary.rates || (item.original_data?.rates && item.proposed_data?.rates) ? (
-                        renderRateTiersDiff(
-                          summary.rates,
-                          item.original_data?.rates,
-                          item.proposed_data?.rates,
-                          item.proposed_data?.currency
-                        )
-                      ) : (
-                        renderRateTiers(item.proposed_data?.rates, item.proposed_data?.currency, 'gray')
+
+                      {renderRateTiersDiff(
+                        summary.rates,
+                        effectiveOrigRates,
+                        prop.rates,
+                        prop.currency || orig.currency,
+                        hasPrecomputedSummary
+                      )}
+
+                      {(unchangedSpecs.length > 0 || unchangedConditions.length > 0) && (
+                        <div
+                          data-testid={`unchanged-specs-${item.id}`}
+                          className="mt-2 rounded-lg bg-emerald-50/80 border border-emerald-300 p-2.5 space-y-1.5"
+                        >
+                          <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-emerald-800">
+                            <CheckCircleIcon className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Unchanged Specifications</span>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {unchangedSpecs.map((spec) => (
+                              <span
+                                key={spec.label}
+                                className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded border bg-emerald-100/80 border-emerald-300 text-emerald-900"
+                              >
+                                <span className="font-medium">{spec.label}:</span>
+                                <span className="font-semibold break-all">{spec.value}</span>
+                                <span className="text-[10px] font-bold text-emerald-700 ml-0.5">
+                                  ✓ Unchanged
+                                </span>
+                              </span>
+                            ))}
+                            {unchangedConditions.map((cond) => (
+                              <span
+                                key={`unchanged-cond-${cond.key}`}
+                                className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded border bg-emerald-100/80 border-emerald-300 text-emerald-900"
+                              >
+                                <span className="font-medium">{cond.name}:</span>
+                                <span className="font-semibold">{cond.notes || 'Required'}</span>
+                                <span className="text-[10px] font-bold text-emerald-700 ml-0.5">
+                                  ✓ Unchanged
+                                </span>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1023,7 +1495,12 @@ export function ChangeProposalDiffViewer({
                     </span>
                     {renderItemDecisionBadge(item.status)}
                   </div>
-                  {renderRateTiers(item.original_data?.rates, item.original_data?.currency, 'red', true)}
+                  {renderRateTiers(
+                    item.original_data?.rates ?? item.baseline_data?.rates,
+                    item.original_data?.currency,
+                    'red',
+                    true
+                  )}
                 </div>
               </div>
             ))}
@@ -1045,28 +1522,69 @@ export function ChangeProposalDiffViewer({
               const summary = item.diff_summary || {};
               const orig = item.original_data || {};
               const prop = item.proposed_data || {};
+              const base = item.baseline_data || {};
+              const allowBaseForMutated = item.status === 'pending';
 
-              const origDesc = orig.business_description ?? orig.businessDescription;
               const propDesc = prop.business_description ?? prop.businessDescription;
+              const origDesc =
+                orig.business_description ??
+                orig.businessDescription ??
+                (allowBaseForMutated || propDesc === undefined
+                  ? base.business_description ?? base.businessDescription
+                  : undefined);
               const descDiff =
                 summary.business_description ||
                 (propDesc !== undefined && propDesc !== origDesc
                   ? { old: origDesc ?? null, new: propDesc }
                   : null);
 
+              const origPhone =
+                orig.phone ??
+                (allowBaseForMutated || prop.phone === undefined ? base.phone : undefined);
               const phoneDiff =
                 summary.phone ||
-                (prop.phone !== undefined && prop.phone !== orig.phone
-                  ? { old: orig.phone ?? null, new: prop.phone }
+                (prop.phone !== undefined && prop.phone !== origPhone
+                  ? { old: origPhone ?? null, new: prop.phone }
                   : null);
 
+              const origWebsite =
+                orig.website ??
+                (allowBaseForMutated || prop.website === undefined ? base.website : undefined);
               const websiteDiff =
                 summary.website ||
-                (prop.website !== undefined && prop.website !== orig.website
-                  ? { old: orig.website ?? null, new: prop.website }
+                (prop.website !== undefined && prop.website !== origWebsite
+                  ? { old: origWebsite ?? null, new: prop.website }
                   : null);
 
-              const origInc: string[] = Array.isArray(orig.inclusions) ? orig.inclusions : [];
+              const unchangedShopFields: Array<{ label: string; value: string }> = [];
+              if (!descDiff) {
+                const unchangedDesc = propDesc ?? origDesc;
+                if (typeof unchangedDesc === 'string' && unchangedDesc.trim().length > 0) {
+                  unchangedShopFields.push({
+                    label: 'Description',
+                    value: unchangedDesc.trim(),
+                  });
+                }
+              }
+              if (!phoneDiff) {
+                const unchangedPhone = prop.phone ?? origPhone;
+                if (typeof unchangedPhone === 'string' && unchangedPhone.trim().length > 0) {
+                  unchangedShopFields.push({ label: 'Phone', value: unchangedPhone.trim() });
+                }
+              }
+              if (!websiteDiff) {
+                const unchangedWebsite = prop.website ?? origWebsite;
+                if (typeof unchangedWebsite === 'string' && unchangedWebsite.trim().length > 0) {
+                  unchangedShopFields.push({ label: 'Website', value: unchangedWebsite.trim() });
+                }
+              }
+
+              const origInc: string[] = Array.isArray(orig.inclusions)
+                ? orig.inclusions
+                : Array.isArray(base.inclusions) &&
+                  (allowBaseForMutated || !Array.isArray(prop.inclusions))
+                ? base.inclusions
+                : [];
               const propInc: string[] | undefined = Array.isArray(prop.inclusions)
                 ? prop.inclusions
                 : undefined;
@@ -1078,8 +1596,21 @@ export function ChangeProposalDiffViewer({
                       removed: origInc.filter((x) => !propInc.includes(x)),
                     }
                   : null);
+              const incAdded: string[] = inclusionsDiff?.added || [];
+              const incRemoved: string[] = inclusionsDiff?.removed || [];
+              const incUnchanged: string[] = propInc
+                ? propInc.filter(
+                    (x) =>
+                      origInc.includes(x) && !incAdded.includes(x) && !incRemoved.includes(x)
+                  )
+                : origInc.filter((x) => !incRemoved.includes(x));
 
-              const origCond: string[] = Array.isArray(orig.conditions) ? orig.conditions : [];
+              const origCond: string[] = Array.isArray(orig.conditions)
+                ? orig.conditions
+                : Array.isArray(base.conditions) &&
+                  (allowBaseForMutated || !Array.isArray(prop.conditions))
+                ? base.conditions
+                : [];
               const propCond: string[] | undefined = Array.isArray(prop.conditions)
                 ? prop.conditions
                 : undefined;
@@ -1091,6 +1622,14 @@ export function ChangeProposalDiffViewer({
                       removed: origCond.filter((x) => !propCond.includes(x)),
                     }
                   : null);
+              const condAdded: string[] = conditionsDiff?.added || [];
+              const condRemoved: string[] = conditionsDiff?.removed || [];
+              const condUnchanged: string[] = propCond
+                ? propCond.filter(
+                    (x) =>
+                      origCond.includes(x) && !condAdded.includes(x) && !condRemoved.includes(x)
+                  )
+                : origCond.filter((x) => !condRemoved.includes(x));
 
               return (
                 <div
@@ -1103,49 +1642,82 @@ export function ChangeProposalDiffViewer({
                       <div className="font-semibold text-gray-900">General Information</div>
                       {renderItemDecisionBadge(item.status)}
                     </div>
-                    <div className="space-y-1 text-xs">
+                    <div className="space-y-1.5 text-xs">
                       {descDiff && (
-                        <div className="text-gray-700">
+                        <div className="text-gray-700 flex items-center gap-1.5 flex-wrap">
                           <span className="font-medium text-gray-900">Description:</span>{' '}
-                          <span className="line-through text-red-500 mr-1">
+                          <span className="line-through text-red-500">
                             {descDiff.old || '(empty)'}
                           </span>
-                          →{' '}
-                          <span className="text-emerald-700 font-medium">{descDiff.new}</span>
+                          <span>→</span>
+                          <span className="text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded font-semibold">
+                            {descDiff.new}
+                          </span>
                         </div>
                       )}
                       {phoneDiff && (
-                        <div className="text-gray-700">
+                        <div className="text-gray-700 flex items-center gap-1.5 flex-wrap">
                           <span className="font-medium text-gray-900">Phone:</span>{' '}
-                          <span className="line-through text-red-500 mr-1">
+                          <span className="line-through text-red-500">
                             {phoneDiff.old || '(empty)'}
                           </span>
-                          →{' '}
-                          <span className="text-emerald-700 font-medium">{phoneDiff.new}</span>
+                          <span>→</span>
+                          <span className="text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded font-semibold">
+                            {phoneDiff.new}
+                          </span>
                         </div>
                       )}
                       {websiteDiff && (
-                        <div className="text-gray-700">
+                        <div className="text-gray-700 flex items-center gap-1.5 flex-wrap">
                           <span className="font-medium text-gray-900">Website:</span>{' '}
-                          <span className="line-through text-red-500 mr-1">
+                          <span className="line-through text-red-500">
                             {websiteDiff.old || '(empty)'}
                           </span>
-                          →{' '}
-                          <span className="text-emerald-700 font-medium">{websiteDiff.new}</span>
+                          <span>→</span>
+                          <span className="text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded font-semibold break-all">
+                            {websiteDiff.new}
+                          </span>
                         </div>
                       )}
-                      {inclusionsDiff &&
-                        renderPolicyList(
-                          'Rental Inclusions',
-                          inclusionsDiff.added,
-                          inclusionsDiff.removed
-                        )}
-                      {conditionsDiff &&
-                        renderPolicyList(
-                          'Rental Conditions',
-                          conditionsDiff.added,
-                          conditionsDiff.removed
-                        )}
+
+                      {unchangedShopFields.length > 0 && (
+                        <div
+                          data-testid={`unchanged-shop-fields-${item.id}`}
+                          className="mt-2 rounded-lg bg-emerald-50/80 border border-emerald-300 p-2.5 space-y-1.5"
+                        >
+                          <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-emerald-800">
+                            <CheckCircleIcon className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Unchanged Shop Fields</span>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {unchangedShopFields.map((field) => (
+                              <span
+                                key={field.label}
+                                className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded border bg-emerald-100/80 border-emerald-300 text-emerald-900"
+                              >
+                                <span className="font-medium">{field.label}:</span>
+                                <span className="font-semibold break-all">{field.value}</span>
+                                <span className="text-[10px] font-bold text-emerald-700 ml-0.5">
+                                  ✓ Unchanged
+                                </span>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {renderPolicyList(
+                        'Rental Inclusions',
+                        incAdded,
+                        incRemoved,
+                        incUnchanged
+                      )}
+                      {renderPolicyList(
+                        'Rental Conditions',
+                        condAdded,
+                        condRemoved,
+                        condUnchanged
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1157,20 +1729,23 @@ export function ChangeProposalDiffViewer({
 
       {/* 5. Confirmed Unchanged Fleet Section */}
       {unchangedItems.length > 0 && (
-        <Card>
+        <Card className="border-emerald-300 bg-emerald-50/30">
           <button
             type="button"
             aria-expanded={isUnchangedExpanded}
             onClick={() => setIsUnchangedExpanded((prev) => !prev)}
             className="w-full flex items-center justify-between text-left"
           >
-            <div className="flex items-center gap-2">
-              <CheckCircleIcon className="w-5 h-5 text-gray-500" />
-              <h3 className="text-base font-semibold text-gray-900">
+            <div className="flex items-center gap-2 flex-wrap">
+              <CheckCircleIcon className="w-5 h-5 text-emerald-600" />
+              <h3 className="text-base font-semibold text-emerald-950">
                 Confirmed Unchanged Inventory ({unchangedItems.length})
               </h3>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                ✓ All Matched
+              </span>
             </div>
-            <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-700">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-800 hover:text-emerald-950">
               <span>{isUnchangedExpanded ? 'Hide' : 'Show'}</span>
               {isUnchangedExpanded ? (
                 <ChevronDownIcon className="w-4 h-4" />
@@ -1181,28 +1756,66 @@ export function ChangeProposalDiffViewer({
           </button>
 
           {isUnchangedExpanded && (
-            <div className="mt-3 pt-3 border-t border-gray-100">
-              <p className="text-xs text-gray-500 mb-3">
+            <div className="mt-3 pt-3 border-t border-emerald-200">
+              <p className="text-xs text-emerald-800 mb-3">
                 These motorcycles were observed on the shop website with identical rates and specifications as the database.
               </p>
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-emerald-200/70">
                 {unchangedItems.map((item) => {
-                  const year = getModelYear(item.proposed_data);
-                  const engineCc = getEngineCapacity(item.proposed_data);
+                  const prop = item.proposed_data || {};
+                  const orig = item.original_data || {};
+                  const base = item.baseline_data || {};
+                  const year =
+                    getModelYear(prop) ?? getModelYear(orig) ?? getModelYear(base);
+                  const engineCc =
+                    getEngineCapacity(prop) ??
+                    getEngineCapacity(orig) ??
+                    getEngineCapacity(base);
+                  const propCat = resolveCategoryDisplay(prop);
+                  const origCat = resolveCategoryDisplay(orig);
+                  const baseCat = resolveCategoryDisplay(base);
+                  const resolvedCat = propCat.provided
+                    ? propCat
+                    : origCat.provided
+                    ? origCat
+                    : baseCat;
+                  const sourceUrl =
+                    prop.source_url ??
+                    prop.sourceUrl ??
+                    orig.source_url ??
+                    orig.sourceUrl ??
+                    base.source_url ??
+                    base.sourceUrl;
+                  const rates = prop.rates ?? orig.rates ?? base.rates;
+                  const currency = prop.currency ?? orig.currency;
+                  const conditions = prop.conditions ?? orig.conditions ?? base.conditions;
+
                   return (
-                    <div key={item.id} className="py-2.5 flex items-start gap-3 px-2">
+                    <div
+                      key={item.id}
+                      className="py-2.5 flex items-start gap-3 px-2.5 rounded-lg bg-emerald-50/70"
+                    >
                       <div className="flex-1 text-sm">
-                        <div className="font-medium text-gray-900">
-                          {item.brand_name} {item.model_name}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <div className="font-semibold text-emerald-950">
+                            {item.brand_name} {item.model_name}
+                          </div>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                            ✓ Unchanged
+                          </span>
                         </div>
-                        <div className="text-xs text-gray-500 flex gap-4 mt-0.5">
+                        <div className="text-xs text-emerald-800 flex gap-4 mt-0.5 flex-wrap font-medium">
+                          {resolvedCat.provided && (
+                            <span>Category: {resolvedCat.label}</span>
+                          )}
                           {year != null && <span>Year: {year}</span>}
                           {engineCc != null && <span>Engine: {engineCc}cc</span>}
+                          {typeof sourceUrl === 'string' && sourceUrl.trim().length > 0 && (
+                            <span className="break-all">Source URL: {sourceUrl.trim()}</span>
+                          )}
                         </div>
-                        {renderRateTiers(item.proposed_data?.rates, item.proposed_data?.currency, 'gray')}
-                        {renderMotorcycleConditionsList(
-                          item.proposed_data?.conditions ?? item.original_data?.conditions
-                        )}
+                        {renderRateTiers(rates, currency, 'emerald', false, true)}
+                        {renderMotorcycleConditionsList(conditions, 'emerald')}
                       </div>
                     </div>
                   );
