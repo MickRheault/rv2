@@ -71,6 +71,8 @@ describe('Reconciliation Reports Migration & Public Isolation Contract', () => {
       path.join(process.cwd(), 'lib', 'mcp', 'tools.ts'),
       path.join(process.cwd(), 'app', 'api', 'v1', 'shops', 'route.ts'),
       path.join(process.cwd(), 'app', 'api', 'v1', 'motorcycles', 'route.ts'),
+      path.join(process.cwd(), 'app', 'api', 'chat', 'route.ts'),
+      path.join(process.cwd(), 'lib', 'chat', 'prompt.ts'),
     ];
 
     const forbiddenPrivateIdentifiers = [

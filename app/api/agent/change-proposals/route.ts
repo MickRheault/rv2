@@ -10,7 +10,10 @@ import {
 } from '@/services/change-proposals';
 import {
   MAX_PROPOSAL_PAYLOAD_BYTES,
+  MAX_TEXT_FIELD_LENGTH,
   PayloadTooLargeError,
+  validateBoundedString,
+  validateHttpUrl,
 } from '@/lib/reconciliation-report';
 import { recordCrawlRun } from '@/services/crawl-runs';
 import {
@@ -83,6 +86,11 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    const validatedTopSourceUrl = validateHttpUrl(
+      sourceUrl,
+      'sourceUrl',
+      ProposalItemValidationError
+    );
 
     if (!Array.isArray(items)) {
       return NextResponse.json(
@@ -90,8 +98,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    const learnedConfig = extractLearnedAgentConfig(body);
 
     // New-format Reconciliation Report submission
     if (hasReconciliationReportKey) {
@@ -102,13 +108,25 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      const rawHints =
+        body.learnedExtractionHints !== undefined
+          ? body.learnedExtractionHints
+          : body.extractionHints;
+      const rawDiscoveredUrl = body.discoveredSourceUrl;
+      const hasRawLearnedFields = rawHints !== undefined || rawDiscoveredUrl !== undefined;
+
       const staged = await ChangeProposalService.stageProposalWithReconciliationReport({
         shopId,
-        sourceUrl,
+        sourceUrl: validatedTopSourceUrl,
         agentRunId,
         items,
         reconciliationReport: body.reconciliationReport,
-        learnedConfig,
+        learnedConfig: hasRawLearnedFields
+          ? {
+              ...(rawHints !== undefined ? { extractionHints: rawHints } : {}),
+              ...(rawDiscoveredUrl !== undefined ? { discoveredSourceUrl: rawDiscoveredUrl } : {}),
+            }
+          : undefined,
       });
 
       return NextResponse.json(
@@ -132,10 +150,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const learnedConfig = extractLearnedAgentConfig(body);
+    if (learnedConfig?.extractionHints !== undefined) {
+      validateBoundedString(
+        learnedConfig.extractionHints,
+        'learnedExtractionHints',
+        MAX_TEXT_FIELD_LENGTH,
+        ProposalItemValidationError
+      );
+    }
+    if (learnedConfig?.discoveredSourceUrl !== undefined) {
+      validateHttpUrl(
+        learnedConfig.discoveredSourceUrl,
+        'discoveredSourceUrl',
+        ProposalItemValidationError
+      );
+    }
+
     // Legacy reportless submission (backward compatible)
     const result = await ChangeProposalService.createProposalFromItems({
       shopId,
-      sourceUrl,
+      sourceUrl: validatedTopSourceUrl,
       agentRunId,
       items,
     });

@@ -53,6 +53,20 @@ ALTER TABLE public.crawl_runs
   ADD COLUMN IF NOT EXISTS reconciliation_status TEXT NOT NULL DEFAULT 'unknown'
     CHECK (reconciliation_status IN ('complete', 'unresolved', 'unknown'));
 
+-- Deduplicate any historical append-only crawl_runs rows sharing (shop_id, agent_run_id) keeping newest row
+DELETE FROM public.crawl_runs c
+USING (
+  SELECT id,
+         ROW_NUMBER() OVER (
+           PARTITION BY shop_id, agent_run_id
+           ORDER BY created_at DESC NULLS LAST, id DESC
+         ) AS rn
+  FROM public.crawl_runs
+  WHERE agent_run_id IS NOT NULL
+) ranked
+WHERE c.id = ranked.id
+  AND ranked.rn > 1;
+
 CREATE UNIQUE INDEX IF NOT EXISTS uq_crawl_runs_shop_agent_run
   ON public.crawl_runs (shop_id, agent_run_id)
   WHERE agent_run_id IS NOT NULL;
@@ -206,7 +220,7 @@ CREATE TABLE IF NOT EXISTS public.proposal_decision_events (
 CREATE INDEX IF NOT EXISTS idx_proposal_decision_events_proposal
   ON public.proposal_decision_events (proposal_id, created_at ASC);
 
--- 11. Row Level Security (Admin-only via authenticated + is_admin(); zero anon policies)
+-- 11. Row Level Security (Admin-only via authenticated + public.is_admin(); zero anon access)
 ALTER TABLE public.unresolved_candidates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reconciliation_reports ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reconciliation_report_entries ENABLE ROW LEVEL SECURITY;
@@ -214,37 +228,59 @@ ALTER TABLE public.reconciliation_entry_item_links ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.unresolved_candidate_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.proposal_decision_events ENABLE ROW LEVEL SECURITY;
 
+REVOKE ALL ON TABLE
+  public.unresolved_candidates,
+  public.reconciliation_reports,
+  public.reconciliation_report_entries,
+  public.reconciliation_entry_item_links,
+  public.unresolved_candidate_events,
+  public.proposal_decision_events
+FROM anon;
+
+DROP POLICY IF EXISTS "Allow admins to read unresolved candidates" ON public.unresolved_candidates;
 CREATE POLICY "Allow admins to read unresolved candidates" ON public.unresolved_candidates
-  FOR SELECT TO authenticated USING (is_admin());
+  FOR SELECT TO authenticated USING (public.is_admin());
+DROP POLICY IF EXISTS "Allow admins to insert unresolved candidates" ON public.unresolved_candidates;
 CREATE POLICY "Allow admins to insert unresolved candidates" ON public.unresolved_candidates
-  FOR INSERT TO authenticated WITH CHECK (is_admin());
+  FOR INSERT TO authenticated WITH CHECK (public.is_admin());
+DROP POLICY IF EXISTS "Allow admins to update unresolved candidates" ON public.unresolved_candidates;
 CREATE POLICY "Allow admins to update unresolved candidates" ON public.unresolved_candidates
-  FOR UPDATE TO authenticated USING (is_admin()) WITH CHECK (is_admin());
+  FOR UPDATE TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 
+DROP POLICY IF EXISTS "Allow admins to read reconciliation reports" ON public.reconciliation_reports;
 CREATE POLICY "Allow admins to read reconciliation reports" ON public.reconciliation_reports
-  FOR SELECT TO authenticated USING (is_admin());
+  FOR SELECT TO authenticated USING (public.is_admin());
+DROP POLICY IF EXISTS "Allow admins to insert reconciliation reports" ON public.reconciliation_reports;
 CREATE POLICY "Allow admins to insert reconciliation reports" ON public.reconciliation_reports
-  FOR INSERT TO authenticated WITH CHECK (is_admin());
+  FOR INSERT TO authenticated WITH CHECK (public.is_admin());
 
+DROP POLICY IF EXISTS "Allow admins to read reconciliation report entries" ON public.reconciliation_report_entries;
 CREATE POLICY "Allow admins to read reconciliation report entries" ON public.reconciliation_report_entries
-  FOR SELECT TO authenticated USING (is_admin());
+  FOR SELECT TO authenticated USING (public.is_admin());
+DROP POLICY IF EXISTS "Allow admins to insert reconciliation report entries" ON public.reconciliation_report_entries;
 CREATE POLICY "Allow admins to insert reconciliation report entries" ON public.reconciliation_report_entries
-  FOR INSERT TO authenticated WITH CHECK (is_admin());
+  FOR INSERT TO authenticated WITH CHECK (public.is_admin());
 
+DROP POLICY IF EXISTS "Allow admins to read reconciliation entry item links" ON public.reconciliation_entry_item_links;
 CREATE POLICY "Allow admins to read reconciliation entry item links" ON public.reconciliation_entry_item_links
-  FOR SELECT TO authenticated USING (is_admin());
+  FOR SELECT TO authenticated USING (public.is_admin());
+DROP POLICY IF EXISTS "Allow admins to insert reconciliation entry item links" ON public.reconciliation_entry_item_links;
 CREATE POLICY "Allow admins to insert reconciliation entry item links" ON public.reconciliation_entry_item_links
-  FOR INSERT TO authenticated WITH CHECK (is_admin());
+  FOR INSERT TO authenticated WITH CHECK (public.is_admin());
 
+DROP POLICY IF EXISTS "Allow admins to read unresolved candidate events" ON public.unresolved_candidate_events;
 CREATE POLICY "Allow admins to read unresolved candidate events" ON public.unresolved_candidate_events
-  FOR SELECT TO authenticated USING (is_admin());
+  FOR SELECT TO authenticated USING (public.is_admin());
+DROP POLICY IF EXISTS "Allow admins to insert unresolved candidate events" ON public.unresolved_candidate_events;
 CREATE POLICY "Allow admins to insert unresolved candidate events" ON public.unresolved_candidate_events
-  FOR INSERT TO authenticated WITH CHECK (is_admin());
+  FOR INSERT TO authenticated WITH CHECK (public.is_admin());
 
+DROP POLICY IF EXISTS "Allow admins to read proposal decision events" ON public.proposal_decision_events;
 CREATE POLICY "Allow admins to read proposal decision events" ON public.proposal_decision_events
-  FOR SELECT TO authenticated USING (is_admin());
+  FOR SELECT TO authenticated USING (public.is_admin());
+DROP POLICY IF EXISTS "Allow admins to insert proposal decision events" ON public.proposal_decision_events;
 CREATE POLICY "Allow admins to insert proposal decision events" ON public.proposal_decision_events
-  FOR INSERT TO authenticated WITH CHECK (is_admin());
+  FOR INSERT TO authenticated WITH CHECK (public.is_admin());
 
 -- 12. Atomic Staging RPC for New-Format Change Proposals + Reconciliation Reports
 CREATE OR REPLACE FUNCTION public.stage_change_proposal_with_report(p_payload JSONB)
@@ -612,6 +648,10 @@ BEGIN
           SELECT val #>> '{}'
           FROM jsonb_array_elements(v_entry->'proposalItemRefs') AS val
         LOOP
+          IF NOT (v_item_map ? v_ref_client_id) THEN
+            RAISE EXCEPTION 'Missing item ref % for reconciliation entry', v_ref_client_id
+              USING ERRCODE = 'P0001';
+          END IF;
           INSERT INTO public.reconciliation_entry_item_links (
             entry_id,
             proposal_item_id,

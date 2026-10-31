@@ -926,9 +926,27 @@ export function normalizeAndValidateReconciliationReport(
               Err
             )
         );
-        if (parsedComparedAttrs.length === 1 && parsedComparedAttrs[0].toLowerCase() === 'price') {
+        const PRICE_ONLY_ATTRIBUTE_TOKENS = new Set([
+          'price',
+          'prices',
+          'pricing',
+          'rate',
+          'rates',
+          'tariff',
+          'tariffs',
+          'daily_rate',
+          'dailyrate',
+          'rate_per_day',
+          'rateperday',
+          'rental_rate_per_day',
+          'cost',
+        ]);
+        const hasNonPriceAttribute = parsedComparedAttrs.some(
+          (attr) => !PRICE_ONLY_ATTRIBUTE_TOKENS.has(attr.trim().toLowerCase())
+        );
+        if (!hasNonPriceAttribute) {
           throw new Err(
-            `Entry '${entryKey}' with disposition 'unchanged' cannot verify price alone; state all compared attributes.`
+            `Entry '${entryKey}' with disposition 'unchanged' cannot verify price/rates alone; state non-price comparedAttributes as well (e.g. brand, model, year, engineCapacityCc, conditions).`
           );
         }
         comparedAttributes = parsedComparedAttrs;
@@ -1206,7 +1224,12 @@ export function planCandidateOperations(params: {
   for (const entry of params.entries) {
     if (entry.disposition === 'unresolved') {
       const { matched, identityKey, isAmbiguous } = matchExistingCandidate(entry);
-      if (matched && !touchedCandidateIds.has(matched.id)) {
+      if (matched && touchedCandidateIds.has(matched.id)) {
+        throw new Err(
+          `Multiple reconciliation entries cannot target the same unresolved candidate '${matched.id}' in one report (conflict at entry '${entry.entryKey}').`
+        );
+      }
+      if (matched) {
         touchedCandidateIds.add(matched.id);
         // Never overwrite an admin dismissal! Flag for review if evidence/issues diverged.
         if (matched.state === 'dismissed') {
@@ -1292,7 +1315,12 @@ export function planCandidateOperations(params: {
       const addRef = entry.proposalItemRefs.find((ref) => itemByClientId.get(ref)?.action === 'add');
       if (addRef) {
         const { matched } = matchExistingCandidate(entry);
-        if (matched && !touchedCandidateIds.has(matched.id)) {
+        if (matched && touchedCandidateIds.has(matched.id)) {
+          throw new Err(
+            `Multiple reconciliation entries cannot target the same unresolved candidate '${matched.id}' in one report (conflict at entry '${entry.entryKey}').`
+          );
+        }
+        if (matched) {
           touchedCandidateIds.add(matched.id);
           if (matched.state === 'open' || matched.state === 'ready_for_proposal') {
             operations.push({
@@ -1319,7 +1347,12 @@ export function planCandidateOperations(params: {
       // Agent reports cannot close open candidates to 'excluded' without admin review;
       // record the agent exclusion observation while keeping the candidate 'open'.
       const { matched } = matchExistingCandidate(entry);
-      if (matched && !touchedCandidateIds.has(matched.id) && matched.state === 'open') {
+      if (matched && touchedCandidateIds.has(matched.id)) {
+        throw new Err(
+          `Multiple reconciliation entries cannot target the same unresolved candidate '${matched.id}' in one report (conflict at entry '${entry.entryKey}').`
+        );
+      }
+      if (matched && matched.state === 'open') {
         touchedCandidateIds.add(matched.id);
         operations.push({
           mode: 'update',

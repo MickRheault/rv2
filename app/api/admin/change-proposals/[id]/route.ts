@@ -64,7 +64,7 @@ export async function GET(
     }
     const msg = String(error?.message || '');
     if (msg.startsWith('Proposal not found')) {
-      return NextResponse.json({ error: msg }, { status: 404 });
+      return NextResponse.json({ error: 'Proposal not found' }, { status: 404 });
     }
     console.error(`Error fetching proposal ${id}:`, error);
     return NextResponse.json(

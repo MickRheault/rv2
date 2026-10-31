@@ -207,6 +207,20 @@ export function createInMemorySupabaseClient(
       if (op === 'insert') {
         const items = Array.isArray(payloadData) ? payloadData : [payloadData];
         const inserted: any[] = [];
+        const validProposalDecisions = new Set([
+          'apply',
+          'partially_apply',
+          'reject',
+          'acknowledge',
+          'supersede',
+        ]);
+        const validCandidateStates = new Set([
+          'open',
+          'ready_for_proposal',
+          'resolved_applied',
+          'excluded',
+          'dismissed',
+        ]);
         for (const raw of items) {
           if (
             table === 'motorcycle_rentals' &&
@@ -214,6 +228,24 @@ export function createInMemorySupabaseClient(
             raw.model === options.failBikeInsertForModel
           ) {
             return { data: null, error: { message: `Simulated DB failure inserting ${raw.model}` } };
+          }
+          if (table === 'proposal_decision_events' && !validProposalDecisions.has(raw.decision)) {
+            return {
+              data: null,
+              error: {
+                code: '23514',
+                message: `new row for relation "proposal_decision_events" violates check constraint "proposal_decision_events_decision_check": '${String(raw.decision)}'`,
+              },
+            };
+          }
+          if (table === 'unresolved_candidates' && raw.state && !validCandidateStates.has(raw.state)) {
+            return {
+              data: null,
+              error: {
+                code: '23514',
+                message: `new row for relation "unresolved_candidates" violates check constraint: '${String(raw.state)}'`,
+              },
+            };
           }
           const now = new Date().toISOString();
           const record = {
@@ -681,7 +713,7 @@ export function createInMemorySupabaseClient(
             cfg = {
               id: makeUuid(),
               shop_id: p.shopId,
-              tier: 1,
+              tier: 2,
               source_url: p.learnedConfig.discoveredSourceUrl || p.sourceUrl,
               extraction_hints: p.learnedConfig.extractionHints || null,
               is_active: true,

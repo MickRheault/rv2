@@ -786,7 +786,7 @@ describe('Reconciliation Reports Staging, Idempotency & Readback (Ticket #202)',
               existingMotorcycleId: OTHER_SHOP_BIKE_ID,
               disposition: 'unchanged',
               proposalItemRefs: [],
-              comparedAttributes: ['rates'],
+              comparedAttributes: ['brand', 'model', 'rates'],
               evidence: [
                 { sourceUrl: 'https://rideon.es/flota/', snippet: 'NMAX', kind: 'fleet_card' },
               ],
@@ -951,5 +951,155 @@ describe('Reconciliation Reports Staging, Idempotency & Readback (Ticket #202)',
     );
     expect(state.unresolved_candidates).toHaveLength(1);
     expect(state.unresolved_candidates[0].state).toBe('open');
+  });
+
+  it('records partially_apply decision event on partial item approval, rejects price-only comparedAttributes, rejects non-string learnedConfig, and rejects duplicate candidate targets in one report', async () => {
+    // 1. Price-only comparedAttributes (['rates'] or ['price', 'pricing']) -> 400
+    const priceOnlyUnchanged = await stageProposal(
+      agentPostRequest(
+        buildRideOnBmwReportOnlyPayload({
+          agentRunId: 'run-price-only',
+          reconciliationReport: {
+            ...buildRideOnBmwReportOnlyPayload().reconciliationReport,
+            entries: [
+              {
+                ...buildRideOnBmwReportOnlyPayload().reconciliationReport.entries[1],
+                comparedAttributes: ['rates', 'pricing'],
+              },
+            ],
+          },
+        })
+      )
+    );
+    expect(priceOnlyUnchanged.status).toBe(400);
+
+    // 2. Non-string discoveredSourceUrl or learnedExtractionHints -> 400
+    const nonStringDiscovered = await stageProposal(
+      agentPostRequest(
+        buildRideOnBmwReportOnlyPayload({
+          agentRunId: 'run-nonstring-url',
+          discoveredSourceUrl: 12345,
+        })
+      )
+    );
+    expect(nonStringDiscovered.status).toBe(400);
+
+    const nonStringHints = await stageProposal(
+      agentPostRequest(
+        buildRideOnBmwReportOnlyPayload({
+          agentRunId: 'run-nonstring-hints',
+          learnedExtractionHints: ['bad'],
+        })
+      )
+    );
+    expect(nonStringHints.status).toBe(400);
+
+    // 3. Stage proposal with 2 actionable items + 1 unresolved BMW candidate, then partially approve 1 item
+    const stageMixed = await stageProposal(
+      agentPostRequest({
+        shopId: RIDE_ON_SHOP_ID,
+        sourceUrl: 'https://rideon.es/flota/',
+        agentRunId: 'run-partial-apply-1',
+        items: [
+          {
+            clientItemId: 'add-forza',
+            entityType: 'motorcycle',
+            action: 'add',
+            brandName: 'Honda',
+            modelName: 'Forza 350',
+            proposedData: {
+              categoryId: SCOOTER_CAT_ID,
+              rates: [{ minDays: 1, maxDays: null, ratePerDay: 49, currency: 'EUR' }],
+            },
+          },
+          {
+            clientItemId: 'add-sh350',
+            entityType: 'motorcycle',
+            action: 'add',
+            brandName: 'Honda',
+            modelName: 'SH 350i',
+            proposedData: {
+              categoryId: SCOOTER_CAT_ID,
+              rates: [{ minDays: 1, maxDays: null, ratePerDay: 45, currency: 'EUR' }],
+            },
+          },
+        ],
+        reconciliationReport: {
+          ...buildRideOnBmwReportOnlyPayload().reconciliationReport,
+          entries: [
+            buildRideOnBmwReportOnlyPayload().reconciliationReport.entries[0],
+            buildRideOnBmwReportOnlyPayload().reconciliationReport.entries[1],
+            {
+              entryKey: 'honda-forza-350',
+              brand: 'Honda',
+              model: 'Forza 350',
+              existingMotorcycleId: null,
+              disposition: 'ready_change',
+              proposalItemRefs: ['add-forza'],
+              evidence: [
+                { sourceUrl: 'https://rideon.es/flota/', snippet: '49€/day', kind: 'fleet_card' },
+              ],
+            },
+            {
+              entryKey: 'honda-sh-350i',
+              brand: 'Honda',
+              model: 'SH 350i',
+              existingMotorcycleId: null,
+              disposition: 'ready_change',
+              proposalItemRefs: ['add-sh350'],
+              evidence: [
+                { sourceUrl: 'https://rideon.es/flota/', snippet: '45€/day', kind: 'fleet_card' },
+              ],
+            },
+          ],
+        },
+      })
+    );
+    expect(stageMixed.status).toBe(201);
+    const { proposalId } = await stageMixed.json();
+    const forzaItem = state.change_proposal_items.find((i) => i.client_item_id === 'add-forza');
+    expect(forzaItem).toBeDefined();
+
+    const partialApplyRes = await applyAdminProposal(
+      new NextRequest(`http://localhost:3000/api/admin/change-proposals/${proposalId}/apply`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ approvedItemIds: [forzaItem!.id] }),
+      }),
+      { params: Promise.resolve({ id: proposalId }) }
+    );
+    expect(partialApplyRes.status).toBe(200);
+    const partialBody = await partialApplyRes.json();
+    expect(partialBody.status).toBe('partially_applied');
+    expect(partialBody.applicationStatus).toBe('partially_applied');
+    expect(state.proposal_decision_events).toHaveLength(1);
+    expect(state.proposal_decision_events[0].decision).toBe('partially_apply');
+
+    // 4. Duplicate candidate target in one report -> 400 without creating duplicate open candidate
+    const bmwCandidateId = state.unresolved_candidates[0].id;
+    const dupCandidateReport = await stageProposal(
+      agentPostRequest(
+        buildRideOnBmwReportOnlyPayload({
+          agentRunId: 'run-dup-cand-target',
+          reconciliationReport: {
+            ...buildRideOnBmwReportOnlyPayload().reconciliationReport,
+            entries: [
+              {
+                ...buildRideOnBmwReportOnlyPayload().reconciliationReport.entries[0],
+                entryKey: 'bmw-card-1',
+                candidateId: bmwCandidateId,
+              },
+              {
+                ...buildRideOnBmwReportOnlyPayload().reconciliationReport.entries[0],
+                entryKey: 'bmw-card-2',
+                candidateId: bmwCandidateId,
+              },
+            ],
+          },
+        })
+      )
+    );
+    expect(dupCandidateReport.status).toBe(400);
+    expect(state.unresolved_candidates).toHaveLength(1);
   });
 });

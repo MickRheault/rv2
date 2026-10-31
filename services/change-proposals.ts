@@ -1536,16 +1536,26 @@ export class ChangeProposalService {
           const origCatId = item.original_data.categoryId as string | null;
           if (origCatId !== null) {
             const matched = categoryCatalog.byId.get(origCatId.toLowerCase());
-            if (!matched) {
+            if (matched) {
+              item.original_data = normalizeCanonicalCategoryObject(
+                item.original_data,
+                matched.id,
+                matched.name
+              );
+            } else if (
+              categoryCatalog.loadedFromDb &&
+              (item.action === 'add' || item.action === 'update')
+            ) {
               throw new ProposalItemValidationError(
                 `Item ${itemLabel} (field 'originalData.categoryId'): unknown categoryId '${origCatId}' (not found in categories catalog).`
               );
+            } else {
+              item.original_data = normalizeCanonicalCategoryObject(
+                item.original_data,
+                origCatId,
+                item.original_data.categoryName ?? undefined
+              );
             }
-            item.original_data = normalizeCanonicalCategoryObject(
-              item.original_data,
-              matched.id,
-              matched.name
-            );
           }
         }
       }
@@ -1944,8 +1954,20 @@ export class ChangeProposalService {
       .eq('id', proposalId)
       .single();
 
-    if (proposalError || !proposal) {
-      throw new Error(`Proposal not found: ${proposalError?.message || 'Unknown error'}`);
+    if (proposalError) {
+      const code = (proposalError as any).code;
+      const errMsg = String(proposalError.message || '');
+      if (
+        code === 'PGRST116' ||
+        code === '22P02' ||
+        /not found|0 rows|no rows/i.test(errMsg)
+      ) {
+        throw new Error(`Proposal not found: ${proposalId}`);
+      }
+      throw new Error(`Failed to load proposal: ${errMsg || 'Database error'}`);
+    }
+    if (!proposal) {
+      throw new Error(`Proposal not found: ${proposalId}`);
     }
 
     const { data: items, error: itemsError } = await supabase
@@ -2197,8 +2219,8 @@ export class ChangeProposalService {
     let decisionEvents: any[] = [];
     let candidateEvents: any[] = [];
 
-    const entriesLimit = Math.min(Math.max(options.entriesLimit || 200, 1), 500);
-    const entriesOffset = Math.max(options.entriesOffset || 0, 0);
+    const entriesLimit = Math.min(Math.max(options.entriesLimit ?? 200, 1), 500);
+    const entriesOffset = Math.max(options.entriesOffset ?? 0, 0);
 
     const reportQuery = (supabase.from('reconciliation_reports') as any)
       ?.select?.('*')
@@ -3122,8 +3144,8 @@ export class ChangeProposalService {
 
     const nowIso = new Date().toISOString();
     const nextVersion = (proposal.version ?? 1) + 1;
-    await (supabase
-      .from('change_proposals') as any)
+    const propUpdateRes = await supabase
+      .from('change_proposals')
       .update({
         status: finalStatus,
         application_status: nextApplicationStatus,
@@ -3135,17 +3157,22 @@ export class ChangeProposalService {
       })
       .eq('id', proposalId);
 
-    const decInsertFn = (supabase.from('proposal_decision_events') as any)?.insert;
-    if (typeof decInsertFn === 'function') {
-      const decRes = await decInsertFn({
+    if (propUpdateRes?.error) {
+      throw new Error(`Failed to update proposal status: ${propUpdateRes.error.message}`);
+    }
+
+    const decisionValue: 'apply' | 'partially_apply' | 'reject' =
+      finalStatus === 'rejected'
+        ? 'reject'
+        : finalStatus === 'partially_applied'
+        ? 'partially_apply'
+        : 'apply';
+    const decTable = supabase.from('proposal_decision_events');
+    if (typeof (decTable as any)?.insert === 'function') {
+      const decRes = await decTable.insert({
         proposal_id: proposalId,
         shop_id: proposal.shop_id,
-        decision:
-          finalStatus === 'rejected'
-            ? 'reject'
-            : finalStatus === 'partially_applied'
-            ? 'partial_apply'
-            : 'apply',
+        decision: decisionValue,
         actor_id: options.actorId ?? null,
         proposal_version: nextVersion,
         notes: options.notes ?? null,

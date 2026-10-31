@@ -2454,44 +2454,44 @@ export function ChangeProposalDiffViewer({
                   No unchanged, excluded, or duplicate entries in the current page slice.
                 </p>
               )}
+          </div>
+        </Card>
+      )}
 
-            {entriesPagination && entriesPagination.total > entriesPagination.limit && (
-              <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-600">
-                <span>
-                  Showing entries {entriesPagination.offset + 1}–
-                  {Math.min(
-                    entriesPagination.offset + entries.length,
-                    entriesPagination.total
-                  )}{' '}
-                  of {entriesPagination.total}
-                </span>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={entriesPagination.offset === 0}
-                    onClick={() =>
-                      onEntriesPageChange?.(
-                        Math.max(0, entriesPagination.offset - entriesPagination.limit)
-                      )
-                    }
-                  >
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={!entriesPagination.hasMore}
-                    onClick={() =>
-                      entriesPagination.nextOffset !== null &&
-                      onEntriesPageChange?.(entriesPagination.nextOffset)
-                    }
-                  >
-                    Next
-                  </Button>
-                </div>
-              </div>
-            )}
+      {/* Report-level Entry Pagination Controls (across Ready Changes, Unresolved & Accounting slices) */}
+      {report && entriesPagination && entriesPagination.total > entriesPagination.limit && (
+        <Card className="py-3 px-4">
+          <div className="flex items-center justify-between text-xs text-gray-600 flex-wrap gap-2">
+            <span>
+              Showing reconciliation entries {entriesPagination.offset + 1}–
+              {Math.min(entriesPagination.offset + entries.length, entriesPagination.total)} of{' '}
+              {entriesPagination.total}
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={entriesPagination.offset === 0}
+                onClick={() =>
+                  onEntriesPageChange?.(
+                    Math.max(0, entriesPagination.offset - entriesPagination.limit)
+                  )
+                }
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!entriesPagination.hasMore}
+                onClick={() =>
+                  entriesPagination.nextOffset !== null &&
+                  onEntriesPageChange?.(entriesPagination.nextOffset)
+                }
+              >
+                Next
+              </Button>
+            </div>
           </div>
         </Card>
       )}
