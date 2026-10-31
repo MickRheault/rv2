@@ -189,6 +189,33 @@ export function createInMemorySupabaseClient(
   options: { failRpcMessage?: string; failBikeInsertForModel?: string } = {}
 ) {
   const makeUuid = () => crypto.randomUUID();
+  const UUID_COL_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const UUID_COLUMNS_BY_TABLE: Partial<Record<keyof InMemoryReconciliationState, string[]>> = {
+    change_proposals: ['shop_id', 'reviewed_by'],
+    unresolved_candidates: [
+      'shop_id',
+      'originating_proposal_id',
+      'latest_proposal_id',
+      'linked_proposal_item_id',
+      'resolved_motorcycle_id',
+    ],
+    unresolved_candidate_events: ['candidate_id', 'shop_id', 'actor_id', 'proposal_id'],
+    proposal_decision_events: ['proposal_id', 'shop_id', 'actor_id'],
+  };
+
+  function validateUuidColumns(table: keyof InMemoryReconciliationState, raw: Record<string, any>) {
+    const cols = UUID_COLUMNS_BY_TABLE[table] || [];
+    for (const col of cols) {
+      const val = raw?.[col];
+      if (val !== undefined && val !== null && !UUID_COL_REGEX.test(String(val))) {
+        return {
+          code: '22P02',
+          message: `invalid input syntax for type uuid: "${String(val)}" (column ${String(table)}.${col})`,
+        };
+      }
+    }
+    return null;
+  }
 
   function createQueryBuilder(table: keyof InMemoryReconciliationState) {
     let op: 'select' | 'insert' | 'update' | 'delete' = 'select';
@@ -228,6 +255,10 @@ export function createInMemorySupabaseClient(
             raw.model === options.failBikeInsertForModel
           ) {
             return { data: null, error: { message: `Simulated DB failure inserting ${raw.model}` } };
+          }
+          const uuidErr = validateUuidColumns(table, raw);
+          if (uuidErr) {
+            return { data: null, error: uuidErr };
           }
           if (table === 'proposal_decision_events' && !validProposalDecisions.has(raw.decision)) {
             return {
@@ -282,6 +313,10 @@ export function createInMemorySupabaseClient(
       }
 
       if (op === 'update') {
+        const uuidErr = validateUuidColumns(table, payloadData || {});
+        if (uuidErr) {
+          return { data: null, error: uuidErr, count: 0 };
+        }
         const now = new Date().toISOString();
         const updated: any[] = [];
         for (const row of matched) {
@@ -330,24 +365,36 @@ export function createInMemorySupabaseClient(
       };
     };
 
+    const assertBound = (ctx: any, methodName: string) => {
+      if (ctx !== builder) {
+        throw new TypeError(
+          `Cannot read properties of undefined (detached PostgrestBuilder.${methodName} call)`
+        );
+      }
+    };
+
     const builder: any = {
-      select(_cols?: string, opts?: { count?: string }) {
+      select(this: any, _cols?: string, opts?: { count?: string }) {
+        assertBound(this, 'select');
         if (op === 'select') {
           countMode = opts?.count;
         }
         return builder;
       },
-      insert(data: any) {
+      insert(this: any, data: any) {
+        assertBound(this, 'insert');
         op = 'insert';
         payloadData = data;
         return builder;
       },
-      update(data: any) {
+      update(this: any, data: any) {
+        assertBound(this, 'update');
         op = 'update';
         payloadData = data;
         return builder;
       },
-      delete() {
+      delete(this: any) {
+        assertBound(this, 'delete');
         op = 'delete';
         return builder;
       },
@@ -397,11 +444,13 @@ export function createInMemorySupabaseClient(
         limitCount = n;
         return builder;
       },
-      single() {
+      single(this: any) {
+        assertBound(this, 'single');
         expectSingle = true;
         return execute();
       },
-      maybeSingle() {
+      maybeSingle(this: any) {
+        assertBound(this, 'maybeSingle');
         expectMaybeSingle = true;
         return execute();
       },
@@ -510,8 +559,8 @@ export function createInMemorySupabaseClient(
                   previous_state: 'ready_for_proposal',
                   new_state: 'open',
                   reason: 'Linked pending proposal superseded before application',
-                  issues_snapshot: null,
-                  evidence_snapshot: null,
+                  issues_snapshot: structuredClone(cand.current_issues ?? null),
+                  evidence_snapshot: structuredClone(cand.latest_evidence ?? null),
                   created_at: now,
                 });
               }
