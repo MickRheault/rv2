@@ -58,6 +58,7 @@ const config = {
     '<rootDir>/node_modules/',
     '<rootDir>/coverage/',
     '<rootDir>/dist/',
+    '<rootDir>/__tests__/helpers/',
   ],
   
   // Transform ignore patterns

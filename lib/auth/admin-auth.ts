@@ -90,3 +90,23 @@ export async function isAuthorizedAdmin(_req?: Request): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Best-effort lookup of the authenticated admin user's ID from the current Supabase session.
+ * Returns null if unavailable (e.g., in service-mocked unit tests).
+ */
+export async function getAuthenticatedAdminUserId(): Promise<string | null> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+    if (error || !user || isSoftDeletedUser(user)) {
+      return null;
+    }
+    return user.id ?? null;
+  } catch {
+    return null;
+  }
+}

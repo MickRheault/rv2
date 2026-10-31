@@ -107,48 +107,63 @@ export type Database = {
       change_proposals: {
         Row: {
           agent_run_id: string | null
+          application_status: 'pending' | 'not_applicable' | 'applied' | 'partially_applied' | 'failed' | 'rejected'
           applied_at: string | null
+          coverage_status: 'complete' | 'partial' | 'failed' | 'unknown'
           created_at: string
           id: string
           notes: string | null
+          payload_digest: string | null
           raw_snapshot: Json
+          reconciliation_status: 'complete' | 'unresolved' | 'unknown'
           reviewed_at: string | null
           reviewed_by: string | null
           shop_id: string
           source_url: string
-          status: 'pending' | 'reviewing' | 'applied' | 'partially_applied' | 'rejected'
+          status: 'pending' | 'reviewing' | 'applied' | 'partially_applied' | 'rejected' | 'acknowledged' | 'superseded'
           summary_counts: Json
           updated_at: string
+          version: number
         }
         Insert: {
           agent_run_id?: string | null
+          application_status?: 'pending' | 'not_applicable' | 'applied' | 'partially_applied' | 'failed' | 'rejected'
           applied_at?: string | null
+          coverage_status?: 'complete' | 'partial' | 'failed' | 'unknown'
           created_at?: string
           id?: string
           notes?: string | null
+          payload_digest?: string | null
           raw_snapshot: Json
+          reconciliation_status?: 'complete' | 'unresolved' | 'unknown'
           reviewed_at?: string | null
           reviewed_by?: string | null
           shop_id: string
           source_url: string
-          status?: 'pending' | 'reviewing' | 'applied' | 'partially_applied' | 'rejected'
+          status?: 'pending' | 'reviewing' | 'applied' | 'partially_applied' | 'rejected' | 'acknowledged' | 'superseded'
           summary_counts?: Json
           updated_at?: string
+          version?: number
         }
         Update: {
           agent_run_id?: string | null
+          application_status?: 'pending' | 'not_applicable' | 'applied' | 'partially_applied' | 'failed' | 'rejected'
           applied_at?: string | null
+          coverage_status?: 'complete' | 'partial' | 'failed' | 'unknown'
           created_at?: string
           id?: string
           notes?: string | null
+          payload_digest?: string | null
           raw_snapshot?: Json
+          reconciliation_status?: 'complete' | 'unresolved' | 'unknown'
           reviewed_at?: string | null
           reviewed_by?: string | null
           shop_id?: string
           source_url?: string
-          status?: 'pending' | 'reviewing' | 'applied' | 'partially_applied' | 'rejected'
+          status?: 'pending' | 'reviewing' | 'applied' | 'partially_applied' | 'rejected' | 'acknowledged' | 'superseded'
           summary_counts?: Json
           updated_at?: string
+          version?: number
         }
         Relationships: [
           {
@@ -164,6 +179,7 @@ export type Database = {
         Row: {
           action: 'add' | 'update' | 'delist' | 'unchanged'
           brand_name: string | null
+          client_item_id: string | null
           created_at: string
           diff_summary: Json | null
           entity_id: string | null
@@ -178,6 +194,7 @@ export type Database = {
         Insert: {
           action: 'add' | 'update' | 'delist' | 'unchanged'
           brand_name?: string | null
+          client_item_id?: string | null
           created_at?: string
           diff_summary?: Json | null
           entity_id?: string | null
@@ -192,6 +209,7 @@ export type Database = {
         Update: {
           action?: 'add' | 'update' | 'delist' | 'unchanged'
           brand_name?: string | null
+          client_item_id?: string | null
           created_at?: string
           diff_summary?: Json | null
           entity_id?: string | null
@@ -296,33 +314,39 @@ export type Database = {
       crawl_runs: {
         Row: {
           agent_run_id: string | null
+          coverage_status: 'complete' | 'partial' | 'failed' | 'unknown'
           created_at: string
           error_message: string | null
           id: string
           metadata: Json
           proposal_id: string | null
+          reconciliation_status: 'complete' | 'unresolved' | 'unknown'
           shop_id: string
-          status: 'success' | 'failed'
+          status: 'success' | 'partial' | 'failed'
         }
         Insert: {
           agent_run_id?: string | null
+          coverage_status?: 'complete' | 'partial' | 'failed' | 'unknown'
           created_at?: string
           error_message?: string | null
           id?: string
           metadata?: Json
           proposal_id?: string | null
+          reconciliation_status?: 'complete' | 'unresolved' | 'unknown'
           shop_id: string
-          status: 'success' | 'failed'
+          status: 'success' | 'partial' | 'failed'
         }
         Update: {
           agent_run_id?: string | null
+          coverage_status?: 'complete' | 'partial' | 'failed' | 'unknown'
           created_at?: string
           error_message?: string | null
           id?: string
           metadata?: Json
           proposal_id?: string | null
+          reconciliation_status?: 'complete' | 'unresolved' | 'unknown'
           shop_id?: string
-          status?: 'success' | 'failed'
+          status?: 'success' | 'partial' | 'failed'
         }
         Relationships: [
           {
@@ -1259,7 +1283,9 @@ export type Database = {
           extraction_hints: string | null
           id: string
           is_active: boolean
+          last_coverage_status: 'complete' | 'partial' | 'failed' | 'unknown'
           last_error: string | null
+          last_reconciliation_status: 'complete' | 'unresolved' | 'unknown'
           last_run_at: string | null
           shop_id: string
           source_url: string
@@ -1272,7 +1298,9 @@ export type Database = {
           extraction_hints?: string | null
           id?: string
           is_active?: boolean
+          last_coverage_status?: 'complete' | 'partial' | 'failed' | 'unknown'
           last_error?: string | null
+          last_reconciliation_status?: 'complete' | 'unresolved' | 'unknown'
           last_run_at?: string | null
           shop_id: string
           source_url: string
@@ -1285,7 +1313,9 @@ export type Database = {
           extraction_hints?: string | null
           id?: string
           is_active?: boolean
+          last_coverage_status?: 'complete' | 'partial' | 'failed' | 'unknown'
           last_error?: string | null
+          last_reconciliation_status?: 'complete' | 'unresolved' | 'unknown'
           last_run_at?: string | null
           shop_id?: string
           source_url?: string
@@ -1301,6 +1331,312 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      reconciliation_reports: {
+        Row: {
+          agent_run_id: string
+          coverage: Json
+          created_at: string
+          id: string
+          proposal_id: string
+          raw_report: Json
+          report_digest: string
+          report_version: number
+          schema_version: number
+          scope: Json
+          server_counts: Json
+          shop_id: string
+        }
+        Insert: {
+          agent_run_id: string
+          coverage: Json
+          created_at?: string
+          id?: string
+          proposal_id: string
+          raw_report: Json
+          report_digest: string
+          report_version?: number
+          schema_version: number
+          scope: Json
+          server_counts: Json
+          shop_id: string
+        }
+        Update: {
+          agent_run_id?: string
+          coverage?: Json
+          created_at?: string
+          id?: string
+          proposal_id?: string
+          raw_report?: Json
+          report_digest?: string
+          report_version?: number
+          schema_version?: number
+          scope?: Json
+          server_counts?: Json
+          shop_id?: string
+        }
+        Relationships: []
+      }
+      reconciliation_report_entries: {
+        Row: {
+          brand_name: string
+          candidate_id: string | null
+          compared_attributes: Json | null
+          created_at: string
+          disposition: 'ready_change' | 'unchanged' | 'unresolved' | 'excluded' | 'duplicate'
+          duplicate_of_entry_key: string | null
+          duplicate_of_motorcycle_id: string | null
+          entry_index: number
+          entry_key: string
+          evidence: Json
+          existing_motorcycle_id: string | null
+          id: string
+          issues: Json | null
+          model_name: string
+          next_action: string | null
+          proposal_id: string
+          reason: string | null
+          report_id: string
+          variant_label: string | null
+          year: number | null
+          year_to: number | null
+        }
+        Insert: {
+          brand_name: string
+          candidate_id?: string | null
+          compared_attributes?: Json | null
+          created_at?: string
+          disposition: 'ready_change' | 'unchanged' | 'unresolved' | 'excluded' | 'duplicate'
+          duplicate_of_entry_key?: string | null
+          duplicate_of_motorcycle_id?: string | null
+          entry_index: number
+          entry_key: string
+          evidence?: Json
+          existing_motorcycle_id?: string | null
+          id?: string
+          issues?: Json | null
+          model_name: string
+          next_action?: string | null
+          proposal_id: string
+          reason?: string | null
+          report_id: string
+          variant_label?: string | null
+          year?: number | null
+          year_to?: number | null
+        }
+        Update: {
+          brand_name?: string
+          candidate_id?: string | null
+          compared_attributes?: Json | null
+          created_at?: string
+          disposition?: 'ready_change' | 'unchanged' | 'unresolved' | 'excluded' | 'duplicate'
+          duplicate_of_entry_key?: string | null
+          duplicate_of_motorcycle_id?: string | null
+          entry_index?: number
+          entry_key?: string
+          evidence?: Json
+          existing_motorcycle_id?: string | null
+          id?: string
+          issues?: Json | null
+          model_name?: string
+          next_action?: string | null
+          proposal_id?: string
+          reason?: string | null
+          report_id?: string
+          variant_label?: string | null
+          year?: number | null
+          year_to?: number | null
+        }
+        Relationships: []
+      }
+      reconciliation_entry_item_links: {
+        Row: {
+          client_item_id: string
+          created_at: string
+          entry_id: string
+          proposal_item_id: string
+        }
+        Insert: {
+          client_item_id: string
+          created_at?: string
+          entry_id: string
+          proposal_item_id: string
+        }
+        Update: {
+          client_item_id?: string
+          created_at?: string
+          entry_id?: string
+          proposal_item_id?: string
+        }
+        Relationships: []
+      }
+      unresolved_candidates: {
+        Row: {
+          brand_name: string
+          created_at: string
+          current_issues: Json
+          flagged_for_review: boolean
+          id: string
+          identity_key: string | null
+          latest_evidence: Json
+          latest_proposal_id: string | null
+          latest_run_id: string
+          linked_proposal_item_id: string | null
+          model_name: string
+          next_action: string | null
+          originating_proposal_id: string | null
+          originating_run_id: string
+          resolution_reason: string | null
+          resolved_motorcycle_id: string | null
+          shop_id: string
+          source_identity: Json
+          state: 'open' | 'ready_for_proposal' | 'resolved_applied' | 'excluded' | 'dismissed'
+          updated_at: string
+          variant_label: string | null
+          version: number
+          year: number | null
+          year_to: number | null
+        }
+        Insert: {
+          brand_name: string
+          created_at?: string
+          current_issues?: Json
+          flagged_for_review?: boolean
+          id?: string
+          identity_key?: string | null
+          latest_evidence?: Json
+          latest_proposal_id?: string | null
+          latest_run_id: string
+          linked_proposal_item_id?: string | null
+          model_name: string
+          next_action?: string | null
+          originating_proposal_id?: string | null
+          originating_run_id: string
+          resolution_reason?: string | null
+          resolved_motorcycle_id?: string | null
+          shop_id: string
+          source_identity?: Json
+          state?: 'open' | 'ready_for_proposal' | 'resolved_applied' | 'excluded' | 'dismissed'
+          updated_at?: string
+          variant_label?: string | null
+          version?: number
+          year?: number | null
+          year_to?: number | null
+        }
+        Update: {
+          brand_name?: string
+          created_at?: string
+          current_issues?: Json
+          flagged_for_review?: boolean
+          id?: string
+          identity_key?: string | null
+          latest_evidence?: Json
+          latest_proposal_id?: string | null
+          latest_run_id?: string
+          linked_proposal_item_id?: string | null
+          model_name?: string
+          next_action?: string | null
+          originating_proposal_id?: string | null
+          originating_run_id?: string
+          resolution_reason?: string | null
+          resolved_motorcycle_id?: string | null
+          shop_id?: string
+          source_identity?: Json
+          state?: 'open' | 'ready_for_proposal' | 'resolved_applied' | 'excluded' | 'dismissed'
+          updated_at?: string
+          variant_label?: string | null
+          version?: number
+          year?: number | null
+          year_to?: number | null
+        }
+        Relationships: []
+      }
+      unresolved_candidate_events: {
+        Row: {
+          actor_id: string | null
+          actor_type: 'agent' | 'admin' | 'system'
+          agent_run_id: string | null
+          candidate_id: string
+          created_at: string
+          event_type: string
+          evidence_snapshot: Json | null
+          id: string
+          issues_snapshot: Json | null
+          new_state: string
+          previous_state: string | null
+          proposal_id: string | null
+          reason: string | null
+          shop_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_type: 'agent' | 'admin' | 'system'
+          agent_run_id?: string | null
+          candidate_id: string
+          created_at?: string
+          event_type: string
+          evidence_snapshot?: Json | null
+          id?: string
+          issues_snapshot?: Json | null
+          new_state: string
+          previous_state?: string | null
+          proposal_id?: string | null
+          reason?: string | null
+          shop_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          actor_type?: 'agent' | 'admin' | 'system'
+          agent_run_id?: string | null
+          candidate_id?: string
+          created_at?: string
+          event_type?: string
+          evidence_snapshot?: Json | null
+          id?: string
+          issues_snapshot?: Json | null
+          new_state?: string
+          previous_state?: string | null
+          proposal_id?: string | null
+          reason?: string | null
+          shop_id?: string
+        }
+        Relationships: []
+      }
+      proposal_decision_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          decision: 'apply' | 'partially_apply' | 'reject' | 'acknowledge' | 'supersede'
+          id: string
+          metadata: Json
+          notes: string | null
+          proposal_id: string
+          proposal_version: number
+          shop_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          decision: 'apply' | 'partially_apply' | 'reject' | 'acknowledge' | 'supersede'
+          id?: string
+          metadata?: Json
+          notes?: string | null
+          proposal_id: string
+          proposal_version: number
+          shop_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          decision?: 'apply' | 'partially_apply' | 'reject' | 'acknowledge' | 'supersede'
+          id?: string
+          metadata?: Json
+          notes?: string | null
+          proposal_id?: string
+          proposal_version?: number
+          shop_id?: string
+        }
+        Relationships: []
       }
       required_document_types: {
         Row: {
@@ -1509,6 +1845,7 @@ export type Database = {
         }[]
       }
       remove_user_admin: { Args: { user_email: string }; Returns: boolean }
+      stage_change_proposal_with_report: { Args: { p_payload: Json }; Returns: Json }
     }
     Enums: {
       app_permission:

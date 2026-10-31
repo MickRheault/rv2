@@ -11,9 +11,28 @@ import {
 } from '@/lib/motorcycle-conditions-helpers';
 import { normalizeMotorcycleYearRange } from '@/lib/utils';
 import { getShopUrl } from '@/lib/utils/urls';
+import {
+  ApplicationStatus,
+  CoverageStatus,
+  MAX_PROPOSAL_ITEMS,
+  MAX_SHORT_LABEL_LENGTH,
+  MAX_TEXT_FIELD_LENGTH,
+  NormalizedActionableItemSummary,
+  ProposalIdempotencyConflictError,
+  ProposalVersionConflictError,
+  ReconciliationStatus,
+  computeCanonicalSha256Digest,
+  normalizeAndValidateReconciliationReport,
+  normalizeScopeForComparison,
+  planCandidateOperations,
+  validateBoundedString,
+  validateHttpUrl,
+  validateMotorcycleRateTiers,
+  validateRequiredUuid,
+} from '@/lib/reconciliation-report';
 import { TaskSchedulerService } from './task-scheduler';
 
-export { CANONICAL_CONDITION_TYPE_NAMES };
+export { CANONICAL_CONDITION_TYPE_NAMES, ProposalIdempotencyConflictError, ProposalVersionConflictError };
 
 export class GeodataImmutabilityError extends Error {
   constructor(field: string) {
@@ -648,6 +667,8 @@ export type ProposalEntityType = 'motorcycle' | 'rental_shop';
 export type ProposalAction = 'add' | 'update' | 'delist' | 'unchanged';
 
 export interface SubmittedProposalItem {
+  clientItemId?: string | null;
+  client_item_id?: string | null;
   entityType?: ProposalEntityType;
   entity_type?: ProposalEntityType;
   action: ProposalAction;
@@ -670,6 +691,18 @@ export interface CreateProposalFromItemsInput {
   sourceUrl: string;
   agentRunId?: string | null;
   items: SubmittedProposalItem[];
+}
+
+export interface StageProposalWithReconciliationReportInput {
+  shopId: string;
+  sourceUrl: string;
+  agentRunId: string;
+  items: SubmittedProposalItem[];
+  reconciliationReport: unknown;
+  learnedConfig?: {
+    extractionHints?: string | null;
+    discoveredSourceUrl?: string | null;
+  } | null;
 }
 
 const VALID_ENTITY_TYPES = new Set<string>(['motorcycle', 'rental_shop']);
@@ -753,6 +786,70 @@ async function insertMotorcycleConditions(
   }
 }
 
+export function normalizeProposalStatusDimensions(prop: any): {
+  coverageStatus: CoverageStatus;
+  reconciliationStatus: ReconciliationStatus;
+  applicationStatus: ApplicationStatus;
+  version: number;
+} {
+  const coverageStatus: CoverageStatus = prop?.coverage_status ?? 'unknown';
+  const reconciliationStatus: ReconciliationStatus = prop?.reconciliation_status ?? 'unknown';
+  const applicationStatus: ApplicationStatus =
+    prop?.application_status ??
+    (prop?.status === 'applied'
+      ? 'applied'
+      : prop?.status === 'partially_applied'
+      ? 'partially_applied'
+      : prop?.status === 'rejected'
+      ? 'rejected'
+      : prop?.status === 'acknowledged'
+      ? 'not_applicable'
+      : 'pending');
+  const version: number = prop?.version ?? 1;
+  return { coverageStatus, reconciliationStatus, applicationStatus, version };
+}
+
+function mapLiveMotorcycleToBaselineData(
+  liveBike: any,
+  fallbackBrand: string | null = null,
+  fallbackModel: string | null = null
+) {
+  const rawCategoryId = liveBike.category_id ?? liveBike.categories?.id ?? null;
+  const categoryId =
+    typeof rawCategoryId === 'string' && rawCategoryId.trim().length > 0
+      ? rawCategoryId.trim()
+      : null;
+  const rawCategoryName = liveBike.categories?.name ?? null;
+  const categoryName =
+    categoryId && typeof rawCategoryName === 'string' && rawCategoryName.trim().length > 0
+      ? rawCategoryName.trim()
+      : null;
+  const sortedTiers = [...(liveBike.rental_rate_tiers || [])].sort(
+    (a: any, b: any) => (a.min_days ?? 1) - (b.min_days ?? 1)
+  );
+  return {
+    brand: liveBike.brands?.name ?? fallbackBrand,
+    model: liveBike.model ?? fallbackModel,
+    categoryId,
+    categoryName,
+    year: liveBike.year ?? null,
+    year_to: liveBike.year_to ?? null,
+    engineCapacityCc: liveBike.engine_capacity_cc ?? null,
+    sourceUrl: liveBike.source_url ?? null,
+    rates: sortedTiers.map((r: any) => ({
+      minDays: r.min_days,
+      maxDays: r.max_days ?? null,
+      ratePerDay: r.rate_per_day,
+      currency: r.currency || 'THB',
+    })),
+    conditions: (liveBike.motorcycle_conditions || []).map((mc: any) => ({
+      condition_type_id: mc.condition_type_id,
+      name: resolveConditionName(mc),
+      notes: resolveConditionNotes(mc),
+    })),
+  };
+}
+
 const APPLY_CONCURRENCY = 10;
 
 export class ChangeProposalService {
@@ -762,6 +859,16 @@ export class ChangeProposalService {
   static async createProposalFromItems(input: CreateProposalFromItemsInput) {
     if (!Array.isArray(input.items)) {
       throw new ProposalItemValidationError('items must be an array of Change Proposal Items.');
+    }
+    if (input.items.length === 0) {
+      throw new ProposalItemValidationError(
+        'items must not be empty when reconciliationReport is not supplied.'
+      );
+    }
+    if (input.items.length > MAX_PROPOSAL_ITEMS) {
+      throw new ProposalItemValidationError(
+        `items exceeds maximum of ${MAX_PROPOSAL_ITEMS} items.`
+      );
     }
 
     const seenEntityKeys = new Set<string>();
@@ -1031,6 +1138,7 @@ export class ChangeProposalService {
     }
 
     // 1. Insert parent proposal record
+    const initialApplicationStatus: ApplicationStatus = hasMutableItems ? 'pending' : 'applied';
     const { data: proposal, error: proposalError } = await (supabase
       .from('change_proposals') as any)
       .insert({
@@ -1041,6 +1149,9 @@ export class ChangeProposalService {
           items: input.items,
         },
         status: initialProposalStatus,
+        coverage_status: 'unknown',
+        reconciliation_status: 'unknown',
+        application_status: initialApplicationStatus,
         summary_counts: summaryCounts,
       })
       .select()
@@ -1090,13 +1201,651 @@ export class ChangeProposalService {
       }
     }
 
-    // 4. Advance shop crawl timestamp to mark task completed
+    // 4. Advance shop crawl timestamp to mark task completed (legacy behavior)
     await TaskSchedulerService.recordCrawlSuccess(input.shopId);
 
     return {
       proposal,
       summaryCounts,
       itemsCount: normalizedItems.length,
+      coverageStatus: 'unknown' as CoverageStatus,
+      reconciliationStatus: 'unknown' as ReconciliationStatus,
+      applicationStatus: initialApplicationStatus,
+    };
+  }
+
+  /**
+   * Validates and atomically stages a new-format Change Proposal carrying a Reconciliation Report (schemaVersion 1).
+   * Does NOT advance shop_agent_configs.last_run_at or write crawl_runs ("proposal staged" != "crawl complete").
+   */
+  static async stageProposalWithReconciliationReport(
+    input: StageProposalWithReconciliationReportInput
+  ) {
+    const shopId = validateRequiredUuid(input.shopId, 'shopId', ProposalItemValidationError);
+    const sourceUrl = validateHttpUrl(
+      input.sourceUrl,
+      'sourceUrl',
+      ProposalItemValidationError
+    );
+    const agentRunId = validateBoundedString(
+      input.agentRunId,
+      'agentRunId',
+      MAX_SHORT_LABEL_LENGTH,
+      ProposalItemValidationError
+    );
+
+    let normalizedLearnedConfig: {
+      extractionHints?: string | null;
+      discoveredSourceUrl?: string | null;
+    } | null = null;
+    if (input.learnedConfig) {
+      normalizedLearnedConfig = {};
+      if (input.learnedConfig.extractionHints !== undefined) {
+        normalizedLearnedConfig.extractionHints =
+          input.learnedConfig.extractionHints === null
+            ? null
+            : validateBoundedString(
+                input.learnedConfig.extractionHints,
+                'learnedConfig.extractionHints',
+                MAX_TEXT_FIELD_LENGTH,
+                ProposalItemValidationError
+              );
+      }
+      if (input.learnedConfig.discoveredSourceUrl !== undefined) {
+        normalizedLearnedConfig.discoveredSourceUrl =
+          input.learnedConfig.discoveredSourceUrl === null
+            ? null
+            : validateHttpUrl(
+                input.learnedConfig.discoveredSourceUrl,
+                'learnedConfig.discoveredSourceUrl',
+                ProposalItemValidationError
+              );
+      }
+    }
+
+    if (!Array.isArray(input.items)) {
+      throw new ProposalItemValidationError('items must be an array of actionable Change Proposal Items.');
+    }
+    if (input.items.length > MAX_PROPOSAL_ITEMS) {
+      throw new ProposalItemValidationError(
+        `items exceeds maximum of ${MAX_PROPOSAL_ITEMS} items.`
+      );
+    }
+
+    const seenEntityKeys = new Set<string>();
+    const seenClientItemIds = new Set<string>();
+
+    const normalizedItems = input.items.map((raw, index) => {
+      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+        throw new ProposalItemValidationError(`Item at index ${index} must be an object.`);
+      }
+
+      const rawClientId = raw.clientItemId ?? raw.client_item_id;
+      let clientItemId: string | null = null;
+      if (rawClientId !== undefined && rawClientId !== null) {
+        clientItemId = validateBoundedString(
+          rawClientId,
+          `items[${index}].clientItemId`,
+          MAX_SHORT_LABEL_LENGTH,
+          ProposalItemValidationError
+        );
+        if (seenClientItemIds.has(clientItemId)) {
+          throw new ProposalItemValidationError(
+            `Duplicate clientItemId '${clientItemId}' at items[${index}].`
+          );
+        }
+        seenClientItemIds.add(clientItemId);
+      }
+
+      const entityType = (raw.entityType ?? raw.entity_type ?? 'motorcycle') as ProposalEntityType;
+      if (!VALID_ENTITY_TYPES.has(entityType)) {
+        throw new ProposalItemValidationError(
+          `Item at index ${index} has invalid entityType '${String(entityType)}'. Expected 'motorcycle' or 'rental_shop'.`
+        );
+      }
+
+      const action = raw.action as ProposalAction;
+      if (action === 'unchanged') {
+        throw new ProposalItemValidationError(
+          `Item at index ${index} has action 'unchanged'; when reconciliationReport is supplied, items[] must contain only actionable mutations ('add', 'update', 'delist') and unchanged inventory belongs in reconciliationReport.entries[].`
+        );
+      }
+      if (action !== 'add' && action !== 'update' && action !== 'delist') {
+        throw new ProposalItemValidationError(
+          `Item at index ${index} has invalid action '${String(action)}'. Expected 'add', 'update', or 'delist'.`
+        );
+      }
+
+      const rawEntityId =
+        raw.entityId ?? raw.entity_id ?? (entityType === 'rental_shop' ? shopId : null);
+      const entityId =
+        rawEntityId !== undefined &&
+        rawEntityId !== null &&
+        !(typeof rawEntityId === 'string' && rawEntityId.trim().length === 0)
+          ? validateRequiredUuid(
+              rawEntityId,
+              `items[${index}].entityId`,
+              ProposalItemValidationError
+            )
+          : null;
+
+      if (action !== 'add' && !entityId) {
+        throw new ProposalItemValidationError(
+          `Item at index ${index} with action '${action}' requires a non-empty entityId.`
+        );
+      }
+      if (entityType === 'rental_shop' && entityId !== shopId) {
+        throw new ProposalItemValidationError(
+          `Rental shop item at index ${index} cannot target cross-shop entityId '${String(entityId)}'.`
+        );
+      }
+
+      if (entityId) {
+        const entityKey = `${entityType}:${entityId}`;
+        if (seenEntityKeys.has(entityKey)) {
+          throw new ProposalItemValidationError(
+            `Duplicate entityId '${entityId}' for entityType '${entityType}' at index ${index}.`
+          );
+        }
+        seenEntityKeys.add(entityKey);
+      }
+
+      const proposedData = (raw.proposedData ?? raw.proposed_data ?? {}) as Record<string, any>;
+      validateGeodataImmutability(proposedData);
+
+      if (proposedData.sourceUrl !== undefined && proposedData.sourceUrl !== null) {
+        validateHttpUrl(
+          proposedData.sourceUrl,
+          `items[${index}].proposedData.sourceUrl`,
+          ProposalItemValidationError
+        );
+      }
+      if (proposedData.source_url !== undefined && proposedData.source_url !== null) {
+        validateHttpUrl(
+          proposedData.source_url,
+          `items[${index}].proposedData.source_url`,
+          ProposalItemValidationError
+        );
+      }
+
+      const originalData = (raw.originalData ?? raw.original_data ?? null) as Record<
+        string,
+        any
+      > | null;
+      const diffSummary = (raw.diffSummary ?? raw.diff_summary ?? null) as Record<
+        string,
+        any
+      > | null;
+
+      const rawBrand =
+        raw.brandName ??
+        raw.brand_name ??
+        proposedData.brand ??
+        proposedData.brandName ??
+        (entityType === 'rental_shop' ? 'Shop Profile' : null);
+      const brandName =
+        typeof rawBrand === 'string' && rawBrand.trim().length > 0 ? rawBrand.trim() : null;
+
+      const rawModel =
+        raw.modelName ??
+        raw.model_name ??
+        proposedData.modelName ??
+        proposedData.model ??
+        (entityType === 'rental_shop' ? 'General Information & Policies' : null);
+      const modelName =
+        typeof rawModel === 'string' && rawModel.trim().length > 0 ? rawModel.trim() : null;
+
+      if (entityType === 'motorcycle' && action === 'add' && (!brandName || !modelName)) {
+        throw new ProposalItemValidationError(
+          `Item at index ${index} with action 'add' requires non-empty brandName and modelName.`
+        );
+      }
+
+      const itemLabel = entityId ? `at index ${index} (${entityId})` : `at index ${index}`;
+      let normalizedProposedData: Record<string, any> = { ...proposedData };
+      let normalizedOriginalData: Record<string, any> | null = originalData
+        ? { ...originalData }
+        : null;
+
+      if (entityType === 'motorcycle') {
+        if (action === 'add' || action === 'update') {
+          const extractedProposedCat = extractAndValidateCategorySyntax(proposedData, {
+            itemLabel,
+            fieldName: 'categoryId',
+            required: action === 'add',
+            allowNull: false,
+          });
+          if (extractedProposedCat.provided && extractedProposedCat.normalizedId) {
+            normalizedProposedData = normalizeCanonicalCategoryObject(
+              normalizedProposedData,
+              extractedProposedCat.normalizedId
+            );
+          }
+
+          // Enforce complete positive pricing on add and on update whenever rates is supplied
+          validateMotorcycleRateTiers(proposedData, {
+            itemLabel,
+            required: action === 'add',
+            validationErrorCtor: ProposalItemValidationError,
+          });
+        } else if (hasExplicitCategoryField(proposedData)) {
+          const extractedInformationalCat = extractAndValidateCategorySyntax(proposedData, {
+            itemLabel,
+            fieldName: 'categoryId',
+            required: false,
+            allowNull: true,
+          });
+          if (extractedInformationalCat.provided) {
+            normalizedProposedData = normalizeCanonicalCategoryObject(
+              normalizedProposedData,
+              extractedInformationalCat.normalizedId
+            );
+          }
+        }
+
+        if (normalizedOriginalData && hasExplicitCategoryField(normalizedOriginalData)) {
+          const extractedOrigCat = extractAndValidateCategorySyntax(normalizedOriginalData, {
+            itemLabel,
+            fieldName: 'originalData.categoryId',
+            required: false,
+            allowNull: true,
+          });
+          if (extractedOrigCat.provided) {
+            normalizedOriginalData = normalizeCanonicalCategoryObject(
+              normalizedOriginalData,
+              extractedOrigCat.normalizedId,
+              extractedOrigCat.normalizedId === null
+                ? normalizedOriginalData.categoryName ?? null
+                : undefined
+            );
+          }
+        }
+      }
+
+      const { year, year_to } = normalizeMotorcycleYearRange(normalizedProposedData);
+
+      return {
+        index,
+        client_item_id: clientItemId,
+        entity_type: entityType,
+        action: action as 'add' | 'update' | 'delist',
+        entity_id: entityId,
+        brand_name: brandName,
+        model_name: modelName,
+        year,
+        year_to,
+        original_data: normalizedOriginalData,
+        proposed_data: normalizedProposedData,
+        diff_summary: diffSummary,
+        status: 'pending' as const,
+      };
+    });
+
+    const itemSummaries: NormalizedActionableItemSummary[] = normalizedItems.map((it) => ({
+      index: it.index,
+      clientItemId: it.client_item_id,
+      entityType: it.entity_type,
+      action: it.action,
+      entityId: it.entity_id,
+      brandName: it.brand_name,
+      modelName: it.model_name,
+      year: it.year,
+      yearTo: it.year_to,
+    }));
+
+    const validatedReport = normalizeAndValidateReconciliationReport(
+      input.reconciliationReport,
+      {
+        items: itemSummaries,
+        validationErrorCtor: ProposalItemValidationError,
+      }
+    );
+
+    const supabase = getSupabaseAdmin();
+
+    // Validate category catalog references
+    const hasMotorcycleCategories = normalizedItems.some(
+      (i) =>
+        i.entity_type === 'motorcycle' &&
+        (hasExplicitCategoryField(i.proposed_data) || hasExplicitCategoryField(i.original_data))
+    );
+    if (hasMotorcycleCategories) {
+      const categoryCatalog = await loadCategoryCatalog(supabase, normalizedItems);
+      for (const item of normalizedItems) {
+        if (item.entity_type !== 'motorcycle') continue;
+        const itemLabel = item.entity_id
+          ? `at index ${item.index} (${item.entity_id})`
+          : `at index ${item.index}`;
+        if (item.proposed_data && hasExplicitCategoryField(item.proposed_data)) {
+          const catId = item.proposed_data.categoryId as string | null;
+          if (catId !== null) {
+            const matched = categoryCatalog.byId.get(catId.toLowerCase());
+            if (!matched) {
+              throw new ProposalItemValidationError(
+                `Item ${itemLabel} (field 'categoryId'): unknown categoryId '${catId}' (not found in categories catalog).`
+              );
+            }
+            item.proposed_data = normalizeCanonicalCategoryObject(
+              item.proposed_data,
+              matched.id,
+              matched.name
+            );
+          }
+        }
+        if (item.original_data && hasExplicitCategoryField(item.original_data)) {
+          const origCatId = item.original_data.categoryId as string | null;
+          if (origCatId !== null) {
+            const matched = categoryCatalog.byId.get(origCatId.toLowerCase());
+            if (matched) {
+              item.original_data = normalizeCanonicalCategoryObject(
+                item.original_data,
+                matched.id,
+                matched.name
+              );
+            } else if (
+              categoryCatalog.loadedFromDb &&
+              (item.action === 'add' || item.action === 'update')
+            ) {
+              throw new ProposalItemValidationError(
+                `Item ${itemLabel} (field 'originalData.categoryId'): unknown categoryId '${origCatId}' (not found in categories catalog).`
+              );
+            } else {
+              item.original_data = normalizeCanonicalCategoryObject(
+                item.original_data,
+                origCatId,
+                item.original_data.categoryName ?? undefined
+              );
+            }
+          }
+        }
+      }
+    }
+
+    // Validate condition_types catalog references
+    const hasMotorcycleConditions = normalizedItems.some(
+      (i) =>
+        i.entity_type === 'motorcycle' &&
+        (i.proposed_data?.conditions !== undefined || i.original_data?.conditions !== undefined)
+    );
+    if (hasMotorcycleConditions) {
+      const conditionCatalog = await loadConditionTypeCatalog(supabase, normalizedItems);
+      for (const item of normalizedItems) {
+        if (item.entity_type !== 'motorcycle') continue;
+        if (item.proposed_data && item.proposed_data.conditions !== undefined) {
+          item.proposed_data = {
+            ...item.proposed_data,
+            conditions: normalizeAndValidateMotorcycleConditions(
+              item.proposed_data.conditions,
+              conditionCatalog,
+              true
+            ),
+          };
+        }
+        if (item.original_data && item.original_data.conditions !== undefined) {
+          item.original_data = {
+            ...item.original_data,
+            conditions: normalizeAndValidateMotorcycleConditions(
+              item.original_data.conditions,
+              conditionCatalog,
+              false
+            ),
+          };
+        }
+      }
+    }
+
+    // Strictly verify shop ownership for ALL referenced motorcycle IDs across items[] and report entries[]
+    const referencedBikeIds = Array.from(
+      new Set([
+        ...normalizedItems
+          .filter((i) => i.entity_type === 'motorcycle' && i.entity_id)
+          .map((i) => i.entity_id as string),
+        ...validatedReport.entries
+          .map((e) => e.existingMotorcycleId)
+          .filter((id): id is string => Boolean(id)),
+        ...validatedReport.entries
+          .map((e) => e.duplicateOfMotorcycleId)
+          .filter((id): id is string => Boolean(id)),
+      ])
+    );
+
+    if (referencedBikeIds.length > 0) {
+      const { data: bikeRows, error: bikeOwnershipErr } = await (supabase
+        .from('motorcycle_rentals') as any)
+        .select('id, shop_id')
+        .in('id', referencedBikeIds);
+
+      if (bikeOwnershipErr) {
+        throw new Error(`Failed to verify motorcycle ownership: ${bikeOwnershipErr.message}`);
+      }
+
+      const ownerByBikeId = new Map<string, string>(
+        (bikeRows || []).map((r: any) => [r.id, r.shop_id])
+      );
+      for (const bikeId of referencedBikeIds) {
+        const ownerShopId = ownerByBikeId.get(bikeId);
+        if (!ownerShopId || ownerShopId !== shopId) {
+          throw new ProposalItemValidationError(
+            `Motorcycle ID '${bikeId}' does not exist or does not belong to shop '${shopId}'.`
+          );
+        }
+      }
+    }
+
+    // Compute payloadDigest BEFORE checking replay so identical retries short-circuit cleanly
+    const canonicalItemsForDigest = normalizedItems.map((it) => ({
+      clientItemId: it.client_item_id,
+      entityType: it.entity_type,
+      action: it.action,
+      entityId: it.entity_id,
+      brandName: it.brand_name,
+      modelName: it.model_name,
+      originalData: it.original_data,
+      proposedData: it.proposed_data,
+      diffSummary: it.diff_summary,
+    }));
+    const payloadDigest = computeCanonicalSha256Digest({
+      shopId,
+      sourceUrl,
+      items: canonicalItemsForDigest,
+      reportDigest: validatedReport.reportDigest,
+      learnedConfig: normalizedLearnedConfig,
+    });
+
+    // Load active shop baseline motorcycles & existing unresolved candidates
+    const [activeBikesRes, existingCandidatesRes, priorPendingProposalsRes] = await Promise.all([
+      (supabase.from('motorcycle_rentals') as any)
+        .select('id, availability_status')
+        .eq('shop_id', shopId)
+        .or('availability_status.is.null,availability_status.neq.unavailable'),
+      (supabase.from('unresolved_candidates') as any)
+        .select('*')
+        .eq('shop_id', shopId),
+      (supabase.from('change_proposals') as any)
+        .select('id, agent_run_id, status')
+        .eq('shop_id', shopId)
+        .eq('status', 'pending'),
+    ]);
+
+    const activeBaselineIds = new Set<string>(
+      (activeBikesRes?.data || []).map((b: any) => b.id)
+    );
+    const existingCandidates = existingCandidatesRes?.data || [];
+
+    // Determine prior pending proposals for the same (shopId, scope) to supersede BEFORE planning candidates
+    const priorPendingIds = (priorPendingProposalsRes?.data || [])
+      .filter((p: any) => p.agent_run_id !== agentRunId)
+      .map((p: any) => p.id as string);
+    let supersededProposalIds: string[] = [];
+    if (priorPendingIds.length > 0) {
+      const { data: priorReports } = await (supabase
+        .from('reconciliation_reports') as any)
+        .select('proposal_id, scope')
+        .in('proposal_id', priorPendingIds);
+      const targetScopeKey = normalizeScopeForComparison(validatedReport.scope);
+      const reportByProposalId = new Map<string, any>(
+        (priorReports || []).map((r: any) => [r.proposal_id, r])
+      );
+      supersededProposalIds = priorPendingIds.filter((pid: string) => {
+        const rep = reportByProposalId.get(pid);
+        if (!rep) return false;
+        return normalizeScopeForComparison(rep.scope) === targetScopeKey;
+      });
+    }
+
+    const supersededSet = new Set<string>(supersededProposalIds);
+    const effectiveExistingCandidates = existingCandidates.map((c: any) =>
+      c.state === 'ready_for_proposal' && c.latest_proposal_id && supersededSet.has(c.latest_proposal_id)
+        ? { ...c, state: 'open' }
+        : c
+    );
+
+    const candidatePlan = planCandidateOperations({
+      entries: validatedReport.entries,
+      items: itemSummaries,
+      existingCandidates: effectiveExistingCandidates,
+      coverage: validatedReport.coverage,
+      sourceUrl,
+      validationErrorCtor: ProposalItemValidationError,
+    });
+
+    const accountedExistingBikeIds = new Set<string>(
+      validatedReport.entries
+        .filter((e) => e.disposition === 'unchanged' || e.disposition === 'ready_change')
+        .map((e) => e.existingMotorcycleId)
+        .filter((id): id is string => Boolean(id))
+    );
+    let allActiveBaselineAccounted = true;
+    for (const activeId of activeBaselineIds) {
+      if (!accountedExistingBikeIds.has(activeId)) {
+        allActiveBaselineAccounted = false;
+        break;
+      }
+    }
+
+    const coverageStatus: CoverageStatus = validatedReport.coverage.status;
+    const reconciliationStatus: ReconciliationStatus =
+      coverageStatus === 'complete' &&
+      validatedReport.coverage.discoveryComplete &&
+      validatedReport.serverCounts.unresolvedModels === 0 &&
+      candidatePlan.remainingOpenOrPendingCount === 0 &&
+      allActiveBaselineAccounted
+        ? 'complete'
+        : 'unresolved';
+
+    const hasActionableItems = normalizedItems.length > 0;
+    const applicationStatus: ApplicationStatus = hasActionableItems
+      ? 'pending'
+      : 'not_applicable';
+
+    const initialProposalStatus = hasActionableItems
+      ? 'pending'
+      : coverageStatus === 'complete' && reconciliationStatus === 'complete'
+      ? 'acknowledged'
+      : 'pending';
+
+    const summaryCounts = {
+      add: validatedReport.serverCounts.add,
+      update: validatedReport.serverCounts.update,
+      delist: validatedReport.serverCounts.delist,
+      unchanged: validatedReport.serverCounts.unchangedModels,
+      unresolved: validatedReport.serverCounts.unresolvedModels,
+      excluded: validatedReport.serverCounts.excludedModels,
+      duplicate: validatedReport.serverCounts.duplicateModels,
+    };
+
+    const rpcPayload = {
+      shopId,
+      sourceUrl,
+      agentRunId,
+      payloadDigest,
+      initialProposalStatus,
+      coverageStatus,
+      reconciliationStatus,
+      applicationStatus,
+      summaryCounts,
+      rawSnapshot: {
+        items: input.items,
+        reconciliationReport: validatedReport.rawReport,
+        ...(normalizedLearnedConfig?.extractionHints
+          ? { extractionHints: normalizedLearnedConfig.extractionHints }
+          : {}),
+      },
+      items: normalizedItems.map(({ index: _idx, year: _y, year_to: _yt, ...dbItem }) => dbItem),
+      candidateOps: candidatePlan.operations,
+      reportDigest: validatedReport.reportDigest,
+      scope: validatedReport.scope,
+      coverage: validatedReport.coverage,
+      serverCounts: validatedReport.serverCounts,
+      rawReport: validatedReport.rawReport,
+      entries: validatedReport.entries,
+      supersededProposalIds,
+      learnedConfig: normalizedLearnedConfig,
+    };
+
+    const { data: rpcResult, error: rpcError } = await (supabase as any).rpc(
+      'stage_change_proposal_with_report',
+      { p_payload: rpcPayload }
+    );
+
+    if (rpcError) {
+      if (rpcError.code === '23505') {
+        const { data: racedProp } = await (supabase.from('change_proposals') as any)
+          .select('*')
+          .eq('shop_id', shopId)
+          .eq('agent_run_id', agentRunId)
+          .maybeSingle();
+        if (racedProp && racedProp.payload_digest === payloadDigest) {
+          const { data: racedRep } = await (supabase.from('reconciliation_reports') as any)
+            .select('*')
+            .eq('proposal_id', racedProp.id)
+            .maybeSingle();
+          if (racedRep) {
+            return {
+              replayed: true,
+              proposalId: racedProp.id as string,
+              proposalVersion: (racedProp.version ?? 1) as number,
+              proposalStatus: racedProp.status as string,
+              reportId: racedRep.id as string,
+              reportVersion: (racedRep.report_version ?? 1) as number,
+              serverCounts: racedRep.server_counts,
+              summaryCounts: racedProp.summary_counts ?? summaryCounts,
+              itemsCount: normalizedItems.length,
+              coverageStatus: (racedProp.coverage_status ?? coverageStatus) as CoverageStatus,
+              reconciliationStatus: (racedProp.reconciliation_status ??
+                reconciliationStatus) as ReconciliationStatus,
+              applicationStatus: (racedProp.application_status ??
+                applicationStatus) as ApplicationStatus,
+              reportDigest: racedRep.report_digest as string,
+            };
+          }
+        }
+      }
+      if (
+        rpcError.code === '23505' ||
+        String(rpcError.message || '').includes('IDEMPOTENCY_CONFLICT')
+      ) {
+        throw new ProposalIdempotencyConflictError(
+          `Conflict: A different payload was already submitted for shopId '${shopId}' and agentRunId '${agentRunId}'. Submit a new agentRunId for revisions.`
+        );
+      }
+      throw new Error(`Failed to stage proposal and reconciliation report: ${rpcError.message}`);
+    }
+
+    return {
+      replayed: Boolean(rpcResult.replayed),
+      proposalId: rpcResult.proposalId as string,
+      proposalVersion: rpcResult.proposalVersion as number,
+      proposalStatus: rpcResult.proposalStatus as string,
+      reportId: rpcResult.reportId as string,
+      reportVersion: rpcResult.reportVersion as number,
+      serverCounts: rpcResult.serverCounts,
+      summaryCounts,
+      itemsCount: normalizedItems.length,
+      coverageStatus: rpcResult.coverageStatus as CoverageStatus,
+      reconciliationStatus: rpcResult.reconciliationStatus as ReconciliationStatus,
+      applicationStatus: rpcResult.applicationStatus as ApplicationStatus,
+      reportDigest: rpcResult.reportDigest as string,
     };
   }
 
@@ -1117,6 +1866,10 @@ export class ChangeProposalService {
         agent_run_id,
         source_url,
         status,
+        coverage_status,
+        reconciliation_status,
+        application_status,
+        version,
         summary_counts,
         created_at,
         reviewed_at,
@@ -1137,28 +1890,59 @@ export class ChangeProposalService {
       throw new Error(`Failed to load change proposals: ${error.message}`);
     }
 
+    const proposalIds = (data || []).map((r: any) => r.id).filter(Boolean);
+    const reportSummaryByProposalId = new Map<string, any>();
+    if (proposalIds.length > 0) {
+      const repQuery = (supabase.from('reconciliation_reports') as any)
+        ?.select?.('id, proposal_id, report_version, report_digest, server_counts')
+        ?.in?.('proposal_id', proposalIds);
+      if (repQuery && typeof repQuery.then === 'function') {
+        const { data: repRows, error: repErr } = await repQuery;
+        if (repErr) {
+          throw new Error(`Failed to load reconciliation report summaries: ${repErr.message}`);
+        }
+        for (const rep of repRows || []) {
+          reportSummaryByProposalId.set(rep.proposal_id, rep);
+        }
+      }
+    }
+
     return {
-      proposals: (data || []).map((row: any) => ({
-        id: row.id,
-        shopId: row.shop_id,
-        shopName: row.rental_shops?.provider_name,
-        shopSlug: row.rental_shops?.slug,
-        shopUrl: resolveProposalShopUrl(row.rental_shops),
-        agentRunId: row.agent_run_id,
-        sourceUrl: row.source_url,
-        status: row.status,
-        summaryCounts: row.summary_counts,
-        createdAt: row.created_at,
-        reviewedAt: row.reviewed_at,
-      })),
+      proposals: (data || []).map((row: any) => {
+        const rep = reportSummaryByProposalId.get(row.id) || null;
+        const dims = normalizeProposalStatusDimensions(row);
+        return {
+          id: row.id,
+          shopId: row.shop_id,
+          shopName: row.rental_shops?.provider_name,
+          shopSlug: row.rental_shops?.slug,
+          shopUrl: resolveProposalShopUrl(row.rental_shops),
+          agentRunId: row.agent_run_id,
+          sourceUrl: row.source_url,
+          status: row.status,
+          coverageStatus: dims.coverageStatus,
+          reconciliationStatus: dims.reconciliationStatus,
+          applicationStatus: dims.applicationStatus,
+          version: dims.version,
+          summaryCounts: row.summary_counts,
+          serverCounts: rep?.server_counts ?? null,
+          hasReconciliationReport: Boolean(rep),
+          createdAt: row.created_at,
+          reviewedAt: row.reviewed_at,
+        };
+      }),
       totalCount: count || 0,
     };
   }
 
   /**
-   * Retrieves full details for a single change proposal including its items.
+   * Retrieves full details for a single change proposal including its items, persisted reconciliation report,
+   * paginated entries, item links, unresolved candidates, and decision history.
    */
-  static async getProposalById(proposalId: string) {
+  static async getProposalById(
+    proposalId: string,
+    options: { entriesLimit?: number; entriesOffset?: number } = {}
+  ) {
     const supabase = getSupabaseAdmin();
 
     const { data: proposal, error: proposalError } = await supabase
@@ -1170,8 +1954,20 @@ export class ChangeProposalService {
       .eq('id', proposalId)
       .single();
 
-    if (proposalError || !proposal) {
-      throw new Error(`Proposal not found: ${proposalError?.message || 'Unknown error'}`);
+    if (proposalError) {
+      const code = (proposalError as any).code;
+      const errMsg = String(proposalError.message || '');
+      if (
+        code === 'PGRST116' ||
+        code === '22P02' ||
+        /not found|0 rows|no rows/i.test(errMsg)
+      ) {
+        throw new Error(`Proposal not found: ${proposalId}`);
+      }
+      throw new Error(`Failed to load proposal: ${errMsg || 'Database error'}`);
+    }
+    if (!proposal) {
+      throw new Error(`Proposal not found: ${proposalId}`);
     }
 
     const { data: items, error: itemsError } = await supabase
@@ -1312,41 +2108,11 @@ export class ChangeProposalService {
             const liveBike = liveById.get(item.entity_id);
             if (!liveBike) continue;
 
-            const rawCategoryId = liveBike.category_id ?? liveBike.categories?.id ?? null;
-            const categoryId =
-              typeof rawCategoryId === 'string' && rawCategoryId.trim().length > 0
-                ? rawCategoryId.trim()
-                : null;
-            const rawCategoryName = liveBike.categories?.name ?? null;
-            const categoryName =
-              categoryId && typeof rawCategoryName === 'string' && rawCategoryName.trim().length > 0
-                ? rawCategoryName.trim()
-                : null;
-            const sortedTiers = [...(liveBike.rental_rate_tiers || [])].sort(
-              (a: any, b: any) => (a.min_days ?? 1) - (b.min_days ?? 1)
+            item.baseline_data = mapLiveMotorcycleToBaselineData(
+              liveBike,
+              item.brand_name ?? null,
+              item.model_name ?? null
             );
-
-            item.baseline_data = {
-              brand: liveBike.brands?.name ?? item.brand_name ?? null,
-              model: liveBike.model ?? item.model_name ?? null,
-              categoryId,
-              categoryName,
-              year: liveBike.year ?? null,
-              year_to: liveBike.year_to ?? null,
-              engineCapacityCc: liveBike.engine_capacity_cc ?? null,
-              sourceUrl: liveBike.source_url ?? null,
-              rates: sortedTiers.map((r: any) => ({
-                minDays: r.min_days,
-                maxDays: r.max_days ?? null,
-                ratePerDay: r.rate_per_day,
-                currency: r.currency || 'THB',
-              })),
-              conditions: (liveBike.motorcycle_conditions || []).map((mc: any) => ({
-                condition_type_id: mc.condition_type_id,
-                name: resolveConditionName(mc),
-                notes: resolveConditionNotes(mc),
-              })),
-            };
           }
         }
       }
@@ -1438,6 +2204,216 @@ export class ChangeProposalService {
       }
     }
 
+    // Load optional reconciliation report, paginated entries, item links, candidates, and audit history
+    let report: any = null;
+    let entries: any[] = [];
+    let entriesPagination: {
+      total: number;
+      limit: number;
+      offset: number;
+      hasMore: boolean;
+      nextOffset: number | null;
+    } | null = null;
+    let itemLinks: any[] = [];
+    let candidates: any[] = [];
+    let decisionEvents: any[] = [];
+    let candidateEvents: any[] = [];
+
+    const entriesLimit = Math.min(Math.max(options.entriesLimit ?? 200, 1), 500);
+    const entriesOffset = Math.max(options.entriesOffset ?? 0, 0);
+
+    const reportQuery = (supabase.from('reconciliation_reports') as any)
+      ?.select?.('*')
+      ?.eq?.('proposal_id', proposalId);
+    const reportRes =
+      typeof reportQuery?.maybeSingle === 'function'
+        ? await reportQuery.maybeSingle()
+        : null;
+    if (reportRes?.error) {
+      throw new Error(`Failed to load reconciliation report: ${reportRes.error.message}`);
+    }
+    if (reportRes?.data) {
+      const rep = reportRes.data;
+      report = {
+        id: rep.id,
+        proposalId: rep.proposal_id,
+        shopId: rep.shop_id,
+        agentRunId: rep.agent_run_id,
+        schemaVersion: rep.schema_version,
+        reportVersion: rep.report_version,
+        reportDigest: rep.report_digest,
+        scope: rep.scope,
+        coverage: rep.coverage,
+        serverCounts: rep.server_counts,
+        rawReport: rep.raw_report,
+        createdAt: rep.created_at,
+      };
+
+      const entriesQuery = (supabase.from('reconciliation_report_entries') as any)
+        ?.select?.('*', { count: 'exact' })
+        ?.eq?.('report_id', rep.id)
+        ?.order?.('entry_index', { ascending: true })
+        ?.range?.(entriesOffset, entriesOffset + entriesLimit - 1);
+      if (entriesQuery && typeof entriesQuery.then === 'function') {
+        const { data: entryRows, count: totalEntries, error: entriesErr } = await entriesQuery;
+        if (entriesErr) {
+          throw new Error(`Failed to load reconciliation report entries: ${entriesErr.message}`);
+        }
+        const total = totalEntries ?? (entryRows || []).length;
+        const entryIds = (entryRows || []).map((e: any) => e.id);
+
+        if (entryIds.length > 0) {
+          const linksQuery = (supabase.from('reconciliation_entry_item_links') as any)
+            ?.select?.('*')
+            ?.in?.('entry_id', entryIds);
+          if (linksQuery && typeof linksQuery.then === 'function') {
+            const { data: linkRows, error: linksErr } = await linksQuery;
+            if (linksErr) {
+              throw new Error(
+                `Failed to load reconciliation entry item links: ${linksErr.message}`
+              );
+            }
+            itemLinks = linkRows || [];
+          }
+        }
+
+        const linksByEntryId = new Map<string, any[]>();
+        for (const lnk of itemLinks) {
+          const list = linksByEntryId.get(lnk.entry_id) || [];
+          list.push(lnk);
+          linksByEntryId.set(lnk.entry_id, list);
+        }
+
+        // Hydrate live emerald-green baseline_data for unchanged entries referencing existingMotorcycleId
+        const unchangedBikeIds = Array.from(
+          new Set(
+            (entryRows || [])
+              .filter((e: any) => e.disposition === 'unchanged' && e.existing_motorcycle_id)
+              .map((e: any) => e.existing_motorcycle_id as string)
+          )
+        );
+        const unchangedBaselineById = new Map<string, any>();
+        if (unchangedBikeIds.length > 0) {
+          const unchangedBikesQuery = (supabase.from('motorcycle_rentals') as any)
+            ?.select?.(`
+              id,
+              category_id,
+              model,
+              year,
+              year_to,
+              engine_capacity_cc,
+              source_url,
+              brands ( name ),
+              categories ( id, name ),
+              rental_rate_tiers ( min_days, max_days, rate_per_day, currency ),
+              motorcycle_conditions (
+                condition_type_id,
+                notes,
+                condition_types ( id, name )
+              )
+            `)
+            ?.in?.('id', unchangedBikeIds);
+          if (unchangedBikesQuery && typeof unchangedBikesQuery.then === 'function') {
+            const { data: liveUnchangedBikes, error: unchangedBikesErr } =
+              await unchangedBikesQuery;
+            if (unchangedBikesErr) {
+              throw new Error(
+                `Failed to load baseline motorcycles for unchanged entries: ${unchangedBikesErr.message}`
+              );
+            }
+            for (const liveBike of liveUnchangedBikes || []) {
+              unchangedBaselineById.set(liveBike.id, mapLiveMotorcycleToBaselineData(liveBike));
+            }
+          }
+        }
+
+        entries = (entryRows || []).map((e: any) => {
+          const links = linksByEntryId.get(e.id) || [];
+          return {
+            id: e.id,
+            entryIndex: e.entry_index,
+            entryKey: e.entry_key,
+            brand: e.brand_name,
+            model: e.model_name,
+            year: e.year ?? null,
+            yearTo: e.year_to ?? null,
+            variantLabel: e.variant_label ?? null,
+            existingMotorcycleId: e.existing_motorcycle_id,
+            candidateId: e.candidate_id,
+            disposition: e.disposition,
+            proposalItemRefs: links.map((l: any) => l.client_item_id),
+            linkedProposalItemIds: links.map((l: any) => l.proposal_item_id),
+            comparedAttributes: e.compared_attributes,
+            issues: e.issues,
+            nextAction: e.next_action,
+            reason: e.reason,
+            duplicateOfEntryKey: e.duplicate_of_entry_key,
+            duplicateOfMotorcycleId: e.duplicate_of_motorcycle_id,
+            evidence: e.evidence,
+            ...(e.existing_motorcycle_id && unchangedBaselineById.has(e.existing_motorcycle_id)
+              ? { baseline_data: unchangedBaselineById.get(e.existing_motorcycle_id) }
+              : {}),
+          };
+        });
+
+        const hasMore = entriesOffset + entries.length < total;
+        entriesPagination = {
+          total,
+          limit: entriesLimit,
+          offset: entriesOffset,
+          hasMore,
+          nextOffset: hasMore ? entriesOffset + entriesLimit : null,
+        };
+      }
+    }
+
+    if ((proposal as any).shop_id) {
+      const candQuery = (supabase.from('unresolved_candidates') as any)
+        ?.select?.('*')
+        ?.eq?.('shop_id', (proposal as any).shop_id)
+        ?.order?.('created_at', { ascending: false });
+      if (candQuery && typeof candQuery.then === 'function') {
+        const { data: candRows, error: candErr } = await candQuery;
+        if (candErr) {
+          throw new Error(`Failed to load unresolved candidates: ${candErr.message}`);
+        }
+        candidates = candRows || [];
+      }
+
+      const candIds = candidates.map((c: any) => c.id);
+      if (candIds.length > 0) {
+        const candEvQuery = (supabase.from('unresolved_candidate_events') as any)
+          ?.select?.('*')
+          ?.in?.('candidate_id', candIds)
+          ?.order?.('created_at', { ascending: true });
+        if (candEvQuery && typeof candEvQuery.then === 'function') {
+          const { data: evRows, error: candEvErr } = await candEvQuery;
+          if (candEvErr) {
+            throw new Error(`Failed to load unresolved candidate events: ${candEvErr.message}`);
+          }
+          candidateEvents = evRows || [];
+        }
+      }
+    }
+
+    const decQuery = (supabase.from('proposal_decision_events') as any)
+      ?.select?.('*')
+      ?.eq?.('proposal_id', proposalId)
+      ?.order?.('created_at', { ascending: true });
+    if (decQuery && typeof decQuery.then === 'function') {
+      const { data: decRows, error: decErr } = await decQuery;
+      if (decErr) {
+        throw new Error(`Failed to load proposal decision events: ${decErr.message}`);
+      }
+      decisionEvents = decRows || [];
+    }
+
+    const hasReconciliationMetadata =
+      Boolean(report) ||
+      candidates.length > 0 ||
+      decisionEvents.length > 0 ||
+      candidateEvents.length > 0;
+
     return {
       proposal: {
         ...proposal,
@@ -1445,6 +2421,161 @@ export class ChangeProposalService {
         ...(extractionHints !== undefined ? { extraction_hints: extractionHints } : {}),
       },
       items: enrichedItems,
+      ...(hasReconciliationMetadata
+        ? {
+            report,
+            entries,
+            entriesPagination,
+            itemLinks,
+            candidates,
+            decisionEvents,
+            candidateEvents,
+          }
+        : {}),
+    };
+  }
+
+  /**
+   * Agent-authenticated readback for a staged Change Proposal and its persisted Reconciliation Report.
+   */
+  static async getAgentProposalReadback(
+    proposalId: string,
+    options: { entriesLimit?: number; entriesOffset?: number } = {}
+  ) {
+    const detail = await ChangeProposalService.getProposalById(proposalId, options);
+    const prop = detail.proposal as any;
+    const dims = normalizeProposalStatusDimensions(prop);
+    return {
+      proposalId: prop.id,
+      shopId: prop.shop_id,
+      agentRunId: prop.agent_run_id,
+      sourceUrl: prop.source_url,
+      status: prop.status,
+      version: dims.version,
+      coverageStatus: dims.coverageStatus,
+      reconciliationStatus: dims.reconciliationStatus,
+      applicationStatus: dims.applicationStatus,
+      summaryCounts: prop.summary_counts,
+      createdAt: prop.created_at,
+      updatedAt: prop.updated_at,
+      items: detail.items.map((it: any) => ({
+        id: it.id,
+        clientItemId: it.client_item_id ?? null,
+        entityType: it.entity_type,
+        action: it.action,
+        entityId: it.entity_id,
+        brandName: it.brand_name,
+        modelName: it.model_name,
+        status: it.status,
+      })),
+      report: (detail as any).report ?? null,
+      entries: (detail as any).entries ?? [],
+      entriesPagination: (detail as any).entriesPagination ?? null,
+      itemLinks: (detail as any).itemLinks ?? [],
+      decisionEvents: (detail as any).decisionEvents ?? [],
+      candidates: ((detail as any).candidates || []).map((c: any) => ({
+        id: c.id,
+        brand: c.brand_name,
+        model: c.model_name,
+        state: c.state,
+        flaggedForReview: Boolean(c.flagged_for_review),
+        currentIssues: c.current_issues,
+        nextAction: c.next_action,
+        version: c.version,
+      })),
+    };
+  }
+
+  /**
+   * Acknowledges/closes a report-only Change Proposal without describing inventory as updated
+   * and without resolving or deleting open Unresolved Candidates.
+   */
+  static async acknowledgeReportOnlyProposal(
+    proposalId: string,
+    options: { expectedVersion?: number; notes?: string | null; actorId?: string | null } = {}
+  ) {
+    const supabase = getSupabaseAdmin();
+    const { data: proposal, error: fetchError } = await (supabase
+      .from('change_proposals') as any)
+      .select('*')
+      .eq('id', proposalId)
+      .single();
+
+    if (fetchError || !proposal) {
+      throw new Error(`Proposal not found: ${fetchError?.message || proposalId}`);
+    }
+
+    if (proposal.application_status !== 'not_applicable') {
+      throw new ProposalItemValidationError(
+        `Cannot acknowledge proposal '${proposalId}' because it contains actionable items (application_status='${proposal.application_status}').`
+      );
+    }
+
+    if (
+      proposal.status === 'acknowledged' ||
+      proposal.status === 'rejected' ||
+      proposal.status === 'superseded'
+    ) {
+      throw new ProposalItemValidationError(
+        `Proposal '${proposalId}' has already been closed with status '${proposal.status}'.`
+      );
+    }
+
+    const currentVersion = proposal.version ?? 1;
+    if (
+      options.expectedVersion !== undefined &&
+      options.expectedVersion !== null &&
+      Number(options.expectedVersion) !== currentVersion
+    ) {
+      throw new ProposalVersionConflictError(
+        `Version conflict on proposal '${proposalId}': expected version ${options.expectedVersion}, found version ${currentVersion}.`
+      );
+    }
+
+    const nextVersion = currentVersion + 1;
+    const nowIso = new Date().toISOString();
+    const { data: updatedRows, error: updateErr } = await (supabase
+      .from('change_proposals') as any)
+      .update({
+        status: 'acknowledged',
+        reviewed_at: nowIso,
+        reviewed_by: options.actorId ?? null,
+        notes: options.notes ?? proposal.notes ?? null,
+        version: nextVersion,
+      })
+      .eq('id', proposalId)
+      .eq('version', currentVersion)
+      .select('id, status, version');
+
+    if (updateErr || (Array.isArray(updatedRows) && updatedRows.length === 0)) {
+      throw new ProposalVersionConflictError(
+        `Concurrent update detected while acknowledging proposal '${proposalId}'.`
+      );
+    }
+
+    const decInsertFn = (supabase.from('proposal_decision_events') as any)?.insert;
+    if (typeof decInsertFn === 'function') {
+      const decRes = await decInsertFn({
+        proposal_id: proposalId,
+        shop_id: proposal.shop_id,
+        decision: 'acknowledge',
+        actor_id: options.actorId ?? null,
+        proposal_version: nextVersion,
+        notes: options.notes ?? null,
+        metadata: {},
+      });
+      if (decRes?.error) {
+        throw new Error(`Failed to record proposal decision event: ${decRes.error.message}`);
+      }
+    }
+
+    return {
+      success: true,
+      status: 'acknowledged' as const,
+      coverageStatus: proposal.coverage_status ?? 'unknown',
+      reconciliationStatus: proposal.reconciliation_status ?? 'unknown',
+      applicationStatus: 'not_applicable' as const,
+      version: nextVersion,
     };
   }
 
@@ -1452,13 +2583,17 @@ export class ChangeProposalService {
    * Applies approved mutation items to live database records.
    * Enforces geodata immutability and soft-delisting.
    */
-  static async apply(proposalId: string, approvedItemIds: string[]) {
+  static async apply(
+    proposalId: string,
+    approvedItemIds: string[],
+    options: { actorId?: string | null; notes?: string | null } = {}
+  ) {
     const supabase = getSupabaseAdmin();
 
     // 1. Fetch proposal
-    const { data: proposal, error: propError } = await supabase
-      .from('change_proposals')
-      .select('id, shop_id, status')
+    const { data: proposal, error: propError } = await (supabase
+      .from('change_proposals') as any)
+      .select('id, shop_id, status, application_status, version')
       .eq('id', proposalId)
       .single();
 
@@ -1469,9 +2604,13 @@ export class ChangeProposalService {
     if (
       proposal.status === 'applied' ||
       proposal.status === 'partially_applied' ||
-      proposal.status === 'rejected'
+      proposal.status === 'rejected' ||
+      proposal.status === 'acknowledged' ||
+      proposal.status === 'superseded'
     ) {
-      throw new Error(`Cannot apply proposal with status '${proposal.status}'`);
+      throw new ProposalItemValidationError(
+        `Cannot apply proposal with status '${proposal.status}'`
+      );
     }
 
     // 2. Fetch all items for this proposal
@@ -1974,28 +3113,81 @@ export class ChangeProposalService {
     }
 
     // 6. Update proposal status based on total applied mutable items (including prior partial runs)
-    const totalAppliedMutableCount = previouslyAppliedItems.length + appliedCount;
-    let finalStatus: 'applied' | 'partially_applied' | 'rejected';
-    if (mutableItems.length === 0 || totalAppliedMutableCount === mutableItems.length) {
-      finalStatus = 'applied';
-    } else if (totalAppliedMutableCount === 0) {
-      finalStatus = 'rejected';
-    } else {
-      finalStatus = 'partially_applied';
+    const isReportOnly =
+      proposal.application_status === 'not_applicable' || allItems.length === 0;
+    if (isReportOnly && approvedSet.size > 0) {
+      throw new ProposalItemValidationError(
+        `Cannot approve items on report-only proposal '${proposalId}'; use action='acknowledge' instead.`
+      );
     }
 
-    await (supabase
-      .from('change_proposals') as any)
+    const totalAppliedMutableCount = previouslyAppliedItems.length + appliedCount;
+    let finalStatus: 'applied' | 'partially_applied' | 'rejected';
+    let nextApplicationStatus: ApplicationStatus;
+
+    if (isReportOnly) {
+      finalStatus = 'rejected';
+      nextApplicationStatus = 'not_applicable';
+    } else if (mutableItems.length === 0) {
+      finalStatus = approvedSet.size === 0 ? 'rejected' : 'applied';
+      nextApplicationStatus = finalStatus === 'rejected' ? 'rejected' : 'not_applicable';
+    } else if (totalAppliedMutableCount === mutableItems.length) {
+      finalStatus = 'applied';
+      nextApplicationStatus = 'applied';
+    } else if (totalAppliedMutableCount === 0) {
+      finalStatus = 'rejected';
+      nextApplicationStatus = 'rejected';
+    } else {
+      finalStatus = 'partially_applied';
+      nextApplicationStatus = 'partially_applied';
+    }
+
+    const nowIso = new Date().toISOString();
+    const nextVersion = (proposal.version ?? 1) + 1;
+    const propUpdateRes = await supabase
+      .from('change_proposals')
       .update({
         status: finalStatus,
-        applied_at: new Date().toISOString(),
+        application_status: nextApplicationStatus,
+        ...(finalStatus !== 'rejected' ? { applied_at: nowIso } : {}),
+        reviewed_at: nowIso,
+        ...(options.actorId !== undefined ? { reviewed_by: options.actorId } : {}),
+        ...(options.notes !== undefined ? { notes: options.notes } : {}),
+        version: nextVersion,
       })
       .eq('id', proposalId);
+
+    if (propUpdateRes?.error) {
+      throw new Error(`Failed to update proposal status: ${propUpdateRes.error.message}`);
+    }
+
+    const decisionValue: 'apply' | 'partially_apply' | 'reject' =
+      finalStatus === 'rejected'
+        ? 'reject'
+        : finalStatus === 'partially_applied'
+        ? 'partially_apply'
+        : 'apply';
+    const decTable = supabase.from('proposal_decision_events');
+    if (typeof (decTable as any)?.insert === 'function') {
+      const decRes = await decTable.insert({
+        proposal_id: proposalId,
+        shop_id: proposal.shop_id,
+        decision: decisionValue,
+        actor_id: options.actorId ?? null,
+        proposal_version: nextVersion,
+        notes: options.notes ?? null,
+        metadata: { appliedCount },
+      });
+      if (decRes?.error) {
+        throw new Error(`Failed to record proposal decision event: ${decRes.error.message}`);
+      }
+    }
 
     return {
       success: true,
       appliedCount,
       status: finalStatus,
+      applicationStatus: nextApplicationStatus,
     };
   }
 }

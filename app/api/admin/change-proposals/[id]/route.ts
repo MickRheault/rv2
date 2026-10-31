@@ -1,13 +1,17 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { ChangeProposalService } from '@/services/change-proposals';
+import {
+  ChangeProposalService,
+  normalizeProposalStatusDimensions,
+} from '@/services/change-proposals';
 import { isAuthorizedAdmin } from '@/lib/auth/admin-auth';
 
 /**
  * GET /api/admin/change-proposals/:id
- * 
- * Fetches proposal details and staged Change Proposal Items for the admin diff viewer.
+ *
+ * Fetches proposal details, staged Change Proposal Items, persisted Reconciliation Report,
+ * paginated entries, item links, unresolved candidates, and decision history.
  */
 export async function GET(
   request: NextRequest,
@@ -23,19 +27,49 @@ export async function GET(
   }
 
   try {
-    const data = await ChangeProposalService.getProposalById(id);
+    const { searchParams } = new URL(request.url);
+    const entriesLimitParam = searchParams.get('entriesLimit');
+    const entriesOffsetParam = searchParams.get('entriesOffset');
+    const hasPaginationParams = entriesLimitParam !== null || entriesOffsetParam !== null;
+
+    const data = hasPaginationParams
+      ? await ChangeProposalService.getProposalById(id, {
+          entriesLimit: entriesLimitParam ? parseInt(entriesLimitParam, 10) : undefined,
+          entriesOffset: entriesOffsetParam ? parseInt(entriesOffsetParam, 10) : undefined,
+        })
+      : await ChangeProposalService.getProposalById(id);
+
+    const prop = (data as any).proposal;
+    const normalizedProposal = prop
+      ? (() => {
+          const dims = normalizeProposalStatusDimensions(prop);
+          return {
+            ...prop,
+            coverage_status: dims.coverageStatus,
+            reconciliation_status: dims.reconciliationStatus,
+            application_status: dims.applicationStatus,
+            version: dims.version,
+          };
+        })()
+      : prop;
+
     return NextResponse.json({
       success: true,
       ...data,
+      proposal: normalizedProposal,
     });
   } catch (error: any) {
     if (error?.name === 'ProposalItemValidationError') {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
+    const msg = String(error?.message || '');
+    if (msg.startsWith('Proposal not found')) {
+      return NextResponse.json({ error: 'Proposal not found' }, { status: 404 });
+    }
     console.error(`Error fetching proposal ${id}:`, error);
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch proposal details' },
-      { status: 404 }
+      { error: 'Failed to fetch proposal details' },
+      { status: 500 }
     );
   }
 }
