@@ -64,6 +64,13 @@ export class StaleCategoryStateError extends Error {
   }
 }
 
+export class StaleMotorcycleStateError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'StaleMotorcycleStateError';
+  }
+}
+
 export interface CategoryCatalogEntry {
   id: string;
   name: string;
@@ -512,6 +519,138 @@ function normalizeRateTiers(rawRates: any[], fallbackCurrency?: string) {
       currency: r?.currency || fallbackCurrency,
     };
   });
+}
+
+function areRateTierStatesEqual(
+  expectedOriginalRates: any[],
+  liveTierRows: any[],
+  fallbackCurrency?: string
+): boolean {
+  const sortKey = (a: { minDays: number; maxDays: number | null }, b: { minDays: number; maxDays: number | null }) =>
+    a.minDays - b.minDays || (a.maxDays ?? Number.MAX_SAFE_INTEGER) - (b.maxDays ?? Number.MAX_SAFE_INTEGER);
+  const expected = normalizeRateTiers(expectedOriginalRates, fallbackCurrency).sort(sortKey);
+  const live = normalizeRateTiers(liveTierRows, fallbackCurrency).sort(sortKey);
+
+  if (expected.length !== live.length) {
+    return false;
+  }
+
+  for (let i = 0; i < expected.length; i++) {
+    const exp = expected[i];
+    const cur = live[i];
+    if (exp.minDays !== cur.minDays || exp.maxDays !== cur.maxDays) {
+      return false;
+    }
+    if (Number(exp.ratePerDay) !== Number(cur.ratePerDay)) {
+      return false;
+    }
+    if (
+      exp.currency &&
+      cur.currency &&
+      String(exp.currency).trim().toUpperCase() !== String(cur.currency).trim().toUpperCase()
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+async function computeShopProposalReconciliationStatus(
+  supabase: any,
+  proposal: {
+    id: string;
+    shop_id: string;
+    coverage_status?: string | null;
+    created_at?: string | null;
+  },
+  options: {
+    hasRejectedMutableItems?: boolean;
+    newlyCreatedBikeIds?: Set<string>;
+  } = {}
+): Promise<ReconciliationStatus> {
+  if (proposal.coverage_status !== 'complete' || options.hasRejectedMutableItems) {
+    return 'unresolved';
+  }
+
+  const candSelectFn = (supabase.from('unresolved_candidates') as any)?.select;
+  let resolvedBikeIds = new Set<string>(options.newlyCreatedBikeIds || []);
+  if (typeof candSelectFn === 'function') {
+    const candRes =
+      (await candSelectFn('id, state, resolved_motorcycle_id')?.eq?.('shop_id', proposal.shop_id)) || {
+        data: [],
+        error: null,
+      };
+    if (candRes?.error) {
+      throw new Error(`Failed to inspect unresolved candidates: ${candRes.error.message}`);
+    }
+    const shopCands = candRes?.data || [];
+    if (shopCands.some((c: any) => c.state === 'open' || c.state === 'ready_for_proposal')) {
+      return 'unresolved';
+    }
+    for (const c of shopCands) {
+      if (c.resolved_motorcycle_id) {
+        resolvedBikeIds.add(c.resolved_motorcycle_id);
+      }
+    }
+  }
+
+  const reportSelectFn = (supabase.from('reconciliation_reports') as any)?.select;
+  if (typeof reportSelectFn === 'function') {
+    const reportRes =
+      (await reportSelectFn('id, coverage')
+        ?.eq?.('proposal_id', proposal.id)
+        ?.maybeSingle?.()) || { data: null, error: null };
+    if (reportRes?.error) {
+      throw new Error(`Failed to inspect reconciliation report: ${reportRes.error.message}`);
+    }
+    const report = reportRes?.data;
+    if (!report || report.coverage?.discoveryComplete !== true) {
+      return 'unresolved';
+    }
+
+    const entriesSelectFn = (supabase.from('reconciliation_report_entries') as any)?.select;
+    const mrSelectFn = (supabase.from('motorcycle_rentals') as any)?.select;
+    if (typeof entriesSelectFn === 'function' && typeof mrSelectFn === 'function') {
+      const entriesRes =
+        (await entriesSelectFn('existing_motorcycle_id')?.eq?.('report_id', report.id)) || {
+          data: [],
+          error: null,
+        };
+      const mrChain = mrSelectFn('id, availability_status, created_at')?.eq?.(
+        'shop_id',
+        proposal.shop_id
+      );
+      if (entriesRes && !entriesRes.error && mrChain && typeof mrChain.then === 'function') {
+        const mrRes = await mrChain;
+        if (!mrRes?.error && Array.isArray(mrRes?.data)) {
+          const accountedIds = new Set<string>(
+            (entriesRes.data || [])
+              .map((e: any) => e.existing_motorcycle_id)
+              .filter(Boolean)
+          );
+          for (const id of resolvedBikeIds) {
+            accountedIds.add(id);
+          }
+          for (const bike of mrRes.data) {
+            if (bike.availability_status === 'unavailable') continue;
+            if (
+              proposal.created_at &&
+              bike.created_at &&
+              String(bike.created_at) >= String(proposal.created_at)
+            ) {
+              continue;
+            }
+            if (!accountedIds.has(bike.id)) {
+              return 'unresolved';
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return 'complete';
 }
 
 /**
@@ -2581,19 +2720,22 @@ export class ChangeProposalService {
 
   /**
    * Applies approved mutation items to live database records.
-   * Enforces geodata immutability and soft-delisting.
+   * Enforces geodata immutability, apply-time revalidation (ownership, pricing, concurrency),
+   * unresolved candidate transitions, and soft-delisting.
    */
   static async apply(
     proposalId: string,
     approvedItemIds: string[],
-    options: { actorId?: string | null; notes?: string | null } = {}
+    options: { expectedVersion?: number; actorId?: string | null; notes?: string | null } = {}
   ) {
     const supabase = getSupabaseAdmin();
 
     // 1. Fetch proposal
     const { data: proposal, error: propError } = await (supabase
       .from('change_proposals') as any)
-      .select('id, shop_id, status, application_status, version')
+      .select(
+        'id, shop_id, status, coverage_status, reconciliation_status, application_status, version, agent_run_id, created_at'
+      )
       .eq('id', proposalId)
       .single();
 
@@ -2613,6 +2755,21 @@ export class ChangeProposalService {
       );
     }
 
+    const currentVersion = proposal.version ?? 1;
+    if (
+      options.expectedVersion !== undefined &&
+      options.expectedVersion !== null &&
+      Number(options.expectedVersion) !== currentVersion
+    ) {
+      throw new ProposalVersionConflictError(
+        `Version conflict on proposal '${proposalId}': expected version ${options.expectedVersion}, found version ${currentVersion}.`
+      );
+    }
+
+    const isReconciliationProposal = Boolean(
+      proposal.reconciliation_status && proposal.reconciliation_status !== 'unknown'
+    );
+
     // 2. Fetch all items for this proposal
     const { data: allItems, error: itemsError } = await supabase
       .from('change_proposal_items')
@@ -2624,6 +2781,14 @@ export class ChangeProposalService {
     }
 
     const approvedSet = new Set(approvedItemIds);
+    const isReportOnly =
+      proposal.application_status === 'not_applicable' || allItems.length === 0;
+    if (isReportOnly && approvedSet.size > 0) {
+      throw new ProposalItemValidationError(
+        `Cannot approve items on report-only proposal '${proposalId}'; use action='acknowledge' instead.`
+      );
+    }
+
     // Partition actionable mutation items from unchanged informational items
     const mutableItems = allItems.filter((i) => isActionableProposalAction(i.action));
     const previouslyAppliedItems = mutableItems.filter((i) => i.status === 'applied');
@@ -2632,7 +2797,7 @@ export class ChangeProposalService {
     );
     const approvedItems = pendingMutableItems.filter((i) => approvedSet.has(i.id));
 
-    // 3. Validate geodata immutability, motorcycle categories, motorcycle conditions, and before-state freshness across all approved items
+    // 3. Revalidate geodata immutability, ownership, pricing, motorcycle categories, motorcycle conditions, and before-state freshness across all approved items
     const hasApprovedBikeCategories = approvedItems.some(
       (i) =>
         i.entity_type === 'motorcycle' &&
@@ -2663,11 +2828,72 @@ export class ChangeProposalService {
     for (const item of approvedItems) {
       validateGeodataImmutability(item.proposed_data as any);
       if (item.entity_type === 'motorcycle') {
+        const itemLabel = `'${item.id}'${item.entity_id ? ` (${item.entity_id})` : ''}`;
+        const rawProposed = (item.proposed_data as Record<string, any>) || {};
+
+        // Positive pricing & tier syntax revalidation on add / update
+        if (item.action === 'add' || item.action === 'update') {
+          if (isReconciliationProposal) {
+            validateMotorcycleRateTiers(rawProposed, {
+              itemLabel,
+              required: item.action === 'add',
+              validationErrorCtor: ProposalItemValidationError,
+            });
+          } else if (Array.isArray(rawProposed.rates)) {
+            for (let tIdx = 0; tIdx < rawProposed.rates.length; tIdx++) {
+              const r = rawProposed.rates[tIdx];
+              const rawRate = r?.ratePerDay ?? r?.dailyRate ?? r?.rate_per_day ?? r?.daily_rate;
+              const rateNum = Number(rawRate);
+              if (!Number.isFinite(rateNum) || rateNum <= 0) {
+                throw new ProposalItemValidationError(
+                  `Item ${itemLabel}: rate tier[${tIdx}].ratePerDay must be a positive number (> 0).`
+                );
+              }
+            }
+          }
+        }
+
+        // Live shop_id ownership & before-state concurrency revalidation on update / delist
+        let liveBike: any = null;
+        if ((item.action === 'update' || item.action === 'delist') && item.entity_id) {
+          const mrTable = supabase.from('motorcycle_rentals') as any;
+          const maybeSingleFn = mrTable
+            ?.select?.(
+              'id, shop_id, brand_id, category_id, model, year, year_to, engine_capacity_cc, brands ( name ), rental_rate_tiers ( min_days, max_days, rate_per_day, currency )'
+            )
+            ?.eq?.('id', item.entity_id)
+            ?.maybeSingle;
+
+          if (typeof maybeSingleFn === 'function') {
+            const liveRentalRes = (await maybeSingleFn()) || { data: null, error: null };
+            if (liveRentalRes?.error) {
+              throw new Error(
+                `Failed to read existing motorcycle '${item.entity_id}': ${liveRentalRes.error.message}`
+              );
+            }
+            liveBike = liveRentalRes?.data ?? null;
+            if (!liveBike) {
+              if (isReconciliationProposal) {
+                throw new ProposalItemValidationError(
+                  `Item ${itemLabel}: motorcycle '${item.entity_id}' does not exist.`
+                );
+              }
+            } else if (
+              liveBike.shop_id !== undefined &&
+              liveBike.shop_id !== null &&
+              liveBike.shop_id !== proposal.shop_id
+            ) {
+              throw new ProposalItemValidationError(
+                `Item ${itemLabel}: cross-shop motorcycle '${item.entity_id}' does not belong to shop '${proposal.shop_id}'.`
+              );
+            }
+          }
+        }
+
         if (
           item.action === 'add' ||
           (item.action === 'update' && hasExplicitCategoryField(item.proposed_data))
         ) {
-          const itemLabel = `'${item.id}'${item.entity_id ? ` (${item.entity_id})` : ''}`;
           const extractedProposedCategory = extractAndValidateCategorySyntax(item.proposed_data, {
             itemLabel,
             fieldName: 'categoryId',
@@ -2694,45 +2920,127 @@ export class ChangeProposalService {
             extractedProposedCategory.normalizedId
           ) {
             const origBike = (item.original_data as Record<string, any>) || {};
-            if (hasExplicitCategoryField(origBike)) {
+            if (hasExplicitCategoryField(origBike) && liveBike && 'category_id' in liveBike) {
               const extractedOrigCategory = extractAndValidateCategorySyntax(origBike, {
                 itemLabel,
                 fieldName: 'originalData.categoryId',
                 required: false,
                 allowNull: true,
               });
-              const mrTable = supabase.from('motorcycle_rentals') as any;
-              const liveRentalRes =
-                (await mrTable
-                  ?.select?.('id, category_id')
-                  ?.eq?.('id', item.entity_id)
-                  ?.maybeSingle?.()) || { data: null, error: null };
-
-              if (liveRentalRes?.error) {
-                throw new Error(
-                  `Failed to read existing motorcycle category: ${liveRentalRes.error.message}`
+              const liveCategoryId =
+                typeof liveBike.category_id === 'string' && liveBike.category_id.trim().length > 0
+                  ? liveBike.category_id.trim().toLowerCase()
+                  : null;
+              const expectedOrigCategoryId = extractedOrigCategory.normalizedId
+                ? extractedOrigCategory.normalizedId.toLowerCase()
+                : null;
+              if (liveCategoryId !== expectedOrigCategoryId) {
+                throw new StaleCategoryStateError(
+                  `Stale motorcycle category for motorcycle '${item.entity_id}': live database category_id ('${String(
+                    liveBike.category_id ?? null
+                  )}') diverged from proposal original_data.categoryId ('${String(
+                    extractedOrigCategory.normalizedId
+                  )}').`
                 );
               }
+            }
+          }
+        }
 
-              if (liveRentalRes?.data) {
-                const liveCategoryId =
-                  typeof liveRentalRes.data.category_id === 'string' &&
-                  liveRentalRes.data.category_id.trim().length > 0
-                    ? liveRentalRes.data.category_id.trim().toLowerCase()
-                    : null;
-                const expectedOrigCategoryId = extractedOrigCategory.normalizedId
-                  ? extractedOrigCategory.normalizedId.toLowerCase()
-                  : null;
-                if (liveCategoryId !== expectedOrigCategoryId) {
-                  throw new StaleCategoryStateError(
-                    `Stale motorcycle category for motorcycle '${item.entity_id}': live database category_id ('${String(
-                      liveRentalRes.data.category_id ?? null
-                    )}') diverged from proposal original_data.categoryId ('${String(
-                      extractedOrigCategory.normalizedId
-                    )}').`
-                  );
-                }
-              }
+        // Scalar spec & rate-tier concurrency check against live DB state on update
+        if (
+          item.action === 'update' &&
+          item.entity_id &&
+          liveBike &&
+          item.original_data &&
+          typeof item.original_data === 'object' &&
+          !Array.isArray(item.original_data)
+        ) {
+          const origBike = item.original_data as Record<string, any>;
+          if (
+            Object.prototype.hasOwnProperty.call(origBike, 'year') &&
+            origBike.year !== undefined &&
+            liveBike.year !== undefined
+          ) {
+            const expectedYear = origBike.year ?? null;
+            const liveYear = liveBike.year ?? null;
+            if (expectedYear !== liveYear) {
+              throw new StaleMotorcycleStateError(
+                `Stale motorcycle state for '${item.entity_id}': live year (${String(
+                  liveYear
+                )}) diverged from original_data.year (${String(expectedYear)}).`
+              );
+            }
+          }
+
+          const origYearTo =
+            origBike.year_to !== undefined ? origBike.year_to : origBike.yearTo;
+          if (origYearTo !== undefined && liveBike.year_to !== undefined) {
+            const expectedYearTo = origYearTo ?? null;
+            const liveYearTo = liveBike.year_to ?? null;
+            if (expectedYearTo !== liveYearTo) {
+              throw new StaleMotorcycleStateError(
+                `Stale motorcycle state for '${item.entity_id}': live year_to (${String(
+                  liveYearTo
+                )}) diverged from original_data.year_to (${String(expectedYearTo)}).`
+              );
+            }
+          }
+
+          const origCc =
+            origBike.engineCapacityCc !== undefined
+              ? origBike.engineCapacityCc
+              : origBike.engine_capacity_cc;
+          if (origCc !== undefined && liveBike.engine_capacity_cc !== undefined) {
+            const expectedCc = origCc ?? null;
+            const liveCc = liveBike.engine_capacity_cc ?? null;
+            if (expectedCc !== liveCc) {
+              throw new StaleMotorcycleStateError(
+                `Stale motorcycle state for '${item.entity_id}': live engine_capacity_cc (${String(
+                  liveCc
+                )}) diverged from original_data.engineCapacityCc (${String(expectedCc)}).`
+              );
+            }
+          }
+
+          const origModel =
+            origBike.model ?? origBike.modelName ?? origBike.model_name;
+          if (origModel !== undefined && liveBike.model !== undefined) {
+            if (String(origModel ?? '').trim() !== String(liveBike.model ?? '').trim()) {
+              throw new StaleMotorcycleStateError(
+                `Stale motorcycle state for '${item.entity_id}': live model ('${String(
+                  liveBike.model
+                )}') diverged from original_data.model ('${String(origModel)}').`
+              );
+            }
+          }
+
+          const origBrand =
+            origBike.brand ?? origBike.brandName ?? origBike.brand_name;
+          if (origBrand !== undefined && liveBike.brands?.name !== undefined) {
+            if (
+              String(origBrand ?? '').trim().toLowerCase() !==
+              String(liveBike.brands?.name ?? '').trim().toLowerCase()
+            ) {
+              throw new StaleMotorcycleStateError(
+                `Stale motorcycle state for '${item.entity_id}': live brand ('${String(
+                  liveBike.brands?.name
+                )}') diverged from original_data.brand ('${String(origBrand)}').`
+              );
+            }
+          }
+
+          if (Array.isArray(origBike.rates) && Array.isArray(liveBike.rental_rate_tiers)) {
+            if (
+              !areRateTierStatesEqual(
+                origBike.rates,
+                liveBike.rental_rate_tiers,
+                origBike.currency
+              )
+            ) {
+              throw new StaleMotorcycleStateError(
+                `Stale motorcycle rates for '${item.entity_id}': live rental_rate_tiers diverged from original_data.rates.`
+              );
             }
           }
         }
@@ -2783,6 +3091,7 @@ export class ChangeProposalService {
 
     let appliedCount = 0;
     const brandCache = new Map<string, Promise<string | null>>();
+    const createdBikeIdByItemId = new Map<string, string>();
 
     // 4. Apply each approved pending item in bounded concurrent batches
     const applySingleItem = async (item: (typeof approvedItems)[number]) => {
@@ -2856,6 +3165,9 @@ export class ChangeProposalService {
             }
           }
 
+          if (newBike?.id) {
+            createdBikeIdByItemId.set(item.id, newBike.id);
+          }
           appliedCount++;
         } else if (item.action === 'update' && item.entity_id) {
           const origBike = (item.original_data as Record<string, any>) || {};
@@ -3098,9 +3410,88 @@ export class ChangeProposalService {
         .eq('id', item.id);
     };
 
-    for (let i = 0; i < approvedItems.length; i += APPLY_CONCURRENCY) {
-      const batch = approvedItems.slice(i, i + APPLY_CONCURRENCY);
-      await Promise.all(batch.map((item) => applySingleItem(item)));
+    try {
+      for (let i = 0; i < approvedItems.length; i += APPLY_CONCURRENCY) {
+        const batch = approvedItems.slice(i, i + APPLY_CONCURRENCY);
+        await Promise.all(batch.map((item) => applySingleItem(item)));
+      }
+    } catch (applyErr: any) {
+      // Mark proposal application_status = 'failed' and revert any unapplied ready_for_proposal candidates back to 'open'
+      try {
+        await (supabase.from('change_proposals') as any)
+          ?.update?.({ application_status: 'failed' })
+          ?.eq?.('id', proposalId);
+
+        const candTable = supabase.from('unresolved_candidates') as any;
+        const candEventsTable = supabase.from('unresolved_candidate_events') as any;
+        if (typeof candTable?.select === 'function' && typeof candTable?.update === 'function') {
+          const pendingItemIds = new Set(pendingMutableItems.map((i) => i.id));
+          const candRes =
+            (await candTable.select('*')?.eq?.('shop_id', proposal.shop_id)) || {
+              data: [],
+              error: null,
+            };
+          for (const cand of candRes?.data || []) {
+            if (cand.state !== 'ready_for_proposal') continue;
+            const linkedItemId = cand.linked_proposal_item_id;
+            if (linkedItemId && createdBikeIdByItemId.has(linkedItemId)) {
+              await candTable
+                .update({
+                  state: 'resolved_applied',
+                  flagged_for_review: false,
+                  resolved_motorcycle_id: createdBikeIdByItemId.get(linkedItemId),
+                  version: (cand.version ?? 1) + 1,
+                })
+                .eq('id', cand.id);
+              await candEventsTable?.insert?.({
+                candidate_id: cand.id,
+                shop_id: proposal.shop_id,
+                event_type: 'resolved_applied',
+                actor_type: 'admin',
+                actor_id: options.actorId ?? null,
+                agent_run_id: proposal.agent_run_id ?? null,
+                proposal_id: proposalId,
+                previous_state: 'ready_for_proposal',
+                new_state: 'resolved_applied',
+                reason: 'Resolved before subsequent item error',
+                issues_snapshot: cand.current_issues ?? null,
+                evidence_snapshot: cand.latest_evidence ?? null,
+              });
+            } else if (
+              (linkedItemId && pendingItemIds.has(linkedItemId)) ||
+              cand.latest_proposal_id === proposalId
+            ) {
+              await candTable
+                .update({
+                  state: 'open',
+                  linked_proposal_item_id: null,
+                  version: (cand.version ?? 1) + 1,
+                })
+                .eq('id', cand.id);
+              await candEventsTable?.insert?.({
+                candidate_id: cand.id,
+                shop_id: proposal.shop_id,
+                event_type: 'apply_failed',
+                actor_type: 'system',
+                actor_id: options.actorId ?? null,
+                agent_run_id: proposal.agent_run_id ?? null,
+                proposal_id: proposalId,
+                previous_state: 'ready_for_proposal',
+                new_state: 'open',
+                reason:
+                  applyErr instanceof Error
+                    ? applyErr.message.slice(0, 1000)
+                    : 'Proposal application failed',
+                issues_snapshot: cand.current_issues ?? null,
+                evidence_snapshot: cand.latest_evidence ?? null,
+              });
+            }
+          }
+        }
+      } catch (revertErr) {
+        console.error('Error recording apply failure state:', revertErr);
+      }
+      throw applyErr;
     }
 
     // 5. Mark non-approved pending mutable items as rejected (leave unchanged & already-applied items as applied)
@@ -3113,14 +3504,6 @@ export class ChangeProposalService {
     }
 
     // 6. Update proposal status based on total applied mutable items (including prior partial runs)
-    const isReportOnly =
-      proposal.application_status === 'not_applicable' || allItems.length === 0;
-    if (isReportOnly && approvedSet.size > 0) {
-      throw new ProposalItemValidationError(
-        `Cannot approve items on report-only proposal '${proposalId}'; use action='acknowledge' instead.`
-      );
-    }
-
     const totalAppliedMutableCount = previouslyAppliedItems.length + appliedCount;
     let finalStatus: 'applied' | 'partially_applied' | 'rejected';
     let nextApplicationStatus: ApplicationStatus;
@@ -3142,13 +3525,125 @@ export class ChangeProposalService {
       nextApplicationStatus = 'partially_applied';
     }
 
+    // 7. Transition linked unresolved candidates (resolved_applied on applied additions; revert ready_for_proposal -> open on rejection)
+    const candTable = supabase.from('unresolved_candidates') as any;
+    const candEventsTable = supabase.from('unresolved_candidate_events') as any;
+    if (typeof candTable?.select === 'function' && typeof candTable?.update === 'function') {
+      const appliedAddItemIds = new Set<string>([
+        ...approvedItems
+          .filter((i) => i.entity_type === 'motorcycle' && i.action === 'add')
+          .map((i) => i.id),
+        ...previouslyAppliedItems
+          .filter((i) => i.entity_type === 'motorcycle' && i.action === 'add')
+          .map((i) => i.id),
+      ]);
+      const rejectedItemIds = new Set<string>(unapprovedItems.map((i) => i.id));
+      const candRes =
+        (await candTable.select('*')?.eq?.('shop_id', proposal.shop_id)) || {
+          data: [],
+          error: null,
+        };
+      if (candRes?.error) {
+        throw new Error(`Failed to load unresolved candidates: ${candRes.error.message}`);
+      }
+
+      for (const cand of candRes?.data || []) {
+        if (
+          cand.linked_proposal_item_id &&
+          appliedAddItemIds.has(cand.linked_proposal_item_id) &&
+          cand.state !== 'resolved_applied'
+        ) {
+          const resolvedBikeId =
+            createdBikeIdByItemId.get(cand.linked_proposal_item_id) ??
+            cand.resolved_motorcycle_id ??
+            null;
+          const updCandRes = await candTable
+            .update({
+              state: 'resolved_applied',
+              flagged_for_review: false,
+              resolved_motorcycle_id: resolvedBikeId,
+              version: (cand.version ?? 1) + 1,
+            })
+            .eq('id', cand.id);
+          if (updCandRes?.error) {
+            throw new Error(`Failed to resolve candidate '${cand.id}': ${updCandRes.error.message}`);
+          }
+          if (typeof candEventsTable?.insert === 'function') {
+            const evRes = await candEventsTable.insert({
+              candidate_id: cand.id,
+              shop_id: proposal.shop_id,
+              event_type: 'resolved_applied',
+              actor_type: 'admin',
+              actor_id: options.actorId ?? null,
+              agent_run_id: proposal.agent_run_id ?? null,
+              proposal_id: proposalId,
+              previous_state: cand.state,
+              new_state: 'resolved_applied',
+              reason: options.notes ?? 'Resolved by applying verified addition proposal item',
+              issues_snapshot: cand.current_issues ?? null,
+              evidence_snapshot: cand.latest_evidence ?? null,
+            });
+            if (evRes?.error) {
+              throw new Error(`Failed to record candidate event: ${evRes.error.message}`);
+            }
+          }
+        } else if (
+          cand.state === 'ready_for_proposal' &&
+          ((cand.linked_proposal_item_id && rejectedItemIds.has(cand.linked_proposal_item_id)) ||
+            (finalStatus === 'rejected' && cand.latest_proposal_id === proposalId))
+        ) {
+          const updCandRes = await candTable
+            .update({
+              state: 'open',
+              linked_proposal_item_id: null,
+              version: (cand.version ?? 1) + 1,
+            })
+            .eq('id', cand.id);
+          if (updCandRes?.error) {
+            throw new Error(`Failed to revert candidate '${cand.id}': ${updCandRes.error.message}`);
+          }
+          if (typeof candEventsTable?.insert === 'function') {
+            const evRes = await candEventsTable.insert({
+              candidate_id: cand.id,
+              shop_id: proposal.shop_id,
+              event_type: 'proposal_rejected',
+              actor_type: 'admin',
+              actor_id: options.actorId ?? null,
+              agent_run_id: proposal.agent_run_id ?? null,
+              proposal_id: proposalId,
+              previous_state: 'ready_for_proposal',
+              new_state: 'open',
+              reason:
+                options.notes ??
+                'Linked proposal item was rejected; candidate returned to open backlog',
+              issues_snapshot: cand.current_issues ?? null,
+              evidence_snapshot: cand.latest_evidence ?? null,
+            });
+            if (evRes?.error) {
+              throw new Error(`Failed to record candidate rejection event: ${evRes.error.message}`);
+            }
+          }
+        }
+      }
+    }
+
+    const nextReconciliationStatus: ReconciliationStatus | undefined = isReconciliationProposal
+      ? await computeShopProposalReconciliationStatus(supabase, proposal, {
+          hasRejectedMutableItems: unapprovedItems.length > 0,
+          newlyCreatedBikeIds: new Set(createdBikeIdByItemId.values()),
+        })
+      : undefined;
+
     const nowIso = new Date().toISOString();
-    const nextVersion = (proposal.version ?? 1) + 1;
+    const nextVersion = currentVersion + 1;
     const propUpdateRes = await supabase
       .from('change_proposals')
       .update({
         status: finalStatus,
         application_status: nextApplicationStatus,
+        ...(nextReconciliationStatus !== undefined
+          ? { reconciliation_status: nextReconciliationStatus }
+          : {}),
         ...(finalStatus !== 'rejected' ? { applied_at: nowIso } : {}),
         reviewed_at: nowIso,
         ...(options.actorId !== undefined ? { reviewed_by: options.actorId } : {}),
@@ -3188,6 +3683,174 @@ export class ChangeProposalService {
       appliedCount,
       status: finalStatus,
       applicationStatus: nextApplicationStatus,
+      ...(nextReconciliationStatus !== undefined
+        ? { reconciliationStatus: nextReconciliationStatus }
+        : {}),
     };
+  }
+
+  /**
+   * Records an audited Admin decision ('dismiss' | 'exclude' | 'reopen') on a persistent
+   * Unresolved Candidate with optimistic locking (`expectedVersion`) and mandatory reason
+   * on dismiss/exclude. Also recomputes the shop's latest non-superseded proposal
+   * `reconciliation_status` when coverage was complete.
+   */
+  static async decideUnresolvedCandidate(
+    candidateId: string,
+    input: {
+      action: 'dismiss' | 'exclude' | 'reopen';
+      reason?: string | null;
+      expectedVersion?: number;
+      actorId?: string | null;
+    }
+  ) {
+    validateRequiredUuid(candidateId, 'candidateId', ProposalItemValidationError);
+    const action = input?.action;
+    if (action !== 'dismiss' && action !== 'exclude' && action !== 'reopen') {
+      throw new ProposalItemValidationError(
+        `Invalid candidate action '${String(action)}'; expected 'dismiss', 'exclude', or 'reopen'.`
+      );
+    }
+
+    let normalizedReason: string | null = null;
+    if (action === 'dismiss' || action === 'exclude') {
+      if (typeof input.reason !== 'string' || input.reason.trim().length === 0) {
+        throw new ProposalItemValidationError(
+          `A non-empty reason is required when action is '${action}'.`
+        );
+      }
+      normalizedReason = validateBoundedString(
+        input.reason,
+        'reason',
+        MAX_TEXT_FIELD_LENGTH,
+        ProposalItemValidationError,
+        false
+      );
+    } else if (input.reason !== undefined && input.reason !== null) {
+      const trimmedOpt = validateBoundedString(
+        input.reason,
+        'reason',
+        MAX_TEXT_FIELD_LENGTH,
+        ProposalItemValidationError,
+        true
+      );
+      normalizedReason = trimmedOpt.length > 0 ? trimmedOpt : null;
+    }
+
+    const supabase = getSupabaseAdmin();
+    const { data: existing, error: fetchErr } = await (supabase
+      .from('unresolved_candidates') as any)
+      .select('*')
+      .eq('id', candidateId)
+      .maybeSingle();
+
+    if (fetchErr) {
+      throw new Error(`Failed to load unresolved candidate: ${fetchErr.message}`);
+    }
+    if (!existing) {
+      throw new Error(`Candidate not found: ${candidateId}`);
+    }
+
+    if (existing.state === 'resolved_applied') {
+      throw new ProposalItemValidationError(
+        `Cannot '${action}' candidate '${candidateId}' because it has already been resolved and applied.`
+      );
+    }
+
+    const currentVersion = existing.version ?? 1;
+    if (
+      input.expectedVersion !== undefined &&
+      input.expectedVersion !== null &&
+      Number(input.expectedVersion) !== currentVersion
+    ) {
+      throw new ProposalVersionConflictError(
+        `Version conflict on candidate '${candidateId}': expected version ${input.expectedVersion}, found version ${currentVersion}.`
+      );
+    }
+
+    const nextState: 'dismissed' | 'excluded' | 'open' =
+      action === 'dismiss' ? 'dismissed' : action === 'exclude' ? 'excluded' : 'open';
+    const eventType: 'admin_dismissed' | 'admin_excluded' | 'admin_reopened' =
+      action === 'dismiss'
+        ? 'admin_dismissed'
+        : action === 'exclude'
+        ? 'admin_excluded'
+        : 'admin_reopened';
+    const nextVersion = currentVersion + 1;
+
+    const { data: updatedRows, error: updErr } = await (supabase
+      .from('unresolved_candidates') as any)
+      .update({
+        state: nextState,
+        flagged_for_review: false,
+        resolution_reason: normalizedReason,
+        ...(action !== 'reopen' ? { linked_proposal_item_id: null } : {}),
+        version: nextVersion,
+      })
+      .eq('id', candidateId)
+      .eq('version', currentVersion)
+      .select('*');
+
+    if (updErr || !Array.isArray(updatedRows) || updatedRows.length === 0) {
+      throw new ProposalVersionConflictError(
+        `Concurrent modification detected on candidate '${candidateId}'.`
+      );
+    }
+
+    const updatedCandidate = updatedRows[0];
+
+    const { error: eventErr } = await (supabase
+      .from('unresolved_candidate_events') as any)
+      .insert({
+        candidate_id: candidateId,
+        shop_id: existing.shop_id,
+        event_type: eventType,
+        actor_type: 'admin',
+        actor_id: input.actorId ?? null,
+        agent_run_id: existing.latest_run_id ?? null,
+        proposal_id: existing.latest_proposal_id ?? null,
+        previous_state: existing.state,
+        new_state: nextState,
+        reason: normalizedReason,
+        issues_snapshot: existing.current_issues ?? null,
+        evidence_snapshot: existing.latest_evidence ?? null,
+      });
+
+    if (eventErr) {
+      throw new Error(`Failed to record candidate decision event: ${eventErr.message}`);
+    }
+
+    // Recompute reconciliation_status on the shop's latest non-superseded report proposal when applicable
+    const propSelectFn = (supabase.from('change_proposals') as any)?.select;
+    if (typeof propSelectFn === 'function') {
+      const latestPropRes =
+        (await propSelectFn(
+          'id, shop_id, status, coverage_status, reconciliation_status, application_status, created_at'
+        )
+          ?.eq?.('shop_id', existing.shop_id)
+          ?.neq?.('status', 'superseded')
+          ?.order?.('created_at', { ascending: false })
+          ?.limit?.(1)) || { data: [], error: null };
+
+      const latestProp = latestPropRes?.data?.[0];
+      if (
+        latestProp &&
+        latestProp.reconciliation_status &&
+        latestProp.reconciliation_status !== 'unknown'
+      ) {
+        const hasRejected =
+          latestProp.status === 'rejected' || latestProp.status === 'partially_applied';
+        const recomputed = await computeShopProposalReconciliationStatus(supabase, latestProp, {
+          hasRejectedMutableItems: hasRejected,
+        });
+        if (recomputed !== latestProp.reconciliation_status) {
+          await (supabase.from('change_proposals') as any)
+            .update({ reconciliation_status: recomputed })
+            .eq('id', latestProp.id);
+        }
+      }
+    }
+
+    return updatedCandidate;
   }
 }
