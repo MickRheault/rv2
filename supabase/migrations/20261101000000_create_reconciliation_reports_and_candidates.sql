@@ -282,6 +282,31 @@ DROP POLICY IF EXISTS "Allow admins to insert proposal decision events" ON publi
 CREATE POLICY "Allow admins to insert proposal decision events" ON public.proposal_decision_events
   FOR INSERT TO authenticated WITH CHECK (public.is_admin());
 
+-- Enforce append-only / snapshot immutability on reports and audit event tables (including service_role)
+CREATE OR REPLACE FUNCTION public.prevent_immutable_audit_update()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RAISE EXCEPTION 'Table %.% is immutable and cannot be updated', TG_TABLE_SCHEMA, TG_TABLE_NAME;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_immutable_reconciliation_reports ON public.reconciliation_reports;
+CREATE TRIGGER trg_immutable_reconciliation_reports
+  BEFORE UPDATE ON public.reconciliation_reports
+  FOR EACH ROW EXECUTE FUNCTION public.prevent_immutable_audit_update();
+
+DROP TRIGGER IF EXISTS trg_immutable_unresolved_candidate_events ON public.unresolved_candidate_events;
+CREATE TRIGGER trg_immutable_unresolved_candidate_events
+  BEFORE UPDATE ON public.unresolved_candidate_events
+  FOR EACH ROW EXECUTE FUNCTION public.prevent_immutable_audit_update();
+
+DROP TRIGGER IF EXISTS trg_immutable_proposal_decision_events ON public.proposal_decision_events;
+CREATE TRIGGER trg_immutable_proposal_decision_events
+  BEFORE UPDATE ON public.proposal_decision_events
+  FOR EACH ROW EXECUTE FUNCTION public.prevent_immutable_audit_update();
+
 -- 12. Atomic Staging RPC for New-Format Change Proposals + Reconciliation Reports
 CREATE OR REPLACE FUNCTION public.stage_change_proposal_with_report(p_payload JSONB)
 RETURNS JSONB
@@ -375,10 +400,10 @@ BEGIN
 
         -- Revert any ready_for_proposal candidates linked to the superseded proposal back to open
         INSERT INTO public.unresolved_candidate_events (
-          candidate_id, shop_id, event_type, actor_type, agent_run_id, proposal_id, previous_state, new_state, reason
+          candidate_id, shop_id, event_type, actor_type, agent_run_id, proposal_id, previous_state, new_state, reason, issues_snapshot, evidence_snapshot
         )
         SELECT id, shop_id, 'proposal_superseded', 'system', v_agent_run_id, v_superseded_id, 'ready_for_proposal', 'open',
-               'Linked pending proposal superseded before application'
+               'Linked pending proposal superseded before application', current_issues, latest_evidence
         FROM public.unresolved_candidates
         WHERE shop_id = v_shop_id
           AND state = 'ready_for_proposal'

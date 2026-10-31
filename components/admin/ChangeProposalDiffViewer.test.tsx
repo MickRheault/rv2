@@ -1410,6 +1410,173 @@ describe('ChangeProposalDiffViewer', () => {
     });
     expect(onApplySuccess).toHaveBeenCalled();
   });
+
+  it('does not show false approval warning when ready_for_proposal item is selected, and renders resolved_applied candidate audit history', () => {
+    const { rerender } = render(
+      <ChangeProposalDiffViewer
+        proposal={{
+          id: 'prop-ready-bmw',
+          shop_id: '53529565-40d9-41f5-98e4-d2ed1f1d7ffd',
+          source_url: 'https://rideon.es/flota/',
+          created_at: '2026-10-31T18:00:00Z',
+          status: 'pending',
+          version: 1,
+          coverage_status: 'complete',
+          reconciliation_status: 'unresolved',
+          application_status: 'pending',
+          rental_shops: { provider_name: 'Ride On - Alquiler moto Barcelona' },
+        }}
+        items={[
+          {
+            id: 'item-add-bmw-ready',
+            proposal_id: 'prop-ready-bmw',
+            entity_type: 'motorcycle',
+            action: 'add',
+            entity_id: null,
+            brand_name: 'BMW',
+            model_name: 'R 1250 GS',
+            original_data: null,
+            proposed_data: {
+              categoryId: 'c375e3d9-e4df-4e09-8688-e7b26e78861c',
+              rates: [{ minDays: 1, ratePerDay: 95, currency: 'EUR' }],
+            },
+            diff_summary: null,
+            status: 'pending',
+          },
+        ]}
+        report={{
+          id: 'rep-ready-bmw',
+          schemaVersion: 1,
+          reportVersion: 1,
+          reportDigest: 'sha256:ready',
+          scope: {
+            branch: 'Barcelona',
+            services: ['daily_short_term_rental'],
+            availabilityBasis: 'supplier_catalog_not_live_stock',
+          },
+          coverage: {
+            status: 'complete',
+            discoveryComplete: true,
+            limitations: [],
+            pages: [{ url: 'https://rideon.es/flota/', role: 'catalog', status: 'processed' }],
+          },
+          serverCounts: {
+            readyActionableItems: 1,
+            accountedDiscoveredModels: 1,
+            unresolvedModels: 0,
+            unchangedModels: 0,
+            excludedModels: 0,
+            duplicateModels: 0,
+            pagesProcessed: 1,
+            pagesFailed: 0,
+            pagesNotProcessed: 0,
+            add: 1,
+            update: 0,
+            delist: 0,
+          },
+        }}
+        entries={[
+          {
+            id: 'entry-bmw-ready',
+            entryIndex: 0,
+            entryKey: 'bmw-r-1250-gs',
+            brand: 'BMW',
+            model: 'R 1250 GS',
+            existingMotorcycleId: null,
+            candidateId: 'cand-bmw-ready',
+            disposition: 'ready_change',
+            proposalItemRefs: ['add-bmw'],
+            linkedProposalItemIds: ['item-add-bmw-ready'],
+            evidence: [],
+          },
+        ]}
+        candidates={[
+          {
+            id: 'cand-bmw-ready',
+            brand_name: 'BMW',
+            model_name: 'R 1250 GS',
+            state: 'ready_for_proposal',
+            linked_proposal_item_id: 'item-add-bmw-ready',
+            flagged_for_review: false,
+            version: 2,
+          } as any,
+        ]}
+      />
+    );
+
+    // Selected ready_for_proposal addition item will resolve the candidate -> no false warning!
+    expect(screen.queryByTestId('unresolved-approval-warning')).not.toBeInTheDocument();
+
+    // Unselecting the item causes warning banner to appear because rejecting it will leave BMW unresolved
+    fireEvent.click(screen.getByRole('button', { name: /deselect all/i }));
+    expect(screen.getByTestId('unresolved-approval-warning')).toBeInTheDocument();
+
+    // Rerender as applied proposal with resolved_applied candidate and audit history
+    rerender(
+      <ChangeProposalDiffViewer
+        proposal={{
+          id: 'prop-ready-bmw',
+          shop_id: '53529565-40d9-41f5-98e4-d2ed1f1d7ffd',
+          source_url: 'https://rideon.es/flota/',
+          created_at: '2026-10-31T18:00:00Z',
+          status: 'applied',
+          version: 2,
+          coverage_status: 'complete',
+          reconciliation_status: 'complete',
+          application_status: 'applied',
+          rental_shops: { provider_name: 'Ride On - Alquiler moto Barcelona' },
+        }}
+        items={[
+          {
+            id: 'item-add-bmw-ready',
+            proposal_id: 'prop-ready-bmw',
+            entity_type: 'motorcycle',
+            action: 'add',
+            entity_id: null,
+            brand_name: 'BMW',
+            model_name: 'R 1250 GS',
+            original_data: null,
+            proposed_data: {
+              categoryId: 'c375e3d9-e4df-4e09-8688-e7b26e78861c',
+              rates: [{ minDays: 1, ratePerDay: 95, currency: 'EUR' }],
+            },
+            diff_summary: null,
+            status: 'applied',
+          },
+        ]}
+        candidates={[
+          {
+            id: 'cand-bmw-ready',
+            brand_name: 'BMW',
+            model_name: 'R 1250 GS',
+            state: 'resolved_applied',
+            resolved_motorcycle_id: '99999999-9999-4999-8999-999999999999',
+            flagged_for_review: false,
+            version: 3,
+          } as any,
+        ]}
+        candidateEvents={[
+          {
+            id: 'ev-resolved',
+            candidate_id: 'cand-bmw-ready',
+            event_type: 'resolved_applied',
+            actor_type: 'admin',
+            previous_state: 'ready_for_proposal',
+            new_state: 'resolved_applied',
+            reason: 'Resolved by applying verified addition proposal item',
+          },
+        ]}
+      />
+    );
+
+    expect(screen.getByText(/Candidate: resolved_applied/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Motorcycle ID: 99999999-9999-4999-8999-999999999999/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Resolved by applying verified addition proposal item/i)
+    ).toBeInTheDocument();
+  });
 });
 
 

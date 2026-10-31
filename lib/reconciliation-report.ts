@@ -1148,8 +1148,17 @@ function hasContradictoryEvidence(
   const nextIssuesDigest = computeCanonicalSha256Digest(newIssues || []);
   if (prevIssuesDigest !== nextIssuesDigest) return true;
 
-  const prevEvDigest = computeCanonicalSha256Digest(existingCandidate.latest_evidence || []);
-  const nextEvDigest = computeCanonicalSha256Digest(newEvidence || []);
+  const stripObservedAt = (records: any[]) =>
+    (Array.isArray(records) ? records : []).map((rec) => {
+      if (!rec || typeof rec !== 'object') return rec;
+      const { observedAt: _ignored, ...rest } = rec;
+      return rest;
+    });
+
+  const prevEvDigest = computeCanonicalSha256Digest(
+    stripObservedAt(existingCandidate.latest_evidence || [])
+  );
+  const nextEvDigest = computeCanonicalSha256Digest(stripObservedAt(newEvidence || []));
   return prevEvDigest !== nextEvDigest;
 }
 
@@ -1170,15 +1179,41 @@ export function planCandidateOperations(params: {
     params.items.filter((i) => i.clientItemId).map((i) => [i.clientItemId as string, i])
   );
 
-  // Group non-resolved candidates by canonical identityKey for unambiguous matching
+  // Group all non-resolved candidates by canonical identityKey (computing fallback when identity_key is null)
   const nonResolvedByIdentity = new Map<string, any[]>();
   for (const cand of params.existingCandidates) {
     if (cand.state === 'resolved_applied') continue;
-    if (cand.identity_key) {
-      const list = nonResolvedByIdentity.get(cand.identity_key) || [];
-      list.push(cand);
-      nonResolvedByIdentity.set(cand.identity_key, list);
-    }
+    const key =
+      cand.identity_key ||
+      buildCandidateIdentityKey({
+        brand: cand.brand_name || '',
+        model: cand.model_name || '',
+        year: cand.year ?? null,
+        yearTo: cand.year_to ?? null,
+        variantLabel: cand.variant_label ?? null,
+      });
+    const list = nonResolvedByIdentity.get(key) || [];
+    list.push(cand);
+    nonResolvedByIdentity.set(key, list);
+  }
+
+  // Pre-count canonical identity keys across entries lacking explicit candidateId to detect same-report ambiguity
+  const implicitEntryCountByIdentity = new Map<string, number>();
+  for (const entry of params.entries) {
+    if (entry.candidateId) continue;
+    const isCandidateBearing =
+      entry.disposition === 'unresolved' ||
+      (entry.disposition === 'ready_change' &&
+        entry.proposalItemRefs.some((ref) => itemByClientId.get(ref)?.action === 'add'));
+    if (!isCandidateBearing) continue;
+    const key = buildCandidateIdentityKey({
+      brand: entry.brandName,
+      model: entry.modelName,
+      year: entry.year,
+      yearTo: entry.yearTo,
+      variantLabel: entry.variantLabel,
+    });
+    implicitEntryCountByIdentity.set(key, (implicitEntryCountByIdentity.get(key) || 0) + 1);
   }
 
   const touchedCandidateIds = new Set<string>();
@@ -1209,6 +1244,10 @@ export function planCandidateOperations(params: {
         );
       }
       return { matched: target, identityKey, isAmbiguous: false };
+    }
+
+    if ((implicitEntryCountByIdentity.get(identityKey) || 0) > 1) {
+      return { matched: null, identityKey, isAmbiguous: true };
     }
 
     const candidatesForKey = nonResolvedByIdentity.get(identityKey) || [];
@@ -1340,6 +1379,25 @@ export function planCandidateOperations(params: {
               reason: `Linked to staged addition item '${addRef}'`,
             });
             projectedStateByCandidateId.set(matched.id, 'ready_for_proposal');
+          } else if (matched.state === 'dismissed') {
+            // Never overwrite an admin dismissal; flag for review when an agent stages an addition matching a dismissed candidate
+            operations.push({
+              mode: 'update',
+              entryKey: entry.entryKey,
+              candidateId: matched.id,
+              brandName: entry.brandName,
+              modelName: entry.modelName,
+              year: entry.year,
+              yearTo: entry.yearTo,
+              variantLabel: entry.variantLabel,
+              previousState: 'dismissed',
+              newState: 'dismissed',
+              flaggedForReview: true,
+              evidence: entry.evidence,
+              eventType: 'contradictory_evidence_on_dismissed',
+              reason: `Agent staged verified addition item '${addRef}' for dismissed candidate`,
+            });
+            projectedStateByCandidateId.set(matched.id, 'dismissed');
           }
         }
       }

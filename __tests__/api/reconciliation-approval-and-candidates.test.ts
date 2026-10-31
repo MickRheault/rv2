@@ -20,7 +20,7 @@ jest.mock('@/lib/supabase/admin', () => ({
 
 jest.mock('@/lib/auth/admin-auth', () => ({
   isAuthorizedAdmin: jest.fn(),
-  getAuthenticatedAdminUserId: jest.fn().mockResolvedValue('admin-user-1111-4111-8111-111111111111'),
+  getAuthenticatedAdminUserId: jest.fn().mockResolvedValue('11111111-1111-4111-8111-111111111111'),
 }));
 
 jest.mock('@/lib/cache/purgePublicCache', () => ({
@@ -597,6 +597,17 @@ describe('Approval Safety, Apply-Time Revalidation, Cross-Run Candidates & Admin
     )!;
     expect(state.unresolved_candidates[0].state).toBe('ready_for_proposal');
 
+    // Attempting to dismiss a ready_for_proposal candidate before rejecting its item -> 400
+    const prematureDismiss = await patchUnresolvedCandidate(
+      adminCandidatePatchRequest(bmwCandidateId, {
+        action: 'dismiss',
+        reason: 'Trying to dismiss while pending addition item exists',
+        expectedVersion: state.unresolved_candidates[0].version,
+      }),
+      { params: Promise.resolve({ id: bmwCandidateId }) }
+    );
+    expect(prematureDismiss.status).toBe(400);
+
     (getSupabaseAdmin as jest.Mock).mockReturnValue(
       createInMemorySupabaseClient(state, { failBikeInsertForModel: 'R 1250 GS' })
     );
@@ -615,22 +626,18 @@ describe('Approval Safety, Apply-Time Revalidation, Cross-Run Candidates & Admin
     expect(state.change_proposals.find((p) => p.id === run5Body.proposalId)?.application_status).toBe(
       'failed'
     );
+    expect(state.change_proposals.find((p) => p.id === run5Body.proposalId)?.status).toBe(
+      'pending'
+    );
 
-    // Restore normal DB client and Run 6: Re-stage verified BMW addition & apply -> resolved_applied with resolved_motorcycle_id!
+    // Restore normal DB client and directly RETRY applying Run 5's proposalId -> resolved_applied with resolved_motorcycle_id!
     (getSupabaseAdmin as jest.Mock).mockReturnValue(createInMemorySupabaseClient(state));
-    const run6 = await stageProposal(agentPostRequest(buildVerifiedBmwPayload('run-lifecycle-6')));
-    expect(run6.status).toBe(201);
-    const run6Body = await run6.json();
-    const run6Item = state.change_proposal_items.find(
-      (i) => i.proposal_id === run6Body.proposalId
-    )!;
-
     const successApply = await applyAdminProposal(
-      adminApplyRequest(run6Body.proposalId, {
-        approvedItemIds: [run6Item.id],
+      adminApplyRequest(run5Body.proposalId, {
+        approvedItemIds: [run5Item.id],
         expectedVersion: 1,
       }),
-      { params: Promise.resolve({ id: run6Body.proposalId }) }
+      { params: Promise.resolve({ id: run5Body.proposalId }) }
     );
     expect(successApply.status).toBe(200);
     const successBody = await successApply.json();
@@ -823,6 +830,28 @@ describe('Approval Safety, Apply-Time Revalidation, Cross-Run Candidates & Admin
     );
     expect(noReasonRes.status).toBe(400);
 
+    // 2b. Missing or malformed expectedVersion on candidate PATCH or reconciliation apply -> 400
+    for (const badVer of [undefined, null, '1', 0, -1, 1.5]) {
+      const badCandVer = await patchUnresolvedCandidate(
+        adminCandidatePatchRequest(candidateId, {
+          action: 'dismiss',
+          reason: 'Confirmed Madrid-only fleet.',
+          ...(badVer !== undefined ? { expectedVersion: badVer } : {}),
+        }),
+        { params: Promise.resolve({ id: candidateId }) }
+      );
+      expect(badCandVer.status).toBe(400);
+
+      const badPropVer = await applyAdminProposal(
+        adminApplyRequest(proposalId, {
+          approvedItemIds: [],
+          ...(badVer !== undefined ? { expectedVersion: badVer } : {}),
+        }),
+        { params: Promise.resolve({ id: proposalId }) }
+      );
+      expect(badPropVer.status).toBe(400);
+    }
+
     // 3. Stale expectedVersion -> 409
     const staleVerRes = await patchUnresolvedCandidate(
       adminCandidatePatchRequest(candidateId, {
@@ -855,6 +884,55 @@ describe('Approval Safety, Apply-Time Revalidation, Cross-Run Candidates & Admin
     expect(state.change_proposals.find((p) => p.id === proposalId)?.reconciliation_status).toBe(
       'complete'
     );
+
+    // 4b. Subsequent crawl with IDENTICAL issues/evidence except a newer observedAt timestamp does NOT flag dismissed candidate!
+    const nonContraCrawl = await stageProposal(
+      agentPostRequest({
+        shopId: RIDE_ON_SHOP_ID,
+        sourceUrl: 'https://rideon.es/flota/',
+        agentRunId: 'run-admin-cand-1b-same-evidence',
+        items: [],
+        reconciliationReport: {
+          schemaVersion: 1,
+          scope: BARCELONA_SCOPE,
+          coverage: {
+            status: 'partial',
+            discoveryComplete: false,
+            limitations: ['Routine re-crawl'],
+            pages: [{ url: 'https://rideon.es/flota/', role: 'catalog', status: 'processed' }],
+          },
+          entries: [
+            {
+              entryKey: 'bmw-r-1250-gs',
+              brand: 'BMW',
+              model: 'R 1250 GS',
+              existingMotorcycleId: null,
+              disposition: 'unresolved',
+              proposalItemRefs: [],
+              issues: [
+                {
+                  code: 'BRANCH_CONFLICT',
+                  detail: 'Displayed Barcelona label links to https://rideon.es/madrid/.',
+                },
+              ],
+              nextAction: 'Confirm whether BMW is Madrid-only.',
+              evidence: [
+                {
+                  sourceUrl: 'https://rideon.es/flota/',
+                  snippet: 'BMW R 1250 GS — BARCELONA',
+                  kind: 'fleet_card',
+                  linkedUrl: 'https://rideon.es/madrid/',
+                  observedAt: '2026-11-01T12:00:00Z',
+                },
+              ],
+            },
+          ],
+        },
+      })
+    );
+    expect(nonContraCrawl.status).toBe(201);
+    expect(state.unresolved_candidates[0].state).toBe('dismissed');
+    expect(state.unresolved_candidates[0].flagged_for_review).toBe(false);
 
     // 5. Subsequent crawl with CONTRADICTORY evidence NEVER overwrites 'dismissed', sets flagged_for_review = true!
     const contraCrawl = await stageProposal(
@@ -935,5 +1013,51 @@ describe('Approval Safety, Apply-Time Revalidation, Cross-Run Candidates & Admin
         (e) => e.candidate_id === candidateId && e.event_type === 'admin_excluded'
       )
     ).toBe(true);
+
+    // 7. Two distinct unresolved entries sharing the same implicit canonical identity within a SINGLE report do NOT auto-merge
+    const sameReportAmbig = await stageProposal(
+      agentPostRequest({
+        shopId: RIDE_ON_SHOP_ID,
+        sourceUrl: 'https://rideon.es/flota/',
+        agentRunId: 'run-same-report-ambig',
+        items: [],
+        reconciliationReport: {
+          schemaVersion: 1,
+          scope: BARCELONA_SCOPE,
+          coverage: {
+            status: 'partial',
+            discoveryComplete: false,
+            limitations: ['Two Kawasaki Z650 cards without variant labels'],
+            pages: [{ url: 'https://rideon.es/flota/', role: 'catalog', status: 'processed' }],
+          },
+          entries: [
+            {
+              entryKey: 'kawasaki-z650-card-1',
+              brand: 'Kawasaki',
+              model: 'Z650',
+              existingMotorcycleId: null,
+              disposition: 'unresolved',
+              proposalItemRefs: [],
+              issues: [{ code: 'IDENTITY_UNRESOLVED', detail: 'Card 1 lacks kW badge' }],
+              nextAction: 'Check kW',
+              evidence: [{ sourceUrl: 'https://rideon.es/flota/', snippet: 'Z650 #1', kind: 'fleet_card' }],
+            },
+            {
+              entryKey: 'kawasaki-z650-card-2',
+              brand: 'Kawasaki',
+              model: 'Z650',
+              existingMotorcycleId: null,
+              disposition: 'unresolved',
+              proposalItemRefs: [],
+              issues: [{ code: 'IDENTITY_UNRESOLVED', detail: 'Card 2 lacks kW badge' }],
+              nextAction: 'Check kW',
+              evidence: [{ sourceUrl: 'https://rideon.es/flota/', snippet: 'Z650 #2', kind: 'fleet_card' }],
+            },
+          ],
+        },
+      })
+    );
+    expect(sameReportAmbig.status).toBe(201);
+    expect(state.unresolved_candidates.filter((c) => c.model_name === 'Z650')).toHaveLength(2);
   });
 });

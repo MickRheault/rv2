@@ -1367,18 +1367,28 @@ export function ChangeProposalDiffViewer({
   const referencedEntryCandidateIds = new Set(
     unresolvedEntries.map((e) => e.candidateId).filter(Boolean) as string[]
   );
-  const openShopCandidates = candidates.filter(
-    (c) => c.state === 'open' || c.state === 'ready_for_proposal'
+  const readyChangeCandidateIds = new Set(
+    readyChangeEntries.map((e) => e.candidateId).filter(Boolean) as string[]
   );
-  const carryoverCandidates = candidates.filter(
-    (c) => c.id && !referencedEntryCandidateIds.has(c.id) && c.state !== 'resolved_applied'
-  );
+  const unresolvedShopCandidates = candidates.filter((c) => {
+    if (c.state === 'open') return true;
+    if (c.state === 'ready_for_proposal') {
+      const linkedId = (c as any).linked_proposal_item_id ?? (c as any).linkedProposalItemId;
+      return !linkedId || !selectedIds.has(linkedId);
+    }
+    return false;
+  });
+  const carryoverCandidates = candidates.filter((c) => {
+    if (!c.id || referencedEntryCandidateIds.has(c.id)) return false;
+    if (c.state === 'ready_for_proposal' && readyChangeCandidateIds.has(c.id)) return false;
+    return true;
+  });
 
   const renderCandidateActions = (cand?: DiffViewerCandidate) => {
     if (!cand || cand.state === 'resolved_applied') return null;
     return (
       <div className="flex items-center gap-2 flex-wrap">
-        {(cand.state === 'open' || cand.state === 'ready_for_proposal') && (
+        {cand.state === 'open' && (
           <>
             <Button
               variant="outline"
@@ -1600,7 +1610,7 @@ export function ChangeProposalDiffViewer({
         {/* Approval Safety Warning Banner when unresolved motorcycles remain open */}
         {!isCompleted &&
           pendingActionableItems.length > 0 &&
-          (displayedUnresolvedCount > 0 || openShopCandidates.length > 0) && (
+          (displayedUnresolvedCount > 0 || unresolvedShopCandidates.length > 0) && (
             <div
               data-testid="unresolved-approval-warning"
               className="mt-5 rounded-lg bg-amber-50 border border-amber-300 px-4 py-3 flex items-start gap-2.5 text-xs text-amber-950"
@@ -2378,11 +2388,11 @@ export function ChangeProposalDiffViewer({
       </div>
 
       {/* Reconciliation Report Section 2: Unresolved Motorcycles */}
-      {report && (
+      {(report || carryoverCandidates.length > 0) && (
         <Card
           data-testid="reconciliation-unresolved-section"
           className={
-            displayedUnresolvedCount > 0
+            displayedUnresolvedCount > 0 || unresolvedShopCandidates.length > 0
               ? 'border-amber-300 bg-amber-50/20'
               : 'border-gray-200'
           }
@@ -2499,6 +2509,8 @@ export function ChangeProposalDiffViewer({
                 const isFlagged = Boolean(cand.flagged_for_review ?? cand.flaggedForReview);
                 const brandLabel = cand.brand_name || cand.brand || '';
                 const modelLabel = cand.model_name || cand.model || '';
+                const resolvedBikeId =
+                  (cand as any).resolved_motorcycle_id ?? (cand as any).resolvedMotorcycleId;
                 return (
                   <div
                     key={cand.id}
@@ -2512,6 +2524,11 @@ export function ChangeProposalDiffViewer({
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-800 border border-slate-300">
                           Candidate: {cand.state}
                         </span>
+                        {resolvedBikeId && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-emerald-50 text-emerald-800 border border-emerald-300">
+                            Motorcycle ID: {resolvedBikeId}
+                          </span>
+                        )}
                         {isFlagged && (
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-red-100 text-red-800 border border-red-300">
                             Flagged for Review
