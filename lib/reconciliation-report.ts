@@ -1243,6 +1243,11 @@ export function planCandidateOperations(params: {
           `Entry '${entry.entryKey}' references unknown or cross-shop candidateId '${entry.candidateId}'.`
         );
       }
+      if (target.state === 'resolved_applied') {
+        throw new Err(
+          `Entry '${entry.entryKey}' references candidate '${entry.candidateId}' which is already resolved_applied (motorcycle '${target.resolved_motorcycle_id || 'unknown'}'); reference existingMotorcycleId instead.`
+        );
+      }
       return { matched: target, identityKey, isAmbiguous: false };
     }
 
@@ -1299,9 +1304,6 @@ export function planCandidateOperations(params: {
         } else {
           const nextState: UnresolvedCandidateState =
             matched.state === 'excluded' ? 'excluded' : 'open';
-          const contradictoryOnExcluded =
-            matched.state === 'excluded' &&
-            hasContradictoryEvidence(matched, entry.issues, entry.evidence);
           operations.push({
             mode: 'update',
             entryKey: entry.entryKey,
@@ -1313,10 +1315,7 @@ export function planCandidateOperations(params: {
             variantLabel: entry.variantLabel,
             previousState: matched.state,
             newState: nextState,
-            flaggedForReview:
-              matched.state === 'excluded'
-                ? contradictoryOnExcluded || Boolean(matched.flagged_for_review)
-                : Boolean(matched.flagged_for_review),
+            flaggedForReview: Boolean(matched.flagged_for_review),
             issues: entry.issues,
             nextAction: entry.nextAction,
             evidence: entry.evidence,
@@ -1400,6 +1399,16 @@ export function planCandidateOperations(params: {
             projectedStateByCandidateId.set(matched.id, 'dismissed');
           }
         }
+      } else if (entry.candidateId) {
+        const { matched } = matchExistingCandidate(entry);
+        if (matched && touchedCandidateIds.has(matched.id)) {
+          throw new Err(
+            `Multiple reconciliation entries cannot target the same unresolved candidate '${matched.id}' in one report (conflict at entry '${entry.entryKey}').`
+          );
+        }
+        if (matched) {
+          touchedCandidateIds.add(matched.id);
+        }
       }
     } else if (entry.disposition === 'excluded' && entry.candidateId) {
       // Agent reports cannot close open candidates to 'excluded' without admin review;
@@ -1410,24 +1419,37 @@ export function planCandidateOperations(params: {
           `Multiple reconciliation entries cannot target the same unresolved candidate '${matched.id}' in one report (conflict at entry '${entry.entryKey}').`
         );
       }
-      if (matched && matched.state === 'open') {
+      if (matched) {
         touchedCandidateIds.add(matched.id);
-        operations.push({
-          mode: 'update',
-          entryKey: entry.entryKey,
-          candidateId: matched.id,
-          brandName: entry.brandName,
-          modelName: entry.modelName,
-          year: entry.year,
-          yearTo: entry.yearTo,
-          variantLabel: entry.variantLabel,
-          previousState: 'open',
-          newState: 'open',
-          evidence: entry.evidence,
-          eventType: 'agent_observed_excluded',
-          reason: entry.reason,
-        });
-        projectedStateByCandidateId.set(matched.id, 'open');
+        if (matched.state === 'open') {
+          operations.push({
+            mode: 'update',
+            entryKey: entry.entryKey,
+            candidateId: matched.id,
+            brandName: entry.brandName,
+            modelName: entry.modelName,
+            year: entry.year,
+            yearTo: entry.yearTo,
+            variantLabel: entry.variantLabel,
+            previousState: 'open',
+            newState: 'open',
+            evidence: entry.evidence,
+            eventType: 'agent_observed_excluded',
+            reason: entry.reason,
+          });
+          projectedStateByCandidateId.set(matched.id, 'open');
+        }
+      }
+    } else if (entry.candidateId) {
+      // Validate explicit candidateId ownership & uniqueness even on unchanged / duplicate dispositions
+      const { matched } = matchExistingCandidate(entry);
+      if (matched && touchedCandidateIds.has(matched.id)) {
+        throw new Err(
+          `Multiple reconciliation entries cannot target the same unresolved candidate '${matched.id}' in one report (conflict at entry '${entry.entryKey}').`
+        );
+      }
+      if (matched) {
+        touchedCandidateIds.add(matched.id);
       }
     }
   }

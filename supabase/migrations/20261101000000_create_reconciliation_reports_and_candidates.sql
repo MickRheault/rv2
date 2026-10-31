@@ -297,6 +297,16 @@ CREATE TRIGGER trg_immutable_reconciliation_reports
   BEFORE UPDATE ON public.reconciliation_reports
   FOR EACH ROW EXECUTE FUNCTION public.prevent_immutable_audit_update();
 
+DROP TRIGGER IF EXISTS trg_immutable_reconciliation_report_entries ON public.reconciliation_report_entries;
+CREATE TRIGGER trg_immutable_reconciliation_report_entries
+  BEFORE UPDATE ON public.reconciliation_report_entries
+  FOR EACH ROW EXECUTE FUNCTION public.prevent_immutable_audit_update();
+
+DROP TRIGGER IF EXISTS trg_immutable_reconciliation_entry_item_links ON public.reconciliation_entry_item_links;
+CREATE TRIGGER trg_immutable_reconciliation_entry_item_links
+  BEFORE UPDATE ON public.reconciliation_entry_item_links
+  FOR EACH ROW EXECUTE FUNCTION public.prevent_immutable_audit_update();
+
 DROP TRIGGER IF EXISTS trg_immutable_unresolved_candidate_events ON public.unresolved_candidate_events;
 CREATE TRIGGER trg_immutable_unresolved_candidate_events
   BEFORE UPDATE ON public.unresolved_candidate_events

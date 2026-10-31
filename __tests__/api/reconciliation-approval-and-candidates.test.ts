@@ -620,8 +620,9 @@ describe('Approval Safety, Apply-Time Revalidation, Cross-Run Candidates & Admin
     );
     expect(failedApply.status).toBe(500);
     expect(state.unresolved_candidates[0].state).toBe('open');
+    expect(state.unresolved_candidates[0].linked_proposal_item_id).toBeNull();
     expect(
-      state.unresolved_candidate_events.some((e) => e.event_type === 'apply_failed')
+      state.unresolved_candidate_events.some((e) => e.event_type === 'application_failed')
     ).toBe(true);
     expect(state.change_proposals.find((p) => p.id === run5Body.proposalId)?.application_status).toBe(
       'failed'
@@ -630,7 +631,7 @@ describe('Approval Safety, Apply-Time Revalidation, Cross-Run Candidates & Admin
       'pending'
     );
 
-    // Restore normal DB client and directly RETRY applying Run 5's proposalId -> resolved_applied with resolved_motorcycle_id!
+    // Restore normal DB client and directly RETRY applying Run 5's proposalId (using entry_id link fallback) -> resolved_applied with resolved_motorcycle_id!
     (getSupabaseAdmin as jest.Mock).mockReturnValue(createInMemorySupabaseClient(state));
     const successApply = await applyAdminProposal(
       adminApplyRequest(run5Body.proposalId, {
@@ -652,6 +653,74 @@ describe('Approval Safety, Apply-Time Revalidation, Cross-Run Candidates & Admin
     expect(state.unresolved_candidates[0].id).toBe(bmwCandidateId);
     expect(state.unresolved_candidates[0].state).toBe('resolved_applied');
     expect(state.unresolved_candidates[0].resolved_motorcycle_id).toBe(createdBmws[0].id);
+
+    // Referencing an already resolved_applied candidateId or unknown/cross-shop candidateId on unchanged -> 400
+    const reopenResolvedAttempt = await stageProposal(
+      agentPostRequest({
+        shopId: RIDE_ON_SHOP_ID,
+        sourceUrl: 'https://rideon.es/flota/',
+        agentRunId: 'run-reopen-resolved-cand',
+        items: [],
+        reconciliationReport: {
+          schemaVersion: 1,
+          scope: BARCELONA_SCOPE,
+          coverage: {
+            status: 'partial',
+            discoveryComplete: false,
+            limitations: ['Test'],
+            pages: [{ url: 'https://rideon.es/flota/', role: 'catalog', status: 'processed' }],
+          },
+          entries: [
+            {
+              entryKey: 'bmw-r-1250-gs',
+              brand: 'BMW',
+              model: 'R 1250 GS',
+              existingMotorcycleId: null,
+              candidateId: bmwCandidateId,
+              disposition: 'unresolved',
+              proposalItemRefs: [],
+              issues: [{ code: 'PRICE_UNVERIFIED', detail: 'Stale agent' }],
+              nextAction: 'None',
+              evidence: [{ sourceUrl: 'https://rideon.es/flota/', snippet: 'BMW', kind: 'fleet_card' }],
+            },
+          ],
+        },
+      })
+    );
+    expect(reopenResolvedAttempt.status).toBe(400);
+
+    const crossShopCandOnUnchanged = await stageProposal(
+      agentPostRequest({
+        shopId: RIDE_ON_SHOP_ID,
+        sourceUrl: 'https://rideon.es/flota/',
+        agentRunId: 'run-cross-cand-unchanged',
+        items: [],
+        reconciliationReport: {
+          schemaVersion: 1,
+          scope: BARCELONA_SCOPE,
+          coverage: {
+            status: 'partial',
+            discoveryComplete: false,
+            limitations: ['Test'],
+            pages: [{ url: 'https://rideon.es/flota/', role: 'catalog', status: 'processed' }],
+          },
+          entries: [
+            {
+              entryKey: 'honda-pcx-125',
+              brand: 'Honda',
+              model: 'PCX 125',
+              existingMotorcycleId: RIDE_ON_PCX_ID,
+              candidateId: 'eeeeeeee-9999-4999-8999-999999999999',
+              disposition: 'unchanged',
+              proposalItemRefs: [],
+              comparedAttributes: ['brand', 'model', 'rates'],
+              evidence: [{ sourceUrl: 'https://rideon.es/flota/', snippet: 'PCX', kind: 'fleet_card' }],
+            },
+          ],
+        },
+      })
+    );
+    expect(crossShopCandOnUnchanged.status).toBe(400);
 
     // Ambiguous identity guard: 2 open candidates with identical identity_key are NOT auto-merged when candidateId is omitted
     state.unresolved_candidates.push(
@@ -863,7 +932,8 @@ describe('Approval Safety, Apply-Time Revalidation, Cross-Run Candidates & Admin
     );
     expect(staleVerRes.status).toBe(409);
 
-    // 4. Valid admin dismiss -> 200, state='dismissed', version=2, audit event recorded, and complete proposal reconciliation_status updated to 'complete'
+    // 4. Valid admin dismiss -> 200, state='dismissed', version=2, audit event recorded;
+    // Run 1's own report snapshot had disposition='unresolved', so its historical reconciliation_status stays 'unresolved' per Spec L49
     const dismissRes = await patchUnresolvedCandidate(
       adminCandidatePatchRequest(candidateId, {
         action: 'dismiss',
@@ -882,7 +952,7 @@ describe('Approval Safety, Apply-Time Revalidation, Cross-Run Candidates & Admin
       )
     ).toBe(true);
     expect(state.change_proposals.find((p) => p.id === proposalId)?.reconciliation_status).toBe(
-      'complete'
+      'unresolved'
     );
 
     // 4b. Subsequent crawl with IDENTICAL issues/evidence except a newer observedAt timestamp does NOT flag dismissed candidate!

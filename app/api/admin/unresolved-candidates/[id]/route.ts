@@ -55,7 +55,7 @@ export async function PATCH(
     if (error?.name === 'ProposalVersionConflictError') {
       return NextResponse.json({ error: error.message }, { status: 409 });
     }
-    if (typeof error?.message === 'string' && error.message.startsWith('Candidate not found')) {
+    if (error?.name === 'CandidateNotFoundError') {
       return NextResponse.json({ error: 'Unresolved candidate not found' }, { status: 404 });
     }
     console.error(`Error updating unresolved candidate ${id}:`, error);

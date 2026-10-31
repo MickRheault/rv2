@@ -208,10 +208,26 @@ export interface DiffViewerCandidate {
   state: 'open' | 'ready_for_proposal' | 'resolved_applied' | 'excluded' | 'dismissed';
   flagged_for_review?: boolean;
   flaggedForReview?: boolean;
+  linked_proposal_item_id?: string | null;
+  linkedProposalItemId?: string | null;
+  resolved_motorcycle_id?: string | null;
+  resolvedMotorcycleId?: string | null;
   current_issues?: Array<{ code: string; detail: string }>;
   next_action?: string | null;
   resolution_reason?: string | null;
   version?: number;
+}
+
+export interface DiffViewerCandidateEvent {
+  id?: string;
+  candidate_id?: string;
+  candidateId?: string;
+  event_type: string;
+  actor_type?: string | null;
+  previous_state?: string | null;
+  new_state?: string | null;
+  reason?: string | null;
+  created_at?: string;
 }
 
 interface ChangeProposalDiffViewerProps {
@@ -222,7 +238,7 @@ interface ChangeProposalDiffViewerProps {
   entriesPagination?: DiffViewerEntriesPagination | null;
   candidates?: DiffViewerCandidate[];
   decisionEvents?: any[];
-  candidateEvents?: any[];
+  candidateEvents?: DiffViewerCandidateEvent[];
   onEntriesPageChange?: (offset: number) => void;
   onApplySuccess?: () => void;
   onRejectSuccess?: () => void;
@@ -1367,22 +1383,17 @@ export function ChangeProposalDiffViewer({
   const referencedEntryCandidateIds = new Set(
     unresolvedEntries.map((e) => e.candidateId).filter(Boolean) as string[]
   );
-  const readyChangeCandidateIds = new Set(
-    readyChangeEntries.map((e) => e.candidateId).filter(Boolean) as string[]
-  );
   const unresolvedShopCandidates = candidates.filter((c) => {
     if (c.state === 'open') return true;
     if (c.state === 'ready_for_proposal') {
-      const linkedId = (c as any).linked_proposal_item_id ?? (c as any).linkedProposalItemId;
+      const linkedId = c.linked_proposal_item_id ?? c.linkedProposalItemId;
       return !linkedId || !selectedIds.has(linkedId);
     }
     return false;
   });
-  const carryoverCandidates = candidates.filter((c) => {
-    if (!c.id || referencedEntryCandidateIds.has(c.id)) return false;
-    if (c.state === 'ready_for_proposal' && readyChangeCandidateIds.has(c.id)) return false;
-    return true;
-  });
+  const carryoverCandidates = candidates.filter(
+    (c) => Boolean(c.id) && !referencedEntryCandidateIds.has(c.id)
+  );
 
   const renderCandidateActions = (cand?: DiffViewerCandidate) => {
     if (!cand || cand.state === 'resolved_applied') return null;
@@ -2509,8 +2520,7 @@ export function ChangeProposalDiffViewer({
                 const isFlagged = Boolean(cand.flagged_for_review ?? cand.flaggedForReview);
                 const brandLabel = cand.brand_name || cand.brand || '';
                 const modelLabel = cand.model_name || cand.model || '';
-                const resolvedBikeId =
-                  (cand as any).resolved_motorcycle_id ?? (cand as any).resolvedMotorcycleId;
+                const resolvedBikeId = cand.resolved_motorcycle_id ?? cand.resolvedMotorcycleId;
                 return (
                   <div
                     key={cand.id}
