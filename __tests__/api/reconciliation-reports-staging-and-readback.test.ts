@@ -158,6 +158,7 @@ describe('Reconciliation Reports Staging, Idempotency & Readback (Ticket #202)',
 
     expect(body.success).toBe(true);
     expect(body.proposalId).toEqual(expect.any(String));
+    expect(body.proposalStatus).toBe('pending');
     expect(body.reportId).toEqual(expect.any(String));
     expect(body.reportVersion).toBe(1);
     expect(body.coverageStatus).toBe('partial');
@@ -281,6 +282,245 @@ describe('Reconciliation Reports Staging, Idempotency & Readback (Ticket #202)',
     expect(state.unresolved_candidates[0].state).toBe('open');
     expect(state.proposal_decision_events).toHaveLength(1);
     expect(state.proposal_decision_events[0].decision).toBe('acknowledge');
+
+    // Subsequent agent readback exposes decisionEvents
+    const agentAfterAckRes = await getAgentProposal(
+      new NextRequest(`http://localhost:3000/api/agent/change-proposals/${body.proposalId}`, {
+        headers: { authorization: 'Bearer secret-agent-key' },
+      }),
+      { params: Promise.resolve({ id: body.proposalId }) }
+    );
+    const agentAfterAckBody = await agentAfterAckRes.json();
+    expect(agentAfterAckBody.decisionEvents).toHaveLength(1);
+    expect(agentAfterAckBody.decisionEvents[0].decision).toBe('acknowledge');
+  });
+
+  it('rejects a report-only proposal cleanly (status=rejected, applicationStatus=not_applicable, never applied) and keeps unresolved candidates open', async () => {
+    const stageRes = await stageProposal(
+      agentPostRequest(buildRideOnBmwReportOnlyPayload({ agentRunId: 'run-reject-report-only' }))
+    );
+    expect(stageRes.status).toBe(201);
+    const { proposalId } = await stageRes.json();
+
+    const rejectRes = await applyAdminProposal(
+      new NextRequest(`http://localhost:3000/api/admin/change-proposals/${proposalId}/apply`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ approvedItemIds: [] }),
+      }),
+      { params: Promise.resolve({ id: proposalId }) }
+    );
+    expect(rejectRes.status).toBe(200);
+    const rejectBody = await rejectRes.json();
+    expect(rejectBody.status).toBe('rejected');
+    expect(rejectBody.applicationStatus).toBe('not_applicable');
+    expect(rejectBody.appliedCount).toBe(0);
+
+    const persisted = state.change_proposals.find((p) => p.id === proposalId);
+    expect(persisted?.status).toBe('rejected');
+    expect(persisted?.application_status).toBe('not_applicable');
+    expect(state.unresolved_candidates[0].state).toBe('open');
+    expect(state.proposal_decision_events).toHaveLength(1);
+    expect(state.proposal_decision_events[0].decision).toBe('reject');
+
+    // Re-applying or re-rejecting a closed report-only proposal returns 400
+    const repeatReject = await applyAdminProposal(
+      new NextRequest(`http://localhost:3000/api/admin/change-proposals/${proposalId}/apply`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ approvedItemIds: [] }),
+      }),
+      { params: Promise.resolve({ id: proposalId }) }
+    );
+    expect(repeatReject.status).toBe(400);
+  });
+
+  it('validates learnedConfig bounds/URLs, upserts shop_agent_configs when missing, validates ready_change existingMotorcycleId & integer rate tiers, and prevents agent excluded entries from closing open candidates', async () => {
+    // 1. Oversized learnedExtractionHints (> 4000 chars) or unsafe discoveredSourceUrl -> 400
+    const badHints = await stageProposal(
+      agentPostRequest(
+        buildRideOnBmwReportOnlyPayload({
+          agentRunId: 'run-bad-hints',
+          learnedExtractionHints: 'h'.repeat(4001),
+        })
+      )
+    );
+    expect(badHints.status).toBe(400);
+
+    const badDiscoveredUrl = await stageProposal(
+      agentPostRequest(
+        buildRideOnBmwReportOnlyPayload({
+          agentRunId: 'run-bad-disc-url',
+          discoveredSourceUrl: 'javascript:alert(1)',
+        })
+      )
+    );
+    expect(badDiscoveredUrl.status).toBe(400);
+
+    // 2. ready_change update with mismatched existingMotorcycleId -> 400, fractional minDays -> 400
+    const mismatchedUpdate = await stageProposal(
+      agentPostRequest(
+        buildRideOnBmwReportOnlyPayload({
+          agentRunId: 'run-mismatch-update',
+          items: [
+            {
+              clientItemId: 'upd-pcx',
+              entityType: 'motorcycle',
+              action: 'update',
+              entityId: RIDE_ON_PCX_ID,
+              proposedData: {
+                rates: [{ minDays: 1, maxDays: null, ratePerDay: 39, currency: 'EUR' }],
+              },
+            },
+          ],
+          reconciliationReport: {
+            ...buildRideOnBmwReportOnlyPayload().reconciliationReport,
+            entries: [
+              {
+                entryKey: 'honda-pcx-125',
+                brand: 'Honda',
+                model: 'PCX 125',
+                existingMotorcycleId: null, // invalid for update!
+                disposition: 'ready_change',
+                proposalItemRefs: ['upd-pcx'],
+                evidence: [
+                  { sourceUrl: 'https://rideon.es/flota/', snippet: '39€', kind: 'fleet_card' },
+                ],
+              },
+            ],
+          },
+        })
+      )
+    );
+    expect(mismatchedUpdate.status).toBe(400);
+
+    const fractionalDays = await stageProposal(
+      agentPostRequest(
+        buildRideOnBmwReportOnlyPayload({
+          agentRunId: 'run-frac-days',
+          items: [
+            {
+              clientItemId: 'add-sh',
+              entityType: 'motorcycle',
+              action: 'add',
+              brandName: 'Honda',
+              modelName: 'SH 125i',
+              proposedData: {
+                categoryId: SCOOTER_CAT_ID,
+                rates: [{ minDays: 1.5, maxDays: 3.5, ratePerDay: 30, currency: 'EUR' }],
+              },
+            },
+          ],
+          reconciliationReport: {
+            ...buildRideOnBmwReportOnlyPayload().reconciliationReport,
+            entries: [
+              {
+                entryKey: 'honda-sh-125i',
+                brand: 'Honda',
+                model: 'SH 125i',
+                existingMotorcycleId: null,
+                disposition: 'ready_change',
+                proposalItemRefs: ['add-sh'],
+                evidence: [
+                  { sourceUrl: 'https://rideon.es/flota/', snippet: '30€', kind: 'fleet_card' },
+                ],
+              },
+            ],
+          },
+        })
+      )
+    );
+    expect(fractionalDays.status).toBe(400);
+
+    // 3. Upsert shop_agent_configs when initially missing + round-trip year/variantLabel/observation
+    state.shop_agent_configs = [];
+    const firstStage = await stageProposal(
+      agentPostRequest(
+        buildRideOnBmwReportOnlyPayload({
+          agentRunId: 'run-upsert-cfg-1',
+          learnedExtractionHints: 'Check /flota/ cards carefully',
+          reconciliationReport: {
+            ...buildRideOnBmwReportOnlyPayload().reconciliationReport,
+            entries: [
+              {
+                ...buildRideOnBmwReportOnlyPayload().reconciliationReport.entries[0],
+                year: 2024,
+                variantLabel: 'Adventure',
+                evidence: [
+                  {
+                    sourceUrl: 'https://rideon.es/flota/',
+                    snippet: 'BMW R 1250 GS Adventure',
+                    observation: { cardBadge: 'BARCELONA', href: 'https://rideon.es/madrid/' },
+                    kind: 'fleet_card',
+                  },
+                ],
+              },
+              buildRideOnBmwReportOnlyPayload().reconciliationReport.entries[1],
+            ],
+          },
+        })
+      )
+    );
+    expect(firstStage.status).toBe(201);
+    const firstBody = await firstStage.json();
+    expect(state.shop_agent_configs).toHaveLength(1);
+    expect(state.shop_agent_configs[0].extraction_hints).toBe('Check /flota/ cards carefully');
+
+    const readbackRes = await getAgentProposal(
+      new NextRequest(`http://localhost:3000/api/agent/change-proposals/${firstBody.proposalId}`, {
+        headers: { authorization: 'Bearer secret-agent-key' },
+      }),
+      { params: Promise.resolve({ id: firstBody.proposalId }) }
+    );
+    const readbackBody = await readbackRes.json();
+    const bmwEntry = readbackBody.entries.find((e: any) => e.entryKey === 'bmw-r-1250-gs');
+    expect(bmwEntry.year).toBe(2024);
+    expect(bmwEntry.variantLabel).toBe('Adventure');
+    expect(bmwEntry.evidence[0].observation).toEqual({
+      cardBadge: 'BARCELONA',
+      href: 'https://rideon.es/madrid/',
+    });
+
+    // 4. Subsequent run where agent marks the open BMW candidate as 'excluded' does NOT silently close candidate
+    const openCandId = state.unresolved_candidates[0].id;
+    const exclRun = await stageProposal(
+      agentPostRequest({
+        shopId: RIDE_ON_SHOP_ID,
+        sourceUrl: 'https://rideon.es/flota/',
+        agentRunId: 'run-agent-excl-attempt',
+        items: [],
+        reconciliationReport: {
+          ...buildRideOnBmwReportOnlyPayload().reconciliationReport,
+          entries: [
+            {
+              entryKey: 'bmw-r-1250-gs',
+              brand: 'BMW',
+              model: 'R 1250 GS',
+              year: 2024,
+              variantLabel: 'Adventure',
+              existingMotorcycleId: null,
+              candidateId: openCandId,
+              disposition: 'excluded',
+              proposalItemRefs: [],
+              reason: 'Monthly subscription card',
+              evidence: [
+                {
+                  sourceUrl: 'https://rideon.es/flota/',
+                  snippet: 'Monthly plan',
+                  kind: 'fleet_card',
+                },
+              ],
+            },
+            buildRideOnBmwReportOnlyPayload().reconciliationReport.entries[1],
+          ],
+        },
+      })
+    );
+    expect(exclRun.status).toBe(201);
+    expect(state.unresolved_candidates[0].state).toBe('open');
+    expect(
+      state.unresolved_candidate_events.some((ev) => ev.event_type === 'agent_observed_excluded')
+    ).toBe(true);
   });
 
   it('C & J: rejects empty items without report, rejects null/malformed report or unchanged items inside new-format items[], and preserves legacy reportless requests with unknown statuses', async () => {

@@ -1397,6 +1397,9 @@ export type Database = {
           proposal_id: string
           reason: string | null
           report_id: string
+          variant_label: string | null
+          year: number | null
+          year_to: number | null
         }
         Insert: {
           brand_name: string
@@ -1417,6 +1420,9 @@ export type Database = {
           proposal_id: string
           reason?: string | null
           report_id: string
+          variant_label?: string | null
+          year?: number | null
+          year_to?: number | null
         }
         Update: {
           brand_name?: string
@@ -1437,6 +1443,9 @@ export type Database = {
           proposal_id?: string
           reason?: string | null
           report_id?: string
+          variant_label?: string | null
+          year?: number | null
+          year_to?: number | null
         }
         Relationships: []
       }

@@ -1,7 +1,10 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { ChangeProposalService } from '@/services/change-proposals';
+import {
+  ChangeProposalService,
+  normalizeProposalStatusDimensions,
+} from '@/services/change-proposals';
 import { isAuthorizedAdmin } from '@/lib/auth/admin-auth';
 
 /**
@@ -38,21 +41,16 @@ export async function GET(
 
     const prop = (data as any).proposal;
     const normalizedProposal = prop
-      ? {
-          ...prop,
-          coverage_status: prop.coverage_status ?? 'unknown',
-          reconciliation_status: prop.reconciliation_status ?? 'unknown',
-          application_status:
-            prop.application_status ??
-            (prop.status === 'applied'
-              ? 'applied'
-              : prop.status === 'partially_applied'
-              ? 'partially_applied'
-              : prop.status === 'rejected'
-              ? 'rejected'
-              : 'pending'),
-          version: prop.version ?? 1,
-        }
+      ? (() => {
+          const dims = normalizeProposalStatusDimensions(prop);
+          return {
+            ...prop,
+            coverage_status: dims.coverageStatus,
+            reconciliation_status: dims.reconciliationStatus,
+            application_status: dims.applicationStatus,
+            version: dims.version,
+          };
+        })()
       : prop;
 
     return NextResponse.json({
@@ -64,10 +62,14 @@ export async function GET(
     if (error?.name === 'ProposalItemValidationError') {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
+    const msg = String(error?.message || '');
+    if (msg.startsWith('Proposal not found')) {
+      return NextResponse.json({ error: msg }, { status: 404 });
+    }
     console.error(`Error fetching proposal ${id}:`, error);
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch proposal details' },
-      { status: 404 }
+      { error: 'Failed to fetch proposal details' },
+      { status: 500 }
     );
   }
 }

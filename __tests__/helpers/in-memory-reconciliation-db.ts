@@ -45,7 +45,7 @@ export function createRideOnSeedState(): InMemoryReconciliationState {
         },
       },
       {
-        id: 'other-shop-9999-41f5-98e4-d2ed1f1d7ffd',
+        id: '99999999-9999-41f5-98e4-d2ed1f1d7ffd',
         provider_name: 'Other Madrid Shop',
         slug: 'other-madrid-shop',
         website: 'https://othermadrid.es',
@@ -99,7 +99,7 @@ export function createRideOnSeedState(): InMemoryReconciliationState {
       },
       {
         id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
-        shop_id: 'other-shop-9999-41f5-98e4-d2ed1f1d7ffd',
+        shop_id: '99999999-9999-41f5-98e4-d2ed1f1d7ffd',
         brand_id: 'brand-yamaha',
         category_id: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737',
         model: 'NMAX 125',
@@ -645,6 +645,9 @@ export function createInMemorySupabaseClient(
             entry_key: entry.entryKey,
             brand_name: entry.brandName,
             model_name: entry.modelName,
+            year: entry.year ?? null,
+            year_to: entry.yearTo ?? null,
+            variant_label: entry.variantLabel ?? null,
             existing_motorcycle_id: entry.existingMotorcycleId || null,
             candidate_id: entry.candidateId || candMap.get(entry.entryKey) || null,
             disposition: entry.disposition,
@@ -673,14 +676,32 @@ export function createInMemorySupabaseClient(
         }
 
         if (p.learnedConfig && typeof p.learnedConfig === 'object') {
-          const cfg = state.shop_agent_configs.find((c) => c.shop_id === p.shopId);
-          if (cfg) {
+          let cfg = state.shop_agent_configs.find((c) => c.shop_id === p.shopId);
+          if (!cfg) {
+            cfg = {
+              id: makeUuid(),
+              shop_id: p.shopId,
+              tier: 1,
+              source_url: p.learnedConfig.discoveredSourceUrl || p.sourceUrl,
+              extraction_hints: p.learnedConfig.extractionHints || null,
+              is_active: true,
+              last_run_at: null,
+              last_error: null,
+              consecutive_errors: 0,
+              last_coverage_status: 'unknown',
+              last_reconciliation_status: 'unknown',
+              created_at: now,
+              updated_at: now,
+            };
+            state.shop_agent_configs.push(cfg);
+          } else {
             if (p.learnedConfig.extractionHints) {
               cfg.extraction_hints = p.learnedConfig.extractionHints;
             }
             if (p.learnedConfig.discoveredSourceUrl) {
               cfg.source_url = p.learnedConfig.discoveredSourceUrl;
             }
+            cfg.updated_at = now;
           }
         }
 

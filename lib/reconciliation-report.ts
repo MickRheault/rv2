@@ -115,6 +115,7 @@ export interface ReconciliationCoverage {
 export interface ReconciliationEvidenceRecord {
   sourceUrl: string;
   snippet: string;
+  observation?: Record<string, any> | null;
   kind: string;
   linkedUrl: string | null;
   observedAt: string | null;
@@ -231,17 +232,25 @@ export function validateIsoTimestampOrNull(
   return trimmed;
 }
 
+export function validateRequiredUuid(
+  raw: unknown,
+  label: string,
+  validationErrorCtor: new (msg: string) => Error
+): string {
+  const trimmed = validateBoundedString(raw, label, 64, validationErrorCtor);
+  if (!UUID_REGEX.test(trimmed)) {
+    throw new validationErrorCtor(`${label} ('${trimmed}') must be a valid UUID.`);
+  }
+  return trimmed;
+}
+
 export function validateOptionalUuid(
   raw: unknown,
   label: string,
   validationErrorCtor: new (msg: string) => Error
 ): string | null {
   if (raw === undefined || raw === null) return null;
-  const trimmed = validateBoundedString(raw, label, 64, validationErrorCtor);
-  if (!UUID_REGEX.test(trimmed)) {
-    throw new validationErrorCtor(`${label} ('${trimmed}') must be a valid UUID.`);
-  }
-  return trimmed;
+  return validateRequiredUuid(raw, label, validationErrorCtor);
 }
 
 export function validateMotorcycleRateTiers(
@@ -284,18 +293,18 @@ export function validateMotorcycleRateTiers(
 
     const rawMin = tier.minDays ?? tier.min_days ?? 1;
     const minDays = Number(rawMin);
-    if (!Number.isFinite(minDays) || minDays <= 0) {
+    if (!Number.isInteger(minDays) || minDays < 1) {
       throw new Err(
-        `Item ${options.itemLabel} (rates[${idx}].minDays): minDays must be a positive number.`
+        `Item ${options.itemLabel} (rates[${idx}].minDays): minDays must be an integer >= 1.`
       );
     }
 
     const rawMax = tier.maxDays !== undefined ? tier.maxDays : tier.max_days;
     if (rawMax !== undefined && rawMax !== null) {
       const maxDays = Number(rawMax);
-      if (!Number.isFinite(maxDays) || maxDays < minDays) {
+      if (!Number.isInteger(maxDays) || maxDays < minDays) {
         throw new Err(
-          `Item ${options.itemLabel} (rates[${idx}].maxDays): maxDays must be null or >= minDays.`
+          `Item ${options.itemLabel} (rates[${idx}].maxDays): maxDays must be null or an integer >= minDays.`
         );
       }
     }
@@ -682,10 +691,11 @@ export function normalizeAndValidateReconciliationReport(
       );
 
       const { year, year_to } = normalizeMotorcycleYearRange(rawEntry);
+      const rawVariant = rawEntry.variantLabel ?? rawEntry.variant;
       const variantLabel =
-        rawEntry.variant !== undefined && rawEntry.variant !== null
+        rawVariant !== undefined && rawVariant !== null
           ? validateBoundedString(
-              rawEntry.variant,
+              rawVariant,
               `entries[${eIdx}].variant`,
               MAX_SHORT_LABEL_LENGTH,
               Err
@@ -742,13 +752,37 @@ export function normalizeAndValidateReconciliationReport(
             `entries[${eIdx}].evidence[${evIdx}].sourceUrl`,
             Err
           );
+          let structuredObservation: Record<string, any> | null = null;
+          if (ev.observation !== undefined && ev.observation !== null) {
+            if (typeof ev.observation === 'object' && !Array.isArray(ev.observation)) {
+              const serializedObs = canonicalJsonStringify(ev.observation);
+              if (serializedObs.length > MAX_TEXT_FIELD_LENGTH) {
+                throw new Err(
+                  `entries[${eIdx}].evidence[${evIdx}].observation exceeds maximum length of ${MAX_TEXT_FIELD_LENGTH} characters.`
+                );
+              }
+              structuredObservation = ev.observation;
+            } else if (typeof ev.observation === 'string') {
+              validateBoundedString(
+                ev.observation,
+                `entries[${eIdx}].evidence[${evIdx}].observation`,
+                MAX_TEXT_FIELD_LENGTH,
+                Err
+              );
+            } else {
+              throw new Err(
+                `entries[${eIdx}].evidence[${evIdx}].observation must be an object or string.`
+              );
+            }
+          }
+
           const rawSnippet =
-            ev.snippet !== undefined
+            ev.snippet !== undefined && ev.snippet !== null
               ? ev.snippet
               : typeof ev.observation === 'string'
               ? ev.observation
-              : ev.observation !== undefined
-              ? JSON.stringify(ev.observation)
+              : structuredObservation
+              ? canonicalJsonStringify(structuredObservation)
               : undefined;
           const snippet = validateBoundedString(
             rawSnippet,
@@ -788,6 +822,7 @@ export function normalizeAndValidateReconciliationReport(
           return {
             sourceUrl,
             snippet,
+            ...(structuredObservation ? { observation: structuredObservation } : {}),
             kind,
             linkedUrl,
             observedAt,
@@ -817,6 +852,21 @@ export function normalizeAndValidateReconciliationReport(
             );
           }
           referencedClientItemIds.add(ref);
+
+          if (targetItem.entityType === 'motorcycle' && targetItem.action === 'add') {
+            if (existingMotorcycleId !== null) {
+              throw new Err(
+                `Addition entry '${entryKey}' must set existingMotorcycleId to null when referencing 'add' item '${ref}'.`
+              );
+            }
+          }
+          if (targetItem.entityType === 'motorcycle' && targetItem.action === 'update') {
+            if (!existingMotorcycleId || existingMotorcycleId !== targetItem.entityId) {
+              throw new Err(
+                `Update entry '${entryKey}' must set existingMotorcycleId matching update item '${ref}' entityId.`
+              );
+            }
+          }
 
           // Check delist invariants (Section 4.3 & 15.D)
           if (targetItem.action === 'delist') {
@@ -1266,6 +1316,8 @@ export function planCandidateOperations(params: {
         }
       }
     } else if (entry.disposition === 'excluded' && entry.candidateId) {
+      // Agent reports cannot close open candidates to 'excluded' without admin review;
+      // record the agent exclusion observation while keeping the candidate 'open'.
       const { matched } = matchExistingCandidate(entry);
       if (matched && !touchedCandidateIds.has(matched.id) && matched.state === 'open') {
         touchedCandidateIds.add(matched.id);
@@ -1278,14 +1330,13 @@ export function planCandidateOperations(params: {
           year: entry.year,
           yearTo: entry.yearTo,
           variantLabel: entry.variantLabel,
-          previousState: matched.state,
-          newState: 'excluded',
+          previousState: 'open',
+          newState: 'open',
           evidence: entry.evidence,
-          clearLinkedItem: true,
-          eventType: 'candidate_excluded_by_report',
+          eventType: 'agent_observed_excluded',
           reason: entry.reason,
         });
-        projectedStateByCandidateId.set(matched.id, 'excluded');
+        projectedStateByCandidateId.set(matched.id, 'open');
       }
     }
   }

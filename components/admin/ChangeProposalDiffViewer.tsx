@@ -132,7 +132,7 @@ export interface DiffViewerEvidence {
   linkedUrl?: string | null;
   kind: string;
   snippet?: string | null;
-  observation?: Record<string, any> | null;
+  observation?: Record<string, any> | string | null;
   observedAt?: string | null;
   contentHash?: string | null;
 }
@@ -143,6 +143,9 @@ export interface DiffViewerReportEntry {
   entryKey: string;
   brand: string;
   model: string;
+  year?: number | null;
+  yearTo?: number | null;
+  variantLabel?: string | null;
   existingMotorcycleId?: string | null;
   candidateId?: string | null;
   disposition: 'ready_change' | 'unchanged' | 'unresolved' | 'excluded' | 'duplicate';
@@ -1088,6 +1091,11 @@ function renderEvidenceList(evidenceList?: DiffViewerEvidence[] | null) {
               {ev.snippet}
             </div>
           )}
+          {typeof ev.observation === 'string' && ev.observation.length > 0 && ev.observation !== ev.snippet && (
+            <div className="font-mono text-gray-800 bg-gray-50 px-2 py-1 rounded whitespace-pre-wrap break-words">
+              {ev.observation}
+            </div>
+          )}
           {ev.observation && typeof ev.observation === 'object' && (
             <pre className="font-mono text-[11px] text-gray-700 bg-gray-50 px-2 py-1 rounded overflow-x-auto">
               {JSON.stringify(ev.observation, null, 2)}
@@ -1264,10 +1272,14 @@ export function ChangeProposalDiffViewer({
   const effectiveApplicationStatus =
     proposal.application_status ?? (report ? (actionableItems.length > 0 ? 'pending' : 'not_applicable') : undefined);
 
+  const displayedReportUnchangedCount =
+    report?.serverCounts?.unchangedModels ?? unchangedReportEntries.length;
+  const displayedExcludedCount =
+    report?.serverCounts?.excludedModels ?? excludedReportEntries.length;
+  const displayedDuplicateCount =
+    report?.serverCounts?.duplicateModels ?? duplicateReportEntries.length;
   const displayedUnchangedCount =
-    unchangedItems.length > 0
-      ? unchangedItems.length
-      : report?.serverCounts?.unchangedModels ?? unchangedReportEntries.length;
+    unchangedItems.length > 0 ? unchangedItems.length : displayedReportUnchangedCount;
   const displayedUnresolvedCount =
     report?.serverCounts?.unresolvedModels ?? unresolvedEntries.length;
 
@@ -2167,7 +2179,7 @@ export function ChangeProposalDiffViewer({
         <Card
           data-testid="reconciliation-unresolved-section"
           className={
-            unresolvedEntries.length > 0
+            displayedUnresolvedCount > 0
               ? 'border-amber-300 bg-amber-50/20'
               : 'border-gray-200'
           }
@@ -2176,7 +2188,7 @@ export function ChangeProposalDiffViewer({
             <div className="flex items-center gap-2">
               <ExclamationTriangleIcon className="w-5 h-5 text-amber-600" />
               <h3 className="text-base font-semibold text-gray-900">
-                Unresolved Motorcycles ({unresolvedEntries.length})
+                Unresolved Motorcycles ({displayedUnresolvedCount})
               </h3>
             </div>
             <span className="text-xs text-gray-500">
@@ -2186,7 +2198,9 @@ export function ChangeProposalDiffViewer({
 
           {unresolvedEntries.length === 0 ? (
             <p className="text-sm text-gray-600">
-              No unresolved motorcycles reported in this submission.
+              {displayedUnresolvedCount > 0
+                ? 'No unresolved motorcycles in the current page slice.'
+                : 'No unresolved motorcycles reported in this submission.'}
             </p>
           ) : (
             <div className="divide-y divide-amber-200/70">
@@ -2276,13 +2290,13 @@ export function ChangeProposalDiffViewer({
             </div>
             <div className="flex items-center gap-2 text-xs flex-wrap">
               <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-medium">
-                {unchangedReportEntries.length} unchanged
+                {displayedReportUnchangedCount} unchanged
               </span>
               <span className="px-2 py-0.5 rounded bg-gray-100 text-gray-700 font-medium">
-                {excludedReportEntries.length} excluded
+                {displayedExcludedCount} excluded
               </span>
               <span className="px-2 py-0.5 rounded bg-purple-100 text-purple-800 font-medium">
-                {duplicateReportEntries.length} duplicate
+                {displayedDuplicateCount} duplicate
               </span>
             </div>
           </div>

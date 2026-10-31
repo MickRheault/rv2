@@ -51,9 +51,14 @@ export async function GET(
     if (error?.name === 'ProposalItemValidationError') {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
+    const msg = String(error?.message || '');
+    if (msg.startsWith('Proposal not found')) {
+      return NextResponse.json({ error: 'Proposal not found' }, { status: 404 });
+    }
+    console.error(`Error fetching agent proposal readback ${id}:`, error);
     return NextResponse.json(
-      { error: error.message || 'Proposal not found' },
-      { status: 404 }
+      { error: 'Failed to fetch proposal readback' },
+      { status: 500 }
     );
   }
 }

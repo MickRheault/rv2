@@ -16,6 +16,7 @@ import {
   CoverageStatus,
   MAX_PROPOSAL_ITEMS,
   MAX_SHORT_LABEL_LENGTH,
+  MAX_TEXT_FIELD_LENGTH,
   NormalizedActionableItemSummary,
   ProposalIdempotencyConflictError,
   ProposalVersionConflictError,
@@ -27,6 +28,7 @@ import {
   validateBoundedString,
   validateHttpUrl,
   validateMotorcycleRateTiers,
+  validateRequiredUuid,
 } from '@/lib/reconciliation-report';
 import { TaskSchedulerService } from './task-scheduler';
 
@@ -784,6 +786,70 @@ async function insertMotorcycleConditions(
   }
 }
 
+export function normalizeProposalStatusDimensions(prop: any): {
+  coverageStatus: CoverageStatus;
+  reconciliationStatus: ReconciliationStatus;
+  applicationStatus: ApplicationStatus;
+  version: number;
+} {
+  const coverageStatus: CoverageStatus = prop?.coverage_status ?? 'unknown';
+  const reconciliationStatus: ReconciliationStatus = prop?.reconciliation_status ?? 'unknown';
+  const applicationStatus: ApplicationStatus =
+    prop?.application_status ??
+    (prop?.status === 'applied'
+      ? 'applied'
+      : prop?.status === 'partially_applied'
+      ? 'partially_applied'
+      : prop?.status === 'rejected'
+      ? 'rejected'
+      : prop?.status === 'acknowledged'
+      ? 'not_applicable'
+      : 'pending');
+  const version: number = prop?.version ?? 1;
+  return { coverageStatus, reconciliationStatus, applicationStatus, version };
+}
+
+function mapLiveMotorcycleToBaselineData(
+  liveBike: any,
+  fallbackBrand: string | null = null,
+  fallbackModel: string | null = null
+) {
+  const rawCategoryId = liveBike.category_id ?? liveBike.categories?.id ?? null;
+  const categoryId =
+    typeof rawCategoryId === 'string' && rawCategoryId.trim().length > 0
+      ? rawCategoryId.trim()
+      : null;
+  const rawCategoryName = liveBike.categories?.name ?? null;
+  const categoryName =
+    categoryId && typeof rawCategoryName === 'string' && rawCategoryName.trim().length > 0
+      ? rawCategoryName.trim()
+      : null;
+  const sortedTiers = [...(liveBike.rental_rate_tiers || [])].sort(
+    (a: any, b: any) => (a.min_days ?? 1) - (b.min_days ?? 1)
+  );
+  return {
+    brand: liveBike.brands?.name ?? fallbackBrand,
+    model: liveBike.model ?? fallbackModel,
+    categoryId,
+    categoryName,
+    year: liveBike.year ?? null,
+    year_to: liveBike.year_to ?? null,
+    engineCapacityCc: liveBike.engine_capacity_cc ?? null,
+    sourceUrl: liveBike.source_url ?? null,
+    rates: sortedTiers.map((r: any) => ({
+      minDays: r.min_days,
+      maxDays: r.max_days ?? null,
+      ratePerDay: r.rate_per_day,
+      currency: r.currency || 'THB',
+    })),
+    conditions: (liveBike.motorcycle_conditions || []).map((mc: any) => ({
+      condition_type_id: mc.condition_type_id,
+      name: resolveConditionName(mc),
+      notes: resolveConditionNotes(mc),
+    })),
+  };
+}
+
 const APPLY_CONCURRENCY = 10;
 
 export class ChangeProposalService {
@@ -1155,12 +1221,7 @@ export class ChangeProposalService {
   static async stageProposalWithReconciliationReport(
     input: StageProposalWithReconciliationReportInput
   ) {
-    const shopId = validateBoundedString(
-      input.shopId,
-      'shopId',
-      64,
-      ProposalItemValidationError
-    );
+    const shopId = validateRequiredUuid(input.shopId, 'shopId', ProposalItemValidationError);
     const sourceUrl = validateHttpUrl(
       input.sourceUrl,
       'sourceUrl',
@@ -1172,6 +1233,35 @@ export class ChangeProposalService {
       MAX_SHORT_LABEL_LENGTH,
       ProposalItemValidationError
     );
+
+    let normalizedLearnedConfig: {
+      extractionHints?: string | null;
+      discoveredSourceUrl?: string | null;
+    } | null = null;
+    if (input.learnedConfig) {
+      normalizedLearnedConfig = {};
+      if (input.learnedConfig.extractionHints !== undefined) {
+        normalizedLearnedConfig.extractionHints =
+          input.learnedConfig.extractionHints === null
+            ? null
+            : validateBoundedString(
+                input.learnedConfig.extractionHints,
+                'learnedConfig.extractionHints',
+                MAX_TEXT_FIELD_LENGTH,
+                ProposalItemValidationError
+              );
+      }
+      if (input.learnedConfig.discoveredSourceUrl !== undefined) {
+        normalizedLearnedConfig.discoveredSourceUrl =
+          input.learnedConfig.discoveredSourceUrl === null
+            ? null
+            : validateHttpUrl(
+                input.learnedConfig.discoveredSourceUrl,
+                'learnedConfig.discoveredSourceUrl',
+                ProposalItemValidationError
+              );
+      }
+    }
 
     if (!Array.isArray(input.items)) {
       throw new ProposalItemValidationError('items must be an array of actionable Change Proposal Items.');
@@ -1229,8 +1319,14 @@ export class ChangeProposalService {
       const rawEntityId =
         raw.entityId ?? raw.entity_id ?? (entityType === 'rental_shop' ? shopId : null);
       const entityId =
-        typeof rawEntityId === 'string' && rawEntityId.trim().length > 0
-          ? rawEntityId.trim()
+        rawEntityId !== undefined &&
+        rawEntityId !== null &&
+        !(typeof rawEntityId === 'string' && rawEntityId.trim().length === 0)
+          ? validateRequiredUuid(
+              rawEntityId,
+              `items[${index}].entityId`,
+              ProposalItemValidationError
+            )
           : null;
 
       if (action !== 'add' && !entityId) {
@@ -1536,12 +1632,14 @@ export class ChangeProposalService {
       modelName: it.model_name,
       originalData: it.original_data,
       proposedData: it.proposed_data,
+      diffSummary: it.diff_summary,
     }));
     const payloadDigest = computeCanonicalSha256Digest({
       shopId,
       sourceUrl,
       items: canonicalItemsForDigest,
       reportDigest: validatedReport.reportDigest,
+      learnedConfig: normalizedLearnedConfig,
     });
 
     // Load active shop baseline motorcycles & existing unresolved candidates
@@ -1564,10 +1662,38 @@ export class ChangeProposalService {
     );
     const existingCandidates = existingCandidatesRes?.data || [];
 
+    // Determine prior pending proposals for the same (shopId, scope) to supersede BEFORE planning candidates
+    const priorPendingIds = (priorPendingProposalsRes?.data || [])
+      .filter((p: any) => p.agent_run_id !== agentRunId)
+      .map((p: any) => p.id as string);
+    let supersededProposalIds: string[] = [];
+    if (priorPendingIds.length > 0) {
+      const { data: priorReports } = await (supabase
+        .from('reconciliation_reports') as any)
+        .select('proposal_id, scope')
+        .in('proposal_id', priorPendingIds);
+      const targetScopeKey = normalizeScopeForComparison(validatedReport.scope);
+      const reportByProposalId = new Map<string, any>(
+        (priorReports || []).map((r: any) => [r.proposal_id, r])
+      );
+      supersededProposalIds = priorPendingIds.filter((pid: string) => {
+        const rep = reportByProposalId.get(pid);
+        if (!rep) return false;
+        return normalizeScopeForComparison(rep.scope) === targetScopeKey;
+      });
+    }
+
+    const supersededSet = new Set<string>(supersededProposalIds);
+    const effectiveExistingCandidates = existingCandidates.map((c: any) =>
+      c.state === 'ready_for_proposal' && c.latest_proposal_id && supersededSet.has(c.latest_proposal_id)
+        ? { ...c, state: 'open' }
+        : c
+    );
+
     const candidatePlan = planCandidateOperations({
       entries: validatedReport.entries,
       items: itemSummaries,
-      existingCandidates,
+      existingCandidates: effectiveExistingCandidates,
       coverage: validatedReport.coverage,
       sourceUrl,
       validationErrorCtor: ProposalItemValidationError,
@@ -1608,27 +1734,6 @@ export class ChangeProposalService {
       ? 'acknowledged'
       : 'pending';
 
-    // Determine prior pending proposals for the same (shopId, scope) to supersede
-    const priorPendingIds = (priorPendingProposalsRes?.data || [])
-      .filter((p: any) => p.agent_run_id !== agentRunId)
-      .map((p: any) => p.id as string);
-    let supersededProposalIds: string[] = [];
-    if (priorPendingIds.length > 0) {
-      const { data: priorReports } = await (supabase
-        .from('reconciliation_reports') as any)
-        .select('proposal_id, scope')
-        .in('proposal_id', priorPendingIds);
-      const targetScopeKey = normalizeScopeForComparison(validatedReport.scope);
-      const reportByProposalId = new Map<string, any>(
-        (priorReports || []).map((r: any) => [r.proposal_id, r])
-      );
-      supersededProposalIds = priorPendingIds.filter((pid: string) => {
-        const rep = reportByProposalId.get(pid);
-        if (!rep) return false;
-        return normalizeScopeForComparison(rep.scope) === targetScopeKey;
-      });
-    }
-
     const summaryCounts = {
       add: validatedReport.serverCounts.add,
       update: validatedReport.serverCounts.update,
@@ -1652,8 +1757,8 @@ export class ChangeProposalService {
       rawSnapshot: {
         items: input.items,
         reconciliationReport: validatedReport.rawReport,
-        ...(input.learnedConfig?.extractionHints
-          ? { extractionHints: input.learnedConfig.extractionHints }
+        ...(normalizedLearnedConfig?.extractionHints
+          ? { extractionHints: normalizedLearnedConfig.extractionHints }
           : {}),
       },
       items: normalizedItems.map(({ index: _idx, year: _y, year_to: _yt, ...dbItem }) => dbItem),
@@ -1665,7 +1770,7 @@ export class ChangeProposalService {
       rawReport: validatedReport.rawReport,
       entries: validatedReport.entries,
       supersededProposalIds,
-      learnedConfig: input.learnedConfig || null,
+      learnedConfig: normalizedLearnedConfig,
     };
 
     const { data: rpcResult, error: rpcError } = await (supabase as any).rpc(
@@ -1674,6 +1779,38 @@ export class ChangeProposalService {
     );
 
     if (rpcError) {
+      if (rpcError.code === '23505') {
+        const { data: racedProp } = await (supabase.from('change_proposals') as any)
+          .select('*')
+          .eq('shop_id', shopId)
+          .eq('agent_run_id', agentRunId)
+          .maybeSingle();
+        if (racedProp && racedProp.payload_digest === payloadDigest) {
+          const { data: racedRep } = await (supabase.from('reconciliation_reports') as any)
+            .select('*')
+            .eq('proposal_id', racedProp.id)
+            .maybeSingle();
+          if (racedRep) {
+            return {
+              replayed: true,
+              proposalId: racedProp.id as string,
+              proposalVersion: (racedProp.version ?? 1) as number,
+              proposalStatus: racedProp.status as string,
+              reportId: racedRep.id as string,
+              reportVersion: (racedRep.report_version ?? 1) as number,
+              serverCounts: racedRep.server_counts,
+              summaryCounts: racedProp.summary_counts ?? summaryCounts,
+              itemsCount: normalizedItems.length,
+              coverageStatus: (racedProp.coverage_status ?? coverageStatus) as CoverageStatus,
+              reconciliationStatus: (racedProp.reconciliation_status ??
+                reconciliationStatus) as ReconciliationStatus,
+              applicationStatus: (racedProp.application_status ??
+                applicationStatus) as ApplicationStatus,
+              reportDigest: racedRep.report_digest as string,
+            };
+          }
+        }
+      }
       if (
         rpcError.code === '23505' ||
         String(rpcError.message || '').includes('IDEMPOTENCY_CONFLICT')
@@ -1746,24 +1883,24 @@ export class ChangeProposalService {
     const proposalIds = (data || []).map((r: any) => r.id).filter(Boolean);
     const reportSummaryByProposalId = new Map<string, any>();
     if (proposalIds.length > 0) {
-      try {
-        const repQuery = (supabase.from('reconciliation_reports') as any)
-          ?.select?.('id, proposal_id, report_version, report_digest, server_counts')
-          ?.in?.('proposal_id', proposalIds);
-        if (repQuery && typeof repQuery.then === 'function') {
-          const { data: repRows } = await repQuery;
-          for (const rep of repRows || []) {
-            reportSummaryByProposalId.set(rep.proposal_id, rep);
-          }
+      const repQuery = (supabase.from('reconciliation_reports') as any)
+        ?.select?.('id, proposal_id, report_version, report_digest, server_counts')
+        ?.in?.('proposal_id', proposalIds);
+      if (repQuery && typeof repQuery.then === 'function') {
+        const { data: repRows, error: repErr } = await repQuery;
+        if (repErr) {
+          throw new Error(`Failed to load reconciliation report summaries: ${repErr.message}`);
         }
-      } catch {
-        // Optional enrichment for legacy/minimal mocks
+        for (const rep of repRows || []) {
+          reportSummaryByProposalId.set(rep.proposal_id, rep);
+        }
       }
     }
 
     return {
       proposals: (data || []).map((row: any) => {
         const rep = reportSummaryByProposalId.get(row.id) || null;
+        const dims = normalizeProposalStatusDimensions(row);
         return {
           id: row.id,
           shopId: row.shop_id,
@@ -1773,18 +1910,10 @@ export class ChangeProposalService {
           agentRunId: row.agent_run_id,
           sourceUrl: row.source_url,
           status: row.status,
-          coverageStatus: row.coverage_status ?? 'unknown',
-          reconciliationStatus: row.reconciliation_status ?? 'unknown',
-          applicationStatus:
-            row.application_status ??
-            (row.status === 'applied'
-              ? 'applied'
-              : row.status === 'partially_applied'
-              ? 'partially_applied'
-              : row.status === 'rejected'
-              ? 'rejected'
-              : 'pending'),
-          version: row.version ?? 1,
+          coverageStatus: dims.coverageStatus,
+          reconciliationStatus: dims.reconciliationStatus,
+          applicationStatus: dims.applicationStatus,
+          version: dims.version,
           summaryCounts: row.summary_counts,
           serverCounts: rep?.server_counts ?? null,
           hasReconciliationReport: Boolean(rep),
@@ -1957,41 +2086,11 @@ export class ChangeProposalService {
             const liveBike = liveById.get(item.entity_id);
             if (!liveBike) continue;
 
-            const rawCategoryId = liveBike.category_id ?? liveBike.categories?.id ?? null;
-            const categoryId =
-              typeof rawCategoryId === 'string' && rawCategoryId.trim().length > 0
-                ? rawCategoryId.trim()
-                : null;
-            const rawCategoryName = liveBike.categories?.name ?? null;
-            const categoryName =
-              categoryId && typeof rawCategoryName === 'string' && rawCategoryName.trim().length > 0
-                ? rawCategoryName.trim()
-                : null;
-            const sortedTiers = [...(liveBike.rental_rate_tiers || [])].sort(
-              (a: any, b: any) => (a.min_days ?? 1) - (b.min_days ?? 1)
+            item.baseline_data = mapLiveMotorcycleToBaselineData(
+              liveBike,
+              item.brand_name ?? null,
+              item.model_name ?? null
             );
-
-            item.baseline_data = {
-              brand: liveBike.brands?.name ?? item.brand_name ?? null,
-              model: liveBike.model ?? item.model_name ?? null,
-              categoryId,
-              categoryName,
-              year: liveBike.year ?? null,
-              year_to: liveBike.year_to ?? null,
-              engineCapacityCc: liveBike.engine_capacity_cc ?? null,
-              sourceUrl: liveBike.source_url ?? null,
-              rates: sortedTiers.map((r: any) => ({
-                minDays: r.min_days,
-                maxDays: r.max_days ?? null,
-                ratePerDay: r.rate_per_day,
-                currency: r.currency || 'THB',
-              })),
-              conditions: (liveBike.motorcycle_conditions || []).map((mc: any) => ({
-                condition_type_id: mc.condition_type_id,
-                name: resolveConditionName(mc),
-                notes: resolveConditionNotes(mc),
-              })),
-            };
           }
         }
       }
@@ -2101,199 +2200,197 @@ export class ChangeProposalService {
     const entriesLimit = Math.min(Math.max(options.entriesLimit || 200, 1), 500);
     const entriesOffset = Math.max(options.entriesOffset || 0, 0);
 
-    try {
-      const reportQuery = (supabase.from('reconciliation_reports') as any)
-        ?.select?.('*')
-        ?.eq?.('proposal_id', proposalId);
-      const reportRes =
-        typeof reportQuery?.maybeSingle === 'function'
-          ? await reportQuery.maybeSingle()
-          : null;
-      if (reportRes?.data) {
-        const rep = reportRes.data;
-        report = {
-          id: rep.id,
-          proposalId: rep.proposal_id,
-          shopId: rep.shop_id,
-          agentRunId: rep.agent_run_id,
-          schemaVersion: rep.schema_version,
-          reportVersion: rep.report_version,
-          reportDigest: rep.report_digest,
-          scope: rep.scope,
-          coverage: rep.coverage,
-          serverCounts: rep.server_counts,
-          rawReport: rep.raw_report,
-          createdAt: rep.created_at,
-        };
-
-        const entriesQuery = (supabase.from('reconciliation_report_entries') as any)
-          ?.select?.('*', { count: 'exact' })
-          ?.eq?.('report_id', rep.id)
-          ?.order?.('entry_index', { ascending: true })
-          ?.range?.(entriesOffset, entriesOffset + entriesLimit - 1);
-        if (entriesQuery && typeof entriesQuery.then === 'function') {
-          const { data: entryRows, count: totalEntries } = await entriesQuery;
-          const total = totalEntries ?? (entryRows || []).length;
-          const entryIds = (entryRows || []).map((e: any) => e.id);
-
-          if (entryIds.length > 0) {
-            const linksQuery = (supabase.from('reconciliation_entry_item_links') as any)
-              ?.select?.('*')
-              ?.in?.('entry_id', entryIds);
-            if (linksQuery && typeof linksQuery.then === 'function') {
-              const { data: linkRows } = await linksQuery;
-              itemLinks = linkRows || [];
-            }
-          }
-
-          const linksByEntryId = new Map<string, any[]>();
-          for (const lnk of itemLinks) {
-            const list = linksByEntryId.get(lnk.entry_id) || [];
-            list.push(lnk);
-            linksByEntryId.set(lnk.entry_id, list);
-          }
-
-          // Hydrate live emerald-green baseline_data for unchanged entries referencing existingMotorcycleId
-          const unchangedBikeIds = Array.from(
-            new Set(
-              (entryRows || [])
-                .filter((e: any) => e.disposition === 'unchanged' && e.existing_motorcycle_id)
-                .map((e: any) => e.existing_motorcycle_id as string)
-            )
-          );
-          const unchangedBaselineById = new Map<string, any>();
-          if (unchangedBikeIds.length > 0) {
-            const unchangedBikesQuery = (supabase.from('motorcycle_rentals') as any)
-              ?.select?.(`
-                id,
-                category_id,
-                model,
-                year,
-                year_to,
-                engine_capacity_cc,
-                source_url,
-                brands ( name ),
-                categories ( id, name ),
-                rental_rate_tiers ( min_days, max_days, rate_per_day, currency ),
-                motorcycle_conditions (
-                  condition_type_id,
-                  notes,
-                  condition_types ( id, name )
-                )
-              `)
-              ?.in?.('id', unchangedBikeIds);
-            if (unchangedBikesQuery && typeof unchangedBikesQuery.then === 'function') {
-              const { data: liveUnchangedBikes } = await unchangedBikesQuery;
-              for (const liveBike of liveUnchangedBikes || []) {
-                const rawCategoryId = liveBike.category_id ?? liveBike.categories?.id ?? null;
-                const categoryId =
-                  typeof rawCategoryId === 'string' && rawCategoryId.trim().length > 0
-                    ? rawCategoryId.trim()
-                    : null;
-                const rawCategoryName = liveBike.categories?.name ?? null;
-                const categoryName =
-                  categoryId && typeof rawCategoryName === 'string' && rawCategoryName.trim().length > 0
-                    ? rawCategoryName.trim()
-                    : null;
-                const sortedTiers = [...(liveBike.rental_rate_tiers || [])].sort(
-                  (a: any, b: any) => (a.min_days ?? 1) - (b.min_days ?? 1)
-                );
-                unchangedBaselineById.set(liveBike.id, {
-                  brand: liveBike.brands?.name ?? null,
-                  model: liveBike.model ?? null,
-                  categoryId,
-                  categoryName,
-                  year: liveBike.year ?? null,
-                  year_to: liveBike.year_to ?? null,
-                  engineCapacityCc: liveBike.engine_capacity_cc ?? null,
-                  sourceUrl: liveBike.source_url ?? null,
-                  rates: sortedTiers.map((r: any) => ({
-                    minDays: r.min_days,
-                    maxDays: r.max_days ?? null,
-                    ratePerDay: r.rate_per_day,
-                    currency: r.currency || 'THB',
-                  })),
-                  conditions: (liveBike.motorcycle_conditions || []).map((mc: any) => ({
-                    condition_type_id: mc.condition_type_id,
-                    name: resolveConditionName(mc),
-                    notes: resolveConditionNotes(mc),
-                  })),
-                });
-              }
-            }
-          }
-
-          entries = (entryRows || []).map((e: any) => {
-            const links = linksByEntryId.get(e.id) || [];
-            return {
-              id: e.id,
-              entryIndex: e.entry_index,
-              entryKey: e.entry_key,
-              brand: e.brand_name,
-              model: e.model_name,
-              existingMotorcycleId: e.existing_motorcycle_id,
-              candidateId: e.candidate_id,
-              disposition: e.disposition,
-              proposalItemRefs: links.map((l: any) => l.client_item_id),
-              linkedProposalItemIds: links.map((l: any) => l.proposal_item_id),
-              comparedAttributes: e.compared_attributes,
-              issues: e.issues,
-              nextAction: e.next_action,
-              reason: e.reason,
-              duplicateOfEntryKey: e.duplicate_of_entry_key,
-              duplicateOfMotorcycleId: e.duplicate_of_motorcycle_id,
-              evidence: e.evidence,
-              ...(e.existing_motorcycle_id && unchangedBaselineById.has(e.existing_motorcycle_id)
-                ? { baseline_data: unchangedBaselineById.get(e.existing_motorcycle_id) }
-                : {}),
-            };
-          });
-
-          const hasMore = entriesOffset + entries.length < total;
-          entriesPagination = {
-            total,
-            limit: entriesLimit,
-            offset: entriesOffset,
-            hasMore,
-            nextOffset: hasMore ? entriesOffset + entriesLimit : null,
-          };
-        }
-      }
-
-      if ((proposal as any).shop_id) {
-        const candQuery = (supabase.from('unresolved_candidates') as any)
-          ?.select?.('*')
-          ?.eq?.('shop_id', (proposal as any).shop_id)
-          ?.order?.('created_at', { ascending: false });
-        if (candQuery && typeof candQuery.then === 'function') {
-          const { data: candRows } = await candQuery;
-          candidates = candRows || [];
-        }
-
-        const candIds = candidates.map((c: any) => c.id);
-        if (candIds.length > 0) {
-          const candEvQuery = (supabase.from('unresolved_candidate_events') as any)
-            ?.select?.('*')
-            ?.in?.('candidate_id', candIds)
-            ?.order?.('created_at', { ascending: true });
-          if (candEvQuery && typeof candEvQuery.then === 'function') {
-            const { data: evRows } = await candEvQuery;
-            candidateEvents = evRows || [];
-          }
-        }
-      }
-
-      const decQuery = (supabase.from('proposal_decision_events') as any)
-        ?.select?.('*')
-        ?.eq?.('proposal_id', proposalId)
-        ?.order?.('created_at', { ascending: true });
-      if (decQuery && typeof decQuery.then === 'function') {
-        const { data: decRows } = await decQuery;
-        decisionEvents = decRows || [];
-      }
-    } catch {
-      // Safe fallback when optional reconciliation tables are not mocked in legacy unit tests
+    const reportQuery = (supabase.from('reconciliation_reports') as any)
+      ?.select?.('*')
+      ?.eq?.('proposal_id', proposalId);
+    const reportRes =
+      typeof reportQuery?.maybeSingle === 'function'
+        ? await reportQuery.maybeSingle()
+        : null;
+    if (reportRes?.error) {
+      throw new Error(`Failed to load reconciliation report: ${reportRes.error.message}`);
     }
+    if (reportRes?.data) {
+      const rep = reportRes.data;
+      report = {
+        id: rep.id,
+        proposalId: rep.proposal_id,
+        shopId: rep.shop_id,
+        agentRunId: rep.agent_run_id,
+        schemaVersion: rep.schema_version,
+        reportVersion: rep.report_version,
+        reportDigest: rep.report_digest,
+        scope: rep.scope,
+        coverage: rep.coverage,
+        serverCounts: rep.server_counts,
+        rawReport: rep.raw_report,
+        createdAt: rep.created_at,
+      };
+
+      const entriesQuery = (supabase.from('reconciliation_report_entries') as any)
+        ?.select?.('*', { count: 'exact' })
+        ?.eq?.('report_id', rep.id)
+        ?.order?.('entry_index', { ascending: true })
+        ?.range?.(entriesOffset, entriesOffset + entriesLimit - 1);
+      if (entriesQuery && typeof entriesQuery.then === 'function') {
+        const { data: entryRows, count: totalEntries, error: entriesErr } = await entriesQuery;
+        if (entriesErr) {
+          throw new Error(`Failed to load reconciliation report entries: ${entriesErr.message}`);
+        }
+        const total = totalEntries ?? (entryRows || []).length;
+        const entryIds = (entryRows || []).map((e: any) => e.id);
+
+        if (entryIds.length > 0) {
+          const linksQuery = (supabase.from('reconciliation_entry_item_links') as any)
+            ?.select?.('*')
+            ?.in?.('entry_id', entryIds);
+          if (linksQuery && typeof linksQuery.then === 'function') {
+            const { data: linkRows, error: linksErr } = await linksQuery;
+            if (linksErr) {
+              throw new Error(
+                `Failed to load reconciliation entry item links: ${linksErr.message}`
+              );
+            }
+            itemLinks = linkRows || [];
+          }
+        }
+
+        const linksByEntryId = new Map<string, any[]>();
+        for (const lnk of itemLinks) {
+          const list = linksByEntryId.get(lnk.entry_id) || [];
+          list.push(lnk);
+          linksByEntryId.set(lnk.entry_id, list);
+        }
+
+        // Hydrate live emerald-green baseline_data for unchanged entries referencing existingMotorcycleId
+        const unchangedBikeIds = Array.from(
+          new Set(
+            (entryRows || [])
+              .filter((e: any) => e.disposition === 'unchanged' && e.existing_motorcycle_id)
+              .map((e: any) => e.existing_motorcycle_id as string)
+          )
+        );
+        const unchangedBaselineById = new Map<string, any>();
+        if (unchangedBikeIds.length > 0) {
+          const unchangedBikesQuery = (supabase.from('motorcycle_rentals') as any)
+            ?.select?.(`
+              id,
+              category_id,
+              model,
+              year,
+              year_to,
+              engine_capacity_cc,
+              source_url,
+              brands ( name ),
+              categories ( id, name ),
+              rental_rate_tiers ( min_days, max_days, rate_per_day, currency ),
+              motorcycle_conditions (
+                condition_type_id,
+                notes,
+                condition_types ( id, name )
+              )
+            `)
+            ?.in?.('id', unchangedBikeIds);
+          if (unchangedBikesQuery && typeof unchangedBikesQuery.then === 'function') {
+            const { data: liveUnchangedBikes, error: unchangedBikesErr } =
+              await unchangedBikesQuery;
+            if (unchangedBikesErr) {
+              throw new Error(
+                `Failed to load baseline motorcycles for unchanged entries: ${unchangedBikesErr.message}`
+              );
+            }
+            for (const liveBike of liveUnchangedBikes || []) {
+              unchangedBaselineById.set(liveBike.id, mapLiveMotorcycleToBaselineData(liveBike));
+            }
+          }
+        }
+
+        entries = (entryRows || []).map((e: any) => {
+          const links = linksByEntryId.get(e.id) || [];
+          return {
+            id: e.id,
+            entryIndex: e.entry_index,
+            entryKey: e.entry_key,
+            brand: e.brand_name,
+            model: e.model_name,
+            year: e.year ?? null,
+            yearTo: e.year_to ?? null,
+            variantLabel: e.variant_label ?? null,
+            existingMotorcycleId: e.existing_motorcycle_id,
+            candidateId: e.candidate_id,
+            disposition: e.disposition,
+            proposalItemRefs: links.map((l: any) => l.client_item_id),
+            linkedProposalItemIds: links.map((l: any) => l.proposal_item_id),
+            comparedAttributes: e.compared_attributes,
+            issues: e.issues,
+            nextAction: e.next_action,
+            reason: e.reason,
+            duplicateOfEntryKey: e.duplicate_of_entry_key,
+            duplicateOfMotorcycleId: e.duplicate_of_motorcycle_id,
+            evidence: e.evidence,
+            ...(e.existing_motorcycle_id && unchangedBaselineById.has(e.existing_motorcycle_id)
+              ? { baseline_data: unchangedBaselineById.get(e.existing_motorcycle_id) }
+              : {}),
+          };
+        });
+
+        const hasMore = entriesOffset + entries.length < total;
+        entriesPagination = {
+          total,
+          limit: entriesLimit,
+          offset: entriesOffset,
+          hasMore,
+          nextOffset: hasMore ? entriesOffset + entriesLimit : null,
+        };
+      }
+    }
+
+    if ((proposal as any).shop_id) {
+      const candQuery = (supabase.from('unresolved_candidates') as any)
+        ?.select?.('*')
+        ?.eq?.('shop_id', (proposal as any).shop_id)
+        ?.order?.('created_at', { ascending: false });
+      if (candQuery && typeof candQuery.then === 'function') {
+        const { data: candRows, error: candErr } = await candQuery;
+        if (candErr) {
+          throw new Error(`Failed to load unresolved candidates: ${candErr.message}`);
+        }
+        candidates = candRows || [];
+      }
+
+      const candIds = candidates.map((c: any) => c.id);
+      if (candIds.length > 0) {
+        const candEvQuery = (supabase.from('unresolved_candidate_events') as any)
+          ?.select?.('*')
+          ?.in?.('candidate_id', candIds)
+          ?.order?.('created_at', { ascending: true });
+        if (candEvQuery && typeof candEvQuery.then === 'function') {
+          const { data: evRows, error: candEvErr } = await candEvQuery;
+          if (candEvErr) {
+            throw new Error(`Failed to load unresolved candidate events: ${candEvErr.message}`);
+          }
+          candidateEvents = evRows || [];
+        }
+      }
+    }
+
+    const decQuery = (supabase.from('proposal_decision_events') as any)
+      ?.select?.('*')
+      ?.eq?.('proposal_id', proposalId)
+      ?.order?.('created_at', { ascending: true });
+    if (decQuery && typeof decQuery.then === 'function') {
+      const { data: decRows, error: decErr } = await decQuery;
+      if (decErr) {
+        throw new Error(`Failed to load proposal decision events: ${decErr.message}`);
+      }
+      decisionEvents = decRows || [];
+    }
+
+    const hasReconciliationMetadata =
+      Boolean(report) ||
+      candidates.length > 0 ||
+      decisionEvents.length > 0 ||
+      candidateEvents.length > 0;
 
     return {
       proposal: {
@@ -2302,7 +2399,7 @@ export class ChangeProposalService {
         ...(extractionHints !== undefined ? { extraction_hints: extractionHints } : {}),
       },
       items: enrichedItems,
-      ...(report
+      ...(hasReconciliationMetadata
         ? {
             report,
             entries,
@@ -2325,16 +2422,17 @@ export class ChangeProposalService {
   ) {
     const detail = await ChangeProposalService.getProposalById(proposalId, options);
     const prop = detail.proposal as any;
+    const dims = normalizeProposalStatusDimensions(prop);
     return {
       proposalId: prop.id,
       shopId: prop.shop_id,
       agentRunId: prop.agent_run_id,
       sourceUrl: prop.source_url,
       status: prop.status,
-      version: prop.version ?? 1,
-      coverageStatus: prop.coverage_status ?? 'unknown',
-      reconciliationStatus: prop.reconciliation_status ?? 'unknown',
-      applicationStatus: prop.application_status ?? 'pending',
+      version: dims.version,
+      coverageStatus: dims.coverageStatus,
+      reconciliationStatus: dims.reconciliationStatus,
+      applicationStatus: dims.applicationStatus,
       summaryCounts: prop.summary_counts,
       createdAt: prop.created_at,
       updatedAt: prop.updated_at,
@@ -2352,6 +2450,7 @@ export class ChangeProposalService {
       entries: (detail as any).entries ?? [],
       entriesPagination: (detail as any).entriesPagination ?? null,
       itemLinks: (detail as any).itemLinks ?? [],
+      decisionEvents: (detail as any).decisionEvents ?? [],
       candidates: ((detail as any).candidates || []).map((c: any) => ({
         id: c.id,
         brand: c.brand_name,
@@ -2432,8 +2531,9 @@ export class ChangeProposalService {
       );
     }
 
-    try {
-      await (supabase.from('proposal_decision_events') as any)?.insert?.({
+    const decInsertFn = (supabase.from('proposal_decision_events') as any)?.insert;
+    if (typeof decInsertFn === 'function') {
+      const decRes = await decInsertFn({
         proposal_id: proposalId,
         shop_id: proposal.shop_id,
         decision: 'acknowledge',
@@ -2442,8 +2542,9 @@ export class ChangeProposalService {
         notes: options.notes ?? null,
         metadata: {},
       });
-    } catch {
-      // Optional audit log in unit mocks
+      if (decRes?.error) {
+        throw new Error(`Failed to record proposal decision event: ${decRes.error.message}`);
+      }
     }
 
     return {
@@ -2460,13 +2561,17 @@ export class ChangeProposalService {
    * Applies approved mutation items to live database records.
    * Enforces geodata immutability and soft-delisting.
    */
-  static async apply(proposalId: string, approvedItemIds: string[]) {
+  static async apply(
+    proposalId: string,
+    approvedItemIds: string[],
+    options: { actorId?: string | null; notes?: string | null } = {}
+  ) {
     const supabase = getSupabaseAdmin();
 
     // 1. Fetch proposal
-    const { data: proposal, error: propError } = await supabase
-      .from('change_proposals')
-      .select('id, shop_id, status')
+    const { data: proposal, error: propError } = await (supabase
+      .from('change_proposals') as any)
+      .select('id, shop_id, status, application_status, version')
       .eq('id', proposalId)
       .single();
 
@@ -2477,9 +2582,13 @@ export class ChangeProposalService {
     if (
       proposal.status === 'applied' ||
       proposal.status === 'partially_applied' ||
-      proposal.status === 'rejected'
+      proposal.status === 'rejected' ||
+      proposal.status === 'acknowledged' ||
+      proposal.status === 'superseded'
     ) {
-      throw new Error(`Cannot apply proposal with status '${proposal.status}'`);
+      throw new ProposalItemValidationError(
+        `Cannot apply proposal with status '${proposal.status}'`
+      );
     }
 
     // 2. Fetch all items for this proposal
@@ -2982,28 +3091,76 @@ export class ChangeProposalService {
     }
 
     // 6. Update proposal status based on total applied mutable items (including prior partial runs)
-    const totalAppliedMutableCount = previouslyAppliedItems.length + appliedCount;
-    let finalStatus: 'applied' | 'partially_applied' | 'rejected';
-    if (mutableItems.length === 0 || totalAppliedMutableCount === mutableItems.length) {
-      finalStatus = 'applied';
-    } else if (totalAppliedMutableCount === 0) {
-      finalStatus = 'rejected';
-    } else {
-      finalStatus = 'partially_applied';
+    const isReportOnly =
+      proposal.application_status === 'not_applicable' || allItems.length === 0;
+    if (isReportOnly && approvedSet.size > 0) {
+      throw new ProposalItemValidationError(
+        `Cannot approve items on report-only proposal '${proposalId}'; use action='acknowledge' instead.`
+      );
     }
 
+    const totalAppliedMutableCount = previouslyAppliedItems.length + appliedCount;
+    let finalStatus: 'applied' | 'partially_applied' | 'rejected';
+    let nextApplicationStatus: ApplicationStatus;
+
+    if (isReportOnly) {
+      finalStatus = 'rejected';
+      nextApplicationStatus = 'not_applicable';
+    } else if (mutableItems.length === 0) {
+      finalStatus = approvedSet.size === 0 ? 'rejected' : 'applied';
+      nextApplicationStatus = finalStatus === 'rejected' ? 'rejected' : 'not_applicable';
+    } else if (totalAppliedMutableCount === mutableItems.length) {
+      finalStatus = 'applied';
+      nextApplicationStatus = 'applied';
+    } else if (totalAppliedMutableCount === 0) {
+      finalStatus = 'rejected';
+      nextApplicationStatus = 'rejected';
+    } else {
+      finalStatus = 'partially_applied';
+      nextApplicationStatus = 'partially_applied';
+    }
+
+    const nowIso = new Date().toISOString();
+    const nextVersion = (proposal.version ?? 1) + 1;
     await (supabase
       .from('change_proposals') as any)
       .update({
         status: finalStatus,
-        applied_at: new Date().toISOString(),
+        application_status: nextApplicationStatus,
+        ...(finalStatus !== 'rejected' ? { applied_at: nowIso } : {}),
+        reviewed_at: nowIso,
+        ...(options.actorId !== undefined ? { reviewed_by: options.actorId } : {}),
+        ...(options.notes !== undefined ? { notes: options.notes } : {}),
+        version: nextVersion,
       })
       .eq('id', proposalId);
+
+    const decInsertFn = (supabase.from('proposal_decision_events') as any)?.insert;
+    if (typeof decInsertFn === 'function') {
+      const decRes = await decInsertFn({
+        proposal_id: proposalId,
+        shop_id: proposal.shop_id,
+        decision:
+          finalStatus === 'rejected'
+            ? 'reject'
+            : finalStatus === 'partially_applied'
+            ? 'partial_apply'
+            : 'apply',
+        actor_id: options.actorId ?? null,
+        proposal_version: nextVersion,
+        notes: options.notes ?? null,
+        metadata: { appliedCount },
+      });
+      if (decRes?.error) {
+        throw new Error(`Failed to record proposal decision event: ${decRes.error.message}`);
+      }
+    }
 
     return {
       success: true,
       appliedCount,
       status: finalStatus,
+      applicationStatus: nextApplicationStatus,
     };
   }
 }

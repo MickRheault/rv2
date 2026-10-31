@@ -117,6 +117,7 @@ export async function POST(request: NextRequest) {
           replayed: staged.replayed,
           proposalId: staged.proposalId,
           proposalVersion: staged.proposalVersion,
+          proposalStatus: staged.proposalStatus,
           reportId: staged.reportId,
           reportVersion: staged.reportVersion,
           serverCounts: staged.serverCounts,

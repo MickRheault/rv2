@@ -132,6 +132,9 @@ CREATE TABLE IF NOT EXISTS public.reconciliation_report_entries (
   entry_key TEXT NOT NULL,
   brand_name TEXT NOT NULL,
   model_name TEXT NOT NULL,
+  year INT,
+  year_to INT,
+  variant_label TEXT,
   existing_motorcycle_id UUID REFERENCES public.motorcycle_rentals(id) ON DELETE SET NULL,
   candidate_id UUID REFERENCES public.unresolved_candidates(id) ON DELETE SET NULL,
   disposition TEXT NOT NULL
@@ -251,9 +254,9 @@ SECURITY DEFINER
 SET search_path = public, extensions
 AS $$
 DECLARE
-  v_shop_id UUID := (p_payload->>'shopId')::UUID;
-  v_agent_run_id TEXT := p_payload->>'agentRunId';
-  v_payload_digest TEXT := p_payload->>'payloadDigest';
+  v_shop_id UUID;
+  v_agent_run_id TEXT;
+  v_payload_digest TEXT;
   v_existing_proposal RECORD;
   v_existing_report RECORD;
   v_proposal_id UUID;
@@ -273,6 +276,10 @@ BEGIN
      AND NOT public.is_admin() THEN
     RAISE EXCEPTION 'Unauthorized: admin or service_role required';
   END IF;
+
+  v_shop_id := (p_payload->>'shopId')::UUID;
+  v_agent_run_id := p_payload->>'agentRunId';
+  v_payload_digest := p_payload->>'payloadDigest';
 
   -- Check (shop_id, agent_run_id) idempotency
   SELECT id, payload_digest, status, coverage_status, reconciliation_status, application_status, version
@@ -560,6 +567,9 @@ BEGIN
         entry_key,
         brand_name,
         model_name,
+        year,
+        year_to,
+        variant_label,
         existing_motorcycle_id,
         candidate_id,
         disposition,
@@ -578,6 +588,9 @@ BEGIN
         v_entry->>'entryKey',
         v_entry->>'brandName',
         v_entry->>'modelName',
+        NULLIF(v_entry->>'year', '')::INT,
+        NULLIF(v_entry->>'yearTo', '')::INT,
+        NULLIF(v_entry->>'variantLabel', ''),
         NULLIF(v_entry->>'existingMotorcycleId', '')::UUID,
         COALESCE(
           NULLIF(v_entry->>'candidateId', '')::UUID,
@@ -616,10 +629,19 @@ BEGIN
 
   -- 6. Persist learned extraction hints atomically ONLY after full validation & staging succeed
   IF jsonb_typeof(p_payload->'learnedConfig') = 'object' THEN
-    UPDATE public.shop_agent_configs
-    SET extraction_hints = COALESCE(p_payload->'learnedConfig'->>'extractionHints', extraction_hints),
-        source_url = COALESCE(p_payload->'learnedConfig'->>'discoveredSourceUrl', source_url)
-    WHERE shop_id = v_shop_id;
+    INSERT INTO public.shop_agent_configs (
+      shop_id,
+      source_url,
+      extraction_hints
+    )
+    VALUES (
+      v_shop_id,
+      COALESCE(NULLIF(p_payload->'learnedConfig'->>'discoveredSourceUrl', ''), p_payload->>'sourceUrl'),
+      NULLIF(p_payload->'learnedConfig'->>'extractionHints', '')
+    )
+    ON CONFLICT (shop_id) DO UPDATE
+    SET extraction_hints = COALESCE(NULLIF(p_payload->'learnedConfig'->>'extractionHints', ''), public.shop_agent_configs.extraction_hints),
+        source_url = COALESCE(NULLIF(p_payload->'learnedConfig'->>'discoveredSourceUrl', ''), public.shop_agent_configs.source_url);
   END IF;
 
   RETURN jsonb_build_object(
