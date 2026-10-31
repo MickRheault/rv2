@@ -769,6 +769,367 @@ describe('ChangeProposalDiffViewer', () => {
 
     expect(screen.queryByText('Extraction Hints')).not.toBeInTheDocument();
   });
+
+  it('renders all 4 reconciliation report sections (Ready Changes, Unresolved Motorcycles, Inventory Accounting, and Coverage) with hydrated emerald unchanged entries (#202)', () => {
+    const SCOOTER_ID = '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737';
+
+    render(
+      <ChangeProposalDiffViewer
+        proposal={{
+          id: 'prop-rideon-mixed',
+          shop_id: '53529565-40d9-41f5-98e4-d2ed1f1d7ffd',
+          source_url: 'https://rideon.es/flota/',
+          status: 'pending',
+          coverage_status: 'partial',
+          reconciliation_status: 'unresolved',
+          application_status: 'pending',
+          version: 1,
+          created_at: '2026-10-31T14:00:00Z',
+          rental_shops: {
+            provider_name: 'Ride On - Alquiler moto Barcelona',
+            slug: 'ride-on-alquiler-moto-barcelona',
+          },
+        }}
+        items={[
+          {
+            id: 'item-sym-add',
+            proposal_id: 'prop-rideon-mixed',
+            entity_type: 'motorcycle',
+            action: 'add',
+            entity_id: null,
+            brand_name: 'SYM',
+            model_name: 'Symphony 125',
+            original_data: null,
+            proposed_data: {
+              categoryId: SCOOTER_ID,
+              categoryName: 'Scooter',
+              engineCapacityCc: 125,
+              rates: [{ minDays: 1, maxDays: 3, ratePerDay: 29, currency: 'EUR' }],
+            },
+            diff_summary: null,
+            status: 'pending',
+          },
+        ]}
+        report={{
+          id: 'rep-mixed-1',
+          schemaVersion: 1,
+          reportVersion: 1,
+          reportDigest: 'sha256:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          scope: {
+            branch: 'Barcelona',
+            catalogType: 'global_catalog',
+            services: ['daily_rental'],
+            availabilityBasis: 'supplier_catalog_not_live_stock',
+          },
+          coverage: {
+            status: 'partial',
+            discoveryComplete: true,
+            limitations: ['BMW pricing requires interactive modal session'],
+            pages: [
+              {
+                url: 'https://rideon.es/flota/',
+                role: 'catalog',
+                required: true,
+                status: 'processed',
+              },
+              {
+                url: 'https://rideon.es/flota/bmw-r-1250-gs/',
+                role: 'pricing',
+                required: true,
+                status: 'failed',
+                reason: 'HTTP 503 upstream timeout',
+              },
+            ],
+          },
+          serverCounts: {
+            readyActionableItems: 1,
+            accountedDiscoveredModels: 5,
+            unresolvedModels: 1,
+            unchangedModels: 1,
+            excludedModels: 1,
+            duplicateModels: 1,
+            pagesProcessed: 1,
+            pagesFailed: 1,
+            pagesNotProcessed: 0,
+            add: 1,
+            update: 0,
+            delist: 0,
+          },
+        }}
+        entries={[
+          {
+            id: 'entry-ready-sym',
+            entryIndex: 0,
+            entryKey: 'sym-symphony-125',
+            brand: 'SYM',
+            model: 'Symphony 125',
+            existingMotorcycleId: null,
+            candidateId: null,
+            disposition: 'ready_change',
+            proposalItemRefs: ['sym-add-1'],
+            linkedProposalItemIds: ['item-sym-add'],
+            evidence: [
+              {
+                sourceUrl: 'https://rideon.es/flota/',
+                kind: 'catalog_card',
+                snippet: 'SYM Symphony 125 - Barcelona - 29 EUR/day',
+              },
+            ],
+          },
+          {
+            id: 'entry-unresolved-bmw',
+            entryIndex: 1,
+            entryKey: 'bmw-r-1250-gs',
+            brand: 'BMW',
+            model: 'R 1250 GS',
+            existingMotorcycleId: null,
+            candidateId: 'cand-bmw-1250',
+            disposition: 'unresolved',
+            proposalItemRefs: [],
+            linkedProposalItemIds: [],
+            issues: [
+              { code: 'PRICE_UNVERIFIED', detail: 'Rental price not verified.' },
+              { code: 'BRANCH_CONFLICT', detail: 'Displayed Barcelona label links to Madrid.' },
+            ],
+            nextAction: 'Resolve branch conflict and obtain verified pricing before proposing an addition.',
+            evidence: [
+              {
+                sourceUrl: 'https://rideon.es/flota/',
+                linkedUrl: 'https://rideon.es/madrid/',
+                kind: 'location_badge',
+                snippet: 'Location badge BARCELONA links to https://rideon.es/madrid/',
+              },
+            ],
+          },
+          {
+            id: 'entry-unchanged-nmax',
+            entryIndex: 2,
+            entryKey: 'yamaha-nmax-125',
+            brand: 'Yamaha',
+            model: 'NMAX 125',
+            existingMotorcycleId: 'bike-nmax-existing',
+            candidateId: null,
+            disposition: 'unchanged',
+            proposalItemRefs: [],
+            linkedProposalItemIds: [],
+            comparedAttributes: ['brand', 'model', 'category', 'engine_capacity_cc', 'rates'],
+            evidence: [
+              {
+                sourceUrl: 'https://rideon.es/flota/',
+                kind: 'catalog_card',
+                snippet: 'Yamaha NMAX 125 - 35 EUR/day',
+              },
+            ],
+            baseline_data: {
+              brand: 'Yamaha',
+              model: 'NMAX 125',
+              categoryId: SCOOTER_ID,
+              categoryName: 'Scooter',
+              year: 2023,
+              engineCapacityCc: 125,
+              sourceUrl: 'https://rideon.es/flota/yamaha-nmax-125/',
+              rates: [{ minDays: 1, maxDays: 3, ratePerDay: 35, currency: 'EUR' }],
+            },
+          },
+          {
+            id: 'entry-excluded-ebike',
+            entryIndex: 3,
+            entryKey: 'xiaomi-scooter-pro',
+            brand: 'Xiaomi',
+            model: 'Electric Kickscooter Pro',
+            existingMotorcycleId: null,
+            candidateId: null,
+            disposition: 'excluded',
+            proposalItemRefs: [],
+            linkedProposalItemIds: [],
+            reason: 'Stand-up kickscooter is outside GMR motorcycle/scooter scope.',
+            evidence: [
+              {
+                sourceUrl: 'https://rideon.es/flota/',
+                kind: 'catalog_card',
+                snippet: 'Xiaomi Electric Kickscooter Pro (25 km/h stand-up)',
+              },
+            ],
+          },
+          {
+            id: 'entry-dup-sym',
+            entryIndex: 4,
+            entryKey: 'sym-symphony-125-mobile-card',
+            brand: 'SYM',
+            model: 'Symphony 125',
+            existingMotorcycleId: null,
+            candidateId: null,
+            disposition: 'duplicate',
+            proposalItemRefs: [],
+            linkedProposalItemIds: [],
+            reason: 'Mobile responsive duplicate DOM card of sym-symphony-125.',
+            duplicateOfEntryKey: 'sym-symphony-125',
+            evidence: [
+              {
+                sourceUrl: 'https://rideon.es/flota/',
+                kind: 'dom_card',
+                snippet: 'Duplicate mobile carousel card',
+              },
+            ],
+          },
+        ]}
+        candidates={[
+          {
+            id: 'cand-bmw-1250',
+            brand_name: 'BMW',
+            model_name: 'R 1250 GS',
+            state: 'open',
+            flagged_for_review: false,
+            version: 1,
+          },
+        ]}
+      />
+    );
+
+    // Status dimension badges
+    expect(screen.getByText('Partial Coverage')).toBeInTheDocument();
+    expect(screen.getByText('Reconciliation: Unresolved')).toBeInTheDocument();
+    expect(screen.getByText('Application: Pending')).toBeInTheDocument();
+
+    // 1. Ready Changes section
+    const readySection = screen.getByTestId('reconciliation-ready-changes');
+    expect(readySection).toHaveTextContent('Ready Changes');
+    expect(readySection).toHaveTextContent('SYM Symphony 125');
+
+    // 2. Unresolved Motorcycles section (Ride On BMW R 1250 GS)
+    const unresolvedSection = screen.getByTestId('reconciliation-unresolved-section');
+    expect(unresolvedSection).toHaveTextContent('BMW R 1250 GS');
+    expect(unresolvedSection).toHaveTextContent('PRICE_UNVERIFIED');
+    expect(unresolvedSection).toHaveTextContent('Rental price not verified.');
+    expect(unresolvedSection).toHaveTextContent('BRANCH_CONFLICT');
+    expect(unresolvedSection).toHaveTextContent('Displayed Barcelona label links to Madrid.');
+    expect(unresolvedSection).toHaveTextContent(
+      'Resolve branch conflict and obtain verified pricing before proposing an addition.'
+    );
+    expect(unresolvedSection).toHaveTextContent('Candidate: open');
+    const madridLink = screen.getByRole('link', { name: /https:\/\/rideon\.es\/madrid\//i });
+    expect(madridLink).toHaveAttribute('href', 'https://rideon.es/madrid/');
+    expect(madridLink).toHaveAttribute('rel', 'noopener noreferrer');
+
+    // 3. Inventory Accounting section (unchanged green hydrated baseline + excluded + duplicate)
+    const accountingSection = screen.getByTestId('reconciliation-accounting-section');
+    expect(accountingSection).toHaveTextContent('Yamaha NMAX 125');
+    expect(accountingSection).toHaveTextContent('€35/day');
+    expect(accountingSection).toHaveTextContent('engine_capacity_cc');
+    expect(accountingSection).toHaveTextContent('Xiaomi Electric Kickscooter Pro');
+    expect(accountingSection).toHaveTextContent(
+      'Stand-up kickscooter is outside GMR motorcycle/scooter scope.'
+    );
+    expect(accountingSection).toHaveTextContent('Mobile responsive duplicate DOM card of sym-symphony-125.');
+    expect(accountingSection).toHaveTextContent('sym-symphony-125');
+
+    // 4. Coverage section
+    const coverageSection = screen.getByTestId('reconciliation-coverage-section');
+    expect(coverageSection).toHaveTextContent('Barcelona');
+    expect(coverageSection).toHaveTextContent('daily_rental');
+    expect(coverageSection).toHaveTextContent('supplier_catalog_not_live_stock');
+    expect(coverageSection).toHaveTextContent('BMW pricing requires interactive modal session');
+    expect(coverageSection).toHaveTextContent('HTTP 503 upstream timeout');
+  });
+
+  it('escapes untrusted HTML/script snippets as plain text and refuses to render non-http(s) URLs as links (#202 Acceptance Test L)', () => {
+    const { container } = render(
+      <ChangeProposalDiffViewer
+        proposal={{
+          id: 'prop-xss',
+          shop_id: 'shop-xss',
+          source_url: 'javascript:alert("source-xss")',
+          status: 'pending',
+          coverage_status: 'partial',
+          reconciliation_status: 'unresolved',
+          application_status: 'not_applicable',
+          version: 1,
+          created_at: '2026-10-31T14:00:00Z',
+          rental_shops: {
+            provider_name: 'Untrusted Shop <script>alert(1)</script>',
+          },
+        }}
+        items={[]}
+        report={{
+          id: 'rep-xss',
+          schemaVersion: 1,
+          reportVersion: 1,
+          reportDigest: 'sha256:0000',
+          scope: {
+            branch: 'Main <img src=x onerror=alert(2)>',
+            services: ['daily_rental'],
+            availabilityBasis: 'supplier_catalog_not_live_stock',
+          },
+          coverage: {
+            status: 'partial',
+            discoveryComplete: false,
+            limitations: ['<b>limitation html</b>'],
+            pages: [
+              {
+                url: 'javascript:alert("page-xss")',
+                role: 'catalog',
+                required: true,
+                status: 'failed',
+                reason: '<svg onload=alert(3)>',
+              },
+            ],
+          },
+          serverCounts: {
+            readyActionableItems: 0,
+            accountedDiscoveredModels: 1,
+            unresolvedModels: 1,
+            unchangedModels: 0,
+            excludedModels: 0,
+            duplicateModels: 0,
+            pagesProcessed: 0,
+            pagesFailed: 1,
+            pagesNotProcessed: 0,
+            add: 0,
+            update: 0,
+            delist: 0,
+          },
+        }}
+        entries={[
+          {
+            id: 'entry-xss',
+            entryIndex: 0,
+            entryKey: 'xss-bike',
+            brand: 'Honda',
+            model: 'Click <script>window.__pwned = true</script>',
+            existingMotorcycleId: null,
+            candidateId: null,
+            disposition: 'unresolved',
+            proposalItemRefs: [],
+            linkedProposalItemIds: [],
+            issues: [{ code: 'OTHER', detail: '<iframe src="javascript:alert(4)"></iframe>' }],
+            nextAction: 'Verify manually',
+            evidence: [
+              {
+                sourceUrl: 'data:text/html,<script>alert(5)</script>',
+                linkedUrl: 'javascript:alert(6)',
+                kind: 'raw_dom',
+                snippet: '<script>alert("snippet-xss")</script>',
+              },
+            ],
+          },
+        ]}
+      />
+    );
+
+    // Zero injected <script>, <iframe>, or executable <a> with javascript:/data: href
+    expect(container.querySelectorAll('script')).toHaveLength(0);
+    expect(container.querySelectorAll('iframe')).toHaveLength(0);
+    const anchors = Array.from(container.querySelectorAll('a'));
+    for (const anchor of anchors) {
+      const href = anchor.getAttribute('href') || '';
+      expect(href.toLowerCase().startsWith('javascript:')).toBe(false);
+      expect(href.toLowerCase().startsWith('data:')).toBe(false);
+    }
+
+    // Malicious strings are visible literally as inert escaped text
+    expect(screen.getByText(/<script>alert\("snippet-xss"\)<\/script>/)).toBeInTheDocument();
+    expect(screen.getByText(/<iframe src="javascript:alert\(4\)"><\/iframe>/)).toBeInTheDocument();
+  });
 });
 
 

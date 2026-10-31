@@ -13,6 +13,9 @@ import {
   CheckCircleIcon,
   ChevronDownIcon,
   ChevronRightIcon,
+  ExclamationTriangleIcon,
+  DocumentMagnifyingGlassIcon,
+  ClipboardDocumentListIcon,
 } from '@heroicons/react/24/outline';
 import { formatMotorcycleYear, getCurrencySymbol } from '@/lib/utils';
 import {
@@ -22,9 +25,53 @@ import {
 } from '@/lib/motorcycle-conditions-helpers';
 import { getShopUrl } from '@/lib/utils/urls';
 
+/**
+ * Validates that an untrusted URL string uses strictly http: or https: before rendering as a link.
+ * Returns null for javascript:, data:, file:, relative, or malformed URLs so callers render inert text.
+ */
+export function toSafeHttpUrl(rawUrl: unknown): string | null {
+  if (typeof rawUrl !== 'string') return null;
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return null;
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return trimmed;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function renderSafeExternalLink(
+  rawUrl: unknown,
+  options?: { className?: string; label?: string; showIcon?: boolean }
+) {
+  const safeHref = toSafeHttpUrl(rawUrl);
+  const displayText =
+    options?.label ?? (typeof rawUrl === 'string' && rawUrl.trim().length > 0 ? rawUrl.trim() : '');
+  if (!displayText) return null;
+  if (!safeHref) {
+    return <span className="font-mono text-gray-600 break-all">{displayText}</span>;
+  }
+  return (
+    <a
+      href={safeHref}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={options?.className || 'inline-flex items-center gap-1 text-blue-600 hover:underline break-all'}
+    >
+      <span>{displayText}</span>
+      {options?.showIcon !== false && <ArrowTopRightOnSquareIcon className="w-3.5 h-3.5 flex-shrink-0" />}
+    </a>
+  );
+}
+
 export interface DiffViewerItem {
   id: string;
   proposal_id: string;
+  client_item_id?: string | null;
   entity_type:
     | 'motorcycle'
     | 'rental_shop'
@@ -54,6 +101,16 @@ export interface DiffViewerProposal {
     extraction_hints?: string | null;
   } | null;
   status: string;
+  coverage_status?: 'complete' | 'partial' | 'failed' | 'unknown';
+  reconciliation_status?: 'complete' | 'unresolved' | 'unknown';
+  application_status?:
+    | 'pending'
+    | 'not_applicable'
+    | 'applied'
+    | 'partially_applied'
+    | 'failed'
+    | 'rejected';
+  version?: number;
   created_at: string;
   applied_at?: string | null;
   rental_shops?: {
@@ -70,24 +127,100 @@ export interface DiffViewerProposal {
   };
 }
 
-function resolveProposalExtractionHints(proposal: DiffViewerProposal): string | null {
-  const candidates = [
-    proposal.extraction_hints,
-    proposal.extractionHints,
-    proposal.raw_snapshot?.extractionHints,
-    proposal.raw_snapshot?.extraction_hints,
-  ];
-  for (const raw of candidates) {
-    if (typeof raw === 'string' && raw.trim().length > 0) {
-      return raw.trim();
-    }
-  }
-  return null;
+export interface DiffViewerEvidence {
+  sourceUrl: string;
+  linkedUrl?: string | null;
+  kind: string;
+  snippet?: string | null;
+  observation?: Record<string, any> | null;
+  observedAt?: string | null;
+  contentHash?: string | null;
+}
+
+export interface DiffViewerReportEntry {
+  id: string;
+  entryIndex: number;
+  entryKey: string;
+  brand: string;
+  model: string;
+  existingMotorcycleId?: string | null;
+  candidateId?: string | null;
+  disposition: 'ready_change' | 'unchanged' | 'unresolved' | 'excluded' | 'duplicate';
+  proposalItemRefs?: string[];
+  linkedProposalItemIds?: string[];
+  comparedAttributes?: string[] | null;
+  issues?: Array<{ code: string; detail: string }> | null;
+  nextAction?: string | null;
+  reason?: string | null;
+  duplicateOfEntryKey?: string | null;
+  duplicateOfMotorcycleId?: string | null;
+  evidence?: DiffViewerEvidence[] | null;
+  baseline_data?: any;
+}
+
+export interface DiffViewerReport {
+  id: string;
+  proposalId?: string;
+  shopId?: string;
+  agentRunId?: string;
+  schemaVersion: number;
+  reportVersion: number;
+  reportDigest: string;
+  scope: {
+    branch: string;
+    catalogType?: string;
+    services: string[];
+    availabilityBasis: string;
+  };
+  coverage: {
+    status: 'complete' | 'partial' | 'failed';
+    discoveryComplete: boolean;
+    limitations?: string[];
+    pages?: Array<{
+      url: string;
+      role: string;
+      required?: boolean;
+      status: 'processed' | 'failed' | 'not_processed';
+      reason?: string | null;
+    }>;
+  };
+  serverCounts?: Record<string, number> | null;
+  createdAt?: string;
+}
+
+export interface DiffViewerEntriesPagination {
+  total: number;
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+  nextOffset: number | null;
+}
+
+export interface DiffViewerCandidate {
+  id: string;
+  brand_name?: string;
+  model_name?: string;
+  brand?: string;
+  model?: string;
+  state: 'open' | 'ready_for_proposal' | 'resolved_applied' | 'excluded' | 'dismissed';
+  flagged_for_review?: boolean;
+  flaggedForReview?: boolean;
+  current_issues?: Array<{ code: string; detail: string }>;
+  next_action?: string | null;
+  resolution_reason?: string | null;
+  version?: number;
 }
 
 interface ChangeProposalDiffViewerProps {
   proposal: DiffViewerProposal;
   items: DiffViewerItem[];
+  report?: DiffViewerReport | null;
+  entries?: DiffViewerReportEntry[];
+  entriesPagination?: DiffViewerEntriesPagination | null;
+  candidates?: DiffViewerCandidate[];
+  decisionEvents?: any[];
+  candidateEvents?: any[];
+  onEntriesPageChange?: (offset: number) => void;
   onApplySuccess?: () => void;
   onRejectSuccess?: () => void;
 }
@@ -745,6 +878,21 @@ function renderRateTiersDiff(
   return null;
 }
 
+function resolveProposalExtractionHints(proposal: DiffViewerProposal): string | null {
+  const candidates = [
+    proposal.extraction_hints,
+    proposal.extractionHints,
+    proposal.raw_snapshot?.extractionHints,
+    proposal.raw_snapshot?.extraction_hints,
+  ];
+  for (const raw of candidates) {
+    if (typeof raw === 'string' && raw.trim().length > 0) {
+      return raw.trim();
+    }
+  }
+  return null;
+}
+
 export async function submitProposalDecision(
   proposalId: string,
   approvedItemIds: string[]
@@ -780,6 +928,177 @@ export async function submitProposalDecision(
   return data;
 }
 
+export async function acknowledgeReportProposal(
+  proposalId: string,
+  expectedVersion?: number,
+  notes?: string
+): Promise<{
+  success: boolean;
+  status: string;
+  coverageStatus?: string;
+  reconciliationStatus?: string;
+  applicationStatus?: string;
+  version?: number;
+}> {
+  const payload: Record<string, any> = { action: 'acknowledge' };
+  if (expectedVersion !== undefined) {
+    payload.expectedVersion = expectedVersion;
+  }
+  if (notes !== undefined && notes.trim().length > 0) {
+    payload.notes = notes.trim();
+  }
+
+  const res = await fetch(`/api/admin/change-proposals/${proposalId}/apply`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  let data: any = null;
+  try {
+    data = await res.json();
+  } catch {
+    // Non-JSON response body
+  }
+
+  if (!res.ok) {
+    throw new Error(data?.error || 'Failed to acknowledge reconciliation report.');
+  }
+  if (!data) {
+    throw new Error('Unexpected non-JSON response from server.');
+  }
+  return data;
+}
+
+function renderCoverageStatusBadge(coverageStatus?: string) {
+  if (!coverageStatus) return null;
+  if (coverageStatus === 'complete') {
+    return (
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
+        Complete Coverage
+      </span>
+    );
+  }
+  if (coverageStatus === 'partial') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300">
+        <ExclamationTriangleIcon className="w-3.5 h-3.5" />
+        Partial Coverage
+      </span>
+    );
+  }
+  if (coverageStatus === 'failed') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-300">
+        <ExclamationTriangleIcon className="w-3.5 h-3.5" />
+        Failed Coverage
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-300">
+      Unknown Coverage
+    </span>
+  );
+}
+
+function renderReconciliationStatusBadge(reconciliationStatus?: string) {
+  if (!reconciliationStatus) return null;
+  if (reconciliationStatus === 'complete') {
+    return (
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
+        Reconciliation: Complete
+      </span>
+    );
+  }
+  if (reconciliationStatus === 'unresolved') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300">
+        <ExclamationTriangleIcon className="w-3.5 h-3.5" />
+        Reconciliation: Unresolved
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-300">
+      Reconciliation: Unknown
+    </span>
+  );
+}
+
+function renderApplicationStatusBadge(applicationStatus?: string) {
+  if (!applicationStatus) return null;
+  const labelMap: Record<string, string> = {
+    pending: 'Application: Pending',
+    not_applicable: 'Application: Not Applicable',
+    applied: 'Application: Applied',
+    partially_applied: 'Application: Partially Applied',
+    rejected: 'Application: Rejected',
+    failed: 'Application: Failed',
+  };
+  const label = labelMap[applicationStatus] || `Application: ${applicationStatus}`;
+  const classes =
+    applicationStatus === 'applied'
+      ? 'bg-indigo-100 text-indigo-800 border-indigo-200'
+      : applicationStatus === 'rejected' || applicationStatus === 'failed'
+      ? 'bg-red-100 text-red-800 border-red-200'
+      : applicationStatus === 'not_applicable'
+      ? 'bg-slate-100 text-slate-800 border-slate-300'
+      : 'bg-blue-50 text-blue-800 border-blue-200';
+  return (
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${classes}`}>
+      {label}
+    </span>
+  );
+}
+
+function renderEvidenceList(evidenceList?: DiffViewerEvidence[] | null) {
+  if (!Array.isArray(evidenceList) || evidenceList.length === 0) return null;
+  return (
+    <div className="mt-2 space-y-1.5">
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+        Source Evidence
+      </div>
+      {evidenceList.map((ev, idx) => (
+        <div
+          key={idx}
+          className="rounded border border-gray-200 bg-white/90 px-2.5 py-1.5 text-xs space-y-1"
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 font-mono text-[11px]">
+              {ev.kind}
+            </span>
+            {renderSafeExternalLink(ev.sourceUrl, {
+              className: 'inline-flex items-center gap-1 text-indigo-600 hover:underline break-all',
+            })}
+            {ev.linkedUrl && (
+              <span className="inline-flex items-center gap-1 text-gray-600">
+                <span>→</span>
+                {renderSafeExternalLink(ev.linkedUrl, {
+                  className: 'inline-flex items-center gap-1 text-amber-800 hover:underline font-medium break-all',
+                })}
+              </span>
+            )}
+            {ev.observedAt && (
+              <span className="text-[11px] text-gray-400 ml-auto">{ev.observedAt}</span>
+            )}
+          </div>
+          {typeof ev.snippet === 'string' && ev.snippet.length > 0 && (
+            <div className="font-mono text-gray-800 bg-gray-50 px-2 py-1 rounded whitespace-pre-wrap break-words">
+              {ev.snippet}
+            </div>
+          )}
+          {ev.observation && typeof ev.observation === 'object' && (
+            <pre className="font-mono text-[11px] text-gray-700 bg-gray-50 px-2 py-1 rounded overflow-x-auto">
+              {JSON.stringify(ev.observation, null, 2)}
+            </pre>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function renderItemDecisionBadge(status: DiffViewerItem['status']) {
   if (status === 'applied') {
     return (
@@ -801,6 +1120,11 @@ function renderItemDecisionBadge(status: DiffViewerItem['status']) {
 export function ChangeProposalDiffViewer({
   proposal,
   items,
+  report = null,
+  entries = [],
+  entriesPagination = null,
+  candidates = [],
+  onEntriesPageChange,
   onApplySuccess,
   onRejectSuccess,
 }: ChangeProposalDiffViewerProps) {
@@ -814,6 +1138,7 @@ export function ChangeProposalDiffViewer({
   );
   const [isApplying, setIsApplying] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
+  const [isAcknowledging, setIsAcknowledging] = useState(false);
   // Expanded by default (#199) so unchanged inventory is immediately visible in green during review
   const [isUnchangedExpanded, setIsUnchangedExpanded] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -883,6 +1208,27 @@ export function ChangeProposalDiffViewer({
     }
   };
 
+  const handleAcknowledgeReport = async () => {
+    setIsAcknowledging(true);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      await acknowledgeReportProposal(proposal.id, proposal.version);
+      setSuccessMessage(
+        'Reconciliation report acknowledged. Published shop inventory was not modified.'
+      );
+      if (onApplySuccess) {
+        onApplySuccess();
+      }
+    } catch (err: any) {
+      console.error('Error acknowledging report:', err);
+      setError(err.message || 'Error acknowledging reconciliation report');
+    } finally {
+      setIsAcknowledging(false);
+    }
+  };
+
   const addItems = items.filter((i) => i.entity_type === 'motorcycle' && i.action === 'add');
   const updateItems = items.filter((i) => i.entity_type === 'motorcycle' && i.action === 'update');
   const delistItems = items.filter((i) => i.entity_type === 'motorcycle' && i.action === 'delist');
@@ -891,10 +1237,39 @@ export function ChangeProposalDiffViewer({
   );
   const shopItems = items.filter((i) => i.entity_type === 'rental_shop');
 
+  const readyChangeEntries = entries.filter((e) => e.disposition === 'ready_change');
+  const unresolvedEntries = entries.filter((e) => e.disposition === 'unresolved');
+  const unchangedReportEntries = entries.filter((e) => e.disposition === 'unchanged');
+  const excludedReportEntries = entries.filter((e) => e.disposition === 'excluded');
+  const duplicateReportEntries = entries.filter((e) => e.disposition === 'duplicate');
+
+  const candidateById = new Map<string, DiffViewerCandidate>();
+  for (const cand of candidates) {
+    if (cand?.id) candidateById.set(cand.id, cand);
+  }
+
   const isCompleted =
     proposal.status === 'applied' ||
     proposal.status === 'partially_applied' ||
-    proposal.status === 'rejected';
+    proposal.status === 'rejected' ||
+    proposal.status === 'acknowledged' ||
+    proposal.status === 'superseded';
+
+  const isReportOnly =
+    proposal.application_status === 'not_applicable' ||
+    (Boolean(report) && actionableItems.length === 0);
+
+  const effectiveCoverageStatus = proposal.coverage_status ?? report?.coverage?.status;
+  const effectiveReconciliationStatus = proposal.reconciliation_status;
+  const effectiveApplicationStatus =
+    proposal.application_status ?? (report ? (actionableItems.length > 0 ? 'pending' : 'not_applicable') : undefined);
+
+  const displayedUnchangedCount =
+    unchangedItems.length > 0
+      ? unchangedItems.length
+      : report?.serverCounts?.unchangedModels ?? unchangedReportEntries.length;
+  const displayedUnresolvedCount =
+    report?.serverCounts?.unresolvedModels ?? unresolvedEntries.length;
 
   const renderPendingItemCheckbox = (item: DiffViewerItem) => {
     if (isCompleted || item.status !== 'pending') return null;
@@ -916,7 +1291,7 @@ export function ChangeProposalDiffViewer({
       <Card>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5 flex-wrap">
               <h2 className="text-xl font-bold text-gray-900">
                 {proposal.rental_shops?.provider_name || 'Rental Shop'}
               </h2>
@@ -926,11 +1301,16 @@ export function ChangeProposalDiffViewer({
                     ? 'success'
                     : proposal.status === 'rejected'
                     ? 'danger'
+                    : proposal.status === 'acknowledged' || proposal.status === 'superseded'
+                    ? 'default'
                     : 'warning'
                 }
               >
                 {proposal.status.replace('_', ' ')}
               </Badge>
+              {renderCoverageStatusBadge(effectiveCoverageStatus)}
+              {renderReconciliationStatusBadge(effectiveReconciliationStatus)}
+              {renderApplicationStatusBadge(effectiveApplicationStatus)}
             </div>
             <div className="mt-1 flex items-center gap-4 text-sm text-gray-500 flex-wrap">
               <span>Proposal ID: {proposal.id}</span>
@@ -945,15 +1325,9 @@ export function ChangeProposalDiffViewer({
                   <ArrowTopRightOnSquareIcon className="w-4 h-4" />
                 </a>
               )}
-              <a
-                href={proposal.source_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-blue-600 hover:underline"
-              >
-                {proposal.source_url}
-                <ArrowTopRightOnSquareIcon className="w-4 h-4" />
-              </a>
+              {renderSafeExternalLink(proposal.source_url, {
+                className: 'inline-flex items-center gap-1 text-blue-600 hover:underline',
+              })}
             </div>
           </div>
 
@@ -968,14 +1342,19 @@ export function ChangeProposalDiffViewer({
               -{delistItems.length} Delisted
             </span>
             <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300">
-              ={unchangedItems.length} Unchanged
+              ={displayedUnchangedCount} Unchanged
             </span>
-            {!isCompleted && (
+            {(Boolean(report) || displayedUnresolvedCount > 0) && (
+              <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300">
+                {displayedUnresolvedCount} Unresolved
+              </span>
+            )}
+            {!isCompleted && !isReportOnly && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleReject}
-                disabled={isApplying || isRejecting}
+                disabled={isApplying || isRejecting || isAcknowledging}
                 className="text-red-600 border-red-200 hover:bg-red-50"
               >
                 <XMarkIcon className="w-4 h-4 mr-1" />
@@ -991,6 +1370,34 @@ export function ChangeProposalDiffViewer({
               Extraction Hints
             </div>
             <p className="text-sm text-gray-800 whitespace-pre-wrap">{extractionHints}</p>
+          </div>
+        )}
+
+        {/* Report-Only Toolbar */}
+        {!isCompleted && isReportOnly && (
+          <div className="mt-6 pt-4 border-t border-gray-100 flex flex-wrap items-center justify-between gap-4">
+            <div className="text-sm text-gray-700">
+              <span className="font-semibold text-gray-900">Report-only submission</span> — 0 ready inventory mutations. Acknowledging records review of crawl coverage and unresolved findings without modifying published inventory.
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={handleReject}
+                disabled={isAcknowledging || isRejecting}
+                className="text-red-600 border-red-200 hover:bg-red-50"
+              >
+                <XMarkIcon className="w-4 h-4 mr-1.5" />
+                {isRejecting ? 'Rejecting...' : 'Reject Report'}
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleAcknowledgeReport}
+                disabled={isAcknowledging || isRejecting}
+              >
+                <CheckIcon className="w-4 h-4 mr-1.5" />
+                {isAcknowledging ? 'Acknowledging...' : 'Acknowledge Report'}
+              </Button>
+            </div>
           </div>
         )}
 
@@ -1046,6 +1453,33 @@ export function ChangeProposalDiffViewer({
 
       {error && <Alert variant="error">{error}</Alert>}
       {successMessage && <Alert variant="success">{successMessage}</Alert>}
+
+      <div
+        data-testid={report ? 'reconciliation-ready-changes' : undefined}
+        className="space-y-6"
+      >
+        {report && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between px-1">
+              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <ClipboardDocumentListIcon className="w-5 h-5 text-indigo-600" />
+                Ready Changes ({actionableItems.length})
+              </h3>
+              {readyChangeEntries.length > 0 && (
+                <span className="text-xs text-gray-500">
+                  {readyChangeEntries.length} linked report entr{readyChangeEntries.length === 1 ? 'y' : 'ies'}
+                </span>
+              )}
+            </div>
+            {actionableItems.length === 0 && (
+              <Card>
+                <p className="text-sm text-gray-600">
+                  0 ready mutations in this submission. No motorcycles or shop fields will be modified.
+                </p>
+              </Card>
+            )}
+          </div>
+        )}
 
       {/* 1. New Listings Section */}
       {addItems.length > 0 && (
@@ -1724,6 +2158,453 @@ export function ChangeProposalDiffViewer({
               );
             })}
           </div>
+        </Card>
+      )}
+      </div>
+
+      {/* Reconciliation Report Section 2: Unresolved Motorcycles */}
+      {report && (
+        <Card
+          data-testid="reconciliation-unresolved-section"
+          className={
+            unresolvedEntries.length > 0
+              ? 'border-amber-300 bg-amber-50/20'
+              : 'border-gray-200'
+          }
+        >
+          <div className="flex items-center justify-between gap-2 mb-4 pb-2 border-b border-gray-200 flex-wrap">
+            <div className="flex items-center gap-2">
+              <ExclamationTriangleIcon className="w-5 h-5 text-amber-600" />
+              <h3 className="text-base font-semibold text-gray-900">
+                Unresolved Motorcycles ({unresolvedEntries.length})
+              </h3>
+            </div>
+            <span className="text-xs text-gray-500">
+              Non-executable blockers — tracked persistently until verified or dismissed
+            </span>
+          </div>
+
+          {unresolvedEntries.length === 0 ? (
+            <p className="text-sm text-gray-600">
+              No unresolved motorcycles reported in this submission.
+            </p>
+          ) : (
+            <div className="divide-y divide-amber-200/70">
+              {unresolvedEntries.map((entry) => {
+                const matchedCandidate = entry.candidateId
+                  ? candidateById.get(entry.candidateId)
+                  : undefined;
+                const isFlagged = Boolean(
+                  matchedCandidate?.flagged_for_review ?? matchedCandidate?.flaggedForReview
+                );
+
+                return (
+                  <div
+                    key={entry.id || entry.entryKey}
+                    className="py-3.5 space-y-2.5 px-2.5 rounded-lg bg-white/80 my-1.5 border border-amber-200"
+                  >
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-gray-900 text-sm">
+                          {entry.brand} {entry.model}
+                        </span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-900 border border-amber-300">
+                          Unresolved
+                        </span>
+                        {matchedCandidate && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-800 border border-slate-300">
+                            Candidate: {matchedCandidate.state}
+                          </span>
+                        )}
+                        {isFlagged && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-red-100 text-red-800 border border-red-300">
+                            Flagged for Review
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs font-mono text-gray-400">
+                        key: {entry.entryKey}
+                      </span>
+                    </div>
+
+                    {Array.isArray(entry.issues) && entry.issues.length > 0 && (
+                      <div className="space-y-1">
+                        <div className="text-[11px] font-semibold uppercase tracking-wider text-amber-900">
+                          Issues
+                        </div>
+                        <ul className="space-y-1">
+                          {entry.issues.map((issue, idx) => (
+                            <li
+                              key={idx}
+                              className="flex items-start gap-2 text-xs text-gray-800"
+                            >
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 font-mono text-[11px] font-semibold flex-shrink-0">
+                                {issue.code}
+                              </span>
+                              <span className="break-words">{issue.detail}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {entry.nextAction && (
+                      <div className="rounded bg-amber-50 border border-amber-200 px-2.5 py-1.5 text-xs text-amber-950">
+                        <span className="font-semibold">Next Action: </span>
+                        <span className="break-words">{entry.nextAction}</span>
+                      </div>
+                    )}
+
+                    {renderEvidenceList(entry.evidence)}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* Reconciliation Report Section 3: Inventory Accounting */}
+      {report && (
+        <Card data-testid="reconciliation-accounting-section">
+          <div className="flex items-center justify-between gap-2 mb-4 pb-2 border-b border-gray-100 flex-wrap">
+            <div className="flex items-center gap-2">
+              <CheckCircleIcon className="w-5 h-5 text-emerald-600" />
+              <h3 className="text-base font-semibold text-gray-900">
+                Inventory Accounting
+              </h3>
+            </div>
+            <div className="flex items-center gap-2 text-xs flex-wrap">
+              <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-medium">
+                {unchangedReportEntries.length} unchanged
+              </span>
+              <span className="px-2 py-0.5 rounded bg-gray-100 text-gray-700 font-medium">
+                {excludedReportEntries.length} excluded
+              </span>
+              <span className="px-2 py-0.5 rounded bg-purple-100 text-purple-800 font-medium">
+                {duplicateReportEntries.length} duplicate
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-5">
+            {/* Unchanged entries with hydrated emerald-green baseline details */}
+            {unchangedReportEntries.length > 0 && (
+              <div className="space-y-2">
+                <div className="text-xs font-semibold uppercase tracking-wider text-emerald-800">
+                  Confirmed Unchanged Fleet ({unchangedReportEntries.length})
+                </div>
+                <div className="space-y-2">
+                  {unchangedReportEntries.map((entry) => {
+                    const base = entry.baseline_data || {};
+                    const year = getModelYear(base);
+                    const engineCc = getEngineCapacity(base);
+                    const catInfo = resolveCategoryDisplay(base);
+                    const sourceUrl = base.source_url ?? base.sourceUrl;
+
+                    return (
+                      <div
+                        key={entry.id || entry.entryKey}
+                        className="p-3 rounded-lg bg-emerald-50/70 border border-emerald-300 space-y-2 text-sm"
+                      >
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold text-emerald-950">
+                              {entry.brand} {entry.model}
+                            </span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                              ✓ Unchanged
+                            </span>
+                            {entry.existingMotorcycleId && (
+                              <span className="text-xs font-mono text-emerald-800">
+                                ID: {entry.existingMotorcycleId}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {Array.isArray(entry.comparedAttributes) &&
+                          entry.comparedAttributes.length > 0 && (
+                            <div className="flex items-center gap-1.5 flex-wrap text-xs">
+                              <span className="font-semibold text-emerald-900">
+                                Compared Attributes:
+                              </span>
+                              {entry.comparedAttributes.map((attr, idx) => (
+                                <span
+                                  key={idx}
+                                  className="px-1.5 py-0.5 rounded bg-emerald-100/90 border border-emerald-300 text-emerald-900 font-mono text-[11px]"
+                                >
+                                  {attr}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
+                        {(catInfo.provided || year != null || engineCc != null || sourceUrl) && (
+                          <div className="text-xs text-emerald-800 flex gap-4 flex-wrap font-medium">
+                            {catInfo.provided && <span>Category: {catInfo.label}</span>}
+                            {year != null && <span>Year: {year}</span>}
+                            {engineCc != null && <span>Engine: {engineCc}cc</span>}
+                            {typeof sourceUrl === 'string' && sourceUrl.trim().length > 0 && (
+                              <span className="break-all">Source URL: {sourceUrl.trim()}</span>
+                            )}
+                          </div>
+                        )}
+
+                        {renderRateTiers(base.rates, base.currency, 'emerald', false, true)}
+                        {renderMotorcycleConditionsList(base.conditions, 'emerald')}
+                        {renderEvidenceList(entry.evidence)}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Excluded entries */}
+            {excludedReportEntries.length > 0 && (
+              <div className="space-y-2">
+                <div className="text-xs font-semibold uppercase tracking-wider text-gray-700">
+                  Excluded Listings ({excludedReportEntries.length})
+                </div>
+                <div className="space-y-2">
+                  {excludedReportEntries.map((entry) => (
+                    <div
+                      key={entry.id || entry.entryKey}
+                      className="p-3 rounded-lg bg-gray-50 border border-gray-200 space-y-1.5 text-sm"
+                    >
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-gray-900">
+                          {entry.brand} {entry.model}
+                        </span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-gray-200 text-gray-800">
+                          Excluded
+                        </span>
+                      </div>
+                      {entry.reason && (
+                        <div className="text-xs text-gray-700">
+                          <span className="font-semibold">Reason: </span>
+                          <span className="break-words">{entry.reason}</span>
+                        </div>
+                      )}
+                      {renderEvidenceList(entry.evidence)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Duplicate entries */}
+            {duplicateReportEntries.length > 0 && (
+              <div className="space-y-2">
+                <div className="text-xs font-semibold uppercase tracking-wider text-purple-800">
+                  Duplicate Cards / Variants ({duplicateReportEntries.length})
+                </div>
+                <div className="space-y-2">
+                  {duplicateReportEntries.map((entry) => (
+                    <div
+                      key={entry.id || entry.entryKey}
+                      className="p-3 rounded-lg bg-purple-50/40 border border-purple-200 space-y-1.5 text-sm"
+                    >
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-gray-900">
+                          {entry.brand} {entry.model}
+                        </span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-purple-100 text-purple-800">
+                          Duplicate
+                        </span>
+                        {(entry.duplicateOfEntryKey || entry.duplicateOfMotorcycleId) && (
+                          <span className="text-xs font-mono text-purple-900">
+                            Surviving target:{' '}
+                            {entry.duplicateOfEntryKey || entry.duplicateOfMotorcycleId}
+                          </span>
+                        )}
+                      </div>
+                      {entry.reason && (
+                        <div className="text-xs text-gray-700">
+                          <span className="font-semibold">Reason: </span>
+                          <span className="break-words">{entry.reason}</span>
+                        </div>
+                      )}
+                      {renderEvidenceList(entry.evidence)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {unchangedReportEntries.length === 0 &&
+              excludedReportEntries.length === 0 &&
+              duplicateReportEntries.length === 0 && (
+                <p className="text-sm text-gray-500">
+                  No unchanged, excluded, or duplicate entries in the current page slice.
+                </p>
+              )}
+
+            {entriesPagination && entriesPagination.total > entriesPagination.limit && (
+              <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-600">
+                <span>
+                  Showing entries {entriesPagination.offset + 1}–
+                  {Math.min(
+                    entriesPagination.offset + entries.length,
+                    entriesPagination.total
+                  )}{' '}
+                  of {entriesPagination.total}
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={entriesPagination.offset === 0}
+                    onClick={() =>
+                      onEntriesPageChange?.(
+                        Math.max(0, entriesPagination.offset - entriesPagination.limit)
+                      )
+                    }
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={!entriesPagination.hasMore}
+                    onClick={() =>
+                      entriesPagination.nextOffset !== null &&
+                      onEntriesPageChange?.(entriesPagination.nextOffset)
+                    }
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
+
+      {/* Reconciliation Report Section 4: Crawl Scope & Coverage */}
+      {report && (
+        <Card data-testid="reconciliation-coverage-section">
+          <div className="flex items-center justify-between gap-2 mb-4 pb-2 border-b border-gray-100 flex-wrap">
+            <div className="flex items-center gap-2">
+              <DocumentMagnifyingGlassIcon className="w-5 h-5 text-indigo-600" />
+              <h3 className="text-base font-semibold text-gray-900">
+                Crawl Scope & Coverage
+              </h3>
+            </div>
+            <span className="text-xs font-mono text-gray-400 break-all">
+              {report.reportDigest}
+            </span>
+          </div>
+
+          {(report.coverage?.status !== 'complete' || !report.coverage?.discoveryComplete) && (
+            <div className="mb-4 rounded-lg bg-amber-50 border border-amber-300 px-3.5 py-2.5 text-xs text-amber-900">
+              <span className="font-semibold">Incomplete Crawl Coverage: </span>
+              Source catalog or pricing discovery was {report.coverage?.status || 'incomplete'} (discoveryComplete={' '}
+              {String(Boolean(report.coverage?.discoveryComplete))}). Source-absence delistings are blocked and supplier inventory is not fully verified.
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs mb-4">
+            <div className="p-2.5 rounded bg-gray-50 border border-gray-200">
+              <div className="text-gray-500 uppercase tracking-wider text-[10px] font-semibold">
+                Branch & Catalog
+              </div>
+              <div className="font-semibold text-gray-900 mt-0.5 break-words">
+                {report.scope?.branch || '—'}{' '}
+                {report.scope?.catalogType ? `(${report.scope.catalogType})` : ''}
+              </div>
+            </div>
+            <div className="p-2.5 rounded bg-gray-50 border border-gray-200">
+              <div className="text-gray-500 uppercase tracking-wider text-[10px] font-semibold">
+                Services
+              </div>
+              <div className="font-semibold text-gray-900 mt-0.5 break-words">
+                {Array.isArray(report.scope?.services)
+                  ? report.scope.services.join(', ')
+                  : '—'}
+              </div>
+            </div>
+            <div className="p-2.5 rounded bg-gray-50 border border-gray-200">
+              <div className="text-gray-500 uppercase tracking-wider text-[10px] font-semibold">
+                Availability Basis
+              </div>
+              <div className="font-mono text-gray-900 mt-0.5 break-words">
+                {report.scope?.availabilityBasis || '—'}
+              </div>
+            </div>
+            <div className="p-2.5 rounded bg-gray-50 border border-gray-200">
+              <div className="text-gray-500 uppercase tracking-wider text-[10px] font-semibold">
+                Discovery & Pages
+              </div>
+              <div className="font-semibold text-gray-900 mt-0.5">
+                Discovery: {report.coverage?.discoveryComplete ? 'Complete' : 'Incomplete'} ·{' '}
+                {report.serverCounts?.pagesProcessed ?? 0} ok /{' '}
+                {report.serverCounts?.pagesFailed ?? 0} failed /{' '}
+                {report.serverCounts?.pagesNotProcessed ?? 0} skipped
+              </div>
+            </div>
+          </div>
+
+          {Array.isArray(report.coverage?.limitations) &&
+            report.coverage.limitations.length > 0 && (
+              <div className="mb-4 space-y-1">
+                <div className="text-xs font-semibold text-gray-800">
+                  Declared Limitations
+                </div>
+                <ul className="list-disc list-inside text-xs text-gray-700 space-y-0.5">
+                  {report.coverage.limitations.map((lim, idx) => (
+                    <li key={idx} className="break-words">
+                      {lim}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+          {Array.isArray(report.coverage?.pages) && report.coverage.pages.length > 0 && (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 text-xs">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-semibold text-gray-600">Source Page</th>
+                    <th className="px-3 py-2 text-left font-semibold text-gray-600">Role</th>
+                    <th className="px-3 py-2 text-left font-semibold text-gray-600">Status</th>
+                    <th className="px-3 py-2 text-left font-semibold text-gray-600">Reason</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 bg-white">
+                  {report.coverage.pages.map((pg, idx) => (
+                    <tr key={idx}>
+                      <td className="px-3 py-2">
+                        {renderSafeExternalLink(pg.url)}
+                      </td>
+                      <td className="px-3 py-2 font-mono text-gray-700">
+                        {pg.role}
+                        {pg.required ? ' (required)' : ''}
+                      </td>
+                      <td className="px-3 py-2">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded font-semibold ${
+                            pg.status === 'processed'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : pg.status === 'failed'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}
+                        >
+                          {pg.status}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-gray-700 break-words">
+                        {pg.reason || '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </Card>
       )}
 

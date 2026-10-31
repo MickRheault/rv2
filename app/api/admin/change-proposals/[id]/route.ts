@@ -6,8 +6,9 @@ import { isAuthorizedAdmin } from '@/lib/auth/admin-auth';
 
 /**
  * GET /api/admin/change-proposals/:id
- * 
- * Fetches proposal details and staged Change Proposal Items for the admin diff viewer.
+ *
+ * Fetches proposal details, staged Change Proposal Items, persisted Reconciliation Report,
+ * paginated entries, item links, unresolved candidates, and decision history.
  */
 export async function GET(
   request: NextRequest,
@@ -23,10 +24,41 @@ export async function GET(
   }
 
   try {
-    const data = await ChangeProposalService.getProposalById(id);
+    const { searchParams } = new URL(request.url);
+    const entriesLimitParam = searchParams.get('entriesLimit');
+    const entriesOffsetParam = searchParams.get('entriesOffset');
+    const hasPaginationParams = entriesLimitParam !== null || entriesOffsetParam !== null;
+
+    const data = hasPaginationParams
+      ? await ChangeProposalService.getProposalById(id, {
+          entriesLimit: entriesLimitParam ? parseInt(entriesLimitParam, 10) : undefined,
+          entriesOffset: entriesOffsetParam ? parseInt(entriesOffsetParam, 10) : undefined,
+        })
+      : await ChangeProposalService.getProposalById(id);
+
+    const prop = (data as any).proposal;
+    const normalizedProposal = prop
+      ? {
+          ...prop,
+          coverage_status: prop.coverage_status ?? 'unknown',
+          reconciliation_status: prop.reconciliation_status ?? 'unknown',
+          application_status:
+            prop.application_status ??
+            (prop.status === 'applied'
+              ? 'applied'
+              : prop.status === 'partially_applied'
+              ? 'partially_applied'
+              : prop.status === 'rejected'
+              ? 'rejected'
+              : 'pending'),
+          version: prop.version ?? 1,
+        }
+      : prop;
+
     return NextResponse.json({
       success: true,
       ...data,
+      proposal: normalizedProposal,
     });
   } catch (error: any) {
     if (error?.name === 'ProposalItemValidationError') {

@@ -8,9 +8,9 @@ import { purgePublicCache } from '@/lib/cache/purgePublicCache';
 
 /**
  * POST /api/admin/change-proposals/:id/apply
- * 
- * Applies approved change proposal items to live production tables.
- * Enforces geodata immutability and soft-delisting.
+ *
+ * Applies approved change proposal items to live database tables, or acknowledges
+ * a report-only Change Proposal (`action: 'acknowledge'`) without mutating inventory.
  */
 export async function POST(
   request: NextRequest,
@@ -27,7 +27,16 @@ export async function POST(
 
   try {
     const body = await request.json();
-    const { approvedItemIds } = body;
+
+    if (body?.action === 'acknowledge') {
+      const ackResult = await ChangeProposalService.acknowledgeReportOnlyProposal(id, {
+        expectedVersion: body.expectedVersion,
+        notes: body.notes ?? null,
+      });
+      return NextResponse.json(ackResult, { status: 200 });
+    }
+
+    const { approvedItemIds } = body || {};
 
     if (!Array.isArray(approvedItemIds)) {
       return NextResponse.json(
@@ -49,7 +58,8 @@ export async function POST(
     }
     if (
       error?.name === 'StaleConditionStateError' ||
-      error?.name === 'StaleCategoryStateError'
+      error?.name === 'StaleCategoryStateError' ||
+      error?.name === 'ProposalVersionConflictError'
     ) {
       return NextResponse.json({ error: error.message }, { status: 409 });
     }
