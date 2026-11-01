@@ -1130,6 +1130,453 @@ describe('ChangeProposalDiffViewer', () => {
     expect(screen.getByText(/<script>alert\("snippet-xss"\)<\/script>/)).toBeInTheDocument();
     expect(screen.getByText(/<iframe src="javascript:alert\(4\)"><\/iframe>/)).toBeInTheDocument();
   });
+
+  it('renders approval warning banner when unresolved motorcycles remain open and sends expectedVersion on apply (#203)', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        success: true,
+        appliedCount: 1,
+        status: 'applied',
+        applicationStatus: 'applied',
+        reconciliationStatus: 'unresolved',
+      }),
+    });
+
+    const onApplySuccess = jest.fn();
+
+    render(
+      <ChangeProposalDiffViewer
+        proposal={{
+          id: 'prop-mixed-203',
+          shop_id: '53529565-40d9-41f5-98e4-d2ed1f1d7ffd',
+          source_url: 'https://rideon.es/flota/',
+          status: 'pending',
+          coverage_status: 'complete',
+          reconciliation_status: 'unresolved',
+          application_status: 'pending',
+          version: 3,
+          created_at: '2026-10-31T15:00:00Z',
+          rental_shops: { provider_name: 'Ride On - Alquiler moto Barcelona' },
+        }}
+        items={[
+          {
+            id: 'item-forza',
+            proposal_id: 'prop-mixed-203',
+            entity_type: 'motorcycle',
+            action: 'add',
+            entity_id: null,
+            brand_name: 'Honda',
+            model_name: 'Forza 350',
+            original_data: null,
+            proposed_data: {
+              categoryId: '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737',
+              categoryName: 'Scooter',
+              rates: [{ minDays: 1, maxDays: null, ratePerDay: 49, currency: 'EUR' }],
+            },
+            diff_summary: null,
+            status: 'pending',
+          },
+        ]}
+        report={{
+          id: 'rep-mixed-203',
+          schemaVersion: 1,
+          reportVersion: 1,
+          reportDigest: 'sha256:mixed203',
+          scope: {
+            branch: 'Barcelona',
+            services: ['daily_rental'],
+            availabilityBasis: 'supplier_catalog_not_live_stock',
+          },
+          coverage: {
+            status: 'complete',
+            discoveryComplete: true,
+            limitations: [],
+            pages: [{ url: 'https://rideon.es/flota/', role: 'catalog', status: 'processed' }],
+          },
+          serverCounts: {
+            readyActionableItems: 1,
+            accountedDiscoveredModels: 2,
+            unresolvedModels: 1,
+            unchangedModels: 0,
+            excludedModels: 0,
+            duplicateModels: 0,
+            pagesProcessed: 1,
+            pagesFailed: 0,
+            pagesNotProcessed: 0,
+            add: 1,
+            update: 0,
+            delist: 0,
+          },
+        }}
+        entries={[
+          {
+            id: 'entry-bmw-203',
+            entryIndex: 0,
+            entryKey: 'bmw-r-1250-gs',
+            brand: 'BMW',
+            model: 'R 1250 GS',
+            existingMotorcycleId: null,
+            candidateId: 'cand-bmw-203',
+            disposition: 'unresolved',
+            proposalItemRefs: [],
+            linkedProposalItemIds: [],
+            issues: [{ code: 'PRICE_UNVERIFIED', detail: 'Rental price not verified.' }],
+            nextAction: 'Verify Barcelona tariff before proposing addition.',
+            evidence: [],
+          },
+        ]}
+        candidates={[
+          {
+            id: 'cand-bmw-203',
+            brand_name: 'BMW',
+            model_name: 'R 1250 GS',
+            state: 'open',
+            flagged_for_review: false,
+            version: 1,
+          },
+        ]}
+        onApplySuccess={onApplySuccess}
+      />
+    );
+
+    const warningBanner = screen.getByTestId('unresolved-approval-warning');
+    expect(warningBanner).toHaveTextContent(/will not resolve open unresolved motorcycles/i);
+
+    fireEvent.click(screen.getByRole('button', { name: /approve & apply selected/i }));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/admin/change-proposals/prop-mixed-203/apply',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({
+            approvedItemIds: ['item-forza'],
+            expectedVersion: 3,
+          }),
+        })
+      );
+    });
+    expect(onApplySuccess).toHaveBeenCalled();
+  });
+
+  it('supports Dismiss, Exclude, and Reopen candidate decisions via modal with required reason and renders candidate audit history (#203)', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        success: true,
+        candidate: {
+          id: 'cand-bmw-modal',
+          state: 'dismissed',
+          version: 2,
+        },
+      }),
+    });
+
+    const onApplySuccess = jest.fn();
+
+    render(
+      <ChangeProposalDiffViewer
+        proposal={{
+          id: 'prop-cand-modal',
+          shop_id: '53529565-40d9-41f5-98e4-d2ed1f1d7ffd',
+          source_url: 'https://rideon.es/flota/',
+          status: 'pending',
+          coverage_status: 'complete',
+          reconciliation_status: 'unresolved',
+          application_status: 'not_applicable',
+          version: 1,
+          created_at: '2026-10-31T16:00:00Z',
+          rental_shops: { provider_name: 'Ride On - Alquiler moto Barcelona' },
+        }}
+        items={[]}
+        report={{
+          id: 'rep-cand-modal',
+          schemaVersion: 1,
+          reportVersion: 1,
+          reportDigest: 'sha256:candmodal',
+          scope: {
+            branch: 'Barcelona',
+            services: ['daily_rental'],
+            availabilityBasis: 'supplier_catalog_not_live_stock',
+          },
+          coverage: {
+            status: 'complete',
+            discoveryComplete: true,
+            limitations: [],
+            pages: [{ url: 'https://rideon.es/flota/', role: 'catalog', status: 'processed' }],
+          },
+          serverCounts: {
+            readyActionableItems: 0,
+            accountedDiscoveredModels: 1,
+            unresolvedModels: 1,
+            unchangedModels: 0,
+            excludedModels: 0,
+            duplicateModels: 0,
+            pagesProcessed: 1,
+            pagesFailed: 0,
+            pagesNotProcessed: 0,
+            add: 0,
+            update: 0,
+            delist: 0,
+          },
+        }}
+        entries={[
+          {
+            id: 'entry-bmw-modal',
+            entryIndex: 0,
+            entryKey: 'bmw-r-1250-gs',
+            brand: 'BMW',
+            model: 'R 1250 GS',
+            existingMotorcycleId: null,
+            candidateId: 'cand-bmw-modal',
+            disposition: 'unresolved',
+            proposalItemRefs: [],
+            linkedProposalItemIds: [],
+            issues: [{ code: 'BRANCH_CONFLICT', detail: 'Barcelona label links to Madrid.' }],
+            nextAction: 'Confirm branch ownership.',
+            evidence: [],
+          },
+        ]}
+        candidates={[
+          {
+            id: 'cand-bmw-modal',
+            brand_name: 'BMW',
+            model_name: 'R 1250 GS',
+            state: 'open',
+            flagged_for_review: false,
+            version: 1,
+          },
+          {
+            id: 'cand-carryover-dismissed',
+            brand_name: 'Yamaha',
+            model_name: 'Tracer 7',
+            state: 'dismissed',
+            flagged_for_review: true,
+            resolution_reason: 'Previously confirmed Madrid-only',
+            version: 4,
+          },
+        ]}
+        candidateEvents={[
+          {
+            id: 'ev-1',
+            candidate_id: 'cand-bmw-modal',
+            event_type: 'observed_unresolved',
+            actor_type: 'agent',
+            previous_state: null,
+            new_state: 'open',
+            reason: 'Initial observation on Ride On fleet page',
+            created_at: '2026-10-31T16:00:00Z',
+          },
+        ]}
+        onApplySuccess={onApplySuccess}
+      />
+    );
+
+    // Audit history rendered for BMW candidate
+    expect(screen.getByText(/Initial observation on Ride On fleet page/i)).toBeInTheDocument();
+    // Carryover flagged candidate is also surfaced with Reopen button
+    expect(screen.getByText(/Yamaha Tracer 7/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /reopen/i })).toBeInTheDocument();
+
+    // Click Dismiss on BMW R 1250 GS
+    fireEvent.click(screen.getByRole('button', { name: /^dismiss$/i }));
+
+    // Empty reason is blocked before fetch
+    fireEvent.click(screen.getByRole('button', { name: /confirm dismiss/i }));
+    expect(screen.getByText(/reason is required/i)).toBeInTheDocument();
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    // Fill reason and confirm
+    fireEvent.change(screen.getByLabelText(/decision reason/i), {
+      target: { value: 'Confirmed with supplier: Madrid-only fleet.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /confirm dismiss/i }));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/admin/unresolved-candidates/cand-bmw-modal',
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({
+            action: 'dismiss',
+            reason: 'Confirmed with supplier: Madrid-only fleet.',
+            expectedVersion: 1,
+          }),
+        })
+      );
+    });
+    expect(onApplySuccess).toHaveBeenCalled();
+  });
+
+  it('does not show false approval warning when ready_for_proposal item is selected, and renders resolved_applied candidate audit history', () => {
+    const { rerender } = render(
+      <ChangeProposalDiffViewer
+        proposal={{
+          id: 'prop-ready-bmw',
+          shop_id: '53529565-40d9-41f5-98e4-d2ed1f1d7ffd',
+          source_url: 'https://rideon.es/flota/',
+          created_at: '2026-10-31T18:00:00Z',
+          status: 'pending',
+          version: 1,
+          coverage_status: 'complete',
+          reconciliation_status: 'unresolved',
+          application_status: 'pending',
+          rental_shops: { provider_name: 'Ride On - Alquiler moto Barcelona' },
+        }}
+        items={[
+          {
+            id: 'item-add-bmw-ready',
+            proposal_id: 'prop-ready-bmw',
+            entity_type: 'motorcycle',
+            action: 'add',
+            entity_id: null,
+            brand_name: 'BMW',
+            model_name: 'R 1250 GS',
+            original_data: null,
+            proposed_data: {
+              categoryId: 'c375e3d9-e4df-4e09-8688-e7b26e78861c',
+              rates: [{ minDays: 1, ratePerDay: 95, currency: 'EUR' }],
+            },
+            diff_summary: null,
+            status: 'pending',
+          },
+        ]}
+        report={{
+          id: 'rep-ready-bmw',
+          schemaVersion: 1,
+          reportVersion: 1,
+          reportDigest: 'sha256:ready',
+          scope: {
+            branch: 'Barcelona',
+            services: ['daily_short_term_rental'],
+            availabilityBasis: 'supplier_catalog_not_live_stock',
+          },
+          coverage: {
+            status: 'complete',
+            discoveryComplete: true,
+            limitations: [],
+            pages: [{ url: 'https://rideon.es/flota/', role: 'catalog', status: 'processed' }],
+          },
+          serverCounts: {
+            readyActionableItems: 1,
+            accountedDiscoveredModels: 1,
+            unresolvedModels: 0,
+            unchangedModels: 0,
+            excludedModels: 0,
+            duplicateModels: 0,
+            pagesProcessed: 1,
+            pagesFailed: 0,
+            pagesNotProcessed: 0,
+            add: 1,
+            update: 0,
+            delist: 0,
+          },
+        }}
+        entries={[
+          {
+            id: 'entry-bmw-ready',
+            entryIndex: 0,
+            entryKey: 'bmw-r-1250-gs',
+            brand: 'BMW',
+            model: 'R 1250 GS',
+            existingMotorcycleId: null,
+            candidateId: 'cand-bmw-ready',
+            disposition: 'ready_change',
+            proposalItemRefs: ['add-bmw'],
+            linkedProposalItemIds: ['item-add-bmw-ready'],
+            evidence: [],
+          },
+        ]}
+        candidates={[
+          {
+            id: 'cand-bmw-ready',
+            brand_name: 'BMW',
+            model_name: 'R 1250 GS',
+            state: 'ready_for_proposal',
+            linked_proposal_item_id: 'item-add-bmw-ready',
+            flagged_for_review: false,
+            version: 2,
+          } as any,
+        ]}
+      />
+    );
+
+    // Selected ready_for_proposal addition item will resolve the candidate -> no false warning!
+    expect(screen.queryByTestId('unresolved-approval-warning')).not.toBeInTheDocument();
+
+    // Unselecting the item causes warning banner to appear because rejecting it will leave BMW unresolved
+    fireEvent.click(screen.getByRole('button', { name: /deselect all/i }));
+    expect(screen.getByTestId('unresolved-approval-warning')).toBeInTheDocument();
+
+    // Rerender as applied proposal with resolved_applied candidate and audit history
+    rerender(
+      <ChangeProposalDiffViewer
+        proposal={{
+          id: 'prop-ready-bmw',
+          shop_id: '53529565-40d9-41f5-98e4-d2ed1f1d7ffd',
+          source_url: 'https://rideon.es/flota/',
+          created_at: '2026-10-31T18:00:00Z',
+          status: 'applied',
+          version: 2,
+          coverage_status: 'complete',
+          reconciliation_status: 'complete',
+          application_status: 'applied',
+          rental_shops: { provider_name: 'Ride On - Alquiler moto Barcelona' },
+        }}
+        items={[
+          {
+            id: 'item-add-bmw-ready',
+            proposal_id: 'prop-ready-bmw',
+            entity_type: 'motorcycle',
+            action: 'add',
+            entity_id: null,
+            brand_name: 'BMW',
+            model_name: 'R 1250 GS',
+            original_data: null,
+            proposed_data: {
+              categoryId: 'c375e3d9-e4df-4e09-8688-e7b26e78861c',
+              rates: [{ minDays: 1, ratePerDay: 95, currency: 'EUR' }],
+            },
+            diff_summary: null,
+            status: 'applied',
+          },
+        ]}
+        candidates={[
+          {
+            id: 'cand-bmw-ready',
+            brand_name: 'BMW',
+            model_name: 'R 1250 GS',
+            state: 'resolved_applied',
+            resolved_motorcycle_id: '99999999-9999-4999-8999-999999999999',
+            flagged_for_review: false,
+            version: 3,
+          } as any,
+        ]}
+        candidateEvents={[
+          {
+            id: 'ev-resolved',
+            candidate_id: 'cand-bmw-ready',
+            event_type: 'resolved_applied',
+            actor_type: 'admin',
+            previous_state: 'ready_for_proposal',
+            new_state: 'resolved_applied',
+            reason: 'Resolved by applying verified addition proposal item',
+          },
+        ]}
+      />
+    );
+
+    expect(screen.getByText(/Candidate: resolved_applied/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Motorcycle ID: 99999999-9999-4999-8999-999999999999/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Resolved by applying verified addition proposal item/i)
+    ).toBeInTheDocument();
+  });
 });
 
 

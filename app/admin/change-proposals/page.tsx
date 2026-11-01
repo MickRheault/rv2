@@ -153,12 +153,12 @@ export default function ChangeProposalsPage() {
     }
   }, [proposalStatusFilter]);
 
-  const handleQuickReject = async (proposalId: string) => {
+  const handleQuickReject = async (proposalId: string, expectedVersion?: number) => {
     setRejectingId(proposalId);
     setProposalError(null);
 
     try {
-      await submitProposalDecision(proposalId, []);
+      await submitProposalDecision(proposalId, [], expectedVersion);
       await fetchProposals();
     } catch (err: any) {
       console.error('Error rejecting proposal:', err);
@@ -608,7 +608,7 @@ export default function ChangeProposalsPage() {
                               {prop.status === 'pending' && (
                                 <button
                                   type="button"
-                                  onClick={() => handleQuickReject(prop.id)}
+                                  onClick={() => handleQuickReject(prop.id, prop.version)}
                                   disabled={rejectingId === prop.id || acknowledgingId === prop.id}
                                   className="inline-flex items-center px-2.5 py-1.5 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50 disabled:opacity-50"
                                 >
