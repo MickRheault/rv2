@@ -2,15 +2,22 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { validateAgentApiKey } from '@/lib/auth/agent-auth';
-import { TaskSchedulerService } from '@/services/task-scheduler';
-import { recordCrawlRun } from '@/services/crawl-runs';
-import { extractLearnedAgentConfig } from '@/services/shop-agent-configs';
+import { PayloadTooLargeError } from '@/lib/reconciliation-report';
+import {
+  CrawlStatusConflictError,
+  CrawlStatusValidationError,
+  MAX_STATUS_PAYLOAD_BYTES,
+  TaskNotFoundError,
+  TaskSchedulerService,
+} from '@/services/task-scheduler';
 
 /**
  * POST /api/agent/tasks/:id/status
- * 
- * Reports crawl completion or crawl failure from external agents.
- * Advances last_run_at to prevent infinite loops, and increments error count if failed.
+ *
+ * Reports crawl completion ('success' | 'partial' | 'failed') from external agents.
+ * Unifies crawl_runs quality bookkeeping per (shop_id, agent_run_id), preserves report-derived
+ * partial/failed/unresolved quality, rejects contradictory complete claims (409), and advances
+ * last_run_at across success, partial, and failed runs so scheduled slots are consumed.
  * Authenticated via Bearer AGENT_API_KEY.
  */
 export async function POST(
@@ -34,50 +41,61 @@ export async function POST(
   }
 
   try {
-    const body = await request.json();
-    const {
-      status,
-      error: crawlError,
-    } = body;
+    const rawText = await request.text();
+    const byteLength = Buffer.byteLength(rawText, 'utf8');
+    if (byteLength > MAX_STATUS_PAYLOAD_BYTES) {
+      throw new PayloadTooLargeError(
+        `Request payload (${byteLength} bytes) exceeds maximum limit of ${MAX_STATUS_PAYLOAD_BYTES} bytes.`
+      );
+    }
 
-    if (status !== 'success' && status !== 'failed') {
+    let body: any;
+    try {
+      body = JSON.parse(rawText);
+    } catch {
       return NextResponse.json(
-        { error: 'Invalid status. Must be "success" or "failed".' },
+        { error: 'Invalid JSON request body.' },
         { status: 400 }
       );
     }
 
-    const learnedConfig = extractLearnedAgentConfig(body);
-
-    const updatedTask = learnedConfig
-      ? await TaskSchedulerService.updateTaskStatus(id, status, crawlError, learnedConfig)
-      : await TaskSchedulerService.updateTaskStatus(id, status, crawlError);
-
-    const shopId = updatedTask?.shop_id || body.shopId;
-    if (shopId) {
-      const isCleanCrawl = status === 'success' && !body.proposalId && !body.proposalCreated && body.hasChanges !== true;
-      const isFailure = status === 'failed';
-
-      if (isFailure || isCleanCrawl) {
-        try {
-          await recordCrawlRun({
-            shopId,
-            status,
-            agentRunId: body.agentRunId || null,
-            errorMessage: isFailure ? (crawlError || null) : null,
-            metadata: body.metadata || {},
-          });
-        } catch (logErr) {
-          console.error(`Failed to record crawl audit log for task ${id}:`, logErr);
-        }
-      }
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return NextResponse.json(
+        { error: 'Request body must be a JSON object.' },
+        { status: 400 }
+      );
     }
 
+    const { status } = body;
+    if (status !== 'success' && status !== 'partial' && status !== 'failed') {
+      return NextResponse.json(
+        { error: 'Invalid status. Must be "success", "partial", or "failed".' },
+        { status: 400 }
+      );
+    }
+
+    const reconciled = await TaskSchedulerService.reconcileTaskCrawlStatus(id, body);
     return NextResponse.json({
       success: true,
-      task: updatedTask,
+      task: reconciled.task,
+      crawlRun: reconciled.crawlRun,
+      status: reconciled.effectiveStatus,
+      coverageStatus: reconciled.coverageStatus,
+      reconciliationStatus: reconciled.reconciliationStatus,
     });
   } catch (err: any) {
+    if (err instanceof PayloadTooLargeError || err?.statusCode === 413) {
+      return NextResponse.json({ error: err.message }, { status: 413 });
+    }
+    if (err instanceof CrawlStatusValidationError || err?.statusCode === 400) {
+      return NextResponse.json({ error: err.message }, { status: 400 });
+    }
+    if (err instanceof TaskNotFoundError || err?.statusCode === 404) {
+      return NextResponse.json({ error: err.message }, { status: 404 });
+    }
+    if (err instanceof CrawlStatusConflictError || err?.statusCode === 409) {
+      return NextResponse.json({ error: err.message }, { status: 409 });
+    }
     console.error(`Error updating status for task ${id}:`, err);
     return NextResponse.json(
       { error: 'Internal server error updating task status', details: err.message },

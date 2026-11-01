@@ -34,13 +34,48 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const entriesLimitParam = searchParams.get('entriesLimit');
     const entriesOffsetParam = searchParams.get('entriesOffset');
-    const entriesLimit = entriesLimitParam ? parseInt(entriesLimitParam, 10) : undefined;
-    const entriesOffset = entriesOffsetParam ? parseInt(entriesOffsetParam, 10) : undefined;
+
+    let entriesLimit: number | undefined;
+    if (entriesLimitParam !== null) {
+      const trimmed = entriesLimitParam.trim();
+      if (!/^\d+$/.test(trimmed)) {
+        return NextResponse.json(
+          { error: 'Invalid entriesLimit. Must be an integer between 1 and 500.' },
+          { status: 400 }
+        );
+      }
+      const parsed = Number(trimmed);
+      if (parsed < 1 || parsed > 500) {
+        return NextResponse.json(
+          { error: 'Invalid entriesLimit. Must be an integer between 1 and 500.' },
+          { status: 400 }
+        );
+      }
+      entriesLimit = parsed;
+    }
+
+    let entriesOffset: number | undefined;
+    if (entriesOffsetParam !== null) {
+      const trimmed = entriesOffsetParam.trim();
+      if (!/^\d+$/.test(trimmed)) {
+        return NextResponse.json(
+          { error: 'Invalid entriesOffset. Must be an integer between 0 and 100000.' },
+          { status: 400 }
+        );
+      }
+      const parsed = Number(trimmed);
+      if (parsed < 0 || parsed > 100000) {
+        return NextResponse.json(
+          { error: 'Invalid entriesOffset. Must be an integer between 0 and 100000.' },
+          { status: 400 }
+        );
+      }
+      entriesOffset = parsed;
+    }
 
     const data = await ChangeProposalService.getAgentProposalReadback(id, {
-      entriesLimit: entriesLimit !== undefined && !isNaN(entriesLimit) ? entriesLimit : undefined,
-      entriesOffset:
-        entriesOffset !== undefined && !isNaN(entriesOffset) ? entriesOffset : undefined,
+      entriesLimit,
+      entriesOffset,
     });
 
     return NextResponse.json({

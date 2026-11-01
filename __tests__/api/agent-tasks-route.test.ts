@@ -12,18 +12,17 @@ jest.mock('@/lib/supabase/admin', () => ({
   getSupabaseAdmin: jest.fn(),
 }));
 
-jest.mock('@/services/task-scheduler', () => ({
-  TaskSchedulerService: {
-    getDueTasks: jest.fn(),
-    updateTaskStatus: jest.fn(),
-  },
-}));
-
-jest.mock('@/services/crawl-runs', () => ({
-  recordCrawlRun: jest.fn().mockResolvedValue({ id: 'crawl-run-1' }),
-}));
-
-import { recordCrawlRun } from '@/services/crawl-runs';
+jest.mock('@/services/task-scheduler', () => {
+  const actual = jest.requireActual('@/services/task-scheduler');
+  return {
+    ...actual,
+    TaskSchedulerService: {
+      getDueTasks: jest.fn(),
+      updateTaskStatus: jest.fn(),
+      reconcileTaskCrawlStatus: jest.fn(),
+    },
+  };
+});
 
 describe('Agent Tasks API Endpoints', () => {
   const originalEnv = process.env;
@@ -339,25 +338,33 @@ describe('Agent Tasks API Endpoints', () => {
   });
 
   describe('POST /api/agent/tasks/[id]/status', () => {
+    const VALID_TASK_ID = '10000000-0000-4000-8000-000000000123';
+
     it('returns 401 when Authorization header is invalid', async () => {
-      const request = new NextRequest('http://localhost:3000/api/agent/tasks/task-123/status', {
+      const request = new NextRequest(`http://localhost:3000/api/agent/tasks/${VALID_TASK_ID}/status`, {
         method: 'POST',
         headers: { authorization: 'Bearer invalid' },
         body: JSON.stringify({ status: 'success' }),
       });
-      const response = await POST(request, { params: Promise.resolve({ id: 'task-123' }) });
+      const response = await POST(request, { params: Promise.resolve({ id: VALID_TASK_ID }) });
       expect(response.status).toBe(401);
     });
 
     it('records successful crawl and returns 200', async () => {
-      (TaskSchedulerService.updateTaskStatus as jest.Mock).mockResolvedValue({
-        id: 'task-123',
-        shop_id: 'shop-123',
-        last_error: null,
-        consecutive_errors: 0,
+      (TaskSchedulerService.reconcileTaskCrawlStatus as jest.Mock).mockResolvedValue({
+        task: {
+          id: VALID_TASK_ID,
+          shop_id: 'shop-123',
+          last_error: null,
+          consecutive_errors: 0,
+        },
+        crawlRun: { id: 'crawl-run-1', status: 'success' },
+        effectiveStatus: 'success',
+        coverageStatus: 'unknown',
+        reconciliationStatus: 'unknown',
       });
 
-      const request = new NextRequest('http://localhost:3000/api/agent/tasks/task-123/status', {
+      const request = new NextRequest(`http://localhost:3000/api/agent/tasks/${VALID_TASK_ID}/status`, {
         method: 'POST',
         headers: {
           authorization: 'Bearer valid-agent-key-secret',
@@ -366,29 +373,36 @@ describe('Agent Tasks API Endpoints', () => {
         body: JSON.stringify({ status: 'success' }),
       });
 
-      const response = await POST(request, { params: Promise.resolve({ id: 'task-123' }) });
+      const response = await POST(request, { params: Promise.resolve({ id: VALID_TASK_ID }) });
       expect(response.status).toBe(200);
       const json = await response.json();
-      expect(json.success).toBe(true);
-      expect(TaskSchedulerService.updateTaskStatus).toHaveBeenCalledWith('task-123', 'success', undefined);
-      expect(recordCrawlRun).toHaveBeenCalledWith({
-        shopId: 'shop-123',
+      expect(json).toMatchObject({
+        success: true,
         status: 'success',
-        agentRunId: null,
-        errorMessage: null,
-        metadata: {},
+        coverageStatus: 'unknown',
+        reconciliationStatus: 'unknown',
+        crawlRun: { id: 'crawl-run-1', status: 'success' },
+      });
+      expect(TaskSchedulerService.reconcileTaskCrawlStatus).toHaveBeenCalledWith(VALID_TASK_ID, {
+        status: 'success',
       });
     });
 
     it('records failed crawl with error message and returns 200', async () => {
-      (TaskSchedulerService.updateTaskStatus as jest.Mock).mockResolvedValue({
-        id: 'task-123',
-        shop_id: 'shop-123',
-        last_error: 'Cloudflare block',
-        consecutive_errors: 1,
+      (TaskSchedulerService.reconcileTaskCrawlStatus as jest.Mock).mockResolvedValue({
+        task: {
+          id: VALID_TASK_ID,
+          shop_id: 'shop-123',
+          last_error: 'Cloudflare block',
+          consecutive_errors: 1,
+        },
+        crawlRun: { id: 'crawl-run-2', status: 'failed' },
+        effectiveStatus: 'failed',
+        coverageStatus: 'failed',
+        reconciliationStatus: 'unknown',
       });
 
-      const request = new NextRequest('http://localhost:3000/api/agent/tasks/task-123/status', {
+      const request = new NextRequest(`http://localhost:3000/api/agent/tasks/${VALID_TASK_ID}/status`, {
         method: 'POST',
         headers: {
           authorization: 'Bearer valid-agent-key-secret',
@@ -397,22 +411,36 @@ describe('Agent Tasks API Endpoints', () => {
         body: JSON.stringify({ status: 'failed', error: 'Cloudflare block' }),
       });
 
-      const response = await POST(request, { params: Promise.resolve({ id: 'task-123' }) });
+      const response = await POST(request, { params: Promise.resolve({ id: VALID_TASK_ID }) });
       expect(response.status).toBe(200);
       const json = await response.json();
-      expect(json.success).toBe(true);
-      expect(TaskSchedulerService.updateTaskStatus).toHaveBeenCalledWith('task-123', 'failed', 'Cloudflare block');
-      expect(recordCrawlRun).toHaveBeenCalledWith({
-        shopId: 'shop-123',
+      expect(json).toMatchObject({
+        success: true,
         status: 'failed',
-        agentRunId: null,
-        errorMessage: 'Cloudflare block',
-        metadata: {},
+        coverageStatus: 'failed',
+        reconciliationStatus: 'unknown',
+      });
+      expect(TaskSchedulerService.reconcileTaskCrawlStatus).toHaveBeenCalledWith(VALID_TASK_ID, {
+        status: 'failed',
+        error: 'Cloudflare block',
       });
     });
 
     it('records learned extraction hints and discovered source URL when provided', async () => {
-      const request = new NextRequest('http://localhost:3000/api/agent/tasks/task-123/status', {
+      (TaskSchedulerService.reconcileTaskCrawlStatus as jest.Mock).mockResolvedValue({
+        task: {
+          id: VALID_TASK_ID,
+          shop_id: 'shop-123',
+          extraction_hints: 'Rates in THB, deposit 2000 cash',
+          source_url: 'https://shop.com/fleet-rates',
+        },
+        crawlRun: { id: 'crawl-run-3', status: 'success' },
+        effectiveStatus: 'success',
+        coverageStatus: 'unknown',
+        reconciliationStatus: 'unknown',
+      });
+
+      const request = new NextRequest(`http://localhost:3000/api/agent/tasks/${VALID_TASK_ID}/status`, {
         method: 'POST',
         headers: {
           authorization: 'Bearer valid-agent-key-secret',
@@ -425,21 +453,17 @@ describe('Agent Tasks API Endpoints', () => {
         }),
       });
 
-      const response = await POST(request, { params: Promise.resolve({ id: 'task-123' }) });
+      const response = await POST(request, { params: Promise.resolve({ id: VALID_TASK_ID }) });
       expect(response.status).toBe(200);
-      expect(TaskSchedulerService.updateTaskStatus).toHaveBeenCalledWith(
-        'task-123',
-        'success',
-        undefined,
-        {
-          extractionHints: 'Rates in THB, deposit 2000 cash',
-          discoveredSourceUrl: 'https://shop.com/fleet-rates',
-        }
-      );
+      expect(TaskSchedulerService.reconcileTaskCrawlStatus).toHaveBeenCalledWith(VALID_TASK_ID, {
+        status: 'success',
+        learnedExtractionHints: 'Rates in THB, deposit 2000 cash',
+        discoveredSourceUrl: 'https://shop.com/fleet-rates',
+      });
     });
 
     it('rejects invalid status payload with 400', async () => {
-      const request = new NextRequest('http://localhost:3000/api/agent/tasks/task-123/status', {
+      const request = new NextRequest(`http://localhost:3000/api/agent/tasks/${VALID_TASK_ID}/status`, {
         method: 'POST',
         headers: {
           authorization: 'Bearer valid-agent-key-secret',
@@ -448,7 +472,7 @@ describe('Agent Tasks API Endpoints', () => {
         body: JSON.stringify({ status: 'unknown_status' }),
       });
 
-      const response = await POST(request, { params: Promise.resolve({ id: 'task-123' }) });
+      const response = await POST(request, { params: Promise.resolve({ id: VALID_TASK_ID }) });
       expect(response.status).toBe(400);
     });
   });
