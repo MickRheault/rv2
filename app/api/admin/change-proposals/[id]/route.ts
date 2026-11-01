@@ -32,10 +32,48 @@ export async function GET(
     const entriesOffsetParam = searchParams.get('entriesOffset');
     const hasPaginationParams = entriesLimitParam !== null || entriesOffsetParam !== null;
 
+    let entriesLimit: number | undefined;
+    if (entriesLimitParam !== null) {
+      const trimmed = entriesLimitParam.trim();
+      if (!/^\d+$/.test(trimmed)) {
+        return NextResponse.json(
+          { error: 'Invalid entriesLimit. Must be an integer between 1 and 500.' },
+          { status: 400 }
+        );
+      }
+      const parsed = Number(trimmed);
+      if (parsed < 1 || parsed > 500) {
+        return NextResponse.json(
+          { error: 'Invalid entriesLimit. Must be an integer between 1 and 500.' },
+          { status: 400 }
+        );
+      }
+      entriesLimit = parsed;
+    }
+
+    let entriesOffset: number | undefined;
+    if (entriesOffsetParam !== null) {
+      const trimmed = entriesOffsetParam.trim();
+      if (!/^\d+$/.test(trimmed)) {
+        return NextResponse.json(
+          { error: 'Invalid entriesOffset. Must be an integer between 0 and 100000.' },
+          { status: 400 }
+        );
+      }
+      const parsed = Number(trimmed);
+      if (parsed < 0 || parsed > 100000) {
+        return NextResponse.json(
+          { error: 'Invalid entriesOffset. Must be an integer between 0 and 100000.' },
+          { status: 400 }
+        );
+      }
+      entriesOffset = parsed;
+    }
+
     const data = hasPaginationParams
       ? await ChangeProposalService.getProposalById(id, {
-          entriesLimit: entriesLimitParam ? parseInt(entriesLimitParam, 10) : undefined,
-          entriesOffset: entriesOffsetParam ? parseInt(entriesOffsetParam, 10) : undefined,
+          entriesLimit,
+          entriesOffset,
         })
       : await ChangeProposalService.getProposalById(id);
 

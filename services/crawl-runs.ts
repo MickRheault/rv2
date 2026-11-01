@@ -1,8 +1,14 @@
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
+export type CrawlRunStatus = 'success' | 'partial' | 'failed';
+export type CrawlCoverageStatus = 'complete' | 'partial' | 'failed' | 'unknown';
+export type CrawlReconciliationStatus = 'complete' | 'unresolved' | 'unknown';
+
 export interface RecordCrawlRunInput {
   shopId: string;
-  status: 'success' | 'failed';
+  status: CrawlRunStatus;
+  coverageStatus?: CrawlCoverageStatus;
+  reconciliationStatus?: CrawlReconciliationStatus;
   proposalId?: string | null;
   agentRunId?: string | null;
   errorMessage?: string | null;
@@ -10,7 +16,7 @@ export interface RecordCrawlRunInput {
 }
 
 export interface GetCrawlRunsOptions {
-  status?: 'success' | 'failed' | 'all' | string;
+  status?: CrawlRunStatus | 'all';
   shopId?: string;
   limit?: number;
   offset?: number;
@@ -26,9 +32,15 @@ export interface CrawlRunRecord {
     add: number;
     update: number;
     delist: number;
+    unchanged?: number;
+    unresolved?: number;
+    excluded?: number;
+    duplicate?: number;
   } | null;
   agentRunId?: string | null;
-  status: 'success' | 'failed';
+  status: CrawlRunStatus;
+  coverageStatus: CrawlCoverageStatus;
+  reconciliationStatus: CrawlReconciliationStatus;
   errorMessage?: string | null;
   metadata: Record<string, any>;
   createdAt: string;
@@ -41,24 +53,37 @@ export interface GetCrawlRunsResult {
 
 export class CrawlRunService {
   /**
-   * Records a crawler attempt (success or failure) in the audit log.
+   * Records a crawler attempt in the audit log (legacy entry point).
+   * If a unique (shop_id, agent_run_id) row already exists (23505), updates it idempotently.
    */
-  static async recordCrawlRun(input: RecordCrawlRunInput) {
+  static async recordCrawlRun(input: RecordCrawlRunInput): Promise<any> {
     const supabase = getSupabaseAdmin();
+    const table = supabase.from('crawl_runs') as any;
 
-    const { data, error } = await (supabase.from('crawl_runs') as any)
-      .insert({
-        shop_id: input.shopId,
-        status: input.status,
-        proposal_id: input.proposalId || null,
-        agent_run_id: input.agentRunId || null,
-        error_message: input.errorMessage || null,
-        metadata: input.metadata || {},
-      })
+    const insertPayload: Record<string, any> = {
+      shop_id: input.shopId,
+      status: input.status,
+      proposal_id: input.proposalId || null,
+      agent_run_id: input.agentRunId || null,
+      error_message: input.errorMessage || null,
+      metadata: input.metadata || {},
+    };
+    if (input.coverageStatus !== undefined) {
+      insertPayload.coverage_status = input.coverageStatus;
+    }
+    if (input.reconciliationStatus !== undefined) {
+      insertPayload.reconciliation_status = input.reconciliationStatus;
+    }
+
+    const { data, error } = await table
+      .insert(insertPayload)
       .select()
       .single();
 
     if (error) {
+      if (error.code === '23505' && input.agentRunId) {
+        return CrawlRunService.upsertCrawlRun(input);
+      }
       throw new Error(`Failed to record crawl run: ${error.message}`);
     }
 
@@ -66,22 +91,118 @@ export class CrawlRunService {
   }
 
   /**
-   * Fetches crawler audit logs with shop and proposal details, filtered and paginated.
+   * Idempotently upserts a single crawl_runs row per (shop_id, agent_run_id) when agentRunId
+   * is provided, or inserts a standalone row when agentRunId is null.
+   */
+  static async upsertCrawlRun(input: RecordCrawlRunInput): Promise<any> {
+    const supabase = getSupabaseAdmin();
+    const crawlRunsTable = () => supabase.from('crawl_runs') as any;
+    const normalizedRunId =
+      typeof input.agentRunId === 'string' && input.agentRunId.trim().length > 0
+        ? input.agentRunId.trim()
+        : null;
+
+    const updateExistingRow = async (existing: any) => {
+      const mergedMetadata = {
+        ...(existing?.metadata && typeof existing.metadata === 'object' ? existing.metadata : {}),
+        ...(input.metadata && typeof input.metadata === 'object' ? input.metadata : {}),
+      };
+      const updatePayload: Record<string, any> = {
+        status: input.status,
+        coverage_status: input.coverageStatus ?? existing?.coverage_status ?? 'unknown',
+        reconciliation_status:
+          input.reconciliationStatus ?? existing?.reconciliation_status ?? 'unknown',
+        proposal_id: input.proposalId ?? existing?.proposal_id ?? null,
+        error_message:
+          input.errorMessage !== undefined ? input.errorMessage : existing?.error_message ?? null,
+        metadata: mergedMetadata,
+      };
+
+      const { data: updated, error: updErr } = await crawlRunsTable()
+        .update(updatePayload)
+        .eq('id', existing.id)
+        .select()
+        .single();
+
+      if (updErr) {
+        throw new Error(`Failed to update crawl run: ${updErr.message}`);
+      }
+      return updated;
+    };
+
+    if (normalizedRunId) {
+      const existingRes = await crawlRunsTable()
+        .select('*')
+        .eq('shop_id', input.shopId)
+        .eq('agent_run_id', normalizedRunId)
+        .maybeSingle();
+
+      if (existingRes?.error) {
+        throw new Error(`Failed to query existing crawl run: ${existingRes.error.message}`);
+      }
+
+      if (existingRes?.data) {
+        return updateExistingRow(existingRes.data);
+      }
+
+      const { data: inserted, error: insErr } = await crawlRunsTable()
+        .insert({
+          shop_id: input.shopId,
+          status: input.status,
+          coverage_status: input.coverageStatus ?? 'unknown',
+          reconciliation_status: input.reconciliationStatus ?? 'unknown',
+          proposal_id: input.proposalId || null,
+          agent_run_id: normalizedRunId,
+          error_message: input.errorMessage ?? null,
+          metadata: input.metadata || {},
+        })
+        .select()
+        .single();
+
+      if (insErr) {
+        if (insErr.code === '23505') {
+          const raceRes = await crawlRunsTable()
+            .select('*')
+            .eq('shop_id', input.shopId)
+            .eq('agent_run_id', normalizedRunId)
+            .maybeSingle();
+          if (raceRes?.data) {
+            return updateExistingRow(raceRes.data);
+          }
+        }
+        throw new Error(`Failed to insert crawl run: ${insErr.message}`);
+      }
+
+      return inserted;
+    }
+
+    return CrawlRunService.recordCrawlRun({
+      ...input,
+      coverageStatus: input.coverageStatus ?? 'unknown',
+      reconciliationStatus: input.reconciliationStatus ?? 'unknown',
+    });
+  }
+
+  /**
+   * Fetches crawler audit logs with shop, proposal, and quality details, filtered and paginated.
    */
   static async getCrawlRuns(options: GetCrawlRunsOptions = {}): Promise<GetCrawlRunsResult> {
     const supabase = getSupabaseAdmin();
-    const limit = options.limit !== undefined ? options.limit : 50;
-    const offset = options.offset !== undefined ? options.offset : 0;
+    const rawLimit = options.limit !== undefined && !Number.isNaN(options.limit) ? options.limit : 50;
+    const rawOffset =
+      options.offset !== undefined && !Number.isNaN(options.offset) ? options.offset : 0;
+    const limit = Math.min(Math.max(rawLimit, 1), 100);
+    const offset = Math.min(Math.max(rawOffset, 0), 100000);
 
-    let query = supabase
-      .from('crawl_runs')
-      .select(
-        `
+    let query = (supabase.from('crawl_runs') as any).select(
+      `
         id,
         shop_id,
         proposal_id,
         agent_run_id,
         status,
+        coverage_status,
+        reconciliation_status,
         error_message,
         metadata,
         created_at,
@@ -92,11 +213,14 @@ export class CrawlRunService {
         ),
         change_proposals (
           id,
+          status,
+          coverage_status,
+          reconciliation_status,
           summary_counts
         )
       `,
-        { count: 'exact' }
-      );
+      { count: 'exact' }
+    );
 
     if (options.status && options.status !== 'all') {
       query = query.eq('status', options.status as any);
@@ -113,22 +237,41 @@ export class CrawlRunService {
     const { data, count, error } = await query;
 
     if (error) {
+      if (error.code === '22P02') {
+        return { runs: [], totalCount: 0 };
+      }
       throw new Error(`Failed to fetch crawl runs: ${error.message}`);
     }
 
-    const runs: CrawlRunRecord[] = (data || []).map((row: any) => ({
-      id: row.id,
-      shopId: row.shop_id,
-      shopName: row.rental_shops?.provider_name || 'Unknown Shop',
-      shopSlug: row.rental_shops?.slug || null,
-      proposalId: row.proposal_id || null,
-      proposalSummaryCounts: row.change_proposals?.summary_counts || null,
-      agentRunId: row.agent_run_id || null,
-      status: row.status as 'success' | 'failed',
-      errorMessage: row.error_message || null,
-      metadata: row.metadata || {},
-      createdAt: row.created_at,
-    }));
+    const runs: CrawlRunRecord[] = (data || []).map((row: any) => {
+      const rowCov = row.coverage_status as CrawlCoverageStatus | undefined;
+      const propCov = row.change_proposals?.coverage_status as CrawlCoverageStatus | undefined;
+      const coverageStatus: CrawlCoverageStatus =
+        rowCov && rowCov !== 'unknown' ? rowCov : propCov || rowCov || 'unknown';
+
+      const rowRec = row.reconciliation_status as CrawlReconciliationStatus | undefined;
+      const propRec = row.change_proposals?.reconciliation_status as
+        | CrawlReconciliationStatus
+        | undefined;
+      const reconciliationStatus: CrawlReconciliationStatus =
+        rowRec && rowRec !== 'unknown' ? rowRec : propRec || rowRec || 'unknown';
+
+      return {
+        id: row.id,
+        shopId: row.shop_id,
+        shopName: row.rental_shops?.provider_name || 'Unknown Shop',
+        shopSlug: row.rental_shops?.slug || null,
+        proposalId: row.proposal_id || null,
+        proposalSummaryCounts: row.change_proposals?.summary_counts || null,
+        agentRunId: row.agent_run_id || null,
+        status: row.status as CrawlRunStatus,
+        coverageStatus,
+        reconciliationStatus,
+        errorMessage: row.error_message || null,
+        metadata: row.metadata || {},
+        createdAt: row.created_at,
+      };
+    });
 
     return {
       runs,
@@ -137,5 +280,6 @@ export class CrawlRunService {
   }
 }
 
-export const recordCrawlRun = CrawlRunService.recordCrawlRun;
-export const getCrawlRuns = CrawlRunService.getCrawlRuns;
+export const recordCrawlRun = CrawlRunService.recordCrawlRun.bind(CrawlRunService);
+export const upsertCrawlRun = CrawlRunService.upsertCrawlRun.bind(CrawlRunService);
+export const getCrawlRuns = CrawlRunService.getCrawlRuns.bind(CrawlRunService);

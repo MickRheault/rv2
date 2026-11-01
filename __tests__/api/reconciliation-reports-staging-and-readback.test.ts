@@ -306,7 +306,7 @@ describe('Reconciliation Reports Staging, Idempotency & Readback (Ticket #202)',
       new NextRequest(`http://localhost:3000/api/admin/change-proposals/${proposalId}/apply`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ approvedItemIds: [] }),
+        body: JSON.stringify({ approvedItemIds: [], expectedVersion: 1 }),
       }),
       { params: Promise.resolve({ id: proposalId }) }
     );
@@ -328,7 +328,7 @@ describe('Reconciliation Reports Staging, Idempotency & Readback (Ticket #202)',
       new NextRequest(`http://localhost:3000/api/admin/change-proposals/${proposalId}/apply`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ approvedItemIds: [] }),
+        body: JSON.stringify({ approvedItemIds: [], expectedVersion: 1 }),
       }),
       { params: Promise.resolve({ id: proposalId }) }
     );
@@ -1064,7 +1064,7 @@ describe('Reconciliation Reports Staging, Idempotency & Readback (Ticket #202)',
       new NextRequest(`http://localhost:3000/api/admin/change-proposals/${proposalId}/apply`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ approvedItemIds: [forzaItem!.id] }),
+        body: JSON.stringify({ approvedItemIds: [forzaItem!.id], expectedVersion: 1 }),
       }),
       { params: Promise.resolve({ id: proposalId }) }
     );

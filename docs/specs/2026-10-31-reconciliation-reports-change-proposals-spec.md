@@ -80,7 +80,7 @@ Extend the Change Proposal workflow to accept an optional, validated, immutable 
     - `duplicate`: empty `proposalItemRefs`, non-empty `reason`, and either `duplicateOfEntryKey` (referencing a non-duplicate entry in the same report) or shop-owned `duplicateOfMotorcycleId`.
 - **Server-Derived Counts & Canonical Digest**:
   - Ignore any client-supplied summary totals when computing authoritative `serverCounts`: `readyActionableItems`, `accountedDiscoveredModels`, `unresolvedModels`, `unchangedModels`, `excludedModels`, `duplicateModels`, `pagesProcessed`, `pagesFailed`, `pagesNotProcessed`, plus mutation counts `add`, `update`, `delist` (and `unchanged` for legacy).
-  - Compute `reportDigest` (`sha256:<hex>`) using RFC-8785 deterministic lexicographical key-sorted UTF-8 JSON serialization over normalized `reconciliationReport`, and `payloadDigest` over normalized `{ sourceUrl, items, reconciliationReport }` for `(shopId, agentRunId)` idempotency (`201` on creation, `200` on identical replay, `409` on divergent replay).
+  - Compute `reportDigest` (`sha256:<hex>`) using RFC-8785 deterministic lexicographical key-sorted UTF-8 JSON serialization over normalized `reconciliationReport`, and `payloadDigest` over normalized `{ shopId, sourceUrl, items, reportDigest, learnedConfig }` for `(shopId, agentRunId)` idempotency (`201` on creation, `200` on identical replay, `409` on divergent replay).
 
 ### 4. Unresolved Candidate State Machine & Cross-Run Linking
 ```
@@ -150,10 +150,11 @@ Extend the Change Proposal workflow to accept an optional, validated, immutable 
 
 - Canonical digest computation (`reportDigest` and `payloadDigest`) uses recursive lexicographical UTF-8 key-sorted JSON serialization (RFC 8785 compatible) prefixed with `sha256:`.
 - Legacy proposals created prior to this feature retain `coverage_status = 'unknown'` and `reconciliation_status = 'unknown'` without backfilling historical crawls as verified complete.
+- Complete API contracts, lifecycle diagrams, limits, and concrete Ride On Barcelona request/response examples are documented in [`docs/reconciliation-reports-handoff.md`](../reconciliation-reports-handoff.md).
 
 ## Implementation Tickets
 
 - Spec: [#201](https://github.com/MickRheault/rv2/issues/201)
-- [ ] [#202: feat(change-proposals): stage, read back, and review reconciliation reports and report-only proposals](https://github.com/MickRheault/rv2/issues/202)
-- [ ] [#203: feat(change-proposals): enforce approval safety, cross-run candidate resolution, and admin candidate decisions](https://github.com/MickRheault/rv2/issues/203)
-- [ ] [#204: feat(agent-tasks): expose open unresolved candidates in task context and unify crawl-run quality bookkeeping](https://github.com/MickRheault/rv2/issues/204)
+- [x] [#202: feat(change-proposals): stage, read back, and review reconciliation reports and report-only proposals](https://github.com/MickRheault/rv2/issues/202)
+- [x] [#203: feat(change-proposals): enforce approval safety, cross-run candidate resolution, and admin candidate decisions](https://github.com/MickRheault/rv2/issues/203)
+- [x] [#204: feat(agent-tasks): expose open unresolved candidates in task context and unify crawl-run quality bookkeeping](https://github.com/MickRheault/rv2/issues/204)

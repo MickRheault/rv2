@@ -32,7 +32,8 @@ export function createRideOnSeedState(): InMemoryReconciliationState {
         website: 'https://rideon.es/flota/',
         phone: '+34 931 000 000',
         business_description: 'Barcelona motorcycle rentals',
-        business_statuses: { name: 'Operational' },
+        business_status_id: 1,
+        business_statuses: { id: 1, name: 'Operational', status_code: 'Operational' },
         cities: {
           name: 'Barcelona',
           slug: 'barcelona',
@@ -49,12 +50,13 @@ export function createRideOnSeedState(): InMemoryReconciliationState {
         provider_name: 'Other Madrid Shop',
         slug: 'other-madrid-shop',
         website: 'https://othermadrid.es',
-        business_statuses: { name: 'Operational' },
+        business_status_id: 1,
+        business_statuses: { id: 1, name: 'Operational', status_code: 'Operational' },
       },
     ],
     shop_agent_configs: [
       {
-        id: 'task-rideon-1',
+        id: '10000000-0000-4000-8000-000000000001',
         shop_id: '53529565-40d9-41f5-98e4-d2ed1f1d7ffd',
         tier: 1,
         source_url: 'https://rideon.es/flota/',
@@ -189,6 +191,35 @@ export function createInMemorySupabaseClient(
   options: { failRpcMessage?: string; failBikeInsertForModel?: string } = {}
 ) {
   const makeUuid = () => crypto.randomUUID();
+  const UUID_COL_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const UUID_COLUMNS_BY_TABLE: Partial<Record<keyof InMemoryReconciliationState, string[]>> = {
+    shop_agent_configs: ['id', 'shop_id'],
+    change_proposals: ['shop_id', 'reviewed_by'],
+    unresolved_candidates: [
+      'shop_id',
+      'originating_proposal_id',
+      'latest_proposal_id',
+      'linked_proposal_item_id',
+      'resolved_motorcycle_id',
+    ],
+    unresolved_candidate_events: ['candidate_id', 'shop_id', 'actor_id', 'proposal_id'],
+    proposal_decision_events: ['proposal_id', 'shop_id', 'actor_id'],
+    crawl_runs: ['shop_id', 'proposal_id'],
+  };
+
+  function validateUuidColumns(table: keyof InMemoryReconciliationState, raw: Record<string, any>) {
+    const cols = UUID_COLUMNS_BY_TABLE[table] || [];
+    for (const col of cols) {
+      const val = raw?.[col];
+      if (val !== undefined && val !== null && !UUID_COL_REGEX.test(String(val))) {
+        return {
+          code: '22P02',
+          message: `invalid input syntax for type uuid: "${String(val)}" (column ${String(table)}.${col})`,
+        };
+      }
+    }
+    return null;
+  }
 
   function createQueryBuilder(table: keyof InMemoryReconciliationState) {
     let op: 'select' | 'insert' | 'update' | 'delete' = 'select';
@@ -229,6 +260,10 @@ export function createInMemorySupabaseClient(
           ) {
             return { data: null, error: { message: `Simulated DB failure inserting ${raw.model}` } };
           }
+          const uuidErr = validateUuidColumns(table, raw);
+          if (uuidErr) {
+            return { data: null, error: uuidErr };
+          }
           if (table === 'proposal_decision_events' && !validProposalDecisions.has(raw.decision)) {
             return {
               data: null,
@@ -246,6 +281,66 @@ export function createInMemorySupabaseClient(
                 message: `new row for relation "unresolved_candidates" violates check constraint: '${String(raw.state)}'`,
               },
             };
+          }
+          if (table === 'crawl_runs') {
+            const validCrawlStatuses = new Set(['success', 'partial', 'failed']);
+            const validCov = new Set(['complete', 'partial', 'failed', 'unknown']);
+            const validRec = new Set(['complete', 'unresolved', 'unknown']);
+            if (!validCrawlStatuses.has(raw.status)) {
+              return {
+                data: null,
+                error: {
+                  code: '23514',
+                  message: `new row for relation "crawl_runs" violates check constraint "crawl_runs_status_check": '${String(raw.status)}'`,
+                },
+              };
+            }
+            if (raw.coverage_status !== undefined && !validCov.has(raw.coverage_status)) {
+              return {
+                data: null,
+                error: {
+                  code: '23514',
+                  message: `new row for relation "crawl_runs" violates coverage_status check: '${String(raw.coverage_status)}'`,
+                },
+              };
+            }
+            if (raw.reconciliation_status !== undefined && !validRec.has(raw.reconciliation_status)) {
+              return {
+                data: null,
+                error: {
+                  code: '23514',
+                  message: `new row for relation "crawl_runs" violates reconciliation_status check: '${String(raw.reconciliation_status)}'`,
+                },
+              };
+            }
+            if (
+              raw.proposal_id !== null &&
+              raw.proposal_id !== undefined &&
+              !state.change_proposals.some((p) => p.id === raw.proposal_id)
+            ) {
+              return {
+                data: null,
+                error: {
+                  code: '23503',
+                  message: `insert or update on table "crawl_runs" violates foreign key constraint "crawl_runs_proposal_id_fkey"`,
+                },
+              };
+            }
+            if (
+              raw.agent_run_id !== null &&
+              raw.agent_run_id !== undefined &&
+              tableRows.some(
+                (r) => r.shop_id === raw.shop_id && r.agent_run_id === raw.agent_run_id
+              )
+            ) {
+              return {
+                data: null,
+                error: {
+                  code: '23505',
+                  message: `duplicate key value violates unique constraint "uq_crawl_runs_shop_agent_run"`,
+                },
+              };
+            }
           }
           const now = new Date().toISOString();
           const record = {
@@ -282,6 +377,25 @@ export function createInMemorySupabaseClient(
       }
 
       if (op === 'update') {
+        const uuidErr = validateUuidColumns(table, payloadData || {});
+        if (uuidErr) {
+          return { data: null, error: uuidErr, count: 0 };
+        }
+        if (
+          table === 'crawl_runs' &&
+          payloadData?.proposal_id !== null &&
+          payloadData?.proposal_id !== undefined &&
+          !state.change_proposals.some((p) => p.id === payloadData.proposal_id)
+        ) {
+          return {
+            data: null,
+            error: {
+              code: '23503',
+              message: `insert or update on table "crawl_runs" violates foreign key constraint "crawl_runs_proposal_id_fkey"`,
+            },
+            count: 0,
+          };
+        }
         const now = new Date().toISOString();
         const updated: any[] = [];
         for (const row of matched) {
@@ -330,82 +444,107 @@ export function createInMemorySupabaseClient(
       };
     };
 
+    const assertBound = (ctx: any, methodName: string) => {
+      if (ctx !== builder) {
+        throw new TypeError(
+          `Cannot read properties of undefined (detached PostgrestBuilder.${methodName} call)`
+        );
+      }
+    };
+
     const builder: any = {
-      select(_cols?: string, opts?: { count?: string }) {
+      select(this: any, _cols?: string, opts?: { count?: string }) {
+        assertBound(this, 'select');
         if (op === 'select') {
           countMode = opts?.count;
         }
         return builder;
       },
-      insert(data: any) {
+      insert(this: any, data: any) {
+        assertBound(this, 'insert');
         op = 'insert';
         payloadData = data;
         return builder;
       },
-      update(data: any) {
+      update(this: any, data: any) {
+        assertBound(this, 'update');
         op = 'update';
         payloadData = data;
         return builder;
       },
-      delete() {
+      delete(this: any) {
+        assertBound(this, 'delete');
         op = 'delete';
         return builder;
       },
-      eq(col: string, val: any) {
+      eq(this: any, col: string, val: any) {
+        assertBound(this, 'eq');
         filters.push((r) => r[col] === val);
         return builder;
       },
-      neq(col: string, val: any) {
+      neq(this: any, col: string, val: any) {
+        assertBound(this, 'neq');
         filters.push((r) => r[col] !== val);
         return builder;
       },
-      in(col: string, vals: any[]) {
+      in(this: any, col: string, vals: any[]) {
+        assertBound(this, 'in');
         const set = new Set(vals);
         filters.push((r) => set.has(r[col]));
         return builder;
       },
-      ilike(col: string, pattern: string) {
+      ilike(this: any, col: string, pattern: string) {
+        assertBound(this, 'ilike');
         const norm = pattern.toLowerCase();
         filters.push((r) => String(r[col] ?? '').toLowerCase() === norm);
         return builder;
       },
-      is(col: string, val: any) {
+      is(this: any, col: string, val: any) {
+        assertBound(this, 'is');
         filters.push((r) => (val === null ? r[col] === null || r[col] === undefined : r[col] === val));
         return builder;
       },
-      not(col: string, operator: string, val: any) {
+      not(this: any, col: string, operator: string, val: any) {
+        assertBound(this, 'not');
         if (operator === 'is' && val === null) {
           filters.push((r) => r[col] !== null && r[col] !== undefined);
         }
         return builder;
       },
-      or(expr: string) {
+      or(this: any, expr: string) {
+        assertBound(this, 'or');
         if (expr.includes('availability_status.neq.unavailable')) {
           filters.push((r) => !r.availability_status || r.availability_status !== 'unavailable');
         }
         return builder;
       },
-      order(col: string, opts?: { ascending?: boolean }) {
+      order(this: any, col: string, opts?: { ascending?: boolean }) {
+        assertBound(this, 'order');
         orderSpec = { col, ascending: opts?.ascending !== false };
         return builder;
       },
-      range(from: number, to: number) {
+      range(this: any, from: number, to: number) {
+        assertBound(this, 'range');
         rangeSpec = { from, to };
         return builder;
       },
-      limit(n: number) {
+      limit(this: any, n: number) {
+        assertBound(this, 'limit');
         limitCount = n;
         return builder;
       },
-      single() {
+      single(this: any) {
+        assertBound(this, 'single');
         expectSingle = true;
         return execute();
       },
-      maybeSingle() {
+      maybeSingle(this: any) {
+        assertBound(this, 'maybeSingle');
         expectMaybeSingle = true;
         return execute();
       },
-      then(onFulfilled: any, onRejected: any) {
+      then(this: any, onFulfilled: any, onRejected: any) {
+        assertBound(this, 'then');
         return execute().then(onFulfilled, onRejected);
       },
     };
@@ -510,8 +649,8 @@ export function createInMemorySupabaseClient(
                   previous_state: 'ready_for_proposal',
                   new_state: 'open',
                   reason: 'Linked pending proposal superseded before application',
-                  issues_snapshot: null,
-                  evidence_snapshot: null,
+                  issues_snapshot: structuredClone(cand.current_issues ?? null),
+                  evidence_snapshot: structuredClone(cand.latest_evidence ?? null),
                   created_at: now,
                 });
               }

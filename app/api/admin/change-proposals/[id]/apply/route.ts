@@ -50,11 +50,13 @@ export async function POST(
       );
     }
 
-    const hasApplyOptions = Boolean(actorId) || body?.notes !== undefined;
+    const hasApplyOptions =
+      body?.expectedVersion !== undefined || Boolean(actorId) || body?.notes !== undefined;
     const result = hasApplyOptions
       ? await ChangeProposalService.apply(id, approvedItemIds, {
-          actorId,
-          notes: body?.notes ?? null,
+          ...(body?.expectedVersion !== undefined ? { expectedVersion: body.expectedVersion } : {}),
+          ...(actorId ? { actorId } : {}),
+          ...(body?.notes !== undefined ? { notes: body.notes ?? null } : {}),
         })
       : await ChangeProposalService.apply(id, approvedItemIds);
     purgePublicCache();
@@ -70,6 +72,7 @@ export async function POST(
     if (
       error?.name === 'StaleConditionStateError' ||
       error?.name === 'StaleCategoryStateError' ||
+      error?.name === 'StaleMotorcycleStateError' ||
       error?.name === 'ProposalVersionConflictError'
     ) {
       return NextResponse.json({ error: error.message }, { status: 409 });

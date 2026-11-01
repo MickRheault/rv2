@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, Button, Badge, Alert, Checkbox, Spinner } from '@/components/ui';
+import { Card, Button, Badge, Alert, Checkbox, Spinner, Modal, Textarea } from '@/components/ui';
 import {
   CheckIcon,
   XMarkIcon,
@@ -208,10 +208,26 @@ export interface DiffViewerCandidate {
   state: 'open' | 'ready_for_proposal' | 'resolved_applied' | 'excluded' | 'dismissed';
   flagged_for_review?: boolean;
   flaggedForReview?: boolean;
+  linked_proposal_item_id?: string | null;
+  linkedProposalItemId?: string | null;
+  resolved_motorcycle_id?: string | null;
+  resolvedMotorcycleId?: string | null;
   current_issues?: Array<{ code: string; detail: string }>;
   next_action?: string | null;
   resolution_reason?: string | null;
   version?: number;
+}
+
+export interface DiffViewerCandidateEvent {
+  id?: string;
+  candidate_id?: string;
+  candidateId?: string;
+  event_type: string;
+  actor_type?: string | null;
+  previous_state?: string | null;
+  new_state?: string | null;
+  reason?: string | null;
+  created_at?: string;
 }
 
 interface ChangeProposalDiffViewerProps {
@@ -222,7 +238,7 @@ interface ChangeProposalDiffViewerProps {
   entriesPagination?: DiffViewerEntriesPagination | null;
   candidates?: DiffViewerCandidate[];
   decisionEvents?: any[];
-  candidateEvents?: any[];
+  candidateEvents?: DiffViewerCandidateEvent[];
   onEntriesPageChange?: (offset: number) => void;
   onApplySuccess?: () => void;
   onRejectSuccess?: () => void;
@@ -898,12 +914,18 @@ function resolveProposalExtractionHints(proposal: DiffViewerProposal): string | 
 
 export async function submitProposalDecision(
   proposalId: string,
-  approvedItemIds: string[]
+  approvedItemIds: string[],
+  expectedVersion?: number
 ): Promise<{ appliedCount: number; status: string }> {
+  const payload: Record<string, any> = { approvedItemIds };
+  if (expectedVersion !== undefined) {
+    payload.expectedVersion = expectedVersion;
+  }
+
   const res = await fetch(`/api/admin/change-proposals/${proposalId}/apply`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ approvedItemIds }),
+    body: JSON.stringify(payload),
   });
 
   let data: any = null;
@@ -928,6 +950,39 @@ export async function submitProposalDecision(
     throw new Error('Unexpected non-JSON response from server.');
   }
 
+  return data;
+}
+
+export async function submitCandidateDecision(
+  candidateId: string,
+  action: 'dismiss' | 'exclude' | 'reopen',
+  reason: string,
+  expectedVersion?: number
+): Promise<{ success: boolean; candidate: DiffViewerCandidate }> {
+  const payload: Record<string, any> = { action, reason };
+  if (expectedVersion !== undefined) {
+    payload.expectedVersion = expectedVersion;
+  }
+
+  const res = await fetch(`/api/admin/unresolved-candidates/${candidateId}`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  let data: any = null;
+  try {
+    data = await res.json();
+  } catch {
+    // Non-JSON response body
+  }
+
+  if (!res.ok) {
+    throw new Error(data?.error || `Failed to ${action} unresolved candidate.`);
+  }
+  if (!data) {
+    throw new Error('Unexpected non-JSON response from server.');
+  }
   return data;
 }
 
@@ -1132,6 +1187,7 @@ export function ChangeProposalDiffViewer({
   entries = [],
   entriesPagination = null,
   candidates = [],
+  candidateEvents = [],
   onEntriesPageChange,
   onApplySuccess,
   onRejectSuccess,
@@ -1151,6 +1207,61 @@ export function ChangeProposalDiffViewer({
   const [isUnchangedExpanded, setIsUnchangedExpanded] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [candidateModal, setCandidateModal] = useState<{
+    candidate: DiffViewerCandidate;
+    action: 'dismiss' | 'exclude' | 'reopen';
+  } | null>(null);
+  const [candidateReason, setCandidateReason] = useState('');
+  const [candidateReasonError, setCandidateReasonError] = useState<string | null>(null);
+  const [isSubmittingCandidate, setIsSubmittingCandidate] = useState(false);
+
+  const openCandidateDecisionModal = (
+    candidate: DiffViewerCandidate,
+    action: 'dismiss' | 'exclude' | 'reopen'
+  ) => {
+    setCandidateModal({ candidate, action });
+    setCandidateReason('');
+    setCandidateReasonError(null);
+  };
+
+  const closeCandidateDecisionModal = () => {
+    if (isSubmittingCandidate) return;
+    setCandidateModal(null);
+    setCandidateReason('');
+    setCandidateReasonError(null);
+  };
+
+  const handleConfirmCandidateDecision = async () => {
+    if (!candidateModal) return;
+    const { candidate, action } = candidateModal;
+    const trimmed = candidateReason.trim();
+    if ((action === 'dismiss' || action === 'exclude') && trimmed.length === 0) {
+      setCandidateReasonError(`A non-empty reason is required to ${action} this candidate.`);
+      return;
+    }
+
+    setIsSubmittingCandidate(true);
+    setCandidateReasonError(null);
+    setError(null);
+
+    try {
+      await submitCandidateDecision(candidate.id, action, trimmed, candidate.version);
+      const label = candidate.brand_name || candidate.brand || '';
+      const modelLabel = candidate.model_name || candidate.model || '';
+      setSuccessMessage(
+        `Candidate ${`${label} ${modelLabel}`.trim() || candidate.id} updated (${action}).`
+      );
+      setCandidateModal(null);
+      setCandidateReason('');
+      if (onApplySuccess) {
+        onApplySuccess();
+      }
+    } catch (err: any) {
+      setCandidateReasonError(err?.message || `Failed to ${action} candidate.`);
+    } finally {
+      setIsSubmittingCandidate(false);
+    }
+  };
 
   const toggleItem = (id: string) => {
     const next = new Set(selectedIds);
@@ -1181,7 +1292,11 @@ export function ChangeProposalDiffViewer({
     setSuccessMessage(null);
 
     try {
-      const data = await submitProposalDecision(proposal.id, Array.from(selectedIds));
+      const data = await submitProposalDecision(
+        proposal.id,
+        Array.from(selectedIds),
+        proposal.version
+      );
       setSuccessMessage(
         `Successfully applied ${data.appliedCount} mutation(s). Status: ${data.status}`
       );
@@ -1202,7 +1317,7 @@ export function ChangeProposalDiffViewer({
     setSuccessMessage(null);
 
     try {
-      await submitProposalDecision(proposal.id, []);
+      await submitProposalDecision(proposal.id, [], proposal.version);
       if (onRejectSuccess) {
         onRejectSuccess();
       } else if (onApplySuccess) {
@@ -1255,6 +1370,96 @@ export function ChangeProposalDiffViewer({
   for (const cand of candidates) {
     if (cand?.id) candidateById.set(cand.id, cand);
   }
+
+  const eventsByCandidateId = new Map<string, any[]>();
+  for (const ev of candidateEvents) {
+    const cid = ev?.candidate_id ?? ev?.candidateId;
+    if (!cid) continue;
+    const list = eventsByCandidateId.get(cid) || [];
+    list.push(ev);
+    eventsByCandidateId.set(cid, list);
+  }
+
+  const referencedEntryCandidateIds = new Set(
+    unresolvedEntries.map((e) => e.candidateId).filter(Boolean) as string[]
+  );
+  const unresolvedShopCandidates = candidates.filter((c) => {
+    if (c.state === 'open') return true;
+    if (c.state === 'ready_for_proposal') {
+      const linkedId = c.linked_proposal_item_id ?? c.linkedProposalItemId;
+      return !linkedId || !selectedIds.has(linkedId);
+    }
+    return false;
+  });
+  const carryoverCandidates = candidates.filter(
+    (c) => Boolean(c.id) && !referencedEntryCandidateIds.has(c.id)
+  );
+
+  const renderCandidateActions = (cand?: DiffViewerCandidate) => {
+    if (!cand || cand.state === 'resolved_applied') return null;
+    return (
+      <div className="flex items-center gap-2 flex-wrap">
+        {cand.state === 'open' && (
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openCandidateDecisionModal(cand, 'dismiss')}
+            >
+              Dismiss
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openCandidateDecisionModal(cand, 'exclude')}
+            >
+              Exclude
+            </Button>
+          </>
+        )}
+        {(cand.state === 'dismissed' || cand.state === 'excluded') && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => openCandidateDecisionModal(cand, 'reopen')}
+          >
+            Reopen
+          </Button>
+        )}
+      </div>
+    );
+  };
+
+  const renderCandidateAuditEvents = (candidateId?: string | null) => {
+    if (!candidateId) return null;
+    const history = eventsByCandidateId.get(candidateId);
+    if (!history || history.length === 0) return null;
+    return (
+      <div className="mt-2 rounded bg-slate-50 border border-slate-200 px-2.5 py-2 space-y-1">
+        <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-600">
+          Candidate Audit History ({history.length})
+        </div>
+        <ul className="space-y-1 text-xs text-slate-700">
+          {history.map((ev: any, idx: number) => (
+            <li key={ev.id || idx} className="flex flex-wrap items-baseline gap-1.5">
+              <span className="font-mono text-[11px] bg-slate-200/80 text-slate-800 px-1.5 py-0.5 rounded">
+                {ev.event_type}
+              </span>
+              {ev.actor_type && (
+                <span className="text-[11px] text-slate-500">({ev.actor_type})</span>
+              )}
+              {ev.new_state && (
+                <span className="text-[11px] font-medium text-slate-700">
+                  {ev.previous_state ? `${ev.previous_state} → ${ev.new_state}` : `→ ${ev.new_state}`}
+                </span>
+              )}
+              {ev.reason && <span className="text-slate-800 break-words">— {ev.reason}</span>}
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  };
 
   const isCompleted =
     proposal.status === 'applied' ||
@@ -1412,6 +1617,25 @@ export function ChangeProposalDiffViewer({
             </div>
           </div>
         )}
+
+        {/* Approval Safety Warning Banner when unresolved motorcycles remain open */}
+        {!isCompleted &&
+          pendingActionableItems.length > 0 &&
+          (displayedUnresolvedCount > 0 || unresolvedShopCandidates.length > 0) && (
+            <div
+              data-testid="unresolved-approval-warning"
+              className="mt-5 rounded-lg bg-amber-50 border border-amber-300 px-4 py-3 flex items-start gap-2.5 text-xs text-amber-950"
+            >
+              <ExclamationTriangleIcon className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <span className="font-semibold">Approval Safety Notice: </span>
+                Approving ready changes will NOT resolve open unresolved motorcycles, publish
+                unverified candidates, or mark this shop&apos;s inventory fully reconciled. Open
+                candidates remain tracked until verified in a future proposal or explicitly
+                dismissed/excluded.
+              </div>
+            </div>
+          )}
 
         {/* Action Toolbar */}
         {!isCompleted && pendingActionableItems.length > 0 && (
@@ -2175,11 +2399,11 @@ export function ChangeProposalDiffViewer({
       </div>
 
       {/* Reconciliation Report Section 2: Unresolved Motorcycles */}
-      {report && (
+      {(report || carryoverCandidates.length > 0) && (
         <Card
           data-testid="reconciliation-unresolved-section"
           className={
-            displayedUnresolvedCount > 0
+            displayedUnresolvedCount > 0 || unresolvedShopCandidates.length > 0
               ? 'border-amber-300 bg-amber-50/20'
               : 'border-gray-200'
           }
@@ -2236,10 +2460,20 @@ export function ChangeProposalDiffViewer({
                           </span>
                         )}
                       </div>
-                      <span className="text-xs font-mono text-gray-400">
-                        key: {entry.entryKey}
-                      </span>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-mono text-gray-400">
+                          key: {entry.entryKey}
+                        </span>
+                        {renderCandidateActions(matchedCandidate)}
+                      </div>
                     </div>
+
+                    {matchedCandidate?.resolution_reason && (
+                      <div className="rounded bg-slate-50 border border-slate-200 px-2.5 py-1.5 text-xs text-slate-800">
+                        <span className="font-semibold">Resolution Reason: </span>
+                        <span className="break-words">{matchedCandidate.resolution_reason}</span>
+                      </div>
+                    )}
 
                     {Array.isArray(entry.issues) && entry.issues.length > 0 && (
                       <div className="space-y-1">
@@ -2270,6 +2504,56 @@ export function ChangeProposalDiffViewer({
                     )}
 
                     {renderEvidenceList(entry.evidence)}
+                    {renderCandidateAuditEvents(matchedCandidate?.id)}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {carryoverCandidates.length > 0 && (
+            <div className="mt-4 pt-3 border-t border-amber-200/80 space-y-2.5">
+              <div className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+                Shop Candidate Backlog & Prior Decisions ({carryoverCandidates.length})
+              </div>
+              {carryoverCandidates.map((cand) => {
+                const isFlagged = Boolean(cand.flagged_for_review ?? cand.flaggedForReview);
+                const brandLabel = cand.brand_name || cand.brand || '';
+                const modelLabel = cand.model_name || cand.model || '';
+                const resolvedBikeId = cand.resolved_motorcycle_id ?? cand.resolvedMotorcycleId;
+                return (
+                  <div
+                    key={cand.id}
+                    className="p-3 rounded-lg bg-white/90 border border-slate-200 space-y-2 text-xs"
+                  >
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-gray-900 text-sm">
+                          {`${brandLabel} ${modelLabel}`.trim()}
+                        </span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-800 border border-slate-300">
+                          Candidate: {cand.state}
+                        </span>
+                        {resolvedBikeId && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-emerald-50 text-emerald-800 border border-emerald-300">
+                            Motorcycle ID: {resolvedBikeId}
+                          </span>
+                        )}
+                        {isFlagged && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-red-100 text-red-800 border border-red-300">
+                            Flagged for Review
+                          </span>
+                        )}
+                      </div>
+                      {renderCandidateActions(cand)}
+                    </div>
+                    {cand.resolution_reason && (
+                      <div className="text-slate-700">
+                        <span className="font-semibold">Reason: </span>
+                        <span className="break-words">{cand.resolution_reason}</span>
+                      </div>
+                    )}
+                    {renderCandidateAuditEvents(cand.id)}
                   </div>
                 );
               })}
@@ -2720,6 +3004,74 @@ export function ChangeProposalDiffViewer({
           )}
         </Card>
       )}
+
+      {/* Candidate Decision Modal (Dismiss / Exclude / Reopen) */}
+      <Modal
+        isOpen={Boolean(candidateModal)}
+        onClose={closeCandidateDecisionModal}
+        title={
+          candidateModal
+            ? `${
+                candidateModal.action === 'dismiss'
+                  ? 'Dismiss'
+                  : candidateModal.action === 'exclude'
+                  ? 'Exclude'
+                  : 'Reopen'
+              } Unresolved Candidate`
+            : 'Candidate Decision'
+        }
+        description={
+          candidateModal
+            ? `${
+                candidateModal.candidate.brand_name || candidateModal.candidate.brand || ''
+              } ${
+                candidateModal.candidate.model_name || candidateModal.candidate.model || ''
+              }`.trim()
+            : undefined
+        }
+        size="md"
+      >
+        <div className="space-y-4">
+          <Textarea
+            id="candidate-decision-reason"
+            label="Decision Reason"
+            rows={3}
+            value={candidateReason}
+            onChange={(e) => {
+              setCandidateReason(e.target.value);
+              if (candidateReasonError) setCandidateReasonError(null);
+            }}
+            error={candidateReasonError || undefined}
+            placeholder={
+              candidateModal?.action === 'reopen'
+                ? 'Optional note for reopening this candidate...'
+                : 'Required: explain why this candidate is being dismissed or excluded...'
+            }
+          />
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={closeCandidateDecisionModal}
+              disabled={isSubmittingCandidate}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleConfirmCandidateDecision}
+              disabled={isSubmittingCandidate}
+            >
+              {isSubmittingCandidate
+                ? 'Saving...'
+                : candidateModal?.action === 'dismiss'
+                ? 'Confirm Dismiss'
+                : candidateModal?.action === 'exclude'
+                ? 'Confirm Exclude'
+                : 'Confirm Reopen'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
