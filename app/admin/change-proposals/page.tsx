@@ -4,11 +4,17 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Card, Button, Badge, Spinner, Alert, Select, Modal } from '@/components/ui';
 import { shopService } from '@/services/shops';
-import { submitProposalDecision } from '@/components/admin/ChangeProposalDiffViewer';
+import {
+  submitProposalDecision,
+  acknowledgeReportProposal,
+  toSafeHttpUrl,
+} from '@/components/admin/ChangeProposalDiffViewer';
 import {
   ArrowLeftIcon,
   ArrowPathIcon,
   ArrowTopRightOnSquareIcon,
+  CheckIcon,
+  ExclamationTriangleIcon,
   SparklesIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
@@ -21,13 +27,35 @@ interface ProposalSummaryItem {
   shopUrl?: string;
   agentRunId?: string | null;
   sourceUrl: string;
-  status: 'pending' | 'reviewing' | 'applied' | 'partially_applied' | 'rejected';
+  status:
+    | 'pending'
+    | 'reviewing'
+    | 'applied'
+    | 'partially_applied'
+    | 'rejected'
+    | 'acknowledged'
+    | 'superseded';
+  coverageStatus?: 'complete' | 'partial' | 'failed' | 'unknown';
+  reconciliationStatus?: 'complete' | 'unresolved' | 'unknown';
+  applicationStatus?:
+    | 'pending'
+    | 'not_applicable'
+    | 'applied'
+    | 'partially_applied'
+    | 'failed'
+    | 'rejected';
+  version?: number;
+  hasReconciliationReport?: boolean;
   summaryCounts: {
     add: number;
     update: number;
     delist: number;
     unchanged?: number;
+    unresolved?: number;
+    excluded?: number;
+    duplicate?: number;
   };
+  serverCounts?: Record<string, number> | null;
   createdAt: string;
   reviewedAt?: string | null;
 }
@@ -53,9 +81,11 @@ interface CrawlRunItem {
 const PROPOSAL_STATUS_FILTER_OPTIONS = [
   { value: 'all', label: 'All Statuses' },
   { value: 'pending', label: 'Pending Review' },
+  { value: 'acknowledged', label: 'Acknowledged' },
   { value: 'applied', label: 'Applied' },
   { value: 'partially_applied', label: 'Partially Applied' },
   { value: 'rejected', label: 'Rejected' },
+  { value: 'superseded', label: 'Superseded' },
 ];
 
 const CRAWLER_STATUS_FILTER_OPTIONS = [
@@ -73,6 +103,7 @@ export default function ChangeProposalsPage() {
   const [proposalStatusFilter, setProposalStatusFilter] = useState<string>('pending');
   const [loadingProposals, setLoadingProposals] = useState<boolean>(true);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
   const [proposalError, setProposalError] = useState<string | null>(null);
 
   // Crawler logs state
@@ -137,6 +168,21 @@ export default function ChangeProposalsPage() {
     }
   };
 
+  const handleQuickAcknowledge = async (proposalId: string, expectedVersion?: number) => {
+    setAcknowledgingId(proposalId);
+    setProposalError(null);
+
+    try {
+      await acknowledgeReportProposal(proposalId, expectedVersion);
+      await fetchProposals();
+    } catch (err: any) {
+      console.error('Error acknowledging report:', err);
+      setProposalError(err.message || 'Error acknowledging reconciliation report');
+    } finally {
+      setAcknowledgingId(null);
+    }
+  };
+
 
   const fetchCrawlerRuns = useCallback(async () => {
     setLoadingCrawler(true);
@@ -177,15 +223,94 @@ export default function ChangeProposalsPage() {
     switch (status) {
       case 'pending':
         return <Badge variant="warning">Pending Review</Badge>;
+      case 'acknowledged':
+        return <Badge variant="default">Acknowledged</Badge>;
       case 'applied':
         return <Badge variant="success">Applied</Badge>;
       case 'partially_applied':
         return <Badge variant="info">Partially Applied</Badge>;
       case 'rejected':
         return <Badge variant="danger">Rejected</Badge>;
+      case 'superseded':
+        return <Badge variant="default">Superseded</Badge>;
       default:
         return <Badge variant="default">{status}</Badge>;
     }
+  };
+
+  const renderQueueQualityBadges = (prop: ProposalSummaryItem) => {
+    const badges: React.ReactNode[] = [];
+    if (prop.coverageStatus === 'partial') {
+      badges.push(
+        <span
+          key="cov-partial"
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300"
+        >
+          <ExclamationTriangleIcon className="w-3 h-3" />
+          Partial Coverage
+        </span>
+      );
+    } else if (prop.coverageStatus === 'failed') {
+      badges.push(
+        <span
+          key="cov-failed"
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-300"
+        >
+          <ExclamationTriangleIcon className="w-3 h-3" />
+          Failed Coverage
+        </span>
+      );
+    } else if (prop.coverageStatus === 'complete') {
+      badges.push(
+        <span
+          key="cov-complete"
+          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200"
+        >
+          Complete Coverage
+        </span>
+      );
+    } else if (prop.coverageStatus === 'unknown') {
+      badges.push(
+        <span
+          key="cov-unknown"
+          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
+        >
+          Unknown Coverage
+        </span>
+      );
+    }
+
+    if (prop.reconciliationStatus === 'unresolved') {
+      badges.push(
+        <span
+          key="rec-unresolved"
+          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300"
+        >
+          Unresolved
+        </span>
+      );
+    } else if (prop.reconciliationStatus === 'complete') {
+      badges.push(
+        <span
+          key="rec-complete"
+          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200"
+        >
+          Reconciled
+        </span>
+      );
+    }
+
+    if (prop.applicationStatus === 'not_applicable') {
+      badges.push(
+        <span
+          key="app-na"
+          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800 border border-slate-300"
+        >
+          Report Only
+        </span>
+      );
+    }
+    return badges.length > 0 ? <div className="flex flex-wrap gap-1 mt-1">{badges}</div> : null;
   };
 
   const getCrawlerStatusBadge = (status: CrawlRunItem['status']) => {
@@ -348,20 +473,43 @@ export default function ChangeProposalsPage() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {proposals.map((prop) => {
                       const gmrUrl = prop.shopUrl || (prop.shopSlug ? `/shop/${prop.shopSlug}` : undefined);
+                      const safeSourceUrl = toSafeHttpUrl(prop.sourceUrl);
+                      const addCount = prop.summaryCounts?.add ?? 0;
+                      const updateCount = prop.summaryCounts?.update ?? 0;
+                      const delistCount = prop.summaryCounts?.delist ?? 0;
+                      const actionableCount = addCount + updateCount + delistCount;
+                      const unchangedCount =
+                        prop.serverCounts?.unchangedModels ?? prop.summaryCounts?.unchanged ?? 0;
+                      const unresolvedCount =
+                        prop.serverCounts?.unresolvedModels ?? prop.summaryCounts?.unresolved ?? 0;
+                      const excludedCount =
+                        prop.serverCounts?.excludedModels ?? prop.summaryCounts?.excluded ?? 0;
+                      const duplicateCount =
+                        prop.serverCounts?.duplicateModels ?? prop.summaryCounts?.duplicate ?? 0;
+                      const isReportOnlyRow =
+                        prop.applicationStatus === 'not_applicable' ||
+                        (Boolean(prop.hasReconciliationReport) && actionableCount === 0);
+
                       return (
                         <tr key={prop.id} className="hover:bg-gray-50 transition-colors">
                           <td className="px-6 py-4">
                             <div className="font-semibold text-gray-900">{prop.shopName}</div>
                             <div className="flex flex-wrap items-center gap-3 mt-0.5">
-                              <a
-                                href={prop.sourceUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1 truncate max-w-xs"
-                              >
-                                {prop.sourceUrl}
-                                <ArrowTopRightOnSquareIcon className="w-3 h-3 flex-shrink-0" />
-                              </a>
+                              {safeSourceUrl ? (
+                                <a
+                                  href={safeSourceUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1 truncate max-w-xs"
+                                >
+                                  {prop.sourceUrl}
+                                  <ArrowTopRightOnSquareIcon className="w-3 h-3 flex-shrink-0" />
+                                </a>
+                              ) : (
+                                <span className="text-xs font-mono text-gray-500 truncate max-w-xs">
+                                  {prop.sourceUrl}
+                                </span>
+                              )}
                               {gmrUrl && (
                                 <a
                                   href={gmrUrl}
@@ -384,35 +532,61 @@ export default function ChangeProposalsPage() {
                           </td>
 
                           <td className="px-6 py-4 whitespace-nowrap">
-                            {getProposalStatusBadge(prop.status)}
+                            <div>{getProposalStatusBadge(prop.status)}</div>
+                            {renderQueueQualityBadges(prop)}
                           </td>
 
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              {prop.summaryCounts.add > 0 && (
+                              {addCount > 0 && (
                                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
-                                  +{prop.summaryCounts.add} new
+                                  +{addCount} new
                                 </span>
                               )}
-                              {prop.summaryCounts.update > 0 && (
+                              {updateCount > 0 && (
                                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                                  ~{prop.summaryCounts.update} updated
+                                  ~{updateCount} updated
                                 </span>
                               )}
-                              {prop.summaryCounts.delist > 0 && (
+                              {delistCount > 0 && (
                                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
-                                  -{prop.summaryCounts.delist} delisted
+                                  -{delistCount} delisted
                                 </span>
                               )}
-                              {(prop.summaryCounts.unchanged ?? 0) > 0 && (
+                              {actionableCount === 0 &&
+                                (Boolean(prop.hasReconciliationReport) ||
+                                  isReportOnlyRow ||
+                                  unresolvedCount > 0) && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                                    0 ready mutations
+                                  </span>
+                                )}
+                              {unresolvedCount > 0 && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300">
+                                  {unresolvedCount} unresolved
+                                </span>
+                              )}
+                              {unchangedCount > 0 && (
                                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">
-                                  ={prop.summaryCounts.unchanged} unchanged
+                                  ={unchangedCount} unchanged
                                 </span>
                               )}
-                              {prop.summaryCounts.add === 0 &&
-                                prop.summaryCounts.update === 0 &&
-                                prop.summaryCounts.delist === 0 &&
-                                (prop.summaryCounts.unchanged ?? 0) === 0 && (
+                              {excludedCount > 0 && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                                  {excludedCount} excluded
+                                </span>
+                              )}
+                              {duplicateCount > 0 && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                  {duplicateCount} duplicate
+                                </span>
+                              )}
+                              {actionableCount === 0 &&
+                                unchangedCount === 0 &&
+                                unresolvedCount === 0 &&
+                                excludedCount === 0 &&
+                                duplicateCount === 0 &&
+                                !prop.hasReconciliationReport && (
                                   <span className="text-xs text-gray-400">No changes detected</span>
                                 )}
                             </div>
@@ -420,11 +594,22 @@ export default function ChangeProposalsPage() {
 
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                             <div className="inline-flex items-center gap-2">
+                              {prop.status === 'pending' && isReportOnlyRow && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleQuickAcknowledge(prop.id, prop.version)}
+                                  disabled={acknowledgingId === prop.id || rejectingId === prop.id}
+                                  className="inline-flex items-center px-2.5 py-1.5 border border-emerald-300 text-xs font-medium rounded-md text-emerald-800 bg-white hover:bg-emerald-50 disabled:opacity-50"
+                                >
+                                  <CheckIcon className="w-3.5 h-3.5 mr-1" />
+                                  {acknowledgingId === prop.id ? 'Acknowledging...' : 'Acknowledge'}
+                                </button>
+                              )}
                               {prop.status === 'pending' && (
                                 <button
                                   type="button"
                                   onClick={() => handleQuickReject(prop.id)}
-                                  disabled={rejectingId === prop.id}
+                                  disabled={rejectingId === prop.id || acknowledgingId === prop.id}
                                   className="inline-flex items-center px-2.5 py-1.5 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50 disabled:opacity-50"
                                 >
                                   <XMarkIcon className="w-3.5 h-3.5 mr-1" />

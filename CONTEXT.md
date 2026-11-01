@@ -5,11 +5,23 @@ Global motorcycle rental aggregator platform connecting riders with rental shops
 ## Language
 
 **Change Proposal**:
-A staged batch of agent-authored Change Proposal Items (`add`, `update`, `delist`, and `unchanged`) for a rental shop produced by comparing the shop's website against its current RideVault database baseline, awaiting administrator review and application.
+A staged shop-level review record produced by comparing a rental shop's website against its RideVault baseline, carrying zero or more Change Proposal Items alongside an optional Reconciliation Report, with independent coverage, reconciliation, and application statuses.
 _Avoid_: Scrape proposal, raw snapshot diff, patch request
 
+**Reconciliation Report**:
+A private administrative inventory-accounting snapshot attached to a Change Proposal that records crawl scope, source-page coverage, and every in-scope motorcycle's disposition with supporting evidence.
+_Avoid_: Public shop note, crawl log, mutation payload
+
+**Reconciliation Entry**:
+A model- or variant-level accounting record inside a Reconciliation Report classifying a motorcycle as `ready_change`, `unchanged`, `unresolved`, `excluded`, or `duplicate` with supporting source evidence and optional links to actionable Change Proposal Items.
+_Avoid_: Unapplied mutation, shadow proposal item
+
+**Unresolved Candidate**:
+A durable shop-scoped tracking record for a discovered motorcycle that cannot yet be published as a validated Change Proposal Item, persisting across crawl runs through `open`, `ready_for_proposal`, `resolved_applied`, `excluded`, and `dismissed` states.
+_Avoid_: Ephemeral warning, placeholder listing, extraction hint note
+
 **Change Proposal Item**:
-An explicit proposed action (`add`, `update`, `delist`, or `unchanged`) submitted by an ingestion agent targeting a specific motorcycle listing (`entity_id`) or rental shop profile within a Change Proposal, carrying the item's `original_data`, `proposed_data`, and `diff_summary`.
+An explicit proposed mutation (`add`, `update`, or `delist`; plus `unchanged` on legacy reportless proposals) submitted by an ingestion agent targeting a specific motorcycle listing or rental shop profile within a Change Proposal.
 _Avoid_: Heuristic diff item, patch row, mutation entry
 
 **Shop Agent Config**:

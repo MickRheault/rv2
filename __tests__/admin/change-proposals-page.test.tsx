@@ -832,6 +832,337 @@ describe('ChangeProposalsPage', () => {
     const unchangedBikeRate = screen.getByText('1-6 days: ฿250/day').parentElement!;
     expect(unchangedBikeRate.className).toContain('bg-emerald-100');
   });
+
+  it('displays report-only Ride On Barcelona proposal in pending queue with separate actionable vs unresolved counts, coverage badges, and Acknowledge support (#202)', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        proposals: [
+          {
+            id: 'prop-rideon-bcn',
+            shopId: '53529565-40d9-41f5-98e4-d2ed1f1d7ffd',
+            shopName: 'Ride On - Alquiler moto Barcelona',
+            shopSlug: 'ride-on-alquiler-moto-barcelona',
+            shopUrl: '/shop/spain/barcelona/ride-on-alquiler-moto-barcelona',
+            agentRunId: 'run-rideon-1',
+            sourceUrl: 'https://rideon.es/flota/',
+            status: 'pending',
+            coverageStatus: 'partial',
+            reconciliationStatus: 'unresolved',
+            applicationStatus: 'not_applicable',
+            version: 1,
+            hasReconciliationReport: true,
+            summaryCounts: {
+              add: 0,
+              update: 0,
+              delist: 0,
+              unchanged: 2,
+              unresolved: 1,
+              excluded: 1,
+              duplicate: 0,
+            },
+            serverCounts: {
+              readyActionableItems: 0,
+              accountedDiscoveredModels: 4,
+              unresolvedModels: 1,
+              unchangedModels: 2,
+              excludedModels: 1,
+              duplicateModels: 0,
+              pagesProcessed: 1,
+              pagesFailed: 1,
+              pagesNotProcessed: 0,
+              add: 0,
+              update: 0,
+              delist: 0,
+            },
+            createdAt: '2026-10-31T14:00:00Z',
+          },
+        ],
+        totalCount: 1,
+      }),
+    });
+
+    render(<ChangeProposalsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Ride On - Alquiler moto Barcelona')).toBeInTheDocument();
+    });
+
+    // Separate actionable vs unresolved counts — never says "No changes detected"
+    expect(screen.getByText('0 ready mutations')).toBeInTheDocument();
+    expect(screen.getByText('1 unresolved')).toBeInTheDocument();
+    expect(screen.getByText('=2 unchanged')).toBeInTheDocument();
+    expect(screen.getByText('1 excluded')).toBeInTheDocument();
+    expect(screen.queryByText(/No changes detected/i)).not.toBeInTheDocument();
+
+    // Prominent coverage & reconciliation status badges
+    expect(screen.getByText('Partial Coverage')).toBeInTheDocument();
+    expect(screen.getByText('Unresolved')).toBeInTheDocument();
+    expect(screen.getByText('Report Only')).toBeInTheDocument();
+
+    // Filter options include Acknowledged and Superseded
+    expect(screen.getByRole('option', { name: 'Acknowledged' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Superseded' })).toBeInTheDocument();
+
+    // Quick Acknowledge sends action: 'acknowledge' with expectedVersion: 1
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        status: 'acknowledged',
+        applicationStatus: 'not_applicable',
+        version: 2,
+      }),
+    });
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        proposals: [],
+        totalCount: 0,
+      }),
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /^Acknowledge$/i }));
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/admin/change-proposals/prop-rideon-bcn/apply',
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ action: 'acknowledge', expectedVersion: 1 }),
+        })
+      );
+    });
+  });
+
+  it('loads full reconciliation report on ProposalReviewPage and acknowledges report-only Ride On submission without claiming inventory updated (#202)', async () => {
+    const reloadSpy = { called: 0 };
+    mockFetch.mockImplementationOnce(async () => ({
+      ok: true,
+      json: async () => ({
+        success: true,
+        proposal: {
+          id: 'prop-rideon-detail',
+          shop_id: '53529565-40d9-41f5-98e4-d2ed1f1d7ffd',
+          source_url: 'https://rideon.es/flota/',
+          status: 'pending',
+          coverage_status: 'partial',
+          reconciliation_status: 'unresolved',
+          application_status: 'not_applicable',
+          version: 1,
+          created_at: '2026-10-31T14:00:00Z',
+          rental_shops: {
+            provider_name: 'Ride On - Alquiler moto Barcelona',
+            slug: 'ride-on-alquiler-moto-barcelona',
+          },
+        },
+        items: [],
+        report: {
+          id: 'rep-rideon-1',
+          proposalId: 'prop-rideon-detail',
+          shopId: '53529565-40d9-41f5-98e4-d2ed1f1d7ffd',
+          agentRunId: 'run-rideon-1',
+          schemaVersion: 1,
+          reportVersion: 1,
+          reportDigest: 'sha256:abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
+          scope: {
+            branch: 'Barcelona',
+            catalogType: 'global_catalog',
+            services: ['daily_rental'],
+            availabilityBasis: 'supplier_catalog_not_live_stock',
+          },
+          coverage: {
+            status: 'partial',
+            discoveryComplete: false,
+            limitations: ['Dynamic booking modal blocked verified rate extraction for BMW R 1250 GS'],
+            pages: [
+              {
+                url: 'https://rideon.es/flota/',
+                role: 'catalog',
+                required: true,
+                status: 'processed',
+              },
+              {
+                url: 'https://rideon.es/flota/bmw-r-1250-gs/',
+                role: 'pricing',
+                required: true,
+                status: 'failed',
+                reason: 'Interactive date modal required session token',
+              },
+            ],
+          },
+          serverCounts: {
+            readyActionableItems: 0,
+            accountedDiscoveredModels: 1,
+            unresolvedModels: 1,
+            unchangedModels: 0,
+            excludedModels: 0,
+            duplicateModels: 0,
+            pagesProcessed: 1,
+            pagesFailed: 1,
+            pagesNotProcessed: 0,
+            add: 0,
+            update: 0,
+            delist: 0,
+          },
+        },
+        entries: [
+          {
+            id: 'entry-bmw-1',
+            entryIndex: 0,
+            entryKey: 'bmw-r-1250-gs',
+            brand: 'BMW',
+            model: 'R 1250 GS',
+            existingMotorcycleId: null,
+            candidateId: 'cand-bmw-1',
+            disposition: 'unresolved',
+            proposalItemRefs: [],
+            linkedProposalItemIds: [],
+            issues: [
+              { code: 'PRICE_UNVERIFIED', detail: 'Rental price not verified.' },
+              { code: 'BRANCH_CONFLICT', detail: 'Displayed Barcelona label links to Madrid.' },
+            ],
+            nextAction: 'Resolve branch conflict and obtain verified pricing before proposing an addition.',
+            evidence: [
+              {
+                sourceUrl: 'https://rideon.es/flota/',
+                linkedUrl: 'https://rideon.es/madrid/',
+                kind: 'branch_badge',
+                snippet: 'BMW R 1250 GS — BARCELONA badge href points to /madrid/',
+              },
+            ],
+          },
+        ],
+        entriesPagination: {
+          total: 1,
+          limit: 200,
+          offset: 0,
+          hasMore: false,
+          nextOffset: null,
+        },
+        candidates: [
+          {
+            id: 'cand-bmw-1',
+            brand_name: 'BMW',
+            model_name: 'R 1250 GS',
+            state: 'open',
+            flagged_for_review: false,
+            version: 1,
+          },
+        ],
+      }),
+    }));
+
+    await React.act(async () => {
+      render(
+        <React.Suspense fallback={<div>Loading...</div>}>
+          <ProposalReviewPage params={Promise.resolve({ id: 'prop-rideon-detail' })} />
+        </React.Suspense>
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Ride On - Alquiler moto Barcelona')).toBeInTheDocument();
+    });
+
+    // Renders Ride On BMW R 1250 GS unresolved details from API payload
+    expect(screen.getByText('BMW R 1250 GS')).toBeInTheDocument();
+    expect(screen.getByText('PRICE_UNVERIFIED')).toBeInTheDocument();
+    expect(screen.getByText('BRANCH_CONFLICT')).toBeInTheDocument();
+    expect(
+      screen.getByText('Resolve branch conflict and obtain verified pricing before proposing an addition.')
+    ).toBeInTheDocument();
+
+    // Acknowledge Report button triggers POST /apply with action: 'acknowledge' and refreshes detail
+    mockFetch.mockImplementationOnce(async () => ({
+      ok: true,
+      json: async () => ({
+        success: true,
+        status: 'acknowledged',
+        coverageStatus: 'partial',
+        reconciliationStatus: 'unresolved',
+        applicationStatus: 'not_applicable',
+        version: 2,
+      }),
+    }));
+    mockFetch.mockImplementationOnce(async () => {
+      reloadSpy.called += 1;
+      return {
+        ok: true,
+        json: async () => ({
+          success: true,
+          proposal: {
+            id: 'prop-rideon-detail',
+            shop_id: '53529565-40d9-41f5-98e4-d2ed1f1d7ffd',
+            source_url: 'https://rideon.es/flota/',
+            status: 'acknowledged',
+            coverage_status: 'partial',
+            reconciliation_status: 'unresolved',
+            application_status: 'not_applicable',
+            version: 2,
+            created_at: '2026-10-31T14:00:00Z',
+            rental_shops: {
+              provider_name: 'Ride On - Alquiler moto Barcelona',
+              slug: 'ride-on-alquiler-moto-barcelona',
+            },
+          },
+          items: [],
+          report: {
+            id: 'rep-rideon-1',
+            schemaVersion: 1,
+            reportVersion: 1,
+            reportDigest: 'sha256:abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
+            scope: {
+              branch: 'Barcelona',
+              services: ['daily_rental'],
+              availabilityBasis: 'supplier_catalog_not_live_stock',
+            },
+            coverage: {
+              status: 'partial',
+              discoveryComplete: false,
+              limitations: [],
+              pages: [],
+            },
+            serverCounts: {
+              readyActionableItems: 0,
+              accountedDiscoveredModels: 1,
+              unresolvedModels: 1,
+              unchangedModels: 0,
+              excludedModels: 0,
+              duplicateModels: 0,
+              pagesProcessed: 1,
+              pagesFailed: 1,
+              pagesNotProcessed: 0,
+              add: 0,
+              update: 0,
+              delist: 0,
+            },
+          },
+          entries: [],
+        }),
+      };
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Acknowledge Report/i }));
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/admin/change-proposals/prop-rideon-detail/apply',
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ action: 'acknowledge', expectedVersion: 1 }),
+        })
+      );
+      expect(reloadSpy.called).toBe(1);
+    });
+
+    expect(screen.queryByText(/inventory updated/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/successfully applied/i)).not.toBeInTheDocument();
+  });
 });
 
 
