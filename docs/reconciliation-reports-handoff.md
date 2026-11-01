@@ -92,7 +92,7 @@ Complete Reconciliation Reports (`reconciliationReport.schemaVersion = 1`) let a
 | URLs (`sourceUrl`, `page.url`, `evidence.sourceUrl`, `evidence.linkedUrl`, `discoveredSourceUrl`) | `<= 2,048` chars, strictly `http:` or `https:` | `400 Bad Request` |
 | `entriesLimit` (`GET .../change-proposals/:id`) | `1..500` (default `200`), `entriesOffset` `0..100000` | `400 Bad Request` |
 | `candidatesLimit` (`GET /api/agent/tasks`) | `1..200` (default `50`), `candidatesOffset` `0..100000` | `400 Bad Request` |
-| `limit` (`GET /api/admin/crawler-logs`) | `1..100` (default `50`), `offset` `0..100000` | `400 Bad Request` |
+| `limit` (`GET /api/admin/crawler-logs`) | `1..100` (default `50`), `offset` `0..100000` | Out-of-range integers clamped to range (`200`); non-integer or invalid `status` returns `400 Bad Request` |
 
 Supported `schemaVersion: 1` issue codes (unknown codes fail with `400`):
 `PRICE_UNVERIFIED`, `BRANCH_CONFLICT`, `SOURCE_ACCESS_FAILED`, `PRICING_NOT_REPRESENTABLE`, `IDENTITY_UNRESOLVED`, `TAXONOMY_UNRESOLVED`, `REQUIRED_FIELD_UNVERIFIED`, `OTHER`.
@@ -229,7 +229,7 @@ Response (`201 Created`):
     "add": 0,
     "update": 0,
     "delist": 0,
-    "unchanged": 1
+    "unchanged": 0
   },
   "summaryCounts": {
     "add": 0,
@@ -262,7 +262,7 @@ Response (`201 Created`):
 }
 ```
 
-Response (`200 OK`):
+Response (`200 OK`, `task` and `crawlRun` abbreviated to reconciliation fields):
 
 ```json
 {
@@ -292,6 +292,8 @@ Response (`200 OK`):
 ```
 
 ### 7.3 Subsequent Agent Task Readback (`GET /api/agent/tasks?shopId=53529565-40d9-41f5-98e4-d2ed1f1d7ffd`)
+
+Response (`200 OK`, `tasks[0]` baseline arrays/shop fields omitted for brevity; `unresolvedCandidates` shown in full):
 
 ```json
 {
@@ -326,7 +328,9 @@ Response (`200 OK`):
                 "sourceUrl": "https://rideon.es/flota/",
                 "linkedUrl": "https://rideon.es/madrid/",
                 "kind": "card_text",
-                "snippet": "BMW R 1250 GS — BARCELONA"
+                "snippet": "BMW R 1250 GS — BARCELONA",
+                "observedAt": null,
+                "contentHash": null
               }
             ],
             "resolutionReason": null,

@@ -477,49 +477,59 @@ export function createInMemorySupabaseClient(
         op = 'delete';
         return builder;
       },
-      eq(col: string, val: any) {
+      eq(this: any, col: string, val: any) {
+        assertBound(this, 'eq');
         filters.push((r) => r[col] === val);
         return builder;
       },
-      neq(col: string, val: any) {
+      neq(this: any, col: string, val: any) {
+        assertBound(this, 'neq');
         filters.push((r) => r[col] !== val);
         return builder;
       },
-      in(col: string, vals: any[]) {
+      in(this: any, col: string, vals: any[]) {
+        assertBound(this, 'in');
         const set = new Set(vals);
         filters.push((r) => set.has(r[col]));
         return builder;
       },
-      ilike(col: string, pattern: string) {
+      ilike(this: any, col: string, pattern: string) {
+        assertBound(this, 'ilike');
         const norm = pattern.toLowerCase();
         filters.push((r) => String(r[col] ?? '').toLowerCase() === norm);
         return builder;
       },
-      is(col: string, val: any) {
+      is(this: any, col: string, val: any) {
+        assertBound(this, 'is');
         filters.push((r) => (val === null ? r[col] === null || r[col] === undefined : r[col] === val));
         return builder;
       },
-      not(col: string, operator: string, val: any) {
+      not(this: any, col: string, operator: string, val: any) {
+        assertBound(this, 'not');
         if (operator === 'is' && val === null) {
           filters.push((r) => r[col] !== null && r[col] !== undefined);
         }
         return builder;
       },
-      or(expr: string) {
+      or(this: any, expr: string) {
+        assertBound(this, 'or');
         if (expr.includes('availability_status.neq.unavailable')) {
           filters.push((r) => !r.availability_status || r.availability_status !== 'unavailable');
         }
         return builder;
       },
-      order(col: string, opts?: { ascending?: boolean }) {
+      order(this: any, col: string, opts?: { ascending?: boolean }) {
+        assertBound(this, 'order');
         orderSpec = { col, ascending: opts?.ascending !== false };
         return builder;
       },
-      range(from: number, to: number) {
+      range(this: any, from: number, to: number) {
+        assertBound(this, 'range');
         rangeSpec = { from, to };
         return builder;
       },
-      limit(n: number) {
+      limit(this: any, n: number) {
+        assertBound(this, 'limit');
         limitCount = n;
         return builder;
       },
@@ -533,7 +543,8 @@ export function createInMemorySupabaseClient(
         expectMaybeSingle = true;
         return execute();
       },
-      then(onFulfilled: any, onRejected: any) {
+      then(this: any, onFulfilled: any, onRejected: any) {
+        assertBound(this, 'then');
         return execute().then(onFulfilled, onRejected);
       },
     };

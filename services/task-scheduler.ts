@@ -449,6 +449,20 @@ export class TaskSchedulerService {
       fetchAllActiveCandidatesForShops(supabase, shopIds),
     ]);
 
+    for (const [tableLabel, queryRes] of [
+      ['motorcycle_rentals', bikesRes],
+      ['rental_shop_inclusions', inclusionsRes],
+      ['rental_shop_conditions', conditionsRes],
+      ['categories', categoriesRes],
+      ['condition_types', conditionTypesRes],
+    ] as const) {
+      if (queryRes?.error) {
+        throw new Error(
+          `Failed to load ${tableLabel} baseline for due tasks: ${queryRes.error.message}`
+        );
+      }
+    }
+
     const allBikes = bikesRes?.data || [];
     const allInclusions = inclusionsRes?.data || [];
     const allConditions = conditionsRes?.data || [];

@@ -81,6 +81,9 @@ describe('Agent Tasks Unresolved Candidates Context & Crawl-Run Quality Bookkeep
         'candidatesLimit=abc',
         'candidatesOffset=-1',
         'candidatesOffset=not-a-number',
+        'minUrgency=',
+        'minUrgency=-1',
+        'minUrgency=abc',
       ]) {
         const req = new NextRequest(`http://localhost:3000/api/agent/tasks?${badQuery}`, {
           headers: agentHeaders(),
@@ -545,6 +548,41 @@ describe('Agent Tasks Unresolved Candidates Context & Crawl-Run Quality Bookkeep
       expect(tailPage.offset).toBe(1000);
       expect(tailPage.hasMore).toBe(false);
       expect(tailPage.nextOffset).toBeNull();
+    });
+
+    it('surfaces transient baseline query errors as HTTP 500 instead of silently returning empty existingInventory', async () => {
+      const baseClient = createInMemorySupabaseClient(dbState);
+      (getSupabaseAdmin as jest.Mock).mockReturnValue({
+        ...baseClient,
+        from(table: any) {
+          if (table === 'motorcycle_rentals') {
+            return {
+              select() {
+                return this;
+              },
+              in() {
+                return this;
+              },
+              or() {
+                return Promise.resolve({
+                  data: null,
+                  error: { message: 'Simulated PostgREST timeout on motorcycle_rentals' },
+                });
+              },
+            };
+          }
+          return baseClient.from(table);
+        },
+      });
+
+      const res = await handleGetTasks(
+        new NextRequest(`http://localhost:3000/api/agent/tasks?shopId=${RIDE_ON_SHOP_ID}`, {
+          headers: agentHeaders(),
+        })
+      );
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.details).toMatch(/Failed to load motorcycle_rentals baseline/i);
     });
   });
 

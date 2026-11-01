@@ -35,7 +35,9 @@ export async function GET(request: NextRequest) {
     };
 
     if (minUrgencyParam !== null) {
-      const parsedMinUrgency = Number(minUrgencyParam);
+      const trimmedUrgency = minUrgencyParam.trim();
+      const parsedMinUrgency =
+        trimmedUrgency.length > 0 ? Number(trimmedUrgency) : Number.NaN;
       if (!Number.isFinite(parsedMinUrgency) || parsedMinUrgency < 0) {
         return NextResponse.json(
           { error: 'Invalid minUrgency. Must be a non-negative number.' },

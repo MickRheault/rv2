@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getCrawlRuns } from '@/services/crawl-runs';
+import { CrawlRunStatus, getCrawlRuns } from '@/services/crawl-runs';
 import { isAuthorizedAdmin } from '@/lib/auth/admin-auth';
 
 const ALLOWED_CRAWLER_LOG_STATUSES = new Set(['all', 'success', 'partial', 'failed']);
@@ -26,7 +26,8 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
-    const status = statusParam && statusParam !== 'all' ? statusParam : undefined;
+    const status =
+      statusParam && statusParam !== 'all' ? (statusParam as CrawlRunStatus) : undefined;
     const shopId = searchParams.get('shopId')?.trim() || searchParams.get('shop_id')?.trim() || undefined;
 
     let limit = 50;

@@ -16,7 +16,7 @@ export interface RecordCrawlRunInput {
 }
 
 export interface GetCrawlRunsOptions {
-  status?: CrawlRunStatus | 'all' | string;
+  status?: CrawlRunStatus | 'all';
   shopId?: string;
   limit?: number;
   offset?: number;
@@ -280,6 +280,6 @@ export class CrawlRunService {
   }
 }
 
-export const recordCrawlRun = CrawlRunService.recordCrawlRun;
-export const upsertCrawlRun = CrawlRunService.upsertCrawlRun;
-export const getCrawlRuns = CrawlRunService.getCrawlRuns;
+export const recordCrawlRun = CrawlRunService.recordCrawlRun.bind(CrawlRunService);
+export const upsertCrawlRun = CrawlRunService.upsertCrawlRun.bind(CrawlRunService);
+export const getCrawlRuns = CrawlRunService.getCrawlRuns.bind(CrawlRunService);
