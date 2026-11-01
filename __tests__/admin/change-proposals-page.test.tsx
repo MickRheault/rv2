@@ -1163,6 +1163,95 @@ describe('ChangeProposalsPage', () => {
     expect(screen.queryByText(/inventory updated/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/successfully applied/i)).not.toBeInTheDocument();
   });
+
+  it('renders partial crawl outcomes, coverage and reconciliation badges, unresolved proposal counts, and never labels partial/unresolved crawls as Clean Crawl (#204)', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        proposals: [],
+        totalCount: 0,
+      }),
+    });
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        runs: [
+          {
+            id: 'run-rideon-partial',
+            shopId: '53529565-40d9-41f5-98e4-d2ed1f1d7ffd',
+            shopName: 'Ride On - Alquiler moto Barcelona',
+            agentRunId: 'rideon-run-k1',
+            status: 'partial',
+            coverageStatus: 'partial',
+            reconciliationStatus: 'unresolved',
+            proposalId: 'prop-rideon-k1',
+            proposalSummaryCounts: {
+              add: 0,
+              update: 0,
+              delist: 0,
+              unresolved: 1,
+              unchanged: 1,
+            },
+            createdAt: '2026-10-31T14:00:00Z',
+            metadata: { pagesVisited: 2 },
+          },
+          {
+            id: 'run-noprop-partial',
+            shopId: 'shop-2',
+            shopName: 'Samui Scooter Club',
+            agentRunId: 'samui-run-k2',
+            status: 'partial',
+            coverageStatus: 'partial',
+            reconciliationStatus: 'unknown',
+            proposalId: null,
+            createdAt: '2026-10-31T15:00:00Z',
+            metadata: {},
+          },
+        ],
+        totalCount: 2,
+      }),
+    });
+
+    render(<ChangeProposalsPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Crawler Activity Log/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Ride On - Alquiler moto Barcelona')).toBeInTheDocument();
+    });
+
+    // Status badges show Partial; quality badges show Partial Coverage & Unresolved
+    expect(screen.getAllByText('Partial').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText('Partial Coverage').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText('Unresolved')).toBeInTheDocument();
+
+    // Linked proposal displays unresolved count and never claims Clean Crawl
+    expect(screen.getByText(/1 unresolved/i)).toBeInTheDocument();
+    expect(screen.getByText(/Partial \/ Incomplete Crawl/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Clean Crawl/i)).not.toBeInTheDocument();
+
+    // Filter dropdown supports 'partial'
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        runs: [],
+        totalCount: 0,
+      }),
+    });
+
+    const statusSelect = screen.getByDisplayValue('All Runs');
+    fireEvent.change(statusSelect, { target: { value: 'partial' } });
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenLastCalledWith(
+        '/api/admin/crawler-logs?status=partial&limit=50'
+      );
+    });
+  });
 });
 
 

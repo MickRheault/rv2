@@ -122,6 +122,8 @@ describe('CrawlRunService', () => {
         proposalSummaryCounts: { add: 2, update: 0, delist: 0 },
         agentRunId: 'agent-99',
         status: 'success',
+        coverageStatus: 'unknown',
+        reconciliationStatus: 'unknown',
         errorMessage: null,
         metadata: { count: 5 },
         createdAt: '2026-10-11T00:00:00Z',

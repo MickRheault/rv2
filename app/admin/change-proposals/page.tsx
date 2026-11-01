@@ -70,9 +70,15 @@ interface CrawlRunItem {
     add: number;
     update: number;
     delist: number;
+    unchanged?: number;
+    unresolved?: number;
+    excluded?: number;
+    duplicate?: number;
   } | null;
   agentRunId?: string | null;
-  status: 'success' | 'failed';
+  status: 'success' | 'partial' | 'failed';
+  coverageStatus?: 'complete' | 'partial' | 'failed' | 'unknown';
+  reconciliationStatus?: 'complete' | 'unresolved' | 'unknown';
   errorMessage?: string | null;
   metadata: Record<string, any>;
   createdAt: string;
@@ -90,6 +96,7 @@ const PROPOSAL_STATUS_FILTER_OPTIONS = [
 
 const CRAWLER_STATUS_FILTER_OPTIONS = [
   { value: 'all', label: 'All Runs' },
+  { value: 'partial', label: 'Partial / Incomplete' },
   { value: 'failed', label: 'Failures Only' },
   { value: 'success', label: 'Success Only' },
 ];
@@ -317,11 +324,69 @@ export default function ChangeProposalsPage() {
     switch (status) {
       case 'success':
         return <Badge variant="success">Success</Badge>;
+      case 'partial':
+        return <Badge variant="warning">Partial</Badge>;
       case 'failed':
         return <Badge variant="danger">Failed</Badge>;
       default:
         return <Badge variant="default">{status}</Badge>;
     }
+  };
+
+  const renderCrawlerQualityBadges = (run: CrawlRunItem) => {
+    const badges: React.ReactNode[] = [];
+    if (run.coverageStatus === 'partial') {
+      badges.push(
+        <span
+          key="run-cov-partial"
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300"
+        >
+          <ExclamationTriangleIcon className="w-3 h-3" />
+          Partial Coverage
+        </span>
+      );
+    } else if (run.coverageStatus === 'failed') {
+      badges.push(
+        <span
+          key="run-cov-failed"
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-300"
+        >
+          <ExclamationTriangleIcon className="w-3 h-3" />
+          Failed Coverage
+        </span>
+      );
+    } else if (run.coverageStatus === 'complete') {
+      badges.push(
+        <span
+          key="run-cov-complete"
+          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200"
+        >
+          Complete Coverage
+        </span>
+      );
+    }
+
+    if (run.reconciliationStatus === 'unresolved') {
+      badges.push(
+        <span
+          key="run-rec-unresolved"
+          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300"
+        >
+          Unresolved
+        </span>
+      );
+    } else if (run.reconciliationStatus === 'complete') {
+      badges.push(
+        <span
+          key="run-rec-complete"
+          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200"
+        >
+          Reconciled
+        </span>
+      );
+    }
+
+    return badges.length > 0 ? <div className="flex flex-wrap gap-1 mt-1">{badges}</div> : null;
   };
 
   return (
@@ -690,7 +755,8 @@ export default function ChangeProposalsPage() {
                         </td>
 
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {getCrawlerStatusBadge(run.status)}
+                          <div>{getCrawlerStatusBadge(run.status)}</div>
+                          {renderCrawlerQualityBadges(run)}
                         </td>
 
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
@@ -704,7 +770,7 @@ export default function ChangeProposalsPage() {
                           {run.proposalId ? (
                             <Link
                               href={`/admin/change-proposals/${run.proposalId}`}
-                              className="inline-flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                              className="inline-flex items-center gap-1.5 flex-wrap text-xs text-indigo-600 hover:text-indigo-800 font-medium"
                             >
                               <Badge variant="info">Proposal Generated</Badge>
                               {run.proposalSummaryCounts && (
@@ -712,8 +778,24 @@ export default function ChangeProposalsPage() {
                                   (+{run.proposalSummaryCounts.add || 0} ~{run.proposalSummaryCounts.update || 0} -{run.proposalSummaryCounts.delist || 0})
                                 </span>
                               )}
+                              {(run.proposalSummaryCounts?.unresolved ?? 0) > 0 && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300">
+                                  {run.proposalSummaryCounts?.unresolved} unresolved
+                                </span>
+                              )}
+                              {(run.proposalSummaryCounts?.unchanged ?? 0) > 0 && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                  ={run.proposalSummaryCounts?.unchanged} unchanged
+                                </span>
+                              )}
                               <ArrowTopRightOnSquareIcon className="w-3 h-3" />
                             </Link>
+                          ) : run.status === 'partial' ||
+                            run.coverageStatus === 'partial' ||
+                            run.reconciliationStatus === 'unresolved' ? (
+                            <span className="text-xs text-amber-800 font-medium">
+                              {run.errorMessage || 'Partial / Incomplete Crawl'}
+                            </span>
                           ) : run.status === 'success' ? (
                             <span className="text-xs text-gray-500 font-medium">Clean Crawl (No changes detected)</span>
                           ) : (
@@ -764,7 +846,10 @@ export default function ChangeProposalsPage() {
                   })}
                 </p>
               </div>
-              <div>{getCrawlerStatusBadge(selectedRun.status)}</div>
+              <div className="text-right">
+                <div>{getCrawlerStatusBadge(selectedRun.status)}</div>
+                {renderCrawlerQualityBadges(selectedRun)}
+              </div>
             </div>
 
             {selectedRun.agentRunId && (

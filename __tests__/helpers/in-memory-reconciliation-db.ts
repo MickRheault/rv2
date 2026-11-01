@@ -32,7 +32,8 @@ export function createRideOnSeedState(): InMemoryReconciliationState {
         website: 'https://rideon.es/flota/',
         phone: '+34 931 000 000',
         business_description: 'Barcelona motorcycle rentals',
-        business_statuses: { name: 'Operational' },
+        business_status_id: 1,
+        business_statuses: { id: 1, name: 'Operational', status_code: 'Operational' },
         cities: {
           name: 'Barcelona',
           slug: 'barcelona',
@@ -49,7 +50,8 @@ export function createRideOnSeedState(): InMemoryReconciliationState {
         provider_name: 'Other Madrid Shop',
         slug: 'other-madrid-shop',
         website: 'https://othermadrid.es',
-        business_statuses: { name: 'Operational' },
+        business_status_id: 1,
+        business_statuses: { id: 1, name: 'Operational', status_code: 'Operational' },
       },
     ],
     shop_agent_configs: [
@@ -201,6 +203,7 @@ export function createInMemorySupabaseClient(
     ],
     unresolved_candidate_events: ['candidate_id', 'shop_id', 'actor_id', 'proposal_id'],
     proposal_decision_events: ['proposal_id', 'shop_id', 'actor_id'],
+    crawl_runs: ['shop_id', 'proposal_id'],
   };
 
   function validateUuidColumns(table: keyof InMemoryReconciliationState, raw: Record<string, any>) {
@@ -277,6 +280,53 @@ export function createInMemorySupabaseClient(
                 message: `new row for relation "unresolved_candidates" violates check constraint: '${String(raw.state)}'`,
               },
             };
+          }
+          if (table === 'crawl_runs') {
+            const validCrawlStatuses = new Set(['success', 'partial', 'failed']);
+            const validCov = new Set(['complete', 'partial', 'failed', 'unknown']);
+            const validRec = new Set(['complete', 'unresolved', 'unknown']);
+            if (!validCrawlStatuses.has(raw.status)) {
+              return {
+                data: null,
+                error: {
+                  code: '23514',
+                  message: `new row for relation "crawl_runs" violates check constraint "crawl_runs_status_check": '${String(raw.status)}'`,
+                },
+              };
+            }
+            if (raw.coverage_status !== undefined && !validCov.has(raw.coverage_status)) {
+              return {
+                data: null,
+                error: {
+                  code: '23514',
+                  message: `new row for relation "crawl_runs" violates coverage_status check: '${String(raw.coverage_status)}'`,
+                },
+              };
+            }
+            if (raw.reconciliation_status !== undefined && !validRec.has(raw.reconciliation_status)) {
+              return {
+                data: null,
+                error: {
+                  code: '23514',
+                  message: `new row for relation "crawl_runs" violates reconciliation_status check: '${String(raw.reconciliation_status)}'`,
+                },
+              };
+            }
+            if (
+              raw.agent_run_id !== null &&
+              raw.agent_run_id !== undefined &&
+              tableRows.some(
+                (r) => r.shop_id === raw.shop_id && r.agent_run_id === raw.agent_run_id
+              )
+            ) {
+              return {
+                data: null,
+                error: {
+                  code: '23505',
+                  message: `duplicate key value violates unique constraint "uq_crawl_runs_shop_agent_run"`,
+                },
+              };
+            }
           }
           const now = new Date().toISOString();
           const record = {

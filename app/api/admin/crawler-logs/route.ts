@@ -4,10 +4,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCrawlRuns } from '@/services/crawl-runs';
 import { isAuthorizedAdmin } from '@/lib/auth/admin-auth';
 
+const ALLOWED_CRAWLER_LOG_STATUSES = new Set(['all', 'success', 'partial', 'failed']);
+
 /**
  * GET /api/admin/crawler-logs
- * 
- * Fetches crawler activity audit logs for the admin dashboard.
+ *
+ * Fetches crawler activity audit logs for the admin dashboard, including
+ * partial crawl outcomes and coverage/reconciliation quality dimensions.
  */
 export async function GET(request: NextRequest) {
   if (!(await isAuthorizedAdmin(request))) {
@@ -16,7 +19,13 @@ export async function GET(request: NextRequest) {
 
   try {
     const { searchParams } = new URL(request.url);
-    const statusParam = searchParams.get('status');
+    const statusParam = searchParams.get('status')?.trim();
+    if (statusParam && !ALLOWED_CRAWLER_LOG_STATUSES.has(statusParam)) {
+      return NextResponse.json(
+        { error: 'Invalid status filter. Must be "all", "success", "partial", or "failed".' },
+        { status: 400 }
+      );
+    }
     const status = statusParam && statusParam !== 'all' ? statusParam : undefined;
     const shopId = searchParams.get('shopId') || searchParams.get('shop_id') || undefined;
     const parsedLimit = parseInt(searchParams.get('limit') || '50', 10);
