@@ -4,8 +4,12 @@ import {
   resolveConditionNotes,
 } from '@/lib/motorcycle-conditions-helpers';
 import {
+  MAX_TEXT_FIELD_LENGTH,
+  validateBoundedString,
+  validateHttpUrl,
+} from '@/lib/reconciliation-report';
+import {
   extractLearnedAgentConfig,
-  LearnedAgentConfig,
   sanitizeLearnedConfig,
 } from '@/services/shop-agent-configs';
 import {
@@ -21,6 +25,10 @@ export const CADENCE_DAYS: Record<number, number> = {
   2: 30,  // Tier 2: Monthly (Standard catalog)
   3: 60,  // Tier 3: Bi-monthly (Infrequent / seasonal)
 };
+
+export const MAX_STATUS_PAYLOAD_BYTES = 65_536; // 64 KB
+const MAX_METADATA_BYTES = 16_384; // 16 KB
+const CANDIDATES_BATCH_PAGE_SIZE = 1000;
 
 const VALID_CRAWL_STATUSES = new Set<CrawlRunStatus>(['success', 'partial', 'failed']);
 const VALID_COVERAGE_STATUSES = new Set<CrawlCoverageStatus>([
@@ -157,27 +165,86 @@ const CANDIDATE_STATE_PRIORITY: Record<string, number> = {
   excluded: 3,
 };
 
-function validateOptionalHttpUrl(rawUrl: unknown, fieldName: string): void {
-  if (rawUrl === undefined || rawUrl === null) return;
-  if (typeof rawUrl !== 'string') {
-    throw new CrawlStatusValidationError(`Field '${fieldName}' must be a string.`);
+const CANDIDATE_SELECT_COLUMNS = `
+  id,
+  shop_id,
+  identity_key,
+  brand_name,
+  model_name,
+  year,
+  year_to,
+  variant_label,
+  state,
+  flagged_for_review,
+  current_issues,
+  next_action,
+  latest_evidence,
+  resolution_reason,
+  originating_run_id,
+  latest_run_id,
+  created_at,
+  updated_at
+`;
+
+async function fetchAllActiveCandidatesForShops(
+  supabase: any,
+  shopIds: string[]
+): Promise<any[]> {
+  const initialTable = supabase.from('unresolved_candidates') as any;
+  if (!initialTable || typeof initialTable.select !== 'function') {
+    return [];
   }
-  const trimmed = rawUrl.trim();
-  if (trimmed.length === 0) return;
-  if (trimmed.length > 2048) {
-    throw new CrawlStatusValidationError(`Field '${fieldName}' exceeds maximum length of 2048 characters.`);
+
+  const buildBaseQuery = (tableInstance?: any) => {
+    const tbl = tableInstance ?? (supabase.from('unresolved_candidates') as any);
+    let q = tbl.select(CANDIDATE_SELECT_COLUMNS);
+    if (q && typeof q.in === 'function') {
+      q = q.in('shop_id', shopIds);
+    }
+    if (q && typeof q.neq === 'function') {
+      q = q.neq('state', 'resolved_applied');
+    }
+    if (q && typeof q.order === 'function') {
+      q = q.order('id', { ascending: true });
+    }
+    return q;
+  };
+
+  const firstQuery = buildBaseQuery(initialTable);
+  if (!firstQuery || typeof firstQuery.range !== 'function') {
+    const res = await Promise.resolve(firstQuery);
+    if (res?.error) {
+      throw new Error(`Failed to load unresolved candidates: ${res.error.message}`);
+    }
+    return (res?.data || []).filter((c: any) => c && c.state !== 'resolved_applied');
   }
-  let parsed: URL;
-  try {
-    parsed = new URL(trimmed);
-  } catch {
-    throw new CrawlStatusValidationError(`Field '${fieldName}' must be a valid HTTP or HTTPS URL.`);
-  }
-  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-    throw new CrawlStatusValidationError(
-      `Field '${fieldName}' must use http or https scheme (received '${parsed.protocol}').`
+
+  const collected: any[] = [];
+  let pageOffset = 0;
+  let currentQuery = firstQuery;
+
+  while (true) {
+    const res = await currentQuery.range(
+      pageOffset,
+      pageOffset + CANDIDATES_BATCH_PAGE_SIZE - 1
     );
+    if (res?.error) {
+      throw new Error(`Failed to load unresolved candidates: ${res.error.message}`);
+    }
+    const batch = res?.data || [];
+    for (const row of batch) {
+      if (row && row.state !== 'resolved_applied') {
+        collected.push(row);
+      }
+    }
+    if (batch.length < CANDIDATES_BATCH_PAGE_SIZE) {
+      break;
+    }
+    pageOffset += batch.length;
+    currentQuery = buildBaseQuery();
   }
+
+  return collected;
 }
 
 /**
@@ -213,7 +280,7 @@ export class TaskSchedulerService {
   static async getDueTasks(options: GetDueTasksOptions = {}): Promise<AgentTask[]> {
     const limit = Math.min(Math.max(options.limit ?? 10, 1), 50);
     const candidatesLimit = Math.min(Math.max(options.candidatesLimit ?? 50, 1), 200);
-    const candidatesOffset = Math.max(options.candidatesOffset ?? 0, 0);
+    const candidatesOffset = Math.min(Math.max(options.candidatesOffset ?? 0, 0), 100000);
     const supabase = getSupabaseAdmin();
 
     // 1. Fetch all active crawler configurations with shop details
@@ -296,7 +363,7 @@ export class TaskSchedulerService {
       return [];
     }
 
-    // 4. Batch fetch active inventory, inclusions, conditions, and unresolved candidates for selected shops
+    // 4. Batch fetch active inventory, inclusions, conditions, and paginated unresolved candidates for selected shops
     const shopIds = scoredConfigs.map((cfg) => cfg.shop_id);
 
     let bikesQuery: any = supabase
@@ -343,7 +410,6 @@ export class TaskSchedulerService {
     const conditionsTable = supabase.from('rental_shop_conditions') as any;
     const categoriesTable = supabase.from('categories') as any;
     const conditionTypesTable = supabase.from('condition_types') as any;
-    const candidatesTable = supabase.from('unresolved_candidates') as any;
 
     let categoriesQuery: Promise<any> = Promise.resolve({ data: [] });
     if (categoriesTable && typeof categoriesTable.select === 'function') {
@@ -363,49 +429,13 @@ export class TaskSchedulerService {
           : Promise.resolve(sel);
     }
 
-    let candidatesQuery: Promise<any> = Promise.resolve({ data: [] });
-    if (candidatesTable && typeof candidatesTable.select === 'function') {
-      let sel = candidatesTable.select(
-        `
-          id,
-          shop_id,
-          identity_key,
-          brand_name,
-          model_name,
-          year,
-          year_to,
-          variant_label,
-          state,
-          flagged_for_review,
-          current_issues,
-          next_action,
-          latest_evidence,
-          resolution_reason,
-          originating_run_id,
-          latest_run_id,
-          created_at,
-          updated_at
-        `
-      );
-      if (sel && typeof sel.in === 'function') {
-        sel = sel.in('shop_id', shopIds);
-      }
-      if (sel && typeof sel.neq === 'function') {
-        sel = sel.neq('state', 'resolved_applied');
-      }
-      if (sel && typeof sel.order === 'function') {
-        sel = sel.order('created_at', { ascending: true });
-      }
-      candidatesQuery = Promise.resolve(sel);
-    }
-
     const [
       bikesRes,
       inclusionsRes,
       conditionsRes,
       categoriesRes,
       conditionTypesRes,
-      candidatesRes,
+      allCandidates,
     ] = await Promise.all([
       bikesQuery,
       inclusionsTable && typeof inclusionsTable.select === 'function'
@@ -416,19 +446,12 @@ export class TaskSchedulerService {
         : Promise.resolve({ data: [] }),
       categoriesQuery,
       conditionTypesQuery,
-      candidatesQuery,
+      fetchAllActiveCandidatesForShops(supabase, shopIds),
     ]);
-
-    if (candidatesRes?.error) {
-      throw new Error(`Failed to load unresolved candidates: ${candidatesRes.error.message}`);
-    }
 
     const allBikes = bikesRes?.data || [];
     const allInclusions = inclusionsRes?.data || [];
     const allConditions = conditionsRes?.data || [];
-    const allCandidates = (candidatesRes?.data || []).filter(
-      (c: any) => c && c.state !== 'resolved_applied'
-    );
 
     const categories: Array<{ id: string; name: string }> = (categoriesRes?.data || []).map(
       (cat: any) => ({
@@ -674,10 +697,11 @@ export class TaskSchedulerService {
 
   /**
    * Unified crawl-completion and quality bookkeeping for POST /api/agent/tasks/:id/status (Spec #201 / #204):
-   * - Validates status ('success' | 'partial' | 'failed'), optional quality enums, and learned URLs/hints.
+   * - Validates status ('success' | 'partial' | 'failed'), optional quality enums, proposalId, and learned URLs/hints.
    * - Resolves any linked Change Proposal for (shop_id, agent_run_id).
-   * - Rejects (409) explicit claims of complete coverage or reconciliation contradicting the linked report.
-   * - Preserves report-derived 'partial' / 'unresolved' quality even when legacy callers report 'success' or 'failed'.
+   * - Rejects (409) explicit claims of complete coverage or reconciliation contradicting the linked report,
+   *   and rejects (400/409) nonexistent, cross-shop, or cross-run proposalId references before mutating state.
+   * - Preserves report-derived 'partial' / 'failed' / 'unresolved' quality even when legacy callers report 'success'.
    * - Advances shop_agent_configs.last_run_at across success, partial, and failed runs so scheduled slots are consumed.
    * - Upserts a single crawl_runs row per (shop_id, agent_run_id).
    */
@@ -696,13 +720,13 @@ export class TaskSchedulerService {
 
     let agentRunId: string | null = null;
     if (body.agentRunId !== undefined && body.agentRunId !== null) {
-      if (typeof body.agentRunId !== 'string' || body.agentRunId.trim().length === 0) {
-        throw new CrawlStatusValidationError('Field "agentRunId" must be a non-empty string.');
-      }
-      if (body.agentRunId.trim().length > 255) {
-        throw new CrawlStatusValidationError('Field "agentRunId" exceeds 255 characters.');
-      }
-      agentRunId = body.agentRunId.trim();
+      agentRunId = validateBoundedString(
+        body.agentRunId,
+        'agentRunId',
+        255,
+        CrawlStatusValidationError,
+        false
+      );
     }
 
     let explicitCoverageStatus: CrawlCoverageStatus | undefined;
@@ -733,48 +757,78 @@ export class TaskSchedulerService {
 
     let crawlError: string | null = null;
     if (body.error !== undefined && body.error !== null) {
-      if (typeof body.error !== 'string') {
-        throw new CrawlStatusValidationError('Field "error" must be a string.');
-      }
-      if (body.error.length > 4000) {
-        throw new CrawlStatusValidationError('Field "error" exceeds 4000 characters.');
-      }
-      crawlError = body.error.trim() || null;
+      const trimmedErr = validateBoundedString(
+        body.error,
+        'error',
+        MAX_TEXT_FIELD_LENGTH,
+        CrawlStatusValidationError,
+        true
+      );
+      crawlError = trimmedErr || null;
     }
 
     for (const hintField of ['learnedExtractionHints', 'extractionHints'] as const) {
       const val = body[hintField];
       if (val !== undefined && val !== null) {
-        if (typeof val !== 'string') {
-          throw new CrawlStatusValidationError(`Field "${hintField}" must be a string.`);
-        }
-        if (val.length > 4000) {
-          throw new CrawlStatusValidationError(
-            `Field "${hintField}" exceeds maximum length of 4000 characters.`
-          );
-        }
+        validateBoundedString(
+          val,
+          hintField,
+          MAX_TEXT_FIELD_LENGTH,
+          CrawlStatusValidationError,
+          true
+        );
       }
     }
 
-    validateOptionalHttpUrl(body.discoveredSourceUrl, 'discoveredSourceUrl');
+    if (body.discoveredSourceUrl !== undefined && body.discoveredSourceUrl !== null) {
+      if (typeof body.discoveredSourceUrl !== 'string') {
+        throw new CrawlStatusValidationError('discoveredSourceUrl must be a string.');
+      }
+      if (body.discoveredSourceUrl.trim().length > 0) {
+        validateHttpUrl(
+          body.discoveredSourceUrl,
+          'discoveredSourceUrl',
+          CrawlStatusValidationError
+        );
+      }
+    }
 
     if (body.metadata !== undefined && body.metadata !== null) {
       if (typeof body.metadata !== 'object' || Array.isArray(body.metadata)) {
         throw new CrawlStatusValidationError('Field "metadata" must be a plain object.');
       }
+      const metadataBytes = Buffer.byteLength(JSON.stringify(body.metadata), 'utf8');
+      if (metadataBytes > MAX_METADATA_BYTES) {
+        throw new CrawlStatusValidationError(
+          `Field "metadata" exceeds maximum size of ${MAX_METADATA_BYTES} bytes.`
+        );
+      }
     }
 
     let explicitProposalId: string | null = null;
     if (body.proposalId !== undefined && body.proposalId !== null) {
-      if (typeof body.proposalId !== 'string' || body.proposalId.trim().length === 0) {
-        throw new CrawlStatusValidationError('Field "proposalId" must be a non-empty string.');
+      const trimmedPropId = validateBoundedString(
+        body.proposalId,
+        'proposalId',
+        255,
+        CrawlStatusValidationError,
+        false
+      );
+      if (!UUID_REGEX.test(trimmedPropId)) {
+        throw new CrawlStatusValidationError(
+          `Field "proposalId" ('${trimmedPropId}') must be a valid UUID.`
+        );
       }
-      explicitProposalId = body.proposalId.trim();
+      explicitProposalId = trimmedPropId;
+    }
+
+    if (!UUID_REGEX.test(taskId)) {
+      throw new TaskNotFoundError(taskId);
     }
 
     const supabase = getSupabaseAdmin();
-    const cfgTable = supabase.from('shop_agent_configs') as any;
-    const { data: current, error: fetchErr } = await cfgTable
+    const fetchCfgTable = supabase.from('shop_agent_configs') as any;
+    const { data: current, error: fetchErr } = await fetchCfgTable
       .select(
         'id, shop_id, consecutive_errors, last_coverage_status, last_reconciliation_status'
       )
@@ -782,6 +836,9 @@ export class TaskSchedulerService {
       .maybeSingle();
 
     if (fetchErr) {
+      if (fetchErr.code === '22P02') {
+        throw new TaskNotFoundError(taskId);
+      }
       throw new Error(`Failed to fetch task config '${taskId}': ${fetchErr.message}`);
     }
     if (!current) {
@@ -789,39 +846,40 @@ export class TaskSchedulerService {
     }
 
     const shopId: string = current.shop_id;
-    const proposalsTable = supabase.from('change_proposals') as any;
-    const crawlRunsTable = supabase.from('crawl_runs') as any;
 
     let linkedProposal: any = null;
-    if (agentRunId && proposalsTable && typeof proposalsTable.select === 'function') {
-      const propRes = await proposalsTable
-        .select(
-          'id, shop_id, agent_run_id, status, coverage_status, reconciliation_status, application_status, payload_digest'
-        )
-        .eq('shop_id', shopId)
-        .eq('agent_run_id', agentRunId)
-        .order('created_at', { ascending: false })
-        .limit(1);
-      if (propRes?.error) {
-        throw new Error(`Failed to query linked proposal: ${propRes.error.message}`);
-      }
-      linkedProposal = propRes?.data?.[0] ?? null;
+    if (agentRunId) {
+      const propByRunTable = supabase.from('change_proposals') as any;
+      if (propByRunTable && typeof propByRunTable.select === 'function') {
+        const propRes = await propByRunTable
+          .select(
+            'id, shop_id, agent_run_id, status, coverage_status, reconciliation_status, application_status, payload_digest'
+          )
+          .eq('shop_id', shopId)
+          .eq('agent_run_id', agentRunId)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        if (propRes?.error) {
+          throw new Error(`Failed to query linked proposal: ${propRes.error.message}`);
+        }
+        linkedProposal = propRes?.data?.[0] ?? null;
 
-      if (explicitProposalId && linkedProposal && linkedProposal.id !== explicitProposalId) {
-        throw new CrawlStatusConflictError(
-          `Explicit proposalId '${explicitProposalId}' conflicts with proposal '${linkedProposal.id}' staged for agentRunId '${agentRunId}'.`
-        );
+        if (explicitProposalId && linkedProposal && linkedProposal.id !== explicitProposalId) {
+          throw new CrawlStatusConflictError(
+            `Explicit proposalId '${explicitProposalId}' conflicts with proposal '${linkedProposal.id}' staged for agentRunId '${agentRunId}'.`
+          );
+        }
       }
     }
 
-    if (
-      !linkedProposal &&
-      explicitProposalId &&
-      UUID_REGEX.test(explicitProposalId) &&
-      proposalsTable &&
-      typeof proposalsTable.select === 'function'
-    ) {
-      const byIdRes = await proposalsTable
+    if (explicitProposalId && !linkedProposal) {
+      const propByIdTable = supabase.from('change_proposals') as any;
+      if (!propByIdTable || typeof propByIdTable.select !== 'function') {
+        throw new CrawlStatusValidationError(
+          `Proposal '${explicitProposalId}' could not be verified.`
+        );
+      }
+      const byIdRes = await propByIdTable
         .select(
           'id, shop_id, agent_run_id, status, coverage_status, reconciliation_status, application_status, payload_digest'
         )
@@ -830,27 +888,41 @@ export class TaskSchedulerService {
       if (byIdRes?.error) {
         throw new Error(`Failed to query proposal '${explicitProposalId}': ${byIdRes.error.message}`);
       }
-      if (byIdRes?.data) {
-        if (byIdRes.data.shop_id !== shopId) {
-          throw new CrawlStatusValidationError(
-            `Proposal '${explicitProposalId}' does not belong to shop '${shopId}'.`
-          );
-        }
-        linkedProposal = byIdRes.data;
+      if (!byIdRes?.data) {
+        throw new CrawlStatusValidationError(
+          `Proposal '${explicitProposalId}' was not found.`
+        );
+      }
+      if (byIdRes.data.shop_id !== shopId) {
+        throw new CrawlStatusValidationError(
+          `Proposal '${explicitProposalId}' does not belong to shop '${shopId}'.`
+        );
+      }
+      if (agentRunId && byIdRes.data.agent_run_id && byIdRes.data.agent_run_id !== agentRunId) {
+        throw new CrawlStatusConflictError(
+          `Proposal '${explicitProposalId}' belongs to agentRunId '${byIdRes.data.agent_run_id}', not '${agentRunId}'.`
+        );
+      }
+      linkedProposal = byIdRes.data;
+      if (!agentRunId && linkedProposal.agent_run_id) {
+        agentRunId = linkedProposal.agent_run_id;
       }
     }
 
     let existingCrawlRun: any = null;
-    if (agentRunId && crawlRunsTable && typeof crawlRunsTable.select === 'function') {
-      const runRes = await crawlRunsTable
-        .select('*')
-        .eq('shop_id', shopId)
-        .eq('agent_run_id', agentRunId)
-        .maybeSingle();
-      if (runRes?.error) {
-        throw new Error(`Failed to query existing crawl run: ${runRes.error.message}`);
+    if (agentRunId) {
+      const crawlRunsTable = supabase.from('crawl_runs') as any;
+      if (crawlRunsTable && typeof crawlRunsTable.select === 'function') {
+        const runRes = await crawlRunsTable
+          .select('*')
+          .eq('shop_id', shopId)
+          .eq('agent_run_id', agentRunId)
+          .maybeSingle();
+        if (runRes?.error) {
+          throw new Error(`Failed to query existing crawl run: ${runRes.error.message}`);
+        }
+        existingCrawlRun = runRes?.data ?? null;
       }
-      existingCrawlRun = runRes?.data ?? null;
     }
 
     const hasLinkedReport = Boolean(
@@ -910,27 +982,50 @@ export class TaskSchedulerService {
       effectiveCoverageStatus = (linkedProposal.coverage_status || 'unknown') as CrawlCoverageStatus;
       effectiveReconciliationStatus = (linkedProposal.reconciliation_status ||
         'unknown') as CrawlReconciliationStatus;
-      effectiveRunStatus =
-        effectiveCoverageStatus === 'complete' && effectiveReconciliationStatus === 'complete'
-          ? requestedStatus === 'partial'
-            ? 'partial'
-            : 'success'
-          : 'partial';
+
+      if (effectiveCoverageStatus === 'failed') {
+        effectiveRunStatus = requestedStatus === 'failed' ? 'failed' : 'partial';
+      } else if (
+        effectiveCoverageStatus === 'partial' ||
+        effectiveReconciliationStatus === 'unresolved'
+      ) {
+        effectiveRunStatus = 'partial';
+      } else {
+        effectiveRunStatus =
+          requestedStatus === 'partial' || requestedStatus === 'failed' ? 'partial' : 'success';
+      }
     } else if (
       existingCrawlRun &&
-      (existingCrawlRun.status === 'partial' ||
+      (existingCrawlRun.status === 'failed' ||
+        existingCrawlRun.status === 'partial' ||
+        existingCrawlRun.coverage_status === 'failed' ||
         existingCrawlRun.coverage_status === 'partial' ||
         existingCrawlRun.reconciliation_status === 'unresolved')
     ) {
-      effectiveRunStatus = 'partial';
-      effectiveCoverageStatus =
-        explicitCoverageStatus && explicitCoverageStatus !== 'unknown'
-          ? explicitCoverageStatus
-          : (existingCrawlRun.coverage_status as CrawlCoverageStatus) || 'partial';
-      effectiveReconciliationStatus =
-        explicitReconciliationStatus && explicitReconciliationStatus !== 'unknown'
-          ? explicitReconciliationStatus
-          : (existingCrawlRun.reconciliation_status as CrawlReconciliationStatus) || 'unknown';
+      if (existingCrawlRun.status === 'failed' && requestedStatus !== 'partial') {
+        effectiveRunStatus = 'failed';
+        effectiveCoverageStatus =
+          explicitCoverageStatus && explicitCoverageStatus !== 'unknown'
+            ? explicitCoverageStatus
+            : (existingCrawlRun.coverage_status as CrawlCoverageStatus) || 'failed';
+        effectiveReconciliationStatus =
+          explicitReconciliationStatus && explicitReconciliationStatus !== 'unknown'
+            ? explicitReconciliationStatus
+            : (existingCrawlRun.reconciliation_status as CrawlReconciliationStatus) || 'unknown';
+      } else {
+        effectiveCoverageStatus =
+          explicitCoverageStatus && explicitCoverageStatus !== 'unknown'
+            ? explicitCoverageStatus
+            : (existingCrawlRun.coverage_status as CrawlCoverageStatus) || 'partial';
+        effectiveReconciliationStatus =
+          explicitReconciliationStatus && explicitReconciliationStatus !== 'unknown'
+            ? explicitReconciliationStatus
+            : (existingCrawlRun.reconciliation_status as CrawlReconciliationStatus) || 'unknown';
+        effectiveRunStatus =
+          requestedStatus === 'failed' && effectiveCoverageStatus === 'failed'
+            ? 'failed'
+            : 'partial';
+      }
     } else if (requestedStatus === 'failed') {
       effectiveRunStatus = 'failed';
       effectiveCoverageStatus = explicitCoverageStatus ?? 'failed';
@@ -938,6 +1033,7 @@ export class TaskSchedulerService {
     } else if (
       requestedStatus === 'partial' ||
       explicitCoverageStatus === 'partial' ||
+      explicitCoverageStatus === 'failed' ||
       explicitReconciliationStatus === 'unresolved'
     ) {
       effectiveRunStatus = 'partial';
@@ -951,12 +1047,17 @@ export class TaskSchedulerService {
     }
 
     const nowIso = new Date().toISOString();
+    const alreadyCountedFailedRun = Boolean(
+      existingCrawlRun && existingCrawlRun.status === 'failed'
+    );
     const configUpdatePayload: Record<string, any> =
       effectiveRunStatus === 'failed'
         ? {
             last_run_at: nowIso,
-            last_error: crawlError || 'Crawl failed',
-            consecutive_errors: (current.consecutive_errors || 0) + 1,
+            last_error: crawlError || existingCrawlRun?.error_message || 'Crawl failed',
+            consecutive_errors: alreadyCountedFailedRun
+              ? Math.max(current.consecutive_errors || 0, 1)
+              : (current.consecutive_errors || 0) + 1,
             last_coverage_status: effectiveCoverageStatus,
             last_reconciliation_status: effectiveReconciliationStatus,
           }
@@ -977,7 +1078,8 @@ export class TaskSchedulerService {
       configUpdatePayload.source_url = sanitizedLearned.source_url;
     }
 
-    const { data: updatedTask, error: updateErr } = await cfgTable
+    const updateCfgTable = supabase.from('shop_agent_configs') as any;
+    const { data: updatedTask, error: updateErr } = await updateCfgTable
       .update(configUpdatePayload)
       .eq('id', taskId)
       .select()
@@ -987,20 +1089,16 @@ export class TaskSchedulerService {
       throw new Error(`Failed to update task status: ${updateErr.message}`);
     }
 
-    // Legacy reportless proposal notification without agentRunId already wrote a crawl_runs row at staging time
-    const isAnonymousLegacyProposalNotification =
-      !agentRunId &&
+    // Legacy reportless proposal notifications already wrote a crawl_runs row during POST /api/agent/change-proposals
+    const isLegacyReportlessProposalSuccess =
       !hasLinkedReport &&
       effectiveRunStatus === 'success' &&
-      Boolean(explicitProposalId || body.proposalCreated || body.hasChanges === true);
+      Boolean(linkedProposal?.id || body.proposalCreated || body.hasChanges === true) &&
+      !(existingCrawlRun && !existingCrawlRun.proposal_id && linkedProposal?.id);
 
-    let crawlRun: any = null;
-    if (!isAnonymousLegacyProposalNotification) {
-      const resolvedProposalId =
-        linkedProposal?.id ??
-        (explicitProposalId && UUID_REGEX.test(explicitProposalId) ? explicitProposalId : null) ??
-        existingCrawlRun?.proposal_id ??
-        null;
+    let crawlRun: any = existingCrawlRun ?? null;
+    if (!isLegacyReportlessProposalSuccess) {
+      const resolvedProposalId = linkedProposal?.id ?? existingCrawlRun?.proposal_id ?? null;
 
       crawlRun = await CrawlRunService.upsertCrawlRun({
         shopId,
@@ -1011,7 +1109,7 @@ export class TaskSchedulerService {
         agentRunId,
         errorMessage:
           effectiveRunStatus === 'failed'
-            ? crawlError || 'Crawl failed'
+            ? crawlError || existingCrawlRun?.error_message || 'Crawl failed'
             : crawlError ?? existingCrawlRun?.error_message ?? null,
         metadata: body.metadata || {},
       });

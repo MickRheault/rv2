@@ -20,20 +20,20 @@ Complete Reconciliation Reports (`reconciliationReport.schemaVersion = 1`) let a
 
 | Method & Path | Purpose |
 | --- | --- |
-| `POST /api/agent/change-proposals` | Stage a Change Proposal with actionable `items[]` (`add`, `update`, `delist`) and an optional `reconciliationReport` (`schemaVersion: 1`), or legacy reportless `items[]`. Returns `201` on creation, `200` on identical `(shopId, agentRunId)` replay, `409` on divergent replay, `413` if raw body exceeds `2 MB`, and `400` on validation errors. |
-| `GET /api/agent/change-proposals/:id` | Read back a persisted Change Proposal, its `reconciliationReport`, server-derived counts, `reportDigest`, independent status dimensions, item links, shop `unresolvedCandidates`, and paginated `entries` (`?entriesLimit=1..200&entriesOffset=0..100000`, default `limit = 100`). |
+| `POST /api/agent/change-proposals` | Stage a Change Proposal with actionable `items[]` (`add`, `update`, `delist`) and an optional `reconciliationReport` (`schemaVersion: 1`), or legacy reportless `items[]`. Returns `201` on creation (`proposalStatus`, `reportId`, `reportDigest`, `serverCounts`, `summaryCounts`, `coverageStatus`, `reconciliationStatus`, `applicationStatus`), `200` on identical `(shopId, agentRunId)` replay (`replayed: true`), `409` on divergent replay, `413` if raw body exceeds `2 MB`, and `400` on validation errors. |
+| `GET /api/agent/change-proposals/:id` | Read back a persisted Change Proposal (`proposalId`, `status`, `version`, `coverageStatus`, `reconciliationStatus`, `applicationStatus`, `summaryCounts`), `report` (including `report.reportDigest` and `report.serverCounts`), `itemLinks`, `decisionEvents`, shop `candidates`, and paginated `entries` + `entriesPagination` (`?entriesLimit=1..500&entriesOffset=0..100000`, default `limit = 200`; `400` on invalid bounds). |
 | `GET /api/agent/tasks` | Fetch due shop crawl tasks enriched with baseline inventory, shop profile, and paginated prior `unresolvedCandidates` (`?candidatesLimit=1..200&candidatesOffset=0..100000`, default `limit = 50`; optional `?shopId=<uuid>&limit=1..50&minUrgency=<num>`). Excludes `resolved_applied` candidates and never writes candidate backlogs into `extractionHints`. |
-| `POST /api/agent/tasks/:id/status` | Record crawl completion (`status: 'success' \| 'partial' \| 'failed'`), advance `shop_agent_configs.last_run_at` across all outcomes so partial/failed crawls consume their scheduled slot without infinite retries, and upsert a single `crawl_runs` row per `(shop_id, agent_run_id)` linked to any staged proposal's `proposal_id`, `coverage_status`, and `reconciliation_status`. Returns `409` if explicit `coverageStatus: 'complete'` or `reconciliationStatus: 'complete'` contradicts the linked report. |
+| `POST /api/agent/tasks/:id/status` | Record crawl completion (`status: 'success' \| 'partial' \| 'failed'`), advance `shop_agent_configs.last_run_at` across all outcomes so partial/failed crawls consume their scheduled slot without infinite retries, and upsert a single `crawl_runs` row per `(shop_id, agent_run_id)` linked to any staged proposal's `proposal_id`, `coverage_status`, and `reconciliation_status`. Returns `409` if explicit `coverageStatus: 'complete'` or `reconciliationStatus: 'complete'` contradicts the linked report, `404` if task UUID is not found, and `413` if body exceeds `64 KB`. |
 
 ### Admin Endpoints (Authenticated Admin Session)
 
 | Method & Path | Purpose |
 | --- | --- |
 | `GET /api/admin/change-proposals` | List Change Proposals filtered by `status` (`all \| pending \| acknowledged \| applied \| partially_applied \| rejected \| superseded`), exposing `coverageStatus`, `reconciliationStatus`, `applicationStatus`, `version`, `summaryCounts`, and `serverCounts`. |
-| `GET /api/admin/change-proposals/:id` | Fetch full Change Proposal detail: actionable/legacy items hydrated with live `baseline_data`, `report`, paginated `entries` (`?entriesLimit=1..200&entriesOffset=0..100000`) hydrated with live baseline specs/rates on `unchanged` entries, `itemLinks`, shop `unresolvedCandidates`, `candidateEvents`, and `decisionEvents`. |
+| `GET /api/admin/change-proposals/:id` | Fetch full Change Proposal detail: `proposal`, actionable/legacy `items` hydrated with live `baseline_data`, `report`, paginated `entries` + `entriesPagination` (`?entriesLimit=1..500&entriesOffset=0..100000`, default `limit = 200`) hydrated with live baseline specs/rates on `unchanged` entries, `itemLinks`, shop `candidates`, `candidateEvents`, and `decisionEvents`. |
 | `POST /api/admin/change-proposals/:id/apply` | Approve/reject actionable `items[]` (`{ approvedItemIds, expectedVersion, notes? }`) or acknowledge a report-only proposal (`{ action: 'acknowledge', expectedVersion, notes? }`). Enforces positive-integer `expectedVersion` (`400` if missing/invalid, `409` on version conflict) and full apply-time revalidation (`shop_id` ownership, positive integer-day rate tiers + currency, category/condition catalogs, geodata immutability, and `original_data` concurrency). Never executes report entries. |
 | `PATCH /api/admin/unresolved-candidates/:id` | Admin candidate decision (`{ action: 'dismiss' \| 'exclude' \| 'reopen', reason, expectedVersion }`). Requires non-empty `reason` for `dismiss`/`exclude` and positive-integer `expectedVersion` (`409` on conflict), records an append-only `unresolved_candidate_events` entry, and recomputes the shop's latest non-superseded report proposal `reconciliation_status` when applicable. |
-| `GET /api/admin/crawler-logs` | List `crawl_runs` filtered by `?status=all\|success\|partial\|failed` and `?shopId=<uuid>`, returning `status`, `coverageStatus`, `reconciliationStatus`, `proposalId`, and `proposalSummaryCounts`. |
+| `GET /api/admin/crawler-logs` | List `crawl_runs` filtered by `?status=all\|success\|partial\|failed`, `?shopId=<uuid>`, `?limit=1..100` (default `50`), and `?offset=0..100000` (default `0`), returning `status`, `coverageStatus`, `reconciliationStatus`, `proposalId`, and `proposalSummaryCounts`. |
 
 ---
 
@@ -58,7 +58,7 @@ Complete Reconciliation Reports (`reconciliationReport.schemaVersion = 1`) let a
 ### 3.2 Unresolved Candidate State Machine
 
 - **`open`**: Active unresolved blocker returned in `GET /api/agent/tasks`. Remains `open` across proposal acknowledgments, rejections, supersedings, partial-crawl absences, and mixed-proposal approvals. On a `complete` catalog run where a prior `open` candidate is absent from `entries[]`, the server records a `complete_catalog_absence` audit event and keeps the candidate `open` until explicitly dispositioned.
-- **`ready_for_proposal`**: Set when a follow-up run stages a `ready_change` `add` item linked to the candidate (by explicit `candidateId` or unambiguous `(shop_id, normalized_brand, normalized_model, year, year_to, normalized_variant)` key). Reverts to `open` if the proposal is superseded, the item is rejected, or `apply` fails.
+- **`ready_for_proposal`**: Set when a follow-up run stages a `ready_change` `add` item linked to the candidate (by explicit `candidateId` or unambiguous `brand::model::year-yearTo::variant` identity key). Reverts to `open` if the proposal is superseded, the item is rejected, or `apply` fails.
 - **`resolved_applied`**: Terminal resolved state reached when the linked `add` item is applied in `POST /api/admin/change-proposals/:id/apply`, recording `resolved_motorcycle_id`. Omitted from future `GET /api/agent/tasks` candidate backlogs.
 - **`dismissed`**: Set by an admin with mandatory `reason`. Agents cannot overwrite `dismissed` back to `open`; if a later crawl observes divergent issues or evidence on a `dismissed` candidate, `state` stays `'dismissed'` and `flagged_for_review` becomes `true`.
 - **`excluded`**: Set by an admin with mandatory `reason` (or re-observed without silent overwrite). Can be reopened by an admin via `action: 'reopen'`.
@@ -72,7 +72,7 @@ Complete Reconciliation Reports (`reconciliationReport.schemaVersion = 1`) let a
   - `reportDigest` = `'sha256:' + hex(SHA-256(canonicalJson(normalizedReconciliationReport)))`.
   - `payloadDigest` = `'sha256:' + hex(SHA-256(canonicalJson({ shopId, sourceUrl, items, reportDigest, learnedConfig })))`.
 - **Semantic Idempotency on `(shopId, agentRunId)`**:
-  - Staging a new-format proposal with the same `(shopId, agentRunId)` and identical `payloadDigest` returns HTTP `200` (`replayed: true`) with the original `proposalId`, `reportId`, `reportDigest`, `serverCounts`, and statuses without duplicating items, candidates, or events.
+  - Staging a new-format proposal with the same `(shopId, agentRunId)` and identical `payloadDigest` returns HTTP `200` (`replayed: true`) with the original `proposalId`, `proposalStatus`, `reportId`, `reportDigest`, `serverCounts`, and status dimensions without duplicating items, candidates, or events.
   - Staging a different payload under an existing `(shopId, agentRunId)` returns HTTP `409 Conflict`.
 
 ---
@@ -82,15 +82,17 @@ Complete Reconciliation Reports (`reconciliationReport.schemaVersion = 1`) let a
 | Bound | Limit | Failure Response |
 | --- | --- | --- |
 | Raw request body (`POST /api/agent/change-proposals`) | `<= 2,097,152` bytes (`2 MB`) | `413 Payload Too Large` (never silently truncated) |
+| Raw request body (`POST /api/agent/tasks/:id/status`) | `<= 65,536` bytes (`64 KB`); `metadata <= 16,384` bytes | `413 Payload Too Large` / `400 Bad Request` |
 | `items[]` length | `<= 500` | `400 Bad Request` |
 | `reconciliationReport.entries[]` length | `<= 1,000` | `400 Bad Request` |
 | `reconciliationReport.coverage.pages[]` length | `<= 500` | `400 Bad Request` |
 | `entry.evidence[]` length | `<= 20` per entry (`>= 1` required) | `400 Bad Request` |
 | `entry.issues[]` length | `<= 20` per `unresolved` entry (`>= 1` required) | `400 Bad Request` |
-| Text fields (`snippet`, `observation`, `detail`, `reason`, `nextAction`, `limitations[]`, `extractionHints`) | `<= 4,000` chars | `400 Bad Request` |
+| Text fields (`snippet`, `observation`, `detail`, `reason`, `nextAction`, `limitations[]`, `extractionHints`, `error`) | `<= 4,000` chars | `400 Bad Request` |
 | URLs (`sourceUrl`, `page.url`, `evidence.sourceUrl`, `evidence.linkedUrl`, `discoveredSourceUrl`) | `<= 2,048` chars, strictly `http:` or `https:` | `400 Bad Request` |
-| `entriesLimit` (`GET .../change-proposals/:id`) | `1..200` (default `100`), `entriesOffset` `0..100000` | `400 Bad Request` |
+| `entriesLimit` (`GET .../change-proposals/:id`) | `1..500` (default `200`), `entriesOffset` `0..100000` | `400 Bad Request` |
 | `candidatesLimit` (`GET /api/agent/tasks`) | `1..200` (default `50`), `candidatesOffset` `0..100000` | `400 Bad Request` |
+| `limit` (`GET /api/admin/crawler-logs`) | `1..100` (default `50`), `offset` `0..100000` | `400 Bad Request` |
 
 Supported `schemaVersion: 1` issue codes (unknown codes fail with `400`):
 `PRICE_UNVERIFIED`, `BRANCH_CONFLICT`, `SOURCE_ACCESS_FAILED`, `PRICING_NOT_REPRESENTABLE`, `IDENTITY_UNRESOLVED`, `TAXONOMY_UNRESOLVED`, `REQUIRED_FIELD_UNVERIFIED`, `OTHER`.
@@ -211,23 +213,9 @@ Response (`201 Created`):
   "replayed": false,
   "proposalId": "d92f8b14-6c10-4b4f-9f0c-54a83d2e1101",
   "proposalVersion": 1,
-  "status": "pending",
-  "coverageStatus": "partial",
-  "reconciliationStatus": "unresolved",
-  "applicationStatus": "not_applicable",
+  "proposalStatus": "pending",
   "reportId": "7a811e0c-2299-4d40-98a0-1c82b6f10002",
   "reportVersion": 1,
-  "reportDigest": "sha256:6b8c4e...",
-  "itemsCount": 0,
-  "summaryCounts": {
-    "add": 0,
-    "update": 0,
-    "delist": 0,
-    "unchanged": 1,
-    "unresolved": 1,
-    "excluded": 0,
-    "duplicate": 0
-  },
   "serverCounts": {
     "readyActionableItems": 0,
     "accountedDiscoveredModels": 2,
@@ -240,14 +228,29 @@ Response (`201 Created`):
     "pagesNotProcessed": 1,
     "add": 0,
     "update": 0,
-    "delist": 0
-  }
+    "delist": 0,
+    "unchanged": 1
+  },
+  "summaryCounts": {
+    "add": 0,
+    "update": 0,
+    "delist": 0,
+    "unchanged": 1,
+    "unresolved": 1,
+    "excluded": 0,
+    "duplicate": 0
+  },
+  "itemsCount": 0,
+  "coverageStatus": "partial",
+  "reconciliationStatus": "unresolved",
+  "applicationStatus": "not_applicable",
+  "reportDigest": "sha256:6b8c4e..."
 }
 ```
 
 ### 7.2 Complete Crawl Slot Bookkeeping
 
-`POST /api/agent/tasks/task-rideon-1/status`
+`POST /api/agent/tasks/10000000-0000-4000-8000-000000000001/status`
 
 ```json
 {
@@ -264,9 +267,15 @@ Response (`200 OK`):
 ```json
 {
   "success": true,
-  "status": "partial",
-  "coverageStatus": "partial",
-  "reconciliationStatus": "unresolved",
+  "task": {
+    "id": "10000000-0000-4000-8000-000000000001",
+    "shop_id": "53529565-40d9-41f5-98e4-d2ed1f1d7ffd",
+    "last_run_at": "2026-11-01T10:00:05.000Z",
+    "last_error": null,
+    "consecutive_errors": 0,
+    "last_coverage_status": "partial",
+    "last_reconciliation_status": "unresolved"
+  },
   "crawlRun": {
     "id": "b1920c31-9e12-4331-81a9-7a0091ee0012",
     "shop_id": "53529565-40d9-41f5-98e4-d2ed1f1d7ffd",
@@ -275,7 +284,10 @@ Response (`200 OK`):
     "status": "partial",
     "coverage_status": "partial",
     "reconciliation_status": "unresolved"
-  }
+  },
+  "status": "partial",
+  "coverageStatus": "partial",
+  "reconciliationStatus": "unresolved"
 }
 ```
 
@@ -287,7 +299,7 @@ Response (`200 OK`):
   "count": 1,
   "tasks": [
     {
-      "taskId": "task-rideon-1",
+      "taskId": "10000000-0000-4000-8000-000000000001",
       "shopId": "53529565-40d9-41f5-98e4-d2ed1f1d7ffd",
       "providerName": "Ride On - Alquiler moto Barcelona",
       "targetUrl": "https://rideon.es/flota/",
@@ -296,7 +308,7 @@ Response (`200 OK`):
         "items": [
           {
             "candidateId": "3f41a9e0-88d1-4a7b-92c4-0b1e2d3c4f5a",
-            "identityKey": "bmw|r 1250 gs|||",
+            "identityKey": "bmw::r-1250-gs::any-single::base",
             "brand": "BMW",
             "model": "R 1250 GS",
             "year": null,
@@ -309,9 +321,18 @@ Response (`200 OK`):
               { "code": "BRANCH_CONFLICT", "detail": "Displayed Barcelona label links to Madrid." }
             ],
             "nextAction": "Resolve branch conflict and obtain verified pricing before proposing an addition.",
+            "latestEvidence": [
+              {
+                "sourceUrl": "https://rideon.es/flota/",
+                "linkedUrl": "https://rideon.es/madrid/",
+                "kind": "card_text",
+                "snippet": "BMW R 1250 GS — BARCELONA"
+              }
+            ],
             "resolutionReason": null,
             "originatingRunId": "rideon-bcn-2026-11-01-r1",
-            "latestRunId": "rideon-bcn-2026-11-01-r1"
+            "latestRunId": "rideon-bcn-2026-11-01-r1",
+            "updatedAt": "2026-11-01T10:00:00.000Z"
           }
         ],
         "total": 1,

@@ -27,11 +27,33 @@ export async function GET(request: NextRequest) {
       );
     }
     const status = statusParam && statusParam !== 'all' ? statusParam : undefined;
-    const shopId = searchParams.get('shopId') || searchParams.get('shop_id') || undefined;
-    const parsedLimit = parseInt(searchParams.get('limit') || '50', 10);
-    const limit = Math.min(Math.max(isNaN(parsedLimit) ? 50 : parsedLimit, 1), 100);
-    const parsedOffset = parseInt(searchParams.get('offset') || '0', 10);
-    const offset = Math.max(isNaN(parsedOffset) ? 0 : parsedOffset, 0);
+    const shopId = searchParams.get('shopId')?.trim() || searchParams.get('shop_id')?.trim() || undefined;
+
+    let limit = 50;
+    const limitParam = searchParams.get('limit');
+    if (limitParam !== null) {
+      const trimmed = limitParam.trim();
+      if (!/^-?\d+$/.test(trimmed)) {
+        return NextResponse.json(
+          { error: 'Invalid limit. Must be an integer.' },
+          { status: 400 }
+        );
+      }
+      limit = Math.min(Math.max(Number(trimmed), 1), 100);
+    }
+
+    let offset = 0;
+    const offsetParam = searchParams.get('offset');
+    if (offsetParam !== null) {
+      const trimmed = offsetParam.trim();
+      if (!/^-?\d+$/.test(trimmed)) {
+        return NextResponse.json(
+          { error: 'Invalid offset. Must be an integer.' },
+          { status: 400 }
+        );
+      }
+      offset = Math.min(Math.max(Number(trimmed), 0), 100000);
+    }
 
     const data = await getCrawlRuns({
       status,

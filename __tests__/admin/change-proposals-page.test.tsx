@@ -1194,6 +1194,8 @@ describe('ChangeProposalsPage', () => {
               delist: 0,
               unresolved: 1,
               unchanged: 1,
+              excluded: 2,
+              duplicate: 1,
             },
             createdAt: '2026-10-31T14:00:00Z',
             metadata: { pagesVisited: 2 },
@@ -1210,8 +1212,20 @@ describe('ChangeProposalsPage', () => {
             createdAt: '2026-10-31T15:00:00Z',
             metadata: {},
           },
+          {
+            id: 'run-noprop-failed-cov',
+            shopId: 'shop-3',
+            shopName: 'Madrid Moto Rentals',
+            agentRunId: 'madrid-run-k3',
+            status: 'partial',
+            coverageStatus: 'failed',
+            reconciliationStatus: 'unknown',
+            proposalId: null,
+            createdAt: '2026-10-31T16:00:00Z',
+            metadata: {},
+          },
         ],
-        totalCount: 2,
+        totalCount: 3,
       }),
     });
 
@@ -1223,14 +1237,18 @@ describe('ChangeProposalsPage', () => {
       expect(screen.getByText('Ride On - Alquiler moto Barcelona')).toBeInTheDocument();
     });
 
-    // Status badges show Partial; quality badges show Partial Coverage & Unresolved
-    expect(screen.getAllByText('Partial').length).toBeGreaterThanOrEqual(2);
+    // Status badges show Partial; quality badges show Partial Coverage, Failed Coverage & Unresolved
+    expect(screen.getAllByText('Partial').length).toBeGreaterThanOrEqual(3);
     expect(screen.getAllByText('Partial Coverage').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText('Failed Coverage')).toBeInTheDocument();
     expect(screen.getByText('Unresolved')).toBeInTheDocument();
 
-    // Linked proposal displays unresolved count and never claims Clean Crawl
+    // Linked proposal displays unresolved/excluded/duplicate counts and never claims Clean Crawl
     expect(screen.getByText(/1 unresolved/i)).toBeInTheDocument();
+    expect(screen.getByText(/2 excluded/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 dup/i)).toBeInTheDocument();
     expect(screen.getByText(/Partial \/ Incomplete Crawl/i)).toBeInTheDocument();
+    expect(screen.getByText(/Failed Coverage Crawl/i)).toBeInTheDocument();
     expect(screen.queryByText(/Clean Crawl/i)).not.toBeInTheDocument();
 
     // Filter dropdown supports 'partial'

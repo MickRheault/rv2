@@ -13,6 +13,8 @@ import { NextRequest } from 'next/server';
 import { GET as handleGetTasks } from '@/app/api/agent/tasks/route';
 import { POST as handlePostTaskStatus } from '@/app/api/agent/tasks/[id]/status/route';
 import { POST as handleStageProposal } from '@/app/api/agent/change-proposals/route';
+import { GET as handleGetAgentProposal } from '@/app/api/agent/change-proposals/[id]/route';
+import { GET as handleGetAdminProposal } from '@/app/api/admin/change-proposals/[id]/route';
 import { POST as handleApplyProposal } from '@/app/api/admin/change-proposals/[id]/apply/route';
 import { PATCH as handlePatchCandidate } from '@/app/api/admin/unresolved-candidates/[id]/route';
 import { GET as handleGetCrawlerLogs } from '@/app/api/admin/crawler-logs/route';
@@ -34,8 +36,9 @@ jest.mock('@/lib/auth/admin-auth', () => ({
 }));
 
 const RIDE_ON_SHOP_ID = '53529565-40d9-41f5-98e4-d2ed1f1d7ffd';
+const OTHER_SHOP_ID = '99999999-9999-41f5-98e4-d2ed1f1d7ffd';
 const RIDE_ON_SOURCE_URL = 'https://rideon.es/flota/';
-const RIDE_ON_TASK_ID = 'task-rideon-1';
+const RIDE_ON_TASK_ID = '10000000-0000-4000-8000-000000000001';
 const EXISTING_PCX_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const ADVENTURE_CAT_ID = 'c375e3d9-e4df-4e09-8688-e7b26e78861c';
 const ADMIN_USER_ID = '12345678-1234-4123-8123-123456789abc';
@@ -503,6 +506,46 @@ describe('Agent Tasks Unresolved Candidates Context & Crawl-Run Quality Bookkeep
       expect(new Set(combinedIds).size).toBe(3);
       expect(combinedIds).toEqual(returnedIds);
     });
+
+    it('paginates cleanly across >1,000 unresolved candidates without PostgREST 1,000-row silent truncation', async () => {
+      for (let i = 1; i <= 1005; i++) {
+        const padded = String(i).padStart(6, '0');
+        dbState.unresolved_candidates.push({
+          id: `50000000-0000-4000-8000-${padded}000000`,
+          shop_id: RIDE_ON_SHOP_ID,
+          identity_key: `honda::model-${i}::any-single::base`,
+          brand_name: 'Honda',
+          model_name: `Model ${i}`,
+          year: null,
+          year_to: null,
+          variant_label: null,
+          state: 'open',
+          flagged_for_review: false,
+          current_issues: [{ code: 'PRICE_UNVERIFIED', detail: 'Unverified' }],
+          next_action: 'Verify rate',
+          latest_evidence: [],
+          resolution_reason: null,
+          originating_run_id: 'bulk-run-1',
+          latest_run_id: 'bulk-run-1',
+          created_at: `2026-10-01T00:00:00.${String(i).padStart(4, '0')}Z`,
+          updated_at: '2026-10-01T00:00:00.000Z',
+        });
+      }
+
+      const tailPageRes = await handleGetTasks(
+        new NextRequest(
+          `http://localhost:3000/api/agent/tasks?shopId=${RIDE_ON_SHOP_ID}&candidatesLimit=10&candidatesOffset=1000`,
+          { headers: agentHeaders() }
+        )
+      );
+      expect(tailPageRes.status).toBe(200);
+      const tailPage = (await tailPageRes.json()).tasks[0].unresolvedCandidates;
+      expect(tailPage.total).toBe(1005);
+      expect(tailPage.items).toHaveLength(5);
+      expect(tailPage.offset).toBe(1000);
+      expect(tailPage.hasMore).toBe(false);
+      expect(tailPage.nextOffset).toBeNull();
+    });
   });
 
   describe('Acceptance Test K — Unified Crawl-Run Quality Bookkeeping & Slot Advancement', () => {
@@ -802,7 +845,7 @@ describe('Agent Tasks Unresolved Candidates Context & Crawl-Run Quality Bookkeep
       );
       expect(badCovRes.status).toBe(400);
 
-      const notFoundRes = await handlePostTaskStatus(
+      const notFoundNonUuidRes = await handlePostTaskStatus(
         new NextRequest('http://localhost:3000/api/agent/tasks/missing-task-id/status', {
           method: 'POST',
           headers: agentHeaders(),
@@ -812,7 +855,258 @@ describe('Agent Tasks Unresolved Candidates Context & Crawl-Run Quality Bookkeep
         }),
         { params: Promise.resolve({ id: 'missing-task-id' }) }
       );
-      expect(notFoundRes.status).toBe(404);
+      expect(notFoundNonUuidRes.status).toBe(404);
+
+      const notFoundUuidRes = await handlePostTaskStatus(
+        new NextRequest(
+          'http://localhost:3000/api/agent/tasks/99999999-0000-4000-8000-999999999999/status',
+          {
+            method: 'POST',
+            headers: agentHeaders(),
+            body: JSON.stringify({
+              status: 'partial',
+            }),
+          }
+        ),
+        { params: Promise.resolve({ id: '99999999-0000-4000-8000-999999999999' }) }
+      );
+      expect(notFoundUuidRes.status).toBe(404);
+    });
+
+    it('enforces payload size limits (413/400), validates proposalId ownership & cross-run conflicts (400/409) without mutating last_run_at, and preserves failed coverage/crawl quality', async () => {
+      const initialLastRunAt = dbState.shop_agent_configs[0].last_run_at;
+
+      // 1. Oversized payload (> 64 KB) -> 413 Payload Too Large
+      const oversizedBody = JSON.stringify({
+        status: 'partial',
+        metadata: { pad: 'x'.repeat(70_000) },
+      });
+      const tooLargeRes = await handlePostTaskStatus(
+        new NextRequest(`http://localhost:3000/api/agent/tasks/${RIDE_ON_TASK_ID}/status`, {
+          method: 'POST',
+          headers: agentHeaders(),
+          body: oversizedBody,
+        }),
+        { params: Promise.resolve({ id: RIDE_ON_TASK_ID }) }
+      );
+      expect(tooLargeRes.status).toBe(413);
+      expect(dbState.shop_agent_configs[0].last_run_at).toBe(initialLastRunAt);
+
+      // Oversized metadata (> 16 KB but < 64 KB) -> 400
+      const oversizedMetaRes = await handlePostTaskStatus(
+        new NextRequest(`http://localhost:3000/api/agent/tasks/${RIDE_ON_TASK_ID}/status`, {
+          method: 'POST',
+          headers: agentHeaders(),
+          body: JSON.stringify({
+            status: 'partial',
+            metadata: { pad: 'y'.repeat(20_000) },
+          }),
+        }),
+        { params: Promise.resolve({ id: RIDE_ON_TASK_ID }) }
+      );
+      expect(oversizedMetaRes.status).toBe(400);
+
+      // 2. Non-UUID, nonexistent UUID, and cross-shop proposalId -> 400 without advancing last_run_at
+      for (const badProposalId of [
+        'not-a-uuid',
+        '88888888-0000-4000-8000-888888888888',
+      ]) {
+        const res = await handlePostTaskStatus(
+          new NextRequest(`http://localhost:3000/api/agent/tasks/${RIDE_ON_TASK_ID}/status`, {
+            method: 'POST',
+            headers: agentHeaders(),
+            body: JSON.stringify({
+              status: 'partial',
+              proposalId: badProposalId,
+            }),
+          }),
+          { params: Promise.resolve({ id: RIDE_ON_TASK_ID }) }
+        );
+        expect(res.status).toBe(400);
+      }
+
+      const otherShopProposalId = '77777777-0000-4000-8000-777777777777';
+      dbState.change_proposals.push({
+        id: otherShopProposalId,
+        shop_id: OTHER_SHOP_ID,
+        source_url: 'https://othermadrid.es',
+        agent_run_id: 'other-shop-run-1',
+        status: 'pending',
+        coverage_status: 'partial',
+        reconciliation_status: 'unresolved',
+        application_status: 'not_applicable',
+        summary_counts: { add: 0, update: 0, delist: 0 },
+        version: 1,
+        created_at: '2026-10-31T00:00:00.000Z',
+        updated_at: '2026-10-31T00:00:00.000Z',
+      });
+
+      const crossShopPropRes = await handlePostTaskStatus(
+        new NextRequest(`http://localhost:3000/api/agent/tasks/${RIDE_ON_TASK_ID}/status`, {
+          method: 'POST',
+          headers: agentHeaders(),
+          body: JSON.stringify({
+            status: 'partial',
+            proposalId: otherShopProposalId,
+          }),
+        }),
+        { params: Promise.resolve({ id: RIDE_ON_TASK_ID }) }
+      );
+      expect(crossShopPropRes.status).toBe(400);
+      expect(dbState.shop_agent_configs[0].last_run_at).toBe(initialLastRunAt);
+      expect(dbState.crawl_runs).toHaveLength(0);
+
+      // 3. Stage a failed-coverage report on Ride On Barcelona and test cross-run proposalId 409 + failed preservation
+      const failedReportStageRes = await handleStageProposal(
+        new NextRequest('http://localhost:3000/api/agent/change-proposals', {
+          method: 'POST',
+          headers: agentHeaders(),
+          body: JSON.stringify({
+            shopId: RIDE_ON_SHOP_ID,
+            sourceUrl: RIDE_ON_SOURCE_URL,
+            agentRunId: 'rideon-failed-cov-run',
+            items: [],
+            reconciliationReport: {
+              schemaVersion: 1,
+              scope: {
+                branch: 'Barcelona',
+                services: ['daily_rental'],
+                availabilityBasis: 'supplier_catalog_not_live_stock',
+              },
+              coverage: {
+                status: 'failed',
+                discoveryComplete: false,
+                limitations: ['Primary fleet page returned 503'],
+                pages: [
+                  {
+                    url: RIDE_ON_SOURCE_URL,
+                    role: 'catalog',
+                    required: true,
+                    status: 'failed',
+                    reason: 'HTTP 503 Service Unavailable',
+                  },
+                ],
+              },
+              entries: [],
+            },
+          }),
+        })
+      );
+      expect(failedReportStageRes.status).toBe(201);
+      const failedReportProposalId = (await failedReportStageRes.json()).proposalId;
+
+      // Cross-run proposalId mismatch -> 409 Conflict without mutating last_run_at
+      const crossRunPropRes = await handlePostTaskStatus(
+        new NextRequest(`http://localhost:3000/api/agent/tasks/${RIDE_ON_TASK_ID}/status`, {
+          method: 'POST',
+          headers: agentHeaders(),
+          body: JSON.stringify({
+            status: 'failed',
+            agentRunId: 'different-run-id',
+            proposalId: failedReportProposalId,
+          }),
+        }),
+        { params: Promise.resolve({ id: RIDE_ON_TASK_ID }) }
+      );
+      expect(crossRunPropRes.status).toBe(409);
+      expect(dbState.shop_agent_configs[0].last_run_at).toBe(initialLastRunAt);
+
+      // Reporting status: 'failed' for failed-coverage report records 'failed' & consecutive_errors = 1
+      const failedCovStatusRes = await handlePostTaskStatus(
+        new NextRequest(`http://localhost:3000/api/agent/tasks/${RIDE_ON_TASK_ID}/status`, {
+          method: 'POST',
+          headers: agentHeaders(),
+          body: JSON.stringify({
+            status: 'failed',
+            agentRunId: 'rideon-failed-cov-run',
+            error: 'HTTP 503 Service Unavailable',
+          }),
+        }),
+        { params: Promise.resolve({ id: RIDE_ON_TASK_ID }) }
+      );
+      expect(failedCovStatusRes.status).toBe(200);
+      expect(dbState.shop_agent_configs[0].consecutive_errors).toBe(1);
+      expect(dbState.crawl_runs).toHaveLength(1);
+      expect(dbState.crawl_runs[0]).toMatchObject({
+        agent_run_id: 'rideon-failed-cov-run',
+        proposal_id: failedReportProposalId,
+        status: 'failed',
+        coverage_status: 'failed',
+      });
+
+      // Idempotent retry of same failed run does NOT double-increment consecutive_errors
+      const retryFailedRes = await handlePostTaskStatus(
+        new NextRequest(`http://localhost:3000/api/agent/tasks/${RIDE_ON_TASK_ID}/status`, {
+          method: 'POST',
+          headers: agentHeaders(),
+          body: JSON.stringify({
+            status: 'failed',
+            agentRunId: 'rideon-failed-cov-run',
+            error: 'HTTP 503 Service Unavailable',
+          }),
+        }),
+        { params: Promise.resolve({ id: RIDE_ON_TASK_ID }) }
+      );
+      expect(retryFailedRes.status).toBe(200);
+      expect(dbState.shop_agent_configs[0].consecutive_errors).toBe(1);
+      expect(dbState.crawl_runs).toHaveLength(1);
+
+      // Reportless { status: 'success', coverageStatus: 'failed' } downgrades status to 'partial' (never 'success')
+      const degradedCovRes = await handlePostTaskStatus(
+        new NextRequest(`http://localhost:3000/api/agent/tasks/${RIDE_ON_TASK_ID}/status`, {
+          method: 'POST',
+          headers: agentHeaders(),
+          body: JSON.stringify({
+            status: 'success',
+            agentRunId: 'rideon-degraded-cov-run',
+            coverageStatus: 'failed',
+          }),
+        }),
+        { params: Promise.resolve({ id: RIDE_ON_TASK_ID }) }
+      );
+      expect(degradedCovRes.status).toBe(200);
+      const degradedJson = await degradedCovRes.json();
+      expect(degradedJson.status).toBe('partial');
+      expect(degradedJson.coverageStatus).toBe('failed');
+
+      // 4. Strict query validation on GET proposal detail & GET admin crawler-logs
+      for (const badParam of [
+        'entriesLimit=abc',
+        'entriesLimit=0',
+        'entriesLimit=501',
+        'entriesOffset=-1',
+        'entriesOffset=abc',
+      ]) {
+        const agentPropRes = await handleGetAgentProposal(
+          new NextRequest(
+            `http://localhost:3000/api/agent/change-proposals/${failedReportProposalId}?${badParam}`,
+            { headers: agentHeaders() }
+          ),
+          { params: Promise.resolve({ id: failedReportProposalId }) }
+        );
+        expect(agentPropRes.status).toBe(400);
+
+        const adminPropRes = await handleGetAdminProposal(
+          new NextRequest(
+            `http://localhost:3000/api/admin/change-proposals/${failedReportProposalId}?${badParam}`
+          ),
+          { params: Promise.resolve({ id: failedReportProposalId }) }
+        );
+        expect(adminPropRes.status).toBe(400);
+      }
+
+      for (const badLogParam of [
+        'limit=abc',
+        'limit=1.5',
+        'offset=abc',
+        'offset=1.5',
+        'status=unknown_filter',
+      ]) {
+        const badLogRes = await handleGetCrawlerLogs(
+          new NextRequest(`http://localhost:3000/api/admin/crawler-logs?${badLogParam}`)
+        );
+        expect(badLogRes.status).toBe(400);
+      }
     });
   });
 });

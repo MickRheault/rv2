@@ -56,7 +56,7 @@ export function createRideOnSeedState(): InMemoryReconciliationState {
     ],
     shop_agent_configs: [
       {
-        id: 'task-rideon-1',
+        id: '10000000-0000-4000-8000-000000000001',
         shop_id: '53529565-40d9-41f5-98e4-d2ed1f1d7ffd',
         tier: 1,
         source_url: 'https://rideon.es/flota/',
@@ -193,6 +193,7 @@ export function createInMemorySupabaseClient(
   const makeUuid = () => crypto.randomUUID();
   const UUID_COL_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const UUID_COLUMNS_BY_TABLE: Partial<Record<keyof InMemoryReconciliationState, string[]>> = {
+    shop_agent_configs: ['id', 'shop_id'],
     change_proposals: ['shop_id', 'reviewed_by'],
     unresolved_candidates: [
       'shop_id',
@@ -313,6 +314,19 @@ export function createInMemorySupabaseClient(
               };
             }
             if (
+              raw.proposal_id !== null &&
+              raw.proposal_id !== undefined &&
+              !state.change_proposals.some((p) => p.id === raw.proposal_id)
+            ) {
+              return {
+                data: null,
+                error: {
+                  code: '23503',
+                  message: `insert or update on table "crawl_runs" violates foreign key constraint "crawl_runs_proposal_id_fkey"`,
+                },
+              };
+            }
+            if (
               raw.agent_run_id !== null &&
               raw.agent_run_id !== undefined &&
               tableRows.some(
@@ -366,6 +380,21 @@ export function createInMemorySupabaseClient(
         const uuidErr = validateUuidColumns(table, payloadData || {});
         if (uuidErr) {
           return { data: null, error: uuidErr, count: 0 };
+        }
+        if (
+          table === 'crawl_runs' &&
+          payloadData?.proposal_id !== null &&
+          payloadData?.proposal_id !== undefined &&
+          !state.change_proposals.some((p) => p.id === payloadData.proposal_id)
+        ) {
+          return {
+            data: null,
+            error: {
+              code: '23503',
+              message: `insert or update on table "crawl_runs" violates foreign key constraint "crawl_runs_proposal_id_fkey"`,
+            },
+            count: 0,
+          };
         }
         const now = new Date().toISOString();
         const updated: any[] = [];

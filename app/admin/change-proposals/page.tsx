@@ -245,41 +245,49 @@ export default function ChangeProposalsPage() {
     }
   };
 
-  const renderQueueQualityBadges = (prop: ProposalSummaryItem) => {
+  const renderQualityBadges = (
+    dims: {
+      coverageStatus?: 'complete' | 'partial' | 'failed' | 'unknown';
+      reconciliationStatus?: 'complete' | 'unresolved' | 'unknown';
+      applicationStatus?: string;
+    },
+    options: { showUnknownCoverage?: boolean; keyPrefix?: string } = {}
+  ) => {
+    const prefix = options.keyPrefix || 'q';
     const badges: React.ReactNode[] = [];
-    if (prop.coverageStatus === 'partial') {
+    if (dims.coverageStatus === 'partial') {
       badges.push(
         <span
-          key="cov-partial"
+          key={`${prefix}-cov-partial`}
           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300"
         >
           <ExclamationTriangleIcon className="w-3 h-3" />
           Partial Coverage
         </span>
       );
-    } else if (prop.coverageStatus === 'failed') {
+    } else if (dims.coverageStatus === 'failed') {
       badges.push(
         <span
-          key="cov-failed"
+          key={`${prefix}-cov-failed`}
           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-300"
         >
           <ExclamationTriangleIcon className="w-3 h-3" />
           Failed Coverage
         </span>
       );
-    } else if (prop.coverageStatus === 'complete') {
+    } else if (dims.coverageStatus === 'complete') {
       badges.push(
         <span
-          key="cov-complete"
+          key={`${prefix}-cov-complete`}
           className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200"
         >
           Complete Coverage
         </span>
       );
-    } else if (prop.coverageStatus === 'unknown') {
+    } else if (options.showUnknownCoverage && dims.coverageStatus === 'unknown') {
       badges.push(
         <span
-          key="cov-unknown"
+          key={`${prefix}-cov-unknown`}
           className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
         >
           Unknown Coverage
@@ -287,19 +295,19 @@ export default function ChangeProposalsPage() {
       );
     }
 
-    if (prop.reconciliationStatus === 'unresolved') {
+    if (dims.reconciliationStatus === 'unresolved') {
       badges.push(
         <span
-          key="rec-unresolved"
+          key={`${prefix}-rec-unresolved`}
           className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300"
         >
           Unresolved
         </span>
       );
-    } else if (prop.reconciliationStatus === 'complete') {
+    } else if (dims.reconciliationStatus === 'complete') {
       badges.push(
         <span
-          key="rec-complete"
+          key={`${prefix}-rec-complete`}
           className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200"
         >
           Reconciled
@@ -307,10 +315,10 @@ export default function ChangeProposalsPage() {
       );
     }
 
-    if (prop.applicationStatus === 'not_applicable') {
+    if (dims.applicationStatus === 'not_applicable') {
       badges.push(
         <span
-          key="app-na"
+          key={`${prefix}-app-na`}
           className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800 border border-slate-300"
         >
           Report Only
@@ -319,6 +327,9 @@ export default function ChangeProposalsPage() {
     }
     return badges.length > 0 ? <div className="flex flex-wrap gap-1 mt-1">{badges}</div> : null;
   };
+
+  const renderQueueQualityBadges = (prop: ProposalSummaryItem) =>
+    renderQualityBadges(prop, { showUnknownCoverage: true, keyPrefix: 'prop' });
 
   const getCrawlerStatusBadge = (status: CrawlRunItem['status']) => {
     switch (status) {
@@ -333,61 +344,8 @@ export default function ChangeProposalsPage() {
     }
   };
 
-  const renderCrawlerQualityBadges = (run: CrawlRunItem) => {
-    const badges: React.ReactNode[] = [];
-    if (run.coverageStatus === 'partial') {
-      badges.push(
-        <span
-          key="run-cov-partial"
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300"
-        >
-          <ExclamationTriangleIcon className="w-3 h-3" />
-          Partial Coverage
-        </span>
-      );
-    } else if (run.coverageStatus === 'failed') {
-      badges.push(
-        <span
-          key="run-cov-failed"
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-300"
-        >
-          <ExclamationTriangleIcon className="w-3 h-3" />
-          Failed Coverage
-        </span>
-      );
-    } else if (run.coverageStatus === 'complete') {
-      badges.push(
-        <span
-          key="run-cov-complete"
-          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200"
-        >
-          Complete Coverage
-        </span>
-      );
-    }
-
-    if (run.reconciliationStatus === 'unresolved') {
-      badges.push(
-        <span
-          key="run-rec-unresolved"
-          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300"
-        >
-          Unresolved
-        </span>
-      );
-    } else if (run.reconciliationStatus === 'complete') {
-      badges.push(
-        <span
-          key="run-rec-complete"
-          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200"
-        >
-          Reconciled
-        </span>
-      );
-    }
-
-    return badges.length > 0 ? <div className="flex flex-wrap gap-1 mt-1">{badges}</div> : null;
-  };
+  const renderCrawlerQualityBadges = (run: CrawlRunItem) =>
+    renderQualityBadges(run, { showUnknownCoverage: false, keyPrefix: 'run' });
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
@@ -788,8 +746,22 @@ export default function ChangeProposalsPage() {
                                   ={run.proposalSummaryCounts?.unchanged} unchanged
                                 </span>
                               )}
+                              {(run.proposalSummaryCounts?.excluded ?? 0) > 0 && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                                  {run.proposalSummaryCounts?.excluded} excluded
+                                </span>
+                              )}
+                              {(run.proposalSummaryCounts?.duplicate ?? 0) > 0 && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                  {run.proposalSummaryCounts?.duplicate} duplicate
+                                </span>
+                              )}
                               <ArrowTopRightOnSquareIcon className="w-3 h-3" />
                             </Link>
+                          ) : run.coverageStatus === 'failed' && run.status !== 'failed' ? (
+                            <span className="text-xs text-red-700 font-medium">
+                              {run.errorMessage || 'Failed Coverage Crawl'}
+                            </span>
                           ) : run.status === 'partial' ||
                             run.coverageStatus === 'partial' ||
                             run.reconciliationStatus === 'unresolved' ? (

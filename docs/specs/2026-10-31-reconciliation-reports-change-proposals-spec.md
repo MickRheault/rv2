@@ -80,7 +80,7 @@ Extend the Change Proposal workflow to accept an optional, validated, immutable 
     - `duplicate`: empty `proposalItemRefs`, non-empty `reason`, and either `duplicateOfEntryKey` (referencing a non-duplicate entry in the same report) or shop-owned `duplicateOfMotorcycleId`.
 - **Server-Derived Counts & Canonical Digest**:
   - Ignore any client-supplied summary totals when computing authoritative `serverCounts`: `readyActionableItems`, `accountedDiscoveredModels`, `unresolvedModels`, `unchangedModels`, `excludedModels`, `duplicateModels`, `pagesProcessed`, `pagesFailed`, `pagesNotProcessed`, plus mutation counts `add`, `update`, `delist` (and `unchanged` for legacy).
-  - Compute `reportDigest` (`sha256:<hex>`) using RFC-8785 deterministic lexicographical key-sorted UTF-8 JSON serialization over normalized `reconciliationReport`, and `payloadDigest` over normalized `{ sourceUrl, items, reconciliationReport }` for `(shopId, agentRunId)` idempotency (`201` on creation, `200` on identical replay, `409` on divergent replay).
+  - Compute `reportDigest` (`sha256:<hex>`) using RFC-8785 deterministic lexicographical key-sorted UTF-8 JSON serialization over normalized `reconciliationReport`, and `payloadDigest` over normalized `{ shopId, sourceUrl, items, reportDigest, learnedConfig }` for `(shopId, agentRunId)` idempotency (`201` on creation, `200` on identical replay, `409` on divergent replay).
 
 ### 4. Unresolved Candidate State Machine & Cross-Run Linking
 ```

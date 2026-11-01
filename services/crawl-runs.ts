@@ -53,10 +53,12 @@ export interface GetCrawlRunsResult {
 
 export class CrawlRunService {
   /**
-   * Records a crawler attempt in the audit log (legacy append-only entry point).
+   * Records a crawler attempt in the audit log (legacy entry point).
+   * If a unique (shop_id, agent_run_id) row already exists (23505), updates it idempotently.
    */
-  static async recordCrawlRun(input: RecordCrawlRunInput) {
+  static async recordCrawlRun(input: RecordCrawlRunInput): Promise<any> {
     const supabase = getSupabaseAdmin();
+    const table = supabase.from('crawl_runs') as any;
 
     const insertPayload: Record<string, any> = {
       shop_id: input.shopId,
@@ -73,12 +75,15 @@ export class CrawlRunService {
       insertPayload.reconciliation_status = input.reconciliationStatus;
     }
 
-    const { data, error } = await (supabase.from('crawl_runs') as any)
+    const { data, error } = await table
       .insert(insertPayload)
       .select()
       .single();
 
     if (error) {
+      if (error.code === '23505' && input.agentRunId) {
+        return CrawlRunService.upsertCrawlRun(input);
+      }
       throw new Error(`Failed to record crawl run: ${error.message}`);
     }
 
@@ -89,9 +94,9 @@ export class CrawlRunService {
    * Idempotently upserts a single crawl_runs row per (shop_id, agent_run_id) when agentRunId
    * is provided, or inserts a standalone row when agentRunId is null.
    */
-  static async upsertCrawlRun(input: RecordCrawlRunInput) {
+  static async upsertCrawlRun(input: RecordCrawlRunInput): Promise<any> {
     const supabase = getSupabaseAdmin();
-    const table = supabase.from('crawl_runs') as any;
+    const crawlRunsTable = () => supabase.from('crawl_runs') as any;
     const normalizedRunId =
       typeof input.agentRunId === 'string' && input.agentRunId.trim().length > 0
         ? input.agentRunId.trim()
@@ -113,7 +118,7 @@ export class CrawlRunService {
         metadata: mergedMetadata,
       };
 
-      const { data: updated, error: updErr } = await table
+      const { data: updated, error: updErr } = await crawlRunsTable()
         .update(updatePayload)
         .eq('id', existing.id)
         .select()
@@ -126,7 +131,7 @@ export class CrawlRunService {
     };
 
     if (normalizedRunId) {
-      const existingRes = await table
+      const existingRes = await crawlRunsTable()
         .select('*')
         .eq('shop_id', input.shopId)
         .eq('agent_run_id', normalizedRunId)
@@ -140,7 +145,7 @@ export class CrawlRunService {
         return updateExistingRow(existingRes.data);
       }
 
-      const { data: inserted, error: insErr } = await table
+      const { data: inserted, error: insErr } = await crawlRunsTable()
         .insert({
           shop_id: input.shopId,
           status: input.status,
@@ -156,7 +161,7 @@ export class CrawlRunService {
 
       if (insErr) {
         if (insErr.code === '23505') {
-          const raceRes = await table
+          const raceRes = await crawlRunsTable()
             .select('*')
             .eq('shop_id', input.shopId)
             .eq('agent_run_id', normalizedRunId)
@@ -183,8 +188,11 @@ export class CrawlRunService {
    */
   static async getCrawlRuns(options: GetCrawlRunsOptions = {}): Promise<GetCrawlRunsResult> {
     const supabase = getSupabaseAdmin();
-    const limit = options.limit !== undefined ? options.limit : 50;
-    const offset = options.offset !== undefined ? options.offset : 0;
+    const rawLimit = options.limit !== undefined && !Number.isNaN(options.limit) ? options.limit : 50;
+    const rawOffset =
+      options.offset !== undefined && !Number.isNaN(options.offset) ? options.offset : 0;
+    const limit = Math.min(Math.max(rawLimit, 1), 100);
+    const offset = Math.min(Math.max(rawOffset, 0), 100000);
 
     let query = (supabase.from('crawl_runs') as any).select(
       `
@@ -229,6 +237,9 @@ export class CrawlRunService {
     const { data, count, error } = await query;
 
     if (error) {
+      if (error.code === '22P02') {
+        return { runs: [], totalCount: 0 };
+      }
       throw new Error(`Failed to fetch crawl runs: ${error.message}`);
     }
 
