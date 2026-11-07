@@ -699,7 +699,7 @@ describe('Flexible Rental Offers across Agent Tasks & Change Proposals (#211)', 
       ).toBe(201);
     });
 
-    it('rejects legacy rates-only update items with 409 Conflict when the target motorcycle currently holds non-daily, labeled, or extension offers', async () => {
+    it('rejects legacy rates-only update items with 409 Conflict when the target motorcycle currently holds non-daily or extension offers', async () => {
       // Give EXISTING_PCX_ID a 7-day package offer alongside its daily tier
       dbState.rental_offers!.push({
         id: 'offer-pcx-weekly-pkg',
@@ -1642,6 +1642,462 @@ describe('Flexible Rental Offers across Agent Tasks & Change Proposals (#211)', 
       expect(dbState.change_proposals.find((p) => p.id === updPropId)!.application_status).toBe(
         'failed'
       );
+    });
+
+    it('approves offers updates on scalar-rate-only bikes without false 409, catches concurrent admin offer edits on previously unpriced bikes and legacy original_data.rates-only items, and allows legacy rates-only updates when live daily offers carry labels/commitments', async () => {
+      const SCALAR_BIKE_ID = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
+      const UNPRICED_BIKE_ID = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+      const LABELED_DAILY_BIKE_ID = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+
+      dbState.motorcycle_rentals.push(
+        {
+          id: SCALAR_BIKE_ID,
+          shop_id: RIDE_ON_SHOP_ID,
+          brand_id: '00000000-0000-4000-8000-000000000001',
+          category_id: SCOOTER_CAT_ID,
+          model: 'SH 125i',
+          year: 2023,
+          year_to: null,
+          engine_capacity_cc: 125,
+          availability_status: 'available',
+          rental_rate_per_day: 40,
+          rental_rate_currency: 'EUR',
+          source_url: RIDE_ON_SOURCE_URL,
+          specifications_details: null,
+        },
+        {
+          id: UNPRICED_BIKE_ID,
+          shop_id: RIDE_ON_SHOP_ID,
+          brand_id: '00000000-0000-4000-8000-000000000001',
+          category_id: SCOOTER_CAT_ID,
+          model: 'Vision 110',
+          year: 2023,
+          year_to: null,
+          engine_capacity_cc: 110,
+          availability_status: 'available',
+          rental_rate_per_day: null,
+          rental_rate_currency: null,
+          source_url: RIDE_ON_SOURCE_URL,
+          specifications_details: null,
+        },
+        {
+          id: LABELED_DAILY_BIKE_ID,
+          shop_id: RIDE_ON_SHOP_ID,
+          brand_id: '00000000-0000-4000-8000-000000000001',
+          category_id: SCOOTER_CAT_ID,
+          model: 'Lead 125',
+          year: 2024,
+          year_to: null,
+          engine_capacity_cc: 125,
+          availability_status: 'available',
+          rental_rate_per_day: 32,
+          rental_rate_currency: 'EUR',
+          source_url: RIDE_ON_SOURCE_URL,
+          specifications_details: null,
+        }
+      );
+
+      dbState.rental_offers!.push({
+        id: 'offer-lead-daily-labeled',
+        motorcycle_id: LABELED_DAILY_BIKE_ID,
+        parent_offer_id: null,
+        offer_type: 'daily',
+        amount: 32,
+        currency: 'EUR',
+        billing_basis: 'per_day',
+        duration_unit: 'day',
+        min_duration: 1,
+        max_duration: null,
+        min_commitment_value: null,
+        min_commitment_unit: null,
+        billing_increment_value: null,
+        billing_increment_unit: null,
+        supplier_label: 'Standard Daily',
+        is_from: true,
+        sort_order: 0,
+      });
+
+      // 1. Scalar-only bike (no rental_rate_tiers or rental_offers rows): stage + apply offers update succeeds without false 409
+      const scalarStageRes = await handleStageProposal(
+        new NextRequest('http://localhost:3000/api/agent/change-proposals', {
+          method: 'POST',
+          headers: agentHeaders(),
+          body: JSON.stringify({
+            shopId: RIDE_ON_SHOP_ID,
+            sourceUrl: RIDE_ON_SOURCE_URL,
+            agentRunId: 'scalar-only-run',
+            items: [
+              {
+                clientItemId: 'upd-scalar-bike',
+                entityType: 'motorcycle',
+                action: 'update',
+                entityId: SCALAR_BIKE_ID,
+                brandName: 'Honda',
+                modelName: 'SH 125i',
+                proposedData: {
+                  offers: [
+                    {
+                      offerType: 'package',
+                      amount: 240,
+                      currency: 'EUR',
+                      billingBasis: 'package_total',
+                      durationUnit: 'day',
+                      minDuration: 7,
+                      maxDuration: 7,
+                    },
+                  ],
+                },
+              },
+            ],
+            reconciliationReport: buildReport([
+              {
+                entryKey: 'honda-sh125i',
+                brand: 'Honda',
+                model: 'SH 125i',
+                existingMotorcycleId: SCALAR_BIKE_ID,
+                disposition: 'ready_change',
+                proposalItemRefs: ['upd-scalar-bike'],
+                evidence: [{ sourceUrl: RIDE_ON_SOURCE_URL, snippet: 'SH 125i', kind: 'fleet_card' }],
+              },
+              {
+                entryKey: 'honda-pcx-125',
+                brand: 'Honda',
+                model: 'PCX 125',
+                existingMotorcycleId: EXISTING_PCX_ID,
+                disposition: 'unchanged',
+                proposalItemRefs: [],
+                comparedAttributes: ['brand', 'model', 'offers'],
+                evidence: [{ sourceUrl: RIDE_ON_SOURCE_URL, snippet: 'PCX', kind: 'fleet_card' }],
+              },
+              {
+                entryKey: 'honda-vision-110',
+                brand: 'Honda',
+                model: 'Vision 110',
+                existingMotorcycleId: UNPRICED_BIKE_ID,
+                disposition: 'unchanged',
+                proposalItemRefs: [],
+                comparedAttributes: ['brand', 'model', 'offers'],
+                evidence: [{ sourceUrl: RIDE_ON_SOURCE_URL, snippet: 'Vision', kind: 'fleet_card' }],
+              },
+              {
+                entryKey: 'honda-lead-125',
+                brand: 'Honda',
+                model: 'Lead 125',
+                existingMotorcycleId: LABELED_DAILY_BIKE_ID,
+                disposition: 'unchanged',
+                proposalItemRefs: [],
+                comparedAttributes: ['brand', 'model', 'offers'],
+                evidence: [{ sourceUrl: RIDE_ON_SOURCE_URL, snippet: 'Lead', kind: 'fleet_card' }],
+              },
+            ]),
+          }),
+        })
+      );
+      expect(scalarStageRes.status).toBe(201);
+      const { proposalId: scalarPropId } = await scalarStageRes.json();
+      const scalarItemId = dbState.change_proposal_items.find((i) => i.proposal_id === scalarPropId)!.id;
+
+      const scalarApplyRes = await handleApplyProposal(
+        new NextRequest(`http://localhost:3000/api/admin/change-proposals/${scalarPropId}/apply`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ approvedItemIds: [scalarItemId], expectedVersion: 1 }),
+        }),
+        { params: Promise.resolve({ id: scalarPropId }) } as any
+      );
+      expect(scalarApplyRes.status).toBe(200);
+
+      // 2. Unpriced bike: stage offers update, then concurrently add an admin offer before approval -> 409 StaleMotorcycleStateError!
+      const unpricedStageRes = await handleStageProposal(
+        new NextRequest('http://localhost:3000/api/agent/change-proposals', {
+          method: 'POST',
+          headers: agentHeaders(),
+          body: JSON.stringify({
+            shopId: RIDE_ON_SHOP_ID,
+            sourceUrl: RIDE_ON_SOURCE_URL,
+            agentRunId: 'unpriced-concurrency-run',
+            items: [
+              {
+                clientItemId: 'upd-unpriced-bike',
+                entityType: 'motorcycle',
+                action: 'update',
+                entityId: UNPRICED_BIKE_ID,
+                brandName: 'Honda',
+                modelName: 'Vision 110',
+                proposedData: {
+                  offers: [
+                    {
+                      offerType: 'daily',
+                      amount: 25,
+                      currency: 'EUR',
+                      billingBasis: 'per_day',
+                      durationUnit: 'day',
+                      minDuration: 1,
+                      maxDuration: null,
+                    },
+                  ],
+                },
+              },
+            ],
+            reconciliationReport: buildReport([
+              {
+                entryKey: 'honda-vision-110',
+                brand: 'Honda',
+                model: 'Vision 110',
+                existingMotorcycleId: UNPRICED_BIKE_ID,
+                disposition: 'ready_change',
+                proposalItemRefs: ['upd-unpriced-bike'],
+                evidence: [{ sourceUrl: RIDE_ON_SOURCE_URL, snippet: 'Vision', kind: 'fleet_card' }],
+              },
+              {
+                entryKey: 'honda-sh125i',
+                brand: 'Honda',
+                model: 'SH 125i',
+                existingMotorcycleId: SCALAR_BIKE_ID,
+                disposition: 'unchanged',
+                proposalItemRefs: [],
+                comparedAttributes: ['brand', 'model', 'offers'],
+                evidence: [{ sourceUrl: RIDE_ON_SOURCE_URL, snippet: 'SH 125i', kind: 'fleet_card' }],
+              },
+              {
+                entryKey: 'honda-pcx-125',
+                brand: 'Honda',
+                model: 'PCX 125',
+                existingMotorcycleId: EXISTING_PCX_ID,
+                disposition: 'unchanged',
+                proposalItemRefs: [],
+                comparedAttributes: ['brand', 'model', 'offers'],
+                evidence: [{ sourceUrl: RIDE_ON_SOURCE_URL, snippet: 'PCX', kind: 'fleet_card' }],
+              },
+              {
+                entryKey: 'honda-lead-125',
+                brand: 'Honda',
+                model: 'Lead 125',
+                existingMotorcycleId: LABELED_DAILY_BIKE_ID,
+                disposition: 'unchanged',
+                proposalItemRefs: [],
+                comparedAttributes: ['brand', 'model', 'offers'],
+                evidence: [{ sourceUrl: RIDE_ON_SOURCE_URL, snippet: 'Lead', kind: 'fleet_card' }],
+              },
+            ]),
+          }),
+        })
+      );
+      expect(unpricedStageRes.status).toBe(201);
+      const { proposalId: unpricedPropId } = await unpricedStageRes.json();
+      const unpricedItemId = dbState.change_proposal_items.find((i) => i.proposal_id === unpricedPropId)!.id;
+
+      // Admin concurrently adds a weekly package to UNPRICED_BIKE_ID
+      dbState.rental_offers!.push({
+        id: 'concurrent-vision-pkg',
+        motorcycle_id: UNPRICED_BIKE_ID,
+        parent_offer_id: null,
+        offer_type: 'package',
+        amount: 150,
+        currency: 'EUR',
+        billing_basis: 'package_total',
+        duration_unit: 'day',
+        min_duration: 7,
+        max_duration: 7,
+        min_commitment_value: null,
+        min_commitment_unit: null,
+        billing_increment_value: null,
+        billing_increment_unit: null,
+        supplier_label: null,
+        is_from: false,
+        sort_order: 0,
+      });
+
+      const unpricedApplyRes = await handleApplyProposal(
+        new NextRequest(`http://localhost:3000/api/admin/change-proposals/${unpricedPropId}/apply`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ approvedItemIds: [unpricedItemId], expectedVersion: 1 }),
+        }),
+        { params: Promise.resolve({ id: unpricedPropId }) } as any
+      );
+      expect(unpricedApplyRes.status).toBe(409);
+
+      // 3. Legacy rates-only update on a daily-only bike with supplierLabel/isFrom succeeds (409 guard applies strictly to non-daily or extension offers per Spec #209)
+      const labeledDailyRes = await handleStageProposal(
+        new NextRequest('http://localhost:3000/api/agent/change-proposals', {
+          method: 'POST',
+          headers: agentHeaders(),
+          body: JSON.stringify({
+            shopId: RIDE_ON_SHOP_ID,
+            sourceUrl: RIDE_ON_SOURCE_URL,
+            agentRunId: 'labeled-daily-legacy-run',
+            items: [
+              {
+                entityType: 'motorcycle',
+                action: 'update',
+                entityId: LABELED_DAILY_BIKE_ID,
+                brandName: 'Honda',
+                modelName: 'Lead 125',
+                proposedData: {
+                  rates: [{ minDays: 1, maxDays: null, ratePerDay: 34, currency: 'EUR' }],
+                },
+              },
+            ],
+          }),
+        })
+      );
+      expect(labeledDailyRes.status).toBe(201);
+    });
+
+    it('rolls back all previously applied items in a multi-item batch and restores exact scalar rate columns when a later step fails during apply', async () => {
+      const SCALAR_ROLLBACK_ID = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
+      dbState.motorcycle_rentals.push({
+        id: SCALAR_ROLLBACK_ID,
+        shop_id: RIDE_ON_SHOP_ID,
+        brand_id: '00000000-0000-4000-8000-000000000001',
+        category_id: SCOOTER_CAT_ID,
+        model: 'SH 350i',
+        year: 2024,
+        year_to: null,
+        engine_capacity_cc: 330,
+        availability_status: 'available',
+        rental_rate_per_day: 55,
+        rental_rate_currency: 'EUR',
+        source_url: RIDE_ON_SOURCE_URL,
+        specifications_details: null,
+      });
+
+      const stageBatchRes = await handleStageProposal(
+        new NextRequest('http://localhost:3000/api/agent/change-proposals', {
+          method: 'POST',
+          headers: agentHeaders(),
+          body: JSON.stringify({
+            shopId: RIDE_ON_SHOP_ID,
+            sourceUrl: RIDE_ON_SOURCE_URL,
+            agentRunId: 'multi-item-atomic-rollback',
+            items: [
+              {
+                clientItemId: 'add-adv350',
+                entityType: 'motorcycle',
+                action: 'add',
+                brandName: 'Honda',
+                modelName: 'ADV 350',
+                proposedData: {
+                  categoryId: SCOOTER_CAT_ID,
+                  year: 2025,
+                  offers: [
+                    {
+                      offerType: 'daily',
+                      amount: 65,
+                      currency: 'EUR',
+                      billingBasis: 'per_day',
+                      durationUnit: 'day',
+                      minDuration: 1,
+                      maxDuration: null,
+                    },
+                  ],
+                },
+              },
+              {
+                clientItemId: 'upd-sh350i',
+                entityType: 'motorcycle',
+                action: 'update',
+                entityId: SCALAR_ROLLBACK_ID,
+                brandName: 'Honda',
+                modelName: 'SH 350i',
+                proposedData: {
+                  year: 2025,
+                  offers: [
+                    {
+                      offerType: 'package',
+                      amount: 320,
+                      currency: 'EUR',
+                      billingBasis: 'package_total',
+                      durationUnit: 'day',
+                      minDuration: 7,
+                      maxDuration: 7,
+                    },
+                  ],
+                  conditions: [
+                    {
+                      conditionTypeId: '11111111-1111-4111-8111-111111111111',
+                      notes: 'EUR 500 deposit',
+                    },
+                  ],
+                },
+              },
+            ],
+            reconciliationReport: buildReport([
+              {
+                entryKey: 'honda-adv-350',
+                brand: 'Honda',
+                model: 'ADV 350',
+                existingMotorcycleId: null,
+                disposition: 'ready_change',
+                proposalItemRefs: ['add-adv350'],
+                evidence: [{ sourceUrl: RIDE_ON_SOURCE_URL, snippet: 'ADV 350', kind: 'fleet_card' }],
+              },
+              {
+                entryKey: 'honda-sh-350i',
+                brand: 'Honda',
+                model: 'SH 350i',
+                existingMotorcycleId: SCALAR_ROLLBACK_ID,
+                disposition: 'ready_change',
+                proposalItemRefs: ['upd-sh350i'],
+                evidence: [{ sourceUrl: RIDE_ON_SOURCE_URL, snippet: 'SH 350i', kind: 'fleet_card' }],
+              },
+              {
+                entryKey: 'honda-pcx-125',
+                brand: 'Honda',
+                model: 'PCX 125',
+                existingMotorcycleId: EXISTING_PCX_ID,
+                disposition: 'unchanged',
+                proposalItemRefs: [],
+                comparedAttributes: ['brand', 'model', 'offers'],
+                evidence: [{ sourceUrl: RIDE_ON_SOURCE_URL, snippet: 'PCX', kind: 'fleet_card' }],
+              },
+            ]),
+          }),
+        })
+      );
+      expect(stageBatchRes.status).toBe(201);
+      const { proposalId: batchPropId } = await stageBatchRes.json();
+      const batchItems = dbState.change_proposal_items.filter((i) => i.proposal_id === batchPropId);
+
+      // Item 1 (ADV 350 add) succeeds; Item 2 (SH 350i update) fails during conditions insert AFTER replace_motorcycle_rental_offers ran!
+      (getSupabaseAdmin as jest.Mock).mockReturnValue(
+        createInMemorySupabaseClient(dbState, {
+          failConditionInsertForMotorcycleId: SCALAR_ROLLBACK_ID,
+        })
+      );
+
+      const batchApplyRes = await handleApplyProposal(
+        new NextRequest(`http://localhost:3000/api/admin/change-proposals/${batchPropId}/apply`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            approvedItemIds: batchItems.map((i) => i.id),
+            expectedVersion: 1,
+          }),
+        }),
+        { params: Promise.resolve({ id: batchPropId }) } as any
+      );
+      expect(batchApplyRes.status).toBe(500);
+
+      // Item 1's inserted ADV 350 is rolled back cleanly!
+      expect(dbState.motorcycle_rentals.find((b) => b.model === 'ADV 350')).toBeUndefined();
+
+      // Item 2's SH 350i scalar columns (rental_rate_per_day = 55, year = 2024) and empty canonical rental_offers are restored cleanly!
+      const sh350After = dbState.motorcycle_rentals.find((b) => b.id === SCALAR_ROLLBACK_ID)!;
+      expect(sh350After.year).toBe(2024);
+      expect(sh350After.rental_rate_per_day).toBe(55);
+      expect(sh350After.rental_rate_currency).toBe('EUR');
+      expect(
+        (dbState.rental_offers || []).filter((o) => o.motorcycle_id === SCALAR_ROLLBACK_ID)
+      ).toHaveLength(0);
+
+      // Both proposal items remain pending so the proposal can be retried cleanly
+      expect(
+        dbState.change_proposal_items
+          .filter((i) => i.proposal_id === batchPropId)
+          .every((i) => i.status === 'pending')
+      ).toBe(true);
     });
   });
 });

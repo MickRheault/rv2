@@ -256,6 +256,8 @@ export function createInMemorySupabaseClient(
   options: {
     failRpcMessage?: string;
     failReplaceOffersRpcMessage?: string;
+    failReplaceOffersForMotorcycleId?: string;
+    failConditionInsertForMotorcycleId?: string;
     failBikeInsertForModel?: string;
   } = {}
 ) {
@@ -331,6 +333,16 @@ export function createInMemorySupabaseClient(
             raw.model === options.failBikeInsertForModel
           ) {
             return { data: null, error: { message: `Simulated DB failure inserting ${raw.model}` } };
+          }
+          if (
+            table === 'motorcycle_conditions' &&
+            options.failConditionInsertForMotorcycleId &&
+            raw.motorcycle_id === options.failConditionInsertForMotorcycleId
+          ) {
+            return {
+              data: null,
+              error: { message: `Simulated DB failure inserting conditions for ${raw.motorcycle_id}` },
+            };
           }
           const uuidErr = validateUuidColumns(table, raw);
           if (uuidErr) {
@@ -634,6 +646,17 @@ export function createInMemorySupabaseClient(
           return {
             data: null,
             error: { message: options.failReplaceOffersRpcMessage || options.failRpcMessage },
+          };
+        }
+        if (
+          options.failReplaceOffersForMotorcycleId &&
+          args.p_motorcycle_id === options.failReplaceOffersForMotorcycleId
+        ) {
+          return {
+            data: null,
+            error: {
+              message: `Simulated replace_motorcycle_rental_offers failure for ${args.p_motorcycle_id}`,
+            },
           };
         }
         const snapshot = structuredClone(state);

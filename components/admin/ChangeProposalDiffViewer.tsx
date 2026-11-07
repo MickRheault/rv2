@@ -991,17 +991,14 @@ function normalizeOffersForViewer(
         : null;
     const isFrom = Boolean(o?.isFrom);
     const sortOrder = typeof o?.sortOrder === 'number' ? o.sortOrder : idx;
-    const dailyEquivalent =
-      typeof o?.dailyEquivalent === 'number'
-        ? o.dailyEquivalent
-        : computeDailyEquivalent({
-            offerType,
-            amount,
-            billingBasis,
-            durationUnit,
-            minDuration,
-            maxDuration,
-          });
+    const dailyEquivalent = computeDailyEquivalent({
+      offerType,
+      amount,
+      billingBasis,
+      durationUnit,
+      minDuration,
+      maxDuration,
+    });
 
     const extensions: NormalizedRentalOfferExtension[] = Array.isArray(o?.extensions)
       ? o.extensions.map((ext: any, extIdx: number) => {
@@ -1098,17 +1095,26 @@ function isViewerOfferIdentical(a: NormalizedRentalOffer, b: NormalizedRentalOff
   return aExts.every((val, idx) => val === bExts[idx]);
 }
 
-function renderRentalOffersList(
-  rawOffers: any[] | undefined,
-  keyPrefix: string,
-  variant: 'indigo' | 'blue' | 'red' | 'emerald' | 'gray' = 'indigo',
-  strikeThrough = false,
-  showUnchangedCheck = false,
-  defaultCurrency?: string
-) {
-  const offers = normalizeOffersForViewer(rawOffers, defaultCurrency);
-  if (offers.length === 0) return null;
+type ViewerOfferCardVariant = 'indigo' | 'blue' | 'red' | 'emerald' | 'gray';
 
+interface ViewerOfferListOptions {
+  variant?: ViewerOfferCardVariant;
+  strikeThrough?: boolean;
+  showUnchangedCheck?: boolean;
+  defaultCurrency?: string;
+}
+
+function renderViewerOfferCard(
+  offer: NormalizedRentalOffer,
+  options: {
+    cardKey: string;
+    testId?: string;
+    variant: ViewerOfferCardVariant;
+    strikeThrough?: boolean;
+    badge?: 'added' | 'removed' | 'unchanged';
+  }
+) {
+  const { cardKey, testId, variant, strikeThrough = false, badge } = options;
   const cardClasses =
     variant === 'emerald'
       ? 'bg-emerald-50/90 text-emerald-950 border-emerald-300'
@@ -1121,87 +1127,129 @@ function renderRentalOffersList(
       : 'bg-gray-50 text-gray-800 border-gray-200';
 
   return (
-    <div className="mt-2 space-y-1.5" data-testid={`proposal-offers-list-${keyPrefix}`}>
-      {offers.map((offer, idx) => (
-        <div
-          key={offer.id ?? `${keyPrefix}-${idx}`}
-          data-testid={`proposal-offer-${keyPrefix}-${idx}`}
-          className={`rounded-lg border px-3 py-2 text-xs space-y-1.5 ${cardClasses} ${
-            strikeThrough ? 'line-through' : ''
-          }`}
-        >
-          <div className="flex items-start justify-between gap-3 flex-wrap">
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="font-semibold">
-                  {offer.supplierLabel || VIEWER_OFFER_TYPE_LABELS[offer.offerType]}
-                </span>
-                {offer.supplierLabel && (
-                  <span className="px-1.5 py-0.5 rounded bg-white/80 border border-current/20 text-[10px] font-medium">
-                    {VIEWER_OFFER_TYPE_LABELS[offer.offerType]}
-                  </span>
-                )}
-                <span className="opacity-85">· {formatOfferDurationRangeLabel(offer)}</span>
-              </div>
-              {offer.minCommitment && (
-                <div className="text-[11px] opacity-85">
-                  Min. commitment: {offer.minCommitment.value}{' '}
-                  {formatDurationUnitLabel(offer.minCommitment.unit, offer.minCommitment.value)}
-                </div>
-              )}
-              {offer.billingIncrement && (
-                <div className="text-[11px] opacity-85">
-                  {formatBillingIncrementPhrase(offer.billingIncrement)}
-                </div>
-              )}
-            </div>
-
-            <div className="text-right ml-auto">
-              <div className="flex items-center justify-end gap-1.5 flex-wrap">
-                <span className="font-bold">
-                  {offer.isFrom ? 'From ' : ''}
-                  {formatViewerOfferAmount(offer.amount, offer.currency)}{' '}
-                  {formatOfferBillingUnitPhrase(offer)}
-                </span>
-                {showUnchangedCheck && (
-                  <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider no-underline">
-                    ✓ Unchanged
-                  </span>
-                )}
-              </div>
-              {offer.dailyEquivalent !== null && (
-                <div className="text-[11px] opacity-80">
-                  {formatViewerOfferAmount(offer.dailyEquivalent, offer.currency, true)}/day daily
-                  equivalent
-                </div>
-              )}
-            </div>
+    <div
+      key={cardKey}
+      data-testid={testId}
+      className={`rounded-lg border px-3 py-2 text-xs space-y-1.5 ${cardClasses} ${
+        strikeThrough ? 'line-through' : ''
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="font-semibold">
+              {offer.supplierLabel || VIEWER_OFFER_TYPE_LABELS[offer.offerType]}
+            </span>
+            {offer.supplierLabel && (
+              <span className="px-1.5 py-0.5 rounded bg-white/80 border border-current/20 text-[10px] font-medium no-underline">
+                {VIEWER_OFFER_TYPE_LABELS[offer.offerType]}
+              </span>
+            )}
+            <span className="opacity-85">· {formatOfferDurationRangeLabel(offer)}</span>
           </div>
-
-          {offer.extensions.length > 0 && (
-            <div className="pt-1.5 border-t border-dashed border-current/20 space-y-1">
-              {offer.extensions.map((ext, extIdx) => (
-                <div
-                  key={ext.id ?? `${keyPrefix}-${idx}-ext-${extIdx}`}
-                  className="flex items-center justify-between gap-2 text-[11px] bg-white/60 rounded px-2 py-1"
-                >
-                  <span>
-                    {ext.supplierLabel || 'Extension rate'}
-                    {ext.billingIncrement
-                      ? ` (${formatBillingIncrementPhrase(ext.billingIncrement)})`
-                      : ''}
-                  </span>
-                  <span className="font-semibold">
-                    + {ext.isFrom ? 'From ' : ''}
-                    {formatViewerOfferAmount(ext.amount, ext.currency)}{' '}
-                    {formatExtensionBillingPhrase(ext)}
-                  </span>
-                </div>
-              ))}
+          {offer.minCommitment && (
+            <div className="text-[11px] opacity-85">
+              {`Min. commitment: ${offer.minCommitment.value} ${formatDurationUnitLabel(
+                offer.minCommitment.unit,
+                offer.minCommitment.value
+              )}`}
+            </div>
+          )}
+          {offer.billingIncrement && (
+            <div className="text-[11px] opacity-85">
+              {formatBillingIncrementPhrase(offer.billingIncrement)}
             </div>
           )}
         </div>
-      ))}
+
+        <div className="text-right ml-auto">
+          <div className="flex items-center justify-end gap-1.5 flex-wrap">
+            <span className="font-bold">
+              {`${offer.isFrom ? 'From ' : ''}${formatViewerOfferAmount(
+                offer.amount,
+                offer.currency
+              )} ${formatOfferBillingUnitPhrase(offer)}`}
+            </span>
+            {badge === 'added' && (
+              <span className="bg-indigo-100 text-indigo-800 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider no-underline">
+                + Added
+              </span>
+            )}
+            {badge === 'removed' && (
+              <span className="bg-red-200 text-red-900 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider no-underline">
+                - Removed
+              </span>
+            )}
+            {badge === 'unchanged' && (
+              <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider no-underline">
+                ✓ Unchanged
+              </span>
+            )}
+          </div>
+          {offer.dailyEquivalent !== null && (
+            <div className="text-[11px] opacity-80">
+              {`${formatViewerOfferAmount(
+                offer.dailyEquivalent,
+                offer.currency,
+                true
+              )}/day daily equivalent`}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {offer.extensions.length > 0 && (
+        <div className="pt-1.5 border-t border-dashed border-current/20 space-y-1">
+          {offer.extensions.map((ext, extIdx) => (
+            <div
+              key={ext.id ?? `${cardKey}-ext-${extIdx}`}
+              className="flex items-center justify-between gap-2 text-[11px] bg-white/60 rounded px-2 py-1"
+            >
+              <span>
+                {ext.supplierLabel || 'Extension rate'}
+                {ext.billingIncrement
+                  ? ` (${formatBillingIncrementPhrase(ext.billingIncrement)})`
+                  : ''}
+              </span>
+              <span className="font-semibold">
+                {`+ ${ext.isFrom ? 'From ' : ''}${formatViewerOfferAmount(
+                  ext.amount,
+                  ext.currency
+                )} ${formatExtensionBillingPhrase(ext)}`}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function renderRentalOffersList(
+  rawOffers: any[] | undefined,
+  keyPrefix: string,
+  options: ViewerOfferListOptions = {}
+) {
+  const {
+    variant = 'indigo',
+    strikeThrough = false,
+    showUnchangedCheck = false,
+    defaultCurrency,
+  } = options;
+  const offers = normalizeOffersForViewer(rawOffers, defaultCurrency);
+  if (offers.length === 0) return null;
+
+  return (
+    <div className="mt-2 space-y-1.5" data-testid={`proposal-offers-list-${keyPrefix}`}>
+      {offers.map((offer, idx) =>
+        renderViewerOfferCard(offer, {
+          cardKey: String(offer.id ?? `${keyPrefix}-${idx}`),
+          testId: `proposal-offer-${keyPrefix}-${idx}`,
+          variant,
+          strikeThrough,
+          badge: showUnchangedCheck ? 'unchanged' : undefined,
+        })
+      )}
     </div>
   );
 }
@@ -1371,26 +1419,63 @@ function renderExtensionDiffRows(
         </div>
       );
     } else {
+      const oldIncPhrase = o.billingIncrement
+        ? formatBillingIncrementPhrase(o.billingIncrement)
+        : null;
+      const newIncPhrase = n.billingIncrement
+        ? formatBillingIncrementPhrase(n.billingIncrement)
+        : null;
+      const incChanged = oldIncPhrase !== newIncPhrase;
+      const extAmountChanged =
+        Math.abs(n.amount - o.amount) >= 0.005 ||
+        o.isFrom !== n.isFrom ||
+        o.billingBasis !== n.billingBasis;
+
       rows.push(
         <div
           key={`${keyPrefix}-ext-mod-${nIdx}`}
           className="flex items-center justify-between gap-2 flex-wrap text-[11px] bg-white/80 rounded px-2 py-1 text-gray-800"
         >
-          <span>
-            {n.supplierLabel || o.supplierLabel || 'Extension rate'}
-            {n.billingIncrement ? ` (${formatBillingIncrementPhrase(n.billingIncrement)})` : ''}
+          <span className="flex items-center gap-1 flex-wrap">
+            <span>{n.supplierLabel || o.supplierLabel || 'Extension rate'}</span>
+            {incChanged ? (
+              <>
+                {oldIncPhrase && (
+                  <span className="line-through text-red-500">{`(${oldIncPhrase}${
+                    !newIncPhrase ? ' removed' : ''
+                  })`}</span>
+                )}
+                {oldIncPhrase && newIncPhrase && <span className="text-gray-400">→</span>}
+                {newIncPhrase && <span className="text-blue-700">{`(${newIncPhrase})`}</span>}
+              </>
+            ) : (
+              newIncPhrase && <span>{`(${newIncPhrase})`}</span>
+            )}
           </span>
-          <span className="flex items-center gap-1.5 flex-wrap">
-            <span className="line-through text-red-500 font-medium">
-              + {o.isFrom ? 'From ' : ''}
-              {formatViewerOfferAmount(o.amount, o.currency)} {formatExtensionBillingPhrase(o)}
+          {extAmountChanged ? (
+            <span className="flex items-center gap-1.5 flex-wrap">
+              <span className="line-through text-red-500 font-medium">
+                {`+ ${o.isFrom ? 'From ' : ''}${formatViewerOfferAmount(
+                  o.amount,
+                  o.currency
+                )} ${formatExtensionBillingPhrase(o)}`}
+              </span>
+              <span className="text-gray-400">→</span>
+              <span className="text-blue-700 font-bold">
+                {`+ ${n.isFrom ? 'From ' : ''}${formatViewerOfferAmount(
+                  n.amount,
+                  n.currency
+                )} ${formatExtensionBillingPhrase(n)}`}
+              </span>
             </span>
-            <span className="text-gray-400">→</span>
-            <span className="text-blue-700 font-bold">
-              + {n.isFrom ? 'From ' : ''}
-              {formatViewerOfferAmount(n.amount, n.currency)} {formatExtensionBillingPhrase(n)}
+          ) : (
+            <span className="font-semibold">
+              {`+ ${n.isFrom ? 'From ' : ''}${formatViewerOfferAmount(
+                n.amount,
+                n.currency
+              )} ${formatExtensionBillingPhrase(n)}`}
             </span>
-          </span>
+          )}
         </div>
       );
     }
@@ -1412,8 +1497,10 @@ function renderExtensionDiffRows(
           {n.billingIncrement ? ` (${formatBillingIncrementPhrase(n.billingIncrement)})` : ''}
         </span>
         <span className="font-semibold">
-          + {n.isFrom ? 'From ' : ''}
-          {formatViewerOfferAmount(n.amount, n.currency)} {formatExtensionBillingPhrase(n)}
+          {`+ ${n.isFrom ? 'From ' : ''}${formatViewerOfferAmount(
+            n.amount,
+            n.currency
+          )} ${formatExtensionBillingPhrase(n)}`}
         </span>
       </div>
     );
@@ -1432,10 +1519,13 @@ function renderExtensionDiffRows(
             - Removed
           </span>
           {o.supplierLabel || 'Extension rate'}
+          {o.billingIncrement ? ` (${formatBillingIncrementPhrase(o.billingIncrement)})` : ''}
         </span>
         <span>
-          + {o.isFrom ? 'From ' : ''}
-          {formatViewerOfferAmount(o.amount, o.currency)} {formatExtensionBillingPhrase(o)}
+          {`+ ${o.isFrom ? 'From ' : ''}${formatViewerOfferAmount(
+            o.amount,
+            o.currency
+          )} ${formatExtensionBillingPhrase(o)}`}
         </span>
       </div>
     );
@@ -1474,6 +1564,30 @@ function renderRentalOffersDiff(
                 oldOffer.isFrom !== newOffer.isFrom;
               const labelChanged = oldOffer.supplierLabel !== newOffer.supplierLabel;
 
+              const oldCommitmentText = oldOffer.minCommitment
+                ? `${oldOffer.minCommitment.value} ${formatDurationUnitLabel(
+                    oldOffer.minCommitment.unit,
+                    oldOffer.minCommitment.value
+                  )}`
+                : null;
+              const newCommitmentText = newOffer.minCommitment
+                ? `${newOffer.minCommitment.value} ${formatDurationUnitLabel(
+                    newOffer.minCommitment.unit,
+                    newOffer.minCommitment.value
+                  )}`
+                : null;
+              const commitmentChanged = oldCommitmentText !== newCommitmentText;
+
+              const oldIncrementText = oldOffer.billingIncrement
+                ? formatBillingIncrementPhrase(oldOffer.billingIncrement)
+                : null;
+              const newIncrementText = newOffer.billingIncrement
+                ? formatBillingIncrementPhrase(newOffer.billingIncrement)
+                : null;
+              const incrementChanged = oldIncrementText !== newIncrementText;
+
+              const dailyEqChanged = oldOffer.dailyEquivalent !== newOffer.dailyEquivalent;
+
               return (
                 <div
                   key={`${keyPrefix}-diff-${idx}`}
@@ -1510,19 +1624,50 @@ function renderRentalOffersDiff(
                           )}
                         </span>
                       </div>
-                      {newOffer.minCommitment && (
-                        <div className="text-[11px] text-gray-600">
-                          Min. commitment: {newOffer.minCommitment.value}{' '}
-                          {formatDurationUnitLabel(
-                            newOffer.minCommitment.unit,
-                            newOffer.minCommitment.value
+                      {commitmentChanged ? (
+                        <div className="text-[11px] text-gray-600 flex items-center gap-1 flex-wrap">
+                          <span>Min. commitment:</span>
+                          {oldCommitmentText && newCommitmentText && (
+                            <>
+                              <span className="line-through text-red-500">{oldCommitmentText}</span>
+                              <span className="text-gray-400">→</span>
+                              <span className="text-blue-700 font-medium">{newCommitmentText}</span>
+                            </>
+                          )}
+                          {oldCommitmentText && !newCommitmentText && (
+                            <span className="text-red-600">{`${oldCommitmentText} (removed)`}</span>
+                          )}
+                          {!oldCommitmentText && newCommitmentText && (
+                            <span className="text-blue-700 font-medium">{newCommitmentText}</span>
                           )}
                         </div>
+                      ) : (
+                        newCommitmentText && (
+                          <div className="text-[11px] text-gray-600">
+                            {`Min. commitment: ${newCommitmentText}`}
+                          </div>
+                        )
                       )}
-                      {newOffer.billingIncrement && (
-                        <div className="text-[11px] text-gray-600">
-                          {formatBillingIncrementPhrase(newOffer.billingIncrement)}
+                      {incrementChanged ? (
+                        <div className="text-[11px] text-gray-600 flex items-center gap-1 flex-wrap">
+                          {oldIncrementText && newIncrementText && (
+                            <>
+                              <span className="line-through text-red-500">{oldIncrementText}</span>
+                              <span className="text-gray-400">→</span>
+                              <span className="text-blue-700 font-medium">{newIncrementText}</span>
+                            </>
+                          )}
+                          {oldIncrementText && !newIncrementText && (
+                            <span className="text-red-600">{`${oldIncrementText} (removed)`}</span>
+                          )}
+                          {!oldIncrementText && newIncrementText && (
+                            <span className="text-blue-700 font-medium">{newIncrementText}</span>
+                          )}
                         </div>
+                      ) : (
+                        newIncrementText && (
+                          <div className="text-[11px] text-gray-600">{newIncrementText}</div>
+                        )
                       )}
                     </div>
 
@@ -1531,33 +1676,68 @@ function renderRentalOffersDiff(
                         {amountChanged ? (
                           <>
                             <span className="line-through text-red-500 font-medium">
-                              {oldOffer.isFrom ? 'From ' : ''}
-                              {formatViewerOfferAmount(oldOffer.amount, oldOffer.currency)}{' '}
-                              {formatOfferBillingUnitPhrase(oldOffer)}
+                              {`${oldOffer.isFrom ? 'From ' : ''}${formatViewerOfferAmount(
+                                oldOffer.amount,
+                                oldOffer.currency
+                              )} ${formatOfferBillingUnitPhrase(oldOffer)}`}
                             </span>
                             <span className="text-gray-400">→</span>
                             <span className="text-blue-700 font-bold">
-                              {newOffer.isFrom ? 'From ' : ''}
-                              {formatViewerOfferAmount(newOffer.amount, newOffer.currency)}{' '}
-                              {formatOfferBillingUnitPhrase(newOffer)}
+                              {`${newOffer.isFrom ? 'From ' : ''}${formatViewerOfferAmount(
+                                newOffer.amount,
+                                newOffer.currency
+                              )} ${formatOfferBillingUnitPhrase(newOffer)}`}
                             </span>
                           </>
                         ) : (
                           <span className="font-bold text-gray-900">
-                            {newOffer.isFrom ? 'From ' : ''}
-                            {formatViewerOfferAmount(newOffer.amount, newOffer.currency)}{' '}
-                            {formatOfferBillingUnitPhrase(newOffer)}
+                            {`${newOffer.isFrom ? 'From ' : ''}${formatViewerOfferAmount(
+                              newOffer.amount,
+                              newOffer.currency
+                            )} ${formatOfferBillingUnitPhrase(newOffer)}`}
                           </span>
                         )}
                       </div>
-                      {newOffer.dailyEquivalent !== null && (
-                        <div className="text-[11px] text-gray-600">
-                          {formatViewerOfferAmount(
-                            newOffer.dailyEquivalent,
-                            newOffer.currency,
-                            true
+                      {(oldOffer.dailyEquivalent !== null || newOffer.dailyEquivalent !== null) && (
+                        <div className="text-[11px] text-gray-600 flex items-center justify-end gap-1 flex-wrap">
+                          {dailyEqChanged ? (
+                            <>
+                              {oldOffer.dailyEquivalent !== null && (
+                                <span className="line-through text-red-500">
+                                  {`${formatViewerOfferAmount(
+                                    oldOffer.dailyEquivalent,
+                                    oldOffer.currency,
+                                    true
+                                  )}/day`}
+                                </span>
+                              )}
+                              {oldOffer.dailyEquivalent !== null &&
+                                newOffer.dailyEquivalent !== null && (
+                                  <span className="text-gray-400">→</span>
+                                )}
+                              {newOffer.dailyEquivalent !== null ? (
+                                <span className="text-blue-700 font-medium">
+                                  {`${formatViewerOfferAmount(
+                                    newOffer.dailyEquivalent,
+                                    newOffer.currency,
+                                    true
+                                  )}/day daily equivalent`}
+                                </span>
+                              ) : (
+                                <span className="text-red-600">daily equivalent removed</span>
+                              )}
+                            </>
+                          ) : (
+                            newOffer.dailyEquivalent !== null && (
+                              <span>
+                                {`${formatViewerOfferAmount(
+                                  newOffer.dailyEquivalent,
+                                  newOffer.currency,
+                                  true
+                                )}/day daily equivalent`}
+                              </span>
+                            )
                           )}
-                          /day daily equivalent
                         </div>
                       )}
                     </div>
@@ -1573,193 +1753,27 @@ function renderRentalOffersDiff(
             }
 
             if (entry.status === 'added') {
-              const { newOffer } = entry;
-              return (
-                <div
-                  key={`${keyPrefix}-diff-${idx}`}
-                  className="text-xs bg-indigo-50 border border-indigo-200 text-indigo-950 rounded-lg p-2.5 space-y-1.5"
-                >
-                  <div className="flex items-start justify-between gap-2 flex-wrap">
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-semibold">
-                          {newOffer.supplierLabel || VIEWER_OFFER_TYPE_LABELS[newOffer.offerType]}
-                        </span>
-                        <span className="opacity-85">· {formatOfferDurationRangeLabel(newOffer)}</span>
-                      </div>
-                      {newOffer.minCommitment && (
-                        <div className="text-[11px] opacity-85">
-                          Min. commitment: {newOffer.minCommitment.value}{' '}
-                          {formatDurationUnitLabel(
-                            newOffer.minCommitment.unit,
-                            newOffer.minCommitment.value
-                          )}
-                        </div>
-                      )}
-                      {newOffer.billingIncrement && (
-                        <div className="text-[11px] opacity-85">
-                          {formatBillingIncrementPhrase(newOffer.billingIncrement)}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="text-right ml-auto">
-                      <div className="flex items-center justify-end gap-1.5 flex-wrap">
-                        <span className="font-bold">
-                          {newOffer.isFrom ? 'From ' : ''}
-                          {formatViewerOfferAmount(newOffer.amount, newOffer.currency)}{' '}
-                          {formatOfferBillingUnitPhrase(newOffer)}
-                        </span>
-                        <span className="bg-indigo-100 text-indigo-800 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
-                          + Added
-                        </span>
-                      </div>
-                      {newOffer.dailyEquivalent !== null && (
-                        <div className="text-[11px] opacity-80">
-                          {formatViewerOfferAmount(
-                            newOffer.dailyEquivalent,
-                            newOffer.currency,
-                            true
-                          )}
-                          /day daily equivalent
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {newOffer.extensions.length > 0 && (
-                    <div className="pt-1.5 border-t border-dashed border-indigo-200 space-y-1">
-                      {newOffer.extensions.map((ext, extIdx) => (
-                        <div
-                          key={`${keyPrefix}-add-${idx}-ext-${extIdx}`}
-                          className="flex items-center justify-between gap-2 text-[11px] bg-white/60 rounded px-2 py-1"
-                        >
-                          <span>
-                            {ext.supplierLabel || 'Extension rate'}
-                            {ext.billingIncrement
-                              ? ` (${formatBillingIncrementPhrase(ext.billingIncrement)})`
-                              : ''}
-                          </span>
-                          <span className="font-semibold">
-                            + {ext.isFrom ? 'From ' : ''}
-                            {formatViewerOfferAmount(ext.amount, ext.currency)}{' '}
-                            {formatExtensionBillingPhrase(ext)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
+              return renderViewerOfferCard(entry.newOffer, {
+                cardKey: `${keyPrefix}-diff-${idx}`,
+                variant: 'indigo',
+                badge: 'added',
+              });
             }
 
             if (entry.status === 'removed') {
-              const { oldOffer } = entry;
-              return (
-                <div
-                  key={`${keyPrefix}-diff-${idx}`}
-                  className="text-xs bg-red-50 border border-red-200 text-red-700 rounded-lg p-2.5 space-y-1.5 line-through"
-                >
-                  <div className="flex items-start justify-between gap-2 flex-wrap">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-semibold">
-                        {oldOffer.supplierLabel || VIEWER_OFFER_TYPE_LABELS[oldOffer.offerType]}
-                      </span>
-                      <span>· {formatOfferDurationRangeLabel(oldOffer)}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 ml-auto">
-                      <span>
-                        {oldOffer.isFrom ? 'From ' : ''}
-                        {formatViewerOfferAmount(oldOffer.amount, oldOffer.currency)}{' '}
-                        {formatOfferBillingUnitPhrase(oldOffer)}
-                      </span>
-                      <span className="bg-red-200 text-red-900 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider no-underline">
-                        - Removed
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
+              return renderViewerOfferCard(entry.oldOffer, {
+                cardKey: `${keyPrefix}-diff-${idx}`,
+                variant: 'red',
+                strikeThrough: true,
+                badge: 'removed',
+              });
             }
 
-            // unchanged
-            const { newOffer } = entry;
-            return (
-              <div
-                key={`${keyPrefix}-diff-${idx}`}
-                className="text-xs bg-emerald-50 border border-emerald-300 text-emerald-950 rounded-lg p-2.5 space-y-1.5"
-              >
-                <div className="flex items-start justify-between gap-2 flex-wrap">
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-semibold">
-                        {newOffer.supplierLabel || VIEWER_OFFER_TYPE_LABELS[newOffer.offerType]}
-                      </span>
-                      <span className="opacity-85">· {formatOfferDurationRangeLabel(newOffer)}</span>
-                    </div>
-                    {newOffer.minCommitment && (
-                      <div className="text-[11px] opacity-85">
-                        Min. commitment: {newOffer.minCommitment.value}{' '}
-                        {formatDurationUnitLabel(
-                          newOffer.minCommitment.unit,
-                          newOffer.minCommitment.value
-                        )}
-                      </div>
-                    )}
-                    {newOffer.billingIncrement && (
-                      <div className="text-[11px] opacity-85">
-                        {formatBillingIncrementPhrase(newOffer.billingIncrement)}
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-right ml-auto">
-                    <div className="flex items-center justify-end gap-1.5 flex-wrap">
-                      <span className="font-semibold">
-                        {newOffer.isFrom ? 'From ' : ''}
-                        {formatViewerOfferAmount(newOffer.amount, newOffer.currency)}{' '}
-                        {formatOfferBillingUnitPhrase(newOffer)}
-                      </span>
-                      <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
-                        ✓ Unchanged
-                      </span>
-                    </div>
-                    {newOffer.dailyEquivalent !== null && (
-                      <div className="text-[11px] opacity-80">
-                        {formatViewerOfferAmount(
-                          newOffer.dailyEquivalent,
-                          newOffer.currency,
-                          true
-                        )}
-                        /day daily equivalent
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {newOffer.extensions.length > 0 && (
-                  <div className="pt-1.5 border-t border-dashed border-emerald-300 space-y-1">
-                    {newOffer.extensions.map((ext, extIdx) => (
-                      <div
-                        key={`${keyPrefix}-unch-${idx}-ext-${extIdx}`}
-                        className="flex items-center justify-between gap-2 text-[11px] bg-white/60 rounded px-2 py-1"
-                      >
-                        <span>
-                          {ext.supplierLabel || 'Extension rate'}
-                          {ext.billingIncrement
-                            ? ` (${formatBillingIncrementPhrase(ext.billingIncrement)})`
-                            : ''}
-                        </span>
-                        <span className="font-semibold">
-                          + {ext.isFrom ? 'From ' : ''}
-                          {formatViewerOfferAmount(ext.amount, ext.currency)}{' '}
-                          {formatExtensionBillingPhrase(ext)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
+            return renderViewerOfferCard(entry.newOffer, {
+              cardKey: `${keyPrefix}-diff-${idx}`,
+              variant: 'emerald',
+              badge: 'unchanged',
+            });
           })}
         </div>
       </div>
@@ -1767,14 +1781,10 @@ function renderRentalOffersDiff(
   }
 
   if (Array.isArray(proposedOffers) && proposedOffers.length > 0) {
-    return renderRentalOffersList(
-      proposedOffers,
-      keyPrefix,
-      'blue',
-      false,
-      false,
-      defaultCurrency
-    );
+    return renderRentalOffersList(proposedOffers, keyPrefix, {
+      variant: 'blue',
+      defaultCurrency,
+    });
   }
 
   return null;
@@ -2647,14 +2657,10 @@ export function ChangeProposalDiffViewer({
                     </div>
                     {Array.isArray(item.proposed_data?.offers) &&
                     item.proposed_data.offers.length > 0
-                      ? renderRentalOffersList(
-                          item.proposed_data.offers,
-                          item.id,
-                          'indigo',
-                          false,
-                          false,
-                          item.proposed_data?.currency
-                        )
+                      ? renderRentalOffersList(item.proposed_data.offers, item.id, {
+                          variant: 'indigo',
+                          defaultCurrency: item.proposed_data?.currency,
+                        })
                       : renderRateTiers(
                           item.proposed_data?.rates,
                           item.proposed_data?.currency,
@@ -3083,14 +3089,12 @@ export function ChangeProposalDiffViewer({
                   {(() => {
                     const delistOffers = item.original_data?.offers ?? item.baseline_data?.offers;
                     if (Array.isArray(delistOffers) && delistOffers.length > 0) {
-                      return renderRentalOffersList(
-                        delistOffers,
-                        item.id,
-                        'red',
-                        true,
-                        false,
-                        item.original_data?.currency ?? item.baseline_data?.currency
-                      );
+                      return renderRentalOffersList(delistOffers, item.id, {
+                        variant: 'red',
+                        strikeThrough: true,
+                        defaultCurrency:
+                          item.original_data?.currency ?? item.baseline_data?.currency,
+                      });
                     }
                     return renderRateTiers(
                       item.original_data?.rates ?? item.baseline_data?.rates,
@@ -3578,14 +3582,11 @@ export function ChangeProposalDiffViewer({
                         )}
 
                         {Array.isArray(base.offers) && base.offers.length > 0
-                          ? renderRentalOffersList(
-                              base.offers,
-                              entry.id || entry.entryKey,
-                              'emerald',
-                              false,
-                              true,
-                              base.currency
-                            )
+                          ? renderRentalOffersList(base.offers, entry.id || entry.entryKey, {
+                              variant: 'emerald',
+                              showUnchangedCheck: true,
+                              defaultCurrency: base.currency,
+                            })
                           : renderRateTiers(base.rates, base.currency, 'emerald', false, true)}
                         {renderMotorcycleConditionsList(base.conditions, 'emerald')}
                         {renderEvidenceList(entry.evidence)}
@@ -3932,7 +3933,11 @@ export function ChangeProposalDiffViewer({
                           )}
                         </div>
                         {Array.isArray(offers) && offers.length > 0
-                          ? renderRentalOffersList(offers, item.id, 'emerald', false, true, currency)
+                          ? renderRentalOffersList(offers, item.id, {
+                              variant: 'emerald',
+                              showUnchangedCheck: true,
+                              defaultCurrency: currency,
+                            })
                           : renderRateTiers(rates, currency, 'emerald', false, true)}
                         {renderMotorcycleConditionsList(conditions, 'emerald')}
                       </div>

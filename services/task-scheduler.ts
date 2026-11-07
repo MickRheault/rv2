@@ -3,12 +3,9 @@ import {
   resolveConditionName,
   resolveConditionNotes,
 } from '@/lib/motorcycle-conditions-helpers';
+import { NormalizedRentalOffer } from '@/lib/rental-offers';
 import {
-  NormalizedRentalOffer,
-  projectOffersToLegacyDaily,
-  resolveFallbackRentalOffers,
-} from '@/lib/rental-offers';
-import {
+  hydrateBaselineOffersAndRates,
   MAX_TEXT_FIELD_LENGTH,
   validateBoundedString,
   validateHttpUrl,
@@ -558,30 +555,10 @@ export class TaskSchedulerService {
           notes: resolveConditionNotes(mc),
         }));
 
-        const sortedBikeTiers = [...(bike.rental_rate_tiers || [])].sort(
-          (a: any, b: any) => (a.min_days ?? 1) - (b.min_days ?? 1)
+        const { offers: bikeOffers, rates: projectedLegacyRates } = hydrateBaselineOffersAndRates(
+          bike,
+          { fallbackLegacyCurrency: 'THB' }
         );
-        const bikeOffers = resolveFallbackRentalOffers({
-          rentalOffersRows: bike.rental_offers,
-          rentalRateTiers: sortedBikeTiers,
-          rentalRatePerDay: bike.rental_rate_per_day,
-          rentalRateCurrency: bike.rental_rate_currency,
-        });
-        const hasCanonicalOffers =
-          Array.isArray(bike.rental_offers) && bike.rental_offers.length > 0;
-        const projectedLegacyRates = hasCanonicalOffers
-          ? projectOffersToLegacyDaily(bikeOffers).legacyRateTiers.map((t) => ({
-              minDays: t.min_days,
-              maxDays: t.max_days,
-              ratePerDay: t.rate_per_day,
-              currency: t.currency,
-            }))
-          : (bike.rental_rate_tiers || []).map((r: any) => ({
-              minDays: r.min_days ?? 1,
-              maxDays: r.max_days ?? null,
-              ratePerDay: Number(r.rate_per_day),
-              currency: r.currency || 'THB',
-            }));
 
         return {
           id: bike.id,

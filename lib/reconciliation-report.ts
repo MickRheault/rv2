@@ -1,9 +1,11 @@
 import crypto from 'crypto';
 import { normalizeMotorcycleYearRange } from '@/lib/utils';
 import {
+  convertLegacyRateTiersToOffers,
   NormalizedRentalOffer,
   projectOffersToLegacyDaily,
   RentalOfferValidationError,
+  resolveFallbackRentalOffers,
   validateAndNormalizeRentalOffers,
 } from '@/lib/rental-offers';
 
@@ -359,6 +361,53 @@ export function stripIdsFromNormalizedOffers(
   });
 }
 
+export function hasStrictNonDailyOrExtensionOffers(offers: NormalizedRentalOffer[]): boolean {
+  return offers.some((o) => o.offerType !== 'daily' || o.extensions.length > 0);
+}
+
+export interface HydratedMotorcycleBaselinePricing {
+  hasCanonicalOffers: boolean;
+  offers: NormalizedRentalOffer[];
+  rates: Array<{
+    minDays: number;
+    maxDays: number | null;
+    ratePerDay: number;
+    currency: string;
+  }>;
+}
+
+export function hydrateBaselineOffersAndRates(
+  liveBike: any,
+  options?: { fallbackLegacyCurrency?: string }
+): HydratedMotorcycleBaselinePricing {
+  const sortedTiers = [...(liveBike?.rental_rate_tiers || [])].sort(
+    (a: any, b: any) => (a.min_days ?? 1) - (b.min_days ?? 1)
+  );
+  const offers = resolveFallbackRentalOffers({
+    rentalOffersRows: liveBike?.rental_offers,
+    rentalRateTiers: sortedTiers,
+    rentalRatePerDay: liveBike?.rental_rate_per_day,
+    rentalRateCurrency: liveBike?.rental_rate_currency,
+  });
+  const hasCanonicalOffers =
+    Array.isArray(liveBike?.rental_offers) && liveBike.rental_offers.length > 0;
+  const rates = hasCanonicalOffers
+    ? projectOffersToLegacyDaily(offers).legacyRateTiers.map((t) => ({
+        minDays: t.min_days,
+        maxDays: t.max_days,
+        ratePerDay: t.rate_per_day,
+        currency: t.currency,
+      }))
+    : sortedTiers.map((r: any) => ({
+        minDays: r.min_days ?? 1,
+        maxDays: r.max_days ?? null,
+        ratePerDay: Number(r.rate_per_day),
+        currency: r.currency ?? options?.fallbackLegacyCurrency,
+      }));
+
+  return { hasCanonicalOffers, offers, rates };
+}
+
 export function validateAndNormalizeProposalMotorcyclePricing(
   proposedData: Record<string, any> | null | undefined,
   options: {
@@ -418,47 +467,32 @@ export function validateAndNormalizeProposalMotorcyclePricing(
         typeof record.currency === 'string' && record.currency.trim().length > 0
           ? record.currency.trim().toUpperCase()
           : null;
-      const normalizedSubmittedTiers = record.rates
-        .map((tier: any) => ({
-          min_days: Number(tier.minDays ?? tier.min_days ?? 1),
-          max_days:
-            (tier.maxDays !== undefined ? tier.maxDays : tier.max_days) ?? null,
-          rate_per_day:
-            Math.round(
-              (Number(
-                tier.ratePerDay !== undefined
-                  ? tier.ratePerDay
-                  : tier.dailyRate !== undefined
-                  ? tier.dailyRate
-                  : tier.rate_per_day
-              ) +
-                Number.EPSILON) *
-                100
-            ) / 100,
-          currency: (
-            typeof tier.currency === 'string' && tier.currency.trim().length > 0
-              ? tier.currency.trim()
-              : fallbackCurrency || ''
-          ).toUpperCase(),
-        }))
-        .sort(
-          (a: any, b: any) =>
-            a.min_days - b.min_days || a.rate_per_day - b.rate_per_day
+      let submittedProjection: typeof projectedLegacyTiers;
+      try {
+        const submittedOffers = convertLegacyRateTiersToOffers(
+          record.rates.map((tier: any) => ({
+            minDays: tier.minDays ?? tier.min_days ?? 1,
+            maxDays: (tier.maxDays !== undefined ? tier.maxDays : tier.max_days) ?? null,
+            ratePerDay:
+              tier.ratePerDay !== undefined
+                ? tier.ratePerDay
+                : tier.dailyRate !== undefined
+                ? tier.dailyRate
+                : tier.rate_per_day,
+            currency:
+              typeof tier.currency === 'string' && tier.currency.trim().length > 0
+                ? tier.currency
+                : fallbackCurrency || '',
+          }))
         );
+        submittedProjection = projectOffersToLegacyDaily(submittedOffers).legacyRateTiers;
+      } catch {
+        throw new Err(
+          `Item ${options.itemLabel}: proposedData.rates contradicts the standalone daily projection of proposedData.offers.`
+        );
+      }
 
-      const matchesProjection =
-        normalizedSubmittedTiers.length === projectedLegacyTiers.length &&
-        normalizedSubmittedTiers.every((sub: any, idx: number) => {
-          const proj = projectedLegacyTiers[idx];
-          return (
-            sub.min_days === proj.min_days &&
-            sub.max_days === proj.max_days &&
-            sub.rate_per_day === proj.rate_per_day &&
-            sub.currency === proj.currency
-          );
-        });
-
-      if (!matchesProjection) {
+      if (JSON.stringify(submittedProjection) !== JSON.stringify(projectedLegacyTiers)) {
         throw new Err(
           `Item ${options.itemLabel}: proposedData.rates contradicts the standalone daily projection of proposedData.offers.`
         );

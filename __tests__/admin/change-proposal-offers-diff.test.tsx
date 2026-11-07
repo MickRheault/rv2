@@ -471,4 +471,136 @@ describe('ChangeProposalDiffViewer Flexible Rental Offers (#211)', () => {
     expect(screen.getByText('฿250/day')).toBeInTheDocument();
     expect(screen.getByText('฿300/day')).toBeInTheDocument();
   });
+
+  it('ignores rogue dailyEquivalent overrides on non-fixed-day offers, renders commitment/increment/dailyEquivalent deltas on modified offers, and shows full details on removed offers', () => {
+    const proposal = buildBaseProposal();
+    const items: DiffViewerItem[] = [
+      {
+        id: 'item-rogue-add',
+        proposal_id: 'prop-flex-1',
+        entity_type: 'motorcycle',
+        action: 'add',
+        entity_id: null,
+        brand_name: 'Honda',
+        model_name: 'Giorgano 125',
+        original_data: null,
+        proposed_data: {
+          offers: [
+            {
+              offerType: 'monthly',
+              amount: 6000,
+              currency: 'THB',
+              billingBasis: 'per_calendar_month',
+              durationUnit: 'calendar_month',
+              minDuration: 1,
+              maxDuration: null,
+              // Rogue override in untrusted snapshot JSON must be ignored!
+              dailyEquivalent: 200,
+            },
+          ],
+        },
+        diff_summary: null,
+        status: 'pending',
+      },
+      {
+        id: 'item-rich-upd',
+        proposal_id: 'prop-flex-1',
+        entity_type: 'motorcycle',
+        action: 'update',
+        entity_id: 'bike-rich-1',
+        brand_name: 'Yamaha',
+        model_name: 'NMAX 155',
+        original_data: {
+          offers: [
+            {
+              offerType: 'package',
+              amount: 3500,
+              currency: 'THB',
+              billingBasis: 'package_total',
+              durationUnit: 'day',
+              minDuration: 7,
+              maxDuration: 7,
+              supplierLabel: 'Weekly Promo',
+              minCommitment: { value: 7, unit: 'day' },
+              billingIncrement: { value: 1, unit: 'day' },
+              extensions: [
+                {
+                  amount: 500,
+                  currency: 'THB',
+                  billingBasis: 'per_day',
+                  billingIncrement: { value: 1, unit: 'day' },
+                },
+              ],
+            },
+            {
+              offerType: 'hourly',
+              amount: 120,
+              currency: 'THB',
+              billingBasis: 'per_hour',
+              durationUnit: 'hour',
+              minDuration: 1,
+              maxDuration: null,
+              minCommitment: { value: 2, unit: 'hour' },
+              billingIncrement: { value: 30, unit: 'minute' },
+              extensions: [
+                {
+                  amount: 100,
+                  currency: 'THB',
+                  billingBasis: 'per_hour',
+                  billingIncrement: { value: 30, unit: 'minute' },
+                },
+              ],
+            },
+          ],
+        },
+        proposed_data: {
+          offers: [
+            {
+              offerType: 'package',
+              amount: 2800,
+              currency: 'THB',
+              billingBasis: 'package_total',
+              durationUnit: 'day',
+              minDuration: 7,
+              maxDuration: 7,
+              supplierLabel: 'Weekly Promo',
+              minCommitment: null,
+              billingIncrement: { value: 7, unit: 'day' },
+              extensions: [
+                {
+                  amount: 450,
+                  currency: 'THB',
+                  billingBasis: 'per_day',
+                  billingIncrement: { value: 2, unit: 'day' },
+                },
+              ],
+            },
+          ],
+        },
+        diff_summary: { offers: true },
+        status: 'pending',
+      },
+    ];
+
+    render(<ChangeProposalDiffViewer proposal={proposal} items={items} />);
+
+    // 1. Calendar-month offer never shows rogue dailyEquivalent
+    const rogueOffer = screen.getByTestId('proposal-offer-item-rogue-add-0');
+    expect(within(rogueOffer).queryByText(/daily equivalent/i)).not.toBeInTheDocument();
+
+    const richDiff = screen.getByTestId('proposal-offers-diff-item-rich-upd');
+
+    // 2. Modified package shows old -> new dailyEquivalent (500.00 -> 400.00), removed minCommitment, and old -> new billingIncrement
+    expect(within(richDiff).getByText(/500\.00/)).toBeInTheDocument();
+    expect(within(richDiff).getByText(/400\.00/)).toBeInTheDocument();
+    expect(within(richDiff).getByText(/7 days.*removed/i)).toBeInTheDocument();
+    expect(within(richDiff).getAllByText(/1-day increments/i).length).toBeGreaterThanOrEqual(1);
+    expect(within(richDiff).getByText(/7-day increments/i)).toBeInTheDocument();
+    expect(within(richDiff).getByText(/2-day increments/i)).toBeInTheDocument();
+
+    // 3. Removed hourly offer preserves minCommitment, billingIncrement, and attached extension
+    expect(within(richDiff).getByText(/Min\. commitment: 2 hours/i)).toBeInTheDocument();
+    expect(within(richDiff).getAllByText(/30-minute increments/i).length).toBeGreaterThanOrEqual(1);
+    expect(within(richDiff).getByText(/100\s+per extra hour/i)).toBeInTheDocument();
+  });
 });
