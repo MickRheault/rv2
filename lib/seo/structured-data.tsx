@@ -3,6 +3,11 @@ import React from 'react';
 import { SITE_CONFIG } from './config';
 import { getShopUrl } from '@/lib/utils/urls';
 import { formatMotorcycleYear, type MotorcycleYearRangeInput } from '@/lib/utils';
+import {
+  formatOfferBillingUnitPhrase,
+  type DurationUnit,
+  type NormalizedRentalOffer,
+} from '@/lib/rental-offers';
 
 // Organization schema for the company
 export function generateOrganizationSchema() {
@@ -457,6 +462,44 @@ export function generateVehicleSchema(
   };
 }
 
+const SCHEMA_UNIT_CODE_MAP: Record<DurationUnit, { unitCode: 'HUR' | 'DAY' | 'MON'; unitText: string }> = {
+  hour: { unitCode: 'HUR', unitText: 'hours' },
+  day: { unitCode: 'DAY', unitText: 'days' },
+  calendar_month: { unitCode: 'MON', unitText: 'months' },
+};
+
+export function generateOfferPricingSchema(rentalOffers: NormalizedRentalOffer[]) {
+  return rentalOffers.map((offer) => {
+    const unitMeta = SCHEMA_UNIT_CODE_MAP[offer.durationUnit];
+    const refQtyValue = offer.billingBasis === 'package_total' ? offer.minDuration : 1;
+    const commitmentUnitMeta = offer.minCommitment
+      ? SCHEMA_UNIT_CODE_MAP[offer.minCommitment.unit]
+      : unitMeta;
+
+    return {
+      '@type': 'UnitPriceSpecification',
+      name:
+        offer.supplierLabel ||
+        `${offer.isFrom ? 'From ' : ''}${offer.amount} ${offer.currency} ${formatOfferBillingUnitPhrase(offer)}`,
+      price: offer.amount.toString(),
+      priceCurrency: offer.currency || 'USD',
+      referenceQuantity: {
+        '@type': 'QuantitativeValue',
+        value: refQtyValue,
+        unitCode: unitMeta.unitCode,
+        unitText: unitMeta.unitText,
+      },
+      eligibleQuantity: {
+        '@type': 'QuantitativeValue',
+        minValue: offer.minCommitment ? offer.minCommitment.value : offer.minDuration,
+        ...(offer.maxDuration !== null ? { maxValue: offer.maxDuration } : {}),
+        unitCode: commitmentUnitMeta.unitCode,
+        unitText: commitmentUnitMeta.unitText,
+      },
+    };
+  });
+}
+
 // Multi-tier pricing schema
 export function generatePricingSchema(rentalRates: Array<{
   rateText?: string;
@@ -598,6 +641,7 @@ export function generateEnhancedMotorcycleSchema(
     description?: string;
     image?: string;
     features?: string[];
+    rentalOffers?: NormalizedRentalOffer[];
     rentalRates?: Array<{
       rateText?: string;
       minDays: number;
@@ -618,7 +662,12 @@ export function generateEnhancedMotorcycleSchema(
   }
 ) {
   const baseVehicleSchema = generateVehicleSchema(motorcycle);
-  const pricingSchemas = motorcycle.rentalRates ? generatePricingSchema(motorcycle.rentalRates) : [];
+  const pricingSchemas =
+    motorcycle.rentalOffers && motorcycle.rentalOffers.length > 0
+      ? generateOfferPricingSchema(motorcycle.rentalOffers)
+      : motorcycle.rentalRates
+        ? generatePricingSchema(motorcycle.rentalRates)
+        : [];
   
   // Only include offers if there are actual rental rates with prices
   const hasValidPricing = pricingSchemas.length > 0 && pricingSchemas.some(rate => rate.price);

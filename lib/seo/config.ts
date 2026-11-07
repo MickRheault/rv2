@@ -1,6 +1,11 @@
 // SEO configuration and utilities for Global Moto Rentals
 import { Metadata } from 'next';
 import { formatMotorcycleYear, type MotorcycleYearRangeInput } from '@/lib/utils';
+import {
+  formatOfferBillingUnitPhrase,
+  type BillingBasis,
+  type DurationUnit,
+} from '@/lib/rental-offers';
 
 export interface SEOConfig {
   title: string;
@@ -224,19 +229,34 @@ export function generateMotorcycleSEO(
     location?: string;
     pricePerDay?: number;
     currency?: string;
+    headlineOffer?: {
+      amount: number;
+      currency: string;
+      billingBasis: BillingBasis;
+      durationUnit: DurationUnit;
+      minDuration: number;
+      maxDuration: number | null;
+      isFrom?: boolean;
+    } | null;
     category?: string;
     image?: string;
   }
 ): SEOConfig {
-  const { model, brand, location, pricePerDay, currency, category, image } = motorcycle;
+  const { model, brand, location, pricePerDay, currency, headlineOffer, category, image } = motorcycle;
   const formattedYear = formatMotorcycleYear(motorcycle);
   
   const bikeName = `${formattedYear || ''} ${brand || ''} ${model || ''}`.trim() || 'Motorcycle';
   const locationText = location ? ` in ${location}` : '';
   
-  // Format price with correct currency
+  // Format price with accurate billing unit when headlineOffer is provided, falling back to legacy pricePerDay
   let priceText = '';
-  if (pricePerDay && currency) {
+  if (headlineOffer && headlineOffer.amount > 0 && headlineOffer.currency) {
+    const formattedAmt = new Intl.NumberFormat('en-US', {
+      maximumFractionDigits: Number.isInteger(headlineOffer.amount) ? 0 : 2,
+    }).format(headlineOffer.amount);
+    const unitPhrase = formatOfferBillingUnitPhrase(headlineOffer);
+    priceText = ` from ${headlineOffer.currency.trim()} ${formattedAmt} ${unitPhrase}`;
+  } else if (pricePerDay && currency) {
     priceText = ` from ${currency}${pricePerDay}/day`;
   } else if (pricePerDay) {
     priceText = ` from $${pricePerDay}/day`;

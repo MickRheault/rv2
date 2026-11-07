@@ -14,6 +14,7 @@ import LocationHeroBanner from '@/components/location/LocationHeroBanner'
 import { generateMetadata as generateSEOMetadata, generateMotorcycleSEO } from '@/lib/seo/config'
 import { StructuredData, generateEnhancedMotorcycleSchema } from '@/lib/seo/structured-data'
 import { generateSlug, formatLocationName } from '@/lib/utils'
+import { hydrateRentalOffersFromRows, selectPrimaryHeadlineOffer } from '@/lib/rental-offers'
 
 export const revalidate = 86400 // Revalidate every 24 hours
 
@@ -37,6 +38,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
             const id = slug[0]
             const motorcycle = await getMotorcycleById(id)
 
+            const offers = hydrateRentalOffersFromRows((motorcycle as any).rental_offers)
+            const headlineOffer = selectPrimaryHeadlineOffer(offers)
+
             const seoConfig = generateMotorcycleSEO({
                 id: (motorcycle as any).id,
                 model: (motorcycle as any).model || undefined,
@@ -44,6 +48,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
                 location: (motorcycle as any).rental_shops?.location_name || (motorcycle as any).rental_shops?.cities?.name || undefined,
                 pricePerDay: (motorcycle as any).rental_rate_per_day || undefined,
                 currency: (motorcycle as any).rental_rate_currency || undefined,
+                headlineOffer,
                 year: (motorcycle as any).year || undefined,
                 year_to: (motorcycle as any).year_to || undefined,
                 category: (motorcycle as any).categories?.name || undefined,
@@ -152,6 +157,8 @@ async function renderMotorcycleDetails(id: string) {
             console.error('Error fetching same model motorcycles:', err)
         }
 
+        const hydratedOffers = hydrateRentalOffersFromRows((motorcycle as any).rental_offers)
+
         // Generate enhanced structured data for rich snippets
         const structuredData = generateEnhancedMotorcycleSchema({
             id: (motorcycle as any).id,
@@ -165,6 +172,7 @@ async function renderMotorcycleDetails(id: string) {
             features: (motorcycle as any).motorcycle_features?.map((f: any) => f.features?.name).filter(Boolean),
             engineSize: (motorcycle as any).engine_capacity_cc || undefined,
             availability: isMotorcycleAvailable(motorcycle as any),
+            rentalOffers: hydratedOffers,
             // Enhanced data from rental rate tiers
             rentalRates: (motorcycle as any).rental_rate_tiers?.map((tier: any) => ({
                 rateText: `${tier.min_days}-${tier.max_days || '+'} day rate`,

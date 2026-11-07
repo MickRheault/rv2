@@ -5,7 +5,7 @@ import { motorcycleService, MotorcycleWithDetails } from '@/services/motorcycles
 import { shopService } from '@/services/shops';
 import { Card, Button, Input, Modal, Alert, Select, Spinner, Checkbox } from '@/components/ui';
 import { MotorcycleConditionsModal } from '@/components/admin/MotorcycleConditionsModal';
-import { RentalRateTiersModal } from '@/components/admin/RentalRateTiersModal';
+import { RentalOffersModal } from '@/components/admin/RentalOffersModal';
 import { 
   PlusIcon, 
   PencilIcon, 
@@ -278,6 +278,7 @@ function MotorcyclesAdminContent() {
   const handleCloseRateTiersModal = () => {
     setShowRateTiersModal(false);
     setRateTiersMotorcycle(null);
+    loadMotorcycles();
   };
 
   // Selection handlers
@@ -556,7 +557,7 @@ function MotorcyclesAdminContent() {
                                 variant="ghost" 
                                 size="sm"
                                 onClick={() => handleManageRateTiers(motorcycle)}
-                                title="Manage Rate Tiers"
+                                title="Manage Rental Offers"
                               >
                                 <CurrencyDollarIcon className="w-4 h-4" />
                               </Button>
@@ -833,11 +834,15 @@ function MotorcyclesAdminContent() {
         />
       )}
 
-      {/* Rental Rate Tiers Modal */}
+      {/* Rental Offers Modal */}
       {rateTiersMotorcycle && (
-        <RentalRateTiersModal
+        <RentalOffersModal
           isOpen={showRateTiersModal}
           onClose={handleCloseRateTiersModal}
+          onSaved={() => {
+            setSuccess('Rental offers saved successfully');
+            loadMotorcycles();
+          }}
           motorcycle={{
             id: rateTiersMotorcycle.id,
             model: rateTiersMotorcycle.model,

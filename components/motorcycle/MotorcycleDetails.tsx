@@ -6,7 +6,6 @@ import {
   MapPinIcon,
   StarIcon,
   CalendarIcon,
-  CogIcon,
   ShieldCheckIcon,
   PhoneIcon,
   GlobeAltIcon,
@@ -21,12 +20,68 @@ import { MotorcycleWithDetails } from '@/services/motorcycles'
 import { isMotorcycleAvailable } from '@/services/shops'
 import { getShopUrl } from '@/lib/utils/urls'
 import { formatMotorcycleYear } from '@/lib/utils'
+import {
+  convertLegacyRateTiersToOffers,
+  formatDurationUnitLabel,
+  formatExtensionBillingPhrase,
+  formatOfferBillingUnitPhrase,
+  formatOfferDurationRangeLabel,
+  hydrateRentalOffersFromRows,
+  selectPrimaryHeadlineOffer,
+  type NormalizedRentalOffer,
+  type StandaloneOfferType,
+} from '@/lib/rental-offers'
 import SameModelWidget from '@/components/motorcycle/SameModelWidget'
 
 interface MotorcycleDetailsProps {
   motorcycle: MotorcycleWithDetails
   sameModelCount?: number
   countryName?: string
+}
+
+const OFFER_TYPE_LABELS: Record<StandaloneOfferType, string> = {
+  daily: 'Daily Rate',
+  hourly: 'Hourly Rental',
+  package: 'Fixed Package',
+  monthly: 'Monthly Rental',
+}
+
+function resolveDisplayOffers(motorcycle: MotorcycleWithDetails): NormalizedRentalOffer[] {
+  const hydrated = hydrateRentalOffersFromRows((motorcycle as any).rental_offers)
+  if (hydrated.length > 0) {
+    return hydrated
+  }
+
+  if (motorcycle.rental_rate_tiers && motorcycle.rental_rate_tiers.length > 0) {
+    try {
+      return convertLegacyRateTiersToOffers(motorcycle.rental_rate_tiers)
+    } catch {
+      // Fallback for any historical fractional rows if encountered un-backfilled
+    }
+  }
+
+  if (motorcycle.rental_rate_per_day && motorcycle.rental_rate_per_day > 0 && motorcycle.rental_rate_currency) {
+    return [
+      {
+        offerType: 'daily',
+        amount: motorcycle.rental_rate_per_day,
+        currency: motorcycle.rental_rate_currency.trim().toUpperCase(),
+        billingBasis: 'per_day',
+        durationUnit: 'day',
+        minDuration: 1,
+        maxDuration: null,
+        minCommitment: null,
+        billingIncrement: null,
+        supplierLabel: null,
+        isFrom: false,
+        sortOrder: 0,
+        dailyEquivalent: null,
+        extensions: [],
+      },
+    ]
+  }
+
+  return []
 }
 
 export default function MotorcycleDetails({
@@ -38,26 +93,29 @@ export default function MotorcycleDetails({
     model,
     year,
     engine_capacity_cc,
-    rental_rate_per_day,
     rental_rate_currency,
     brands,
     categories,
     rental_shops,
     motorcycle_features,
     motorcycle_conditions,
-    rental_rate_tiers,
     specifications_details,
     conditions_details
   } = motorcycle
   const formattedYear = formatMotorcycleYear(year, (motorcycle as any).year_to)
 
-  const formatCurrency = (amount: number | null, currency: string | null) => {
-    if (!amount || !currency) return 'Price on request'
+  const formatOfferAmount = (
+    amount: number | null | undefined,
+    currency: string | null | undefined,
+    preserveDecimals: boolean = false
+  ) => {
+    if (amount === null || amount === undefined || !currency) return 'Price on request'
+    const hasFraction = preserveDecimals || !Number.isInteger(amount)
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      currency: currency.trim().toUpperCase(),
+      minimumFractionDigits: hasFraction ? 2 : 0,
+      maximumFractionDigits: hasFraction ? 2 : 0,
     }).format(amount)
   }
 
@@ -78,41 +136,17 @@ export default function MotorcycleDetails({
     return parts.join(', ')
   }
 
-  // Availability badge removed per UI cleanup
-
   const features = motorcycle_features?.filter(mf => mf.features).map(mf => mf.features!) || []
   const specifications = specifications_details as any || {}
   const conditions = conditions_details as any || {}
 
-  // Get the best (lowest) daily rate from rate tiers or fallback to base rate
-  const getBestRate = () => {
-    if (rental_rate_tiers && rental_rate_tiers.length > 0) {
-      // Find the tier with the shortest min_days
-      const shortestPeriodTier = rental_rate_tiers.reduce((prev, current) =>
-        prev.min_days < current.min_days ? prev : current
-      )
-      return { amount: shortestPeriodTier.rate_per_day, currency: shortestPeriodTier.currency }
-    }
-    return { amount: rental_rate_per_day, currency: rental_rate_currency }
-  }
+  const offers = resolveDisplayOffers(motorcycle)
+  const headlineOffer = selectPrimaryHeadlineOffer(offers)
+  const fallbackCurrency = rental_rate_currency || headlineOffer?.currency || null
 
-  const bestRate = getBestRate()
-
-  // Format duration text for rate tiers
-  const formatDuration = (minDays: number, maxDays: number | null) => {
-    if (minDays === 1 && (!maxDays || maxDays === 1)) {
-      return 'Daily'
-    }
-    if (minDays === 7 && (!maxDays || maxDays === 7)) {
-      return 'Weekly'
-    }
-    if (minDays === 30 && (!maxDays || maxDays === 30)) {
-      return 'Monthly'
-    }
-    if (maxDays) {
-      return `${minDays}-${maxDays} days`
-    }
-    return `${minDays}+ days`
+  const formatIncrementLabel = (value: number, unit: string) => {
+    const cleanUnit = unit.replace('_', ' ')
+    return `Billed in ${value}-${cleanUnit} increments`
   }
 
   return (
@@ -163,11 +197,15 @@ export default function MotorcycleDetails({
 
         <div className="text-right">
           <div className="text-3xl font-bold text-blue-600">
-            {formatCurrency(bestRate.amount, bestRate.currency)}
+            {headlineOffer
+              ? `${headlineOffer.isFrom ? 'From ' : ''}${formatOfferAmount(headlineOffer.amount, headlineOffer.currency)}`
+              : 'Price on request'}
           </div>
-          <div className="text-gray-600">
-            {rental_rate_tiers && rental_rate_tiers.length > 0 ? 'starting from' : 'per day'}
-          </div>
+          {headlineOffer && (
+            <div className="text-gray-600">
+              {formatOfferBillingUnitPhrase(headlineOffer)}
+            </div>
+          )}
         </div>
       </div>
 
@@ -195,82 +233,92 @@ export default function MotorcycleDetails({
         {/* Main Details */}
         <div className="lg:col-span-2 space-y-6">
 
-          {/* Rental Rates */}
-          {rental_rate_tiers && rental_rate_tiers.length > 0 && (
+          {/* Flexible Rental Offers */}
+          {offers.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CurrencyDollarIcon className="w-5 h-5" />
-                  Rental Rates
+                  Rental Offers
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {rental_rate_tiers
-                    .sort((a, b) => a.min_days - b.min_days) // Sort by duration
-                    .map((rateTier, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                        <div>
-                          <div className="font-medium text-gray-900">
-                            {formatDuration(rateTier.min_days, rateTier.max_days)}
+                  {offers.map((offer, index) => {
+                    const offerKey = offer.id ?? `${offer.offerType}-${index}`
+                    return (
+                      <div
+                        key={offerKey}
+                        data-testid={`rental-offer-${offerKey}`}
+                        className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                          <div className="space-y-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-medium text-gray-900">
+                                {offer.supplierLabel || OFFER_TYPE_LABELS[offer.offerType]}
+                              </span>
+                              <Badge variant="secondary" className="text-xs border border-gray-200">
+                                {OFFER_TYPE_LABELS[offer.offerType]}
+                              </Badge>
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {formatOfferDurationRangeLabel(offer)}
+                            </div>
+                            {offer.minCommitment && (
+                              <div className="text-xs text-gray-600">
+                                Min. commitment: {offer.minCommitment.value}{' '}
+                                {formatDurationUnitLabel(offer.minCommitment.unit, offer.minCommitment.value)}
+                              </div>
+                            )}
+                            {offer.billingIncrement && (
+                              <div className="text-xs text-gray-600">
+                                {formatIncrementLabel(offer.billingIncrement.value, offer.billingIncrement.unit)}
+                              </div>
+                            )}
                           </div>
-                          <div className="text-sm text-gray-600">
-                            {rateTier.max_days
-                              ? `${rateTier.min_days} to ${rateTier.max_days} days`
-                              : `${rateTier.min_days}+ days`
-                            }
+
+                          <div className="sm:text-right">
+                            <div className="font-bold text-lg text-blue-600">
+                              {offer.isFrom ? 'From ' : ''}
+                              {formatOfferAmount(offer.amount, offer.currency)}
+                            </div>
+                            <div className="text-xs font-medium text-gray-600">
+                              {formatOfferBillingUnitPhrase(offer)}
+                            </div>
+                            {offer.dailyEquivalent !== null && (
+                              <div className="text-xs text-gray-500 mt-1">
+                                {formatOfferAmount(offer.dailyEquivalent, offer.currency, true)}/day daily equivalent
+                              </div>
+                            )}
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className="font-bold text-lg text-blue-600">
-                            {formatCurrency(rateTier.rate_per_day, rateTier.currency)}
+
+                        {offer.extensions.length > 0 && (
+                          <div className="mt-3 pt-2 border-t border-dashed border-gray-200 space-y-1.5">
+                            {offer.extensions.map((ext, extIdx) => (
+                              <div
+                                key={ext.id ?? `${offerKey}-ext-${extIdx}`}
+                                className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-700 bg-gray-50 px-3 py-1.5 rounded"
+                              >
+                                <span>
+                                  {ext.supplierLabel || 'Extension rate'}
+                                  {ext.billingIncrement
+                                    ? ` (${formatIncrementLabel(ext.billingIncrement.value, ext.billingIncrement.unit)})`
+                                    : ''}
+                                </span>
+                                <span className="font-semibold text-gray-900">
+                                  + {ext.isFrom ? 'From ' : ''}
+                                  {formatOfferAmount(ext.amount, ext.currency)}{' '}
+                                  {formatExtensionBillingPhrase(ext)}
+                                </span>
+                              </div>
+                            ))}
                           </div>
-                          <div className="text-xs text-gray-500">per day</div>
-                        </div>
+                        )}
                       </div>
-                    ))}
-                </div>
-
-                {/* Fallback message if only basic rate exists */}
-                {rental_rate_per_day && (
-                  <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <div className="flex items-center gap-2">
-                      <div className="text-sm text-blue-800">
-                        💡 <strong>Note:</strong> Additional pricing tiers may be available. Contact the rental shop for long-term rates and special offers.
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Fallback Basic Rate (when no rate tiers) */}
-          {(!rental_rate_tiers || rental_rate_tiers.length === 0) && rental_rate_per_day && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CurrencyDollarIcon className="w-5 h-5" />
-                  Rental Rate
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50">
-                  <div>
-                    <div className="font-medium text-gray-900">Daily Rate</div>
-                    <div className="text-sm text-gray-600">Standard pricing</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-bold text-2xl text-blue-600">
-                      {formatCurrency(rental_rate_per_day, rental_rate_currency)}
-                    </div>
-                    <div className="text-sm text-gray-500">per day</div>
-                  </div>
-                </div>
-                <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <div className="text-sm text-blue-800">
-                    💡 <strong>Tip:</strong> Contact the rental shop for weekly, monthly rates and special discounts for longer rentals.
-                  </div>
+                    )
+                  })}
                 </div>
               </CardContent>
             </Card>
@@ -371,7 +419,7 @@ export default function MotorcycleDetails({
                   {conditions.deposit && (
                     <div className="flex justify-between">
                       <span className="font-medium">Security Deposit</span>
-                      <span>{formatCurrency(conditions.deposit, rental_rate_currency)}</span>
+                      <span>{formatOfferAmount(conditions.deposit, fallbackCurrency)}</span>
                     </div>
                   )}
                   {conditions.fuel_policy && (
@@ -403,25 +451,45 @@ export default function MotorcycleDetails({
 
               {rental_shops?.rating && (
                 <div className="flex items-center gap-2">
-                  <StarSolid className="w-4 h-4 text-yellow-400" />
+                  <div className="flex items-center">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <span key={star}>
+                        {star <= Math.round(rental_shops.rating!) ? (
+                          <StarSolid className="w-4 h-4 text-yellow-400" />
+                        ) : (
+                          <StarIcon className="w-4 h-4 text-gray-300" />
+                        )}
+                      </span>
+                    ))}
+                  </div>
                   <span className="font-medium">{rental_shops.rating.toFixed(1)}</span>
                   {rental_shops.review_count && (
-                    <span className="text-gray-600 text-sm">
+                    <span className="text-sm text-gray-500">
                       ({rental_shops.review_count} reviews)
                     </span>
                   )}
                 </div>
               )}
 
-              <div className="space-y-2">
+              {rental_shops?.business_description && (
+                <p className="text-sm text-gray-600 line-clamp-3">
+                  {rental_shops.business_description}
+                </p>
+              )}
+
+              <div className="space-y-2 pt-2">
                 {rental_shops?.phone && (
                   <div className="flex items-center gap-2 text-sm">
                     <PhoneIcon className="w-4 h-4 text-gray-500" />
-                    <a href={`tel:${rental_shops.phone}`} className="text-blue-600 hover:underline">
+                    <a
+                      href={`tel:${rental_shops.phone}`}
+                      className="text-blue-600 hover:text-blue-800"
+                    >
                       {rental_shops.phone}
                     </a>
                   </div>
                 )}
+
                 {rental_shops?.website && (
                   <div className="flex items-center gap-2 text-sm">
                     <GlobeAltIcon className="w-4 h-4 text-gray-500" />
@@ -429,7 +497,7 @@ export default function MotorcycleDetails({
                       href={rental_shops.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline flex items-center gap-1"
+                      className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
                     >
                       Visit Website
                       <ArrowTopRightOnSquareIcon className="w-3 h-3" />
@@ -438,12 +506,14 @@ export default function MotorcycleDetails({
                 )}
               </div>
 
-              <div className="pt-4 space-y-2">
-                <Link href={rental_shops ? getShopUrl(rental_shops) : '#'}>
-                  <Button className="w-full">
-                    View Shop Details
-                  </Button>
-                </Link>
+              <div className="space-y-2 pt-4">
+                {rental_shops && (
+                  <Link href={getShopUrl(rental_shops)}>
+                    <Button variant="primary" className="w-full">
+                      View Shop Details
+                    </Button>
+                  </Link>
+                )}
                 <Button variant="outline" className="w-full">
                   Contact Shop
                 </Button>
@@ -451,16 +521,14 @@ export default function MotorcycleDetails({
             </CardContent>
           </Card>
 
-          {/* Same Model Widget */}
           <SameModelWidget
             currentMotorcycleId={motorcycle.id}
             count={sameModelCount}
+            brandName={brands?.name || ''}
+            modelName={model || ''}
             countryName={countryName}
-            brandName={brands?.name}
-            modelName={model}
           />
 
-          {/* Quick Actions */}
           <Card>
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
@@ -477,8 +545,8 @@ export default function MotorcycleDetails({
               </Button>
             </CardContent>
           </Card>
-        </div >
-      </div >
-    </div >
+        </div>
+      </div>
+    </div>
   )
-} 
+}

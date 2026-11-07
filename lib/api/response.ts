@@ -79,6 +79,8 @@ export const errors = {
         errorResponse('NOT_FOUND', `${resource} not found`, 404),
     badRequest: (message: string, details?: Record<string, string[]>) =>
         errorResponse('BAD_REQUEST', message, 400, details),
+    conflict: (message: string, details?: Record<string, string[]>) =>
+        errorResponse('CONFLICT', message, 409, details),
     rateLimited: () =>
         errorResponse('RATE_LIMITED', 'Too many requests. Please try again later.', 429),
     internal: (message: string = 'An unexpected error occurred') =>
