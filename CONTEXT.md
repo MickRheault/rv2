@@ -40,6 +40,18 @@ _Avoid_: Scraped model title, listing alias, informal nickname
 The inclusive span of production years (`year` to `year_to`, or a single `year`) that defines a distinct generation or fleet pricing tier of a motorcycle listing at a rental shop.
 _Avoid_: Generation string, year suffix in model name, open-ended year
 
+**Rental Offer**:
+A standalone verbatim pricing option published by a rental shop for a motorcycle (`daily`, `package`, `hourly`, or `monthly`), preserving the supplier's authoritative amount, currency, billing basis (`per_hour`, `per_day`, `per_calendar_month`, or `package_total`), duration unit (`hour`, `day`, or `calendar_month`), commitments, billing increments, `"from"` qualifier, and supplier label without synthetic daily conversion.
+_Avoid_: Synthetic rate tier, averaged daily rate, descriptive pricing note
+
+**Extension Charge**:
+An extra-day or extra-hour overage charge (`offer_type = 'extension'`) attached to a specific parent Rental Offer via `parent_offer_id` rather than standing alone as an independent rental option.
+_Avoid_: Standalone extra-day tier, unlinked overage note
+
+**Daily Equivalent**:
+A read-only comparison figure (`round(amount / days, 2)`) deterministically derived for fixed-day `package_total` Rental Offers (`duration_unit = 'day'`, fixed `days > 1`), displayed secondary to the authoritative package total and never computed for `calendar_month`, `hourly`, `daily`, or `extension` offers.
+_Avoid_: Standalone daily rate, 30-day calendar-month division, manual daily override
+
 **Recovery Snapshot**:
 A full, self-contained SQL dump of the `public` and `auth` database schemas and data, compressed and GPG-encrypted for point-in-time disaster recovery.
 _Avoid_: Partial dump, unencrypted export, table CSV

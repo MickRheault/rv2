@@ -36,7 +36,7 @@ The platform implements an official Model Context Protocol server at `/api/mcp` 
 | **Discovery** | `list_motorcycles`, `list_shops`, `list_brands`, `list_categories`, `list_locations` | Multi-parameter fleet search with automatic geographic and category name resolution (e.g. "Chiang Mai", "Scooter", price bounds). |
 | **Inspection** | `get_motorcycle`, `get_shop`, `list_condition_types`, `list_features` | Deep inspection of specific vehicles, rental shop policies, insurance tiers, and included amenities. |
 | **Fleet Operations** | `create_motorcycle`, `update_motorcycle`, `delete_motorcycle`, `create_shop`, `update_shop`, `delete_shop` | Programmatic fleet catalog management for verified shop managers and automated agents. |
-| **Pricing & Policies** | `set_motorcycle_rate_tiers`, `set_motorcycle_conditions`, `set_shop_inclusions`, `set_shop_conditions` | Duration-based pricing tiers, mileage limits, and rental contract condition configuration. |
+| **Pricing & Policies** | `set_motorcycle_offers`, `set_motorcycle_rate_tiers`, `set_motorcycle_conditions`, `set_shop_inclusions`, `set_shop_conditions` | Flexible rental offers (daily, package, hourly, monthly + extensions), duration-based pricing tiers, mileage limits, and rental contract condition configuration. |
 
 #### Connecting an AI Agent
 

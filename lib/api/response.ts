@@ -1,4 +1,9 @@
 import { NextResponse } from 'next/server';
+import {
+    RentalOfferConflictError,
+    RentalOfferNotFoundError,
+    RentalOfferValidationError,
+} from '@/lib/rental-offers';
 
 /**
  * Standard API Response Types
@@ -79,11 +84,29 @@ export const errors = {
         errorResponse('NOT_FOUND', `${resource} not found`, 404),
     badRequest: (message: string, details?: Record<string, string[]>) =>
         errorResponse('BAD_REQUEST', message, 400, details),
+    conflict: (message: string, details?: Record<string, string[]>) =>
+        errorResponse('CONFLICT', message, 409, details),
     rateLimited: () =>
         errorResponse('RATE_LIMITED', 'Too many requests. Please try again later.', 429),
     internal: (message: string = 'An unexpected error occurred') =>
         errorResponse('INTERNAL_ERROR', message, 500),
 };
+
+export function mapRentalOfferErrorToResponse(
+    error: unknown,
+    notFoundResource: string = 'Motorcycle'
+): NextResponse<ApiErrorResponse> | null {
+    if (error instanceof RentalOfferValidationError) {
+        return errors.badRequest(error.message);
+    }
+    if (error instanceof RentalOfferConflictError) {
+        return errors.conflict(error.message);
+    }
+    if (error instanceof RentalOfferNotFoundError) {
+        return errors.notFound(notFoundResource);
+    }
+    return null;
+}
 
 /**
  * Parse pagination params from request

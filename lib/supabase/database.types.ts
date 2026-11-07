@@ -1010,6 +1010,87 @@ export type Database = {
           },
         ]
       }
+      rental_offers: {
+        Row: {
+          amount: number
+          billing_basis: string
+          billing_increment_unit: string | null
+          billing_increment_value: number | null
+          created_at: string
+          currency: string
+          duration_unit: string
+          id: string
+          is_from: boolean
+          max_duration: number | null
+          min_commitment_unit: string | null
+          min_commitment_value: number | null
+          min_duration: number
+          motorcycle_id: string
+          offer_type: string
+          parent_offer_id: string | null
+          sort_order: number
+          supplier_label: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          billing_basis: string
+          billing_increment_unit?: string | null
+          billing_increment_value?: number | null
+          created_at?: string
+          currency: string
+          duration_unit: string
+          id?: string
+          is_from?: boolean
+          max_duration?: number | null
+          min_commitment_unit?: string | null
+          min_commitment_value?: number | null
+          min_duration: number
+          motorcycle_id: string
+          offer_type: string
+          parent_offer_id?: string | null
+          sort_order?: number
+          supplier_label?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          billing_basis?: string
+          billing_increment_unit?: string | null
+          billing_increment_value?: number | null
+          created_at?: string
+          currency?: string
+          duration_unit?: string
+          id?: string
+          is_from?: boolean
+          max_duration?: number | null
+          min_commitment_unit?: string | null
+          min_commitment_value?: number | null
+          min_duration?: number
+          motorcycle_id?: string
+          offer_type?: string
+          parent_offer_id?: string | null
+          sort_order?: number
+          supplier_label?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rental_offers_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
+            referencedRelation: "motorcycle_rentals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rental_offers_parent_offer_id_fkey"
+            columns: ["parent_offer_id"]
+            isOneToOne: false
+            referencedRelation: "rental_offers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rental_rate_tiers: {
         Row: {
           currency: string
@@ -1715,6 +1796,10 @@ export type Database = {
       apply_flagged_content_changes: {
         Args: { admin_id: string; flagged_content_id: string }
         Returns: boolean
+      }
+      replace_motorcycle_rental_offers: {
+        Args: { p_motorcycle_id: string; p_payload: Json }
+        Returns: Json
       }
       authorize: {
         Args: {
