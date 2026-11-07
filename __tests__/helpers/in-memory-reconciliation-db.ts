@@ -253,7 +253,11 @@ function enrichRow(table: string, row: any, state: InMemoryReconciliationState) 
 
 export function createInMemorySupabaseClient(
   state: InMemoryReconciliationState,
-  options: { failRpcMessage?: string; failBikeInsertForModel?: string } = {}
+  options: {
+    failRpcMessage?: string;
+    failReplaceOffersRpcMessage?: string;
+    failBikeInsertForModel?: string;
+  } = {}
 ) {
   const makeUuid = () => crypto.randomUUID();
   const UUID_COL_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -626,8 +630,11 @@ export function createInMemorySupabaseClient(
     },
     async rpc(fnName: string, args: any) {
       if (fnName === 'replace_motorcycle_rental_offers') {
-        if (options.failRpcMessage) {
-          return { data: null, error: { message: options.failRpcMessage } };
+        if (options.failRpcMessage || options.failReplaceOffersRpcMessage) {
+          return {
+            data: null,
+            error: { message: options.failReplaceOffersRpcMessage || options.failRpcMessage },
+          };
         }
         const snapshot = structuredClone(state);
         try {

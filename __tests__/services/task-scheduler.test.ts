@@ -287,6 +287,24 @@ describe('TaskSchedulerService', () => {
           availabilityStatus: 'available',
           sourceUrl: 'https://siemreapscooterrental.com/pg-1',
           rates: [{ minDays: 1, maxDays: 6, ratePerDay: 12, currency: 'USD' }],
+          offers: [
+            {
+              offerType: 'daily',
+              amount: 12,
+              currency: 'USD',
+              billingBasis: 'per_day',
+              durationUnit: 'day',
+              minDuration: 1,
+              maxDuration: 6,
+              minCommitment: null,
+              billingIncrement: null,
+              supplierLabel: null,
+              isFrom: false,
+              sortOrder: 0,
+              dailyEquivalent: null,
+              extensions: [],
+            },
+          ],
           conditions: [
             {
               condition_type_id: '9526b7ae-8c84-45a2-a8ac-c4ecbeea600b',

@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { validateAgentApiKey } from '@/lib/auth/agent-auth';
+import { RentalOfferConflictError } from '@/lib/rental-offers';
 import {
   ChangeProposalService,
   ProposalItemValidationError,
@@ -218,7 +219,9 @@ export async function POST(request: NextRequest) {
     }
     if (
       error instanceof ProposalIdempotencyConflictError ||
-      error?.name === 'ProposalIdempotencyConflictError'
+      error instanceof RentalOfferConflictError ||
+      error?.name === 'ProposalIdempotencyConflictError' ||
+      error?.name === 'RentalOfferConflictError'
     ) {
       return NextResponse.json({ error: error.message }, { status: 409 });
     }
