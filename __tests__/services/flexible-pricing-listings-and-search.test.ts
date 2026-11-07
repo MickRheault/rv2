@@ -229,19 +229,23 @@ describe('Flexible Rental Pricing — Listings, Daily-Only Price Filters & Deter
       ).toBeNull()
 
       // Legacy scalar row without rental_rate_currency must NOT invent USD/THB headline currency
-      expect(
-        resolveListingHeadline({
-          id: 'legacy-no-currency',
-          rental_rate_per_day: 250,
-          rental_rate_currency: null,
-          rental_rate_tiers: [],
-          rental_offers: [],
-        })
-      ).toEqual({
+      // AND must NOT be treated as a standalone daily rate for filtering or sorting
+      const legacyNoCurrency = {
+        id: 'legacy-no-currency',
+        rental_rate_per_day: 250,
+        rental_rate_currency: null,
+        rental_rate_tiers: [],
+        rental_offers: [],
+      }
+      expect(getStandaloneDailyRate(legacyNoCurrency)).toBeNull()
+      expect(resolveListingHeadline(legacyNoCurrency)).toEqual({
         headlineOffer: null,
         showFrom: false,
         unitLabel: null,
       })
+      expect(
+        filterAndSortMotorcycles([legacyNoCurrency], { minPrice: 100, maxPrice: 500 })
+      ).toEqual([])
 
       // Wide range [50, 10000] covers 100/hr, 200 (6000/30), 428.57 (3000/7), 3000, 4200, and 6000 —
       // yet ONLY standalone daily bikes match!
@@ -514,6 +518,7 @@ describe('Flexible Rental Pricing — Listings, Daily-Only Price Filters & Deter
         }
       })
 
+      const recordedOrderCalls: Array<[string, any]> = []
       ;(supabase.from as jest.Mock).mockImplementation((table: string) => {
         if (table === 'business_statuses') {
           return {
@@ -533,7 +538,10 @@ describe('Flexible Rental Pricing — Listings, Daily-Only Price Filters & Deter
             not: jest.fn(() => builder),
             ilike: jest.fn(() => builder),
             or: jest.fn(() => builder),
-            order: jest.fn(() => builder),
+            order: jest.fn((col: string, opts?: any) => {
+              recordedOrderCalls.push([col, opts])
+              return builder
+            }),
             limit: jest.fn(() => builder),
             range: jest.fn((from: number, to: number) =>
               Promise.resolve({
@@ -562,6 +570,12 @@ describe('Flexible Rental Pricing — Listings, Daily-Only Price Filters & Deter
         'catalog-1048',
         'catalog-1049',
       ])
+      expect(recordedOrderCalls).toContainEqual(['id', { ascending: true }])
+
+      const openapi = require('@/public/openapi.json')
+      const getMotorcyclesParams = openapi.paths['/motorcycles'].get.parameters
+      expect(getMotorcyclesParams.find((p: any) => p.name === 'minPrice').schema.type).toBe('number')
+      expect(getMotorcyclesParams.find((p: any) => p.name === 'maxPrice').schema.type).toBe('number')
 
       const deepPage = await motorcycleService.getMotorcycles({
         sortBy: 'price_asc',
@@ -734,12 +748,16 @@ describe('Flexible Rental Pricing — Listings, Daily-Only Price Filters & Deter
       }))
       const allFeaturedCandidates = [...leadingUnpriced, ...trailingPriced]
 
+      const featuredOrderCalls: Array<[string, any]> = []
       ;(supabase.from as jest.Mock).mockImplementation((table: string) => {
         if (table === 'motorcycle_rentals') {
           const builder: any = {
             select: jest.fn(() => builder),
             or: jest.fn(() => builder),
-            order: jest.fn(() => builder),
+            order: jest.fn((col: string, opts?: any) => {
+              featuredOrderCalls.push([col, opts])
+              return builder
+            }),
             limit: jest.fn((n: number) =>
               Promise.resolve({ data: allFeaturedCandidates.slice(0, n), error: null })
             ),
@@ -753,6 +771,7 @@ describe('Flexible Rental Pricing — Listings, Daily-Only Price Filters & Deter
       })
 
       const featured = await motorcycleService.getFeaturedMotorcycles(3)
+      expect(featuredOrderCalls).toContainEqual(['id', { ascending: true }])
       expect(featured.map((m: any) => m.id)).toEqual([
         'priced-pkg-0',
         'priced-pkg-1',

@@ -5,7 +5,7 @@ import { SupabaseClient } from '@supabase/supabase-js'
 import { generateSlug } from '@/lib/utils'
 import {
   compareMotorcyclesByPrice,
-  getStandaloneDailyRate,
+  matchesDailyPriceRange,
   resolveMotorcycleRentalOffers,
   type NormalizedRentalOffer,
 } from '@/lib/rental-offers'
@@ -240,11 +240,8 @@ export function filterAndSortMotorcycles<T extends Record<string, any>>(
       if (bikeModel !== normalizedModel) return false
     }
 
-    if (minPrice !== undefined || maxPrice !== undefined) {
-      const effectiveRate = getStandaloneDailyRate(motorcycle)
-      if (effectiveRate === null) return false
-      if (minPrice !== undefined && effectiveRate < minPrice) return false
-      if (maxPrice !== undefined && effectiveRate > maxPrice) return false
+    if (!matchesDailyPriceRange(motorcycle, minPrice, maxPrice)) {
+      return false
     }
 
     if (minEngineCapacity !== undefined || maxEngineCapacity !== undefined) {
@@ -550,10 +547,9 @@ export const motorcycleService = {
       let batchOffset = 0
 
       while (true) {
-        const { data: batchData, error: batchError } = await buildFilteredQuery().range(
-          batchOffset,
-          batchOffset + POSTGREST_BATCH_SIZE - 1
-        )
+        const { data: batchData, error: batchError } = await buildFilteredQuery()
+          .order('id', { ascending: true })
+          .range(batchOffset, batchOffset + POSTGREST_BATCH_SIZE - 1)
 
         if (batchError) {
           console.error('Error fetching motorcycles for post-query filtering/sorting:', batchError)
@@ -582,13 +578,9 @@ export const motorcycleService = {
       }
 
       if (minPrice !== undefined || maxPrice !== undefined) {
-        processedData = processedData.filter((motorcycle: any) => {
-          const effectiveRate = getStandaloneDailyRate(motorcycle)
-          if (effectiveRate === null) return false
-          if (minPrice !== undefined && effectiveRate < minPrice) return false
-          if (maxPrice !== undefined && effectiveRate > maxPrice) return false
-          return true
-        })
+        processedData = processedData.filter((motorcycle: any) =>
+          matchesDailyPriceRange(motorcycle, minPrice, maxPrice)
+        )
       }
 
       if (sortBy === 'price_asc' || sortBy === 'price_desc') {
@@ -850,6 +842,7 @@ export const motorcycleService = {
       query = applyAvailableMotorcycleFilterSync(query)
         .order('rental_shops.rating', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false })
+        .order('id', { ascending: true })
         .range(batchOffset, batchOffset + batchSize - 1)
 
       const { data, error } = await query

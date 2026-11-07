@@ -13,10 +13,10 @@ import {
     formatExtensionBillingPhrase,
     formatOfferBillingUnitPhrase,
     getStandaloneDailyRate,
+    resolveListingHeadline,
     resolveMotorcycleRentalOffers,
-    selectPrimaryHeadlineOffer,
-    shouldShowHeadlineFromPrefix,
     sortRentalOffersForDisplay,
+    type MotorcyclePricingRecord,
 } from '@/lib/rental-offers';
 import type { ChatCompletionTool } from 'openai/resources/chat/completions';
 
@@ -211,11 +211,10 @@ function formatPlainAmount(amount: number): string {
     }).format(amount);
 }
 
-function buildMotorcycleToolPricing(m: any) {
+function buildMotorcycleToolPricing(m: MotorcyclePricingRecord | null | undefined) {
     const offers = resolveMotorcycleRentalOffers(m);
     const dailyRate = getStandaloneDailyRate(m);
-    const headlineOffer = selectPrimaryHeadlineOffer(offers);
-    const showFrom = shouldShowHeadlineFromPrefix(offers, headlineOffer);
+    const { headlineOffer, showFrom } = resolveListingHeadline(m);
     const fallbackCurrency =
         typeof m?.rental_rate_currency === 'string' && m.rental_rate_currency.trim().length > 0
             ? m.rental_rate_currency.trim().toUpperCase()

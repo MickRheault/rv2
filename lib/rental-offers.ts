@@ -897,7 +897,17 @@ export function formatListingHeadlineUnitLabel(offer: OfferDurationTerms): strin
   return LISTING_UNIT_SLASH_LABELS[offer.billingBasis] ?? formatOfferBillingUnitPhrase(offer);
 }
 
-export function resolveMotorcycleRentalOffers(motorcycle: any): NormalizedRentalOffer[] {
+export interface MotorcyclePricingRecord {
+  id?: string | null;
+  rental_offers?: unknown;
+  rental_rate_tiers?: any[] | null;
+  rental_rate_per_day?: number | null;
+  rental_rate_currency?: string | null;
+}
+
+export function resolveMotorcycleRentalOffers(
+  motorcycle: MotorcyclePricingRecord | null | undefined
+): NormalizedRentalOffer[] {
   const rawCurrency =
     typeof motorcycle?.rental_rate_currency === 'string' &&
     motorcycle.rental_rate_currency.trim().length > 0
@@ -912,43 +922,31 @@ export function resolveMotorcycleRentalOffers(motorcycle: any): NormalizedRental
   });
 }
 
-export function getStandaloneDailyRate(motorcycle: any): number | null {
-  const canonicalOffers = hydrateRentalOffersFromRows(motorcycle?.rental_offers);
-  if (canonicalOffers.length > 0) {
-    const dailyOffers = canonicalOffers
-      .filter((o) => o.offerType === 'daily')
-      .sort((a, b) => a.minDuration - b.minDuration || a.sortOrder - b.sortOrder || a.amount - b.amount);
-    return dailyOffers.length > 0 ? dailyOffers[0].amount : null;
-  }
-
-  if (Array.isArray(motorcycle?.rental_rate_tiers) && motorcycle.rental_rate_tiers.length > 0) {
-    const validTiers = motorcycle.rental_rate_tiers.filter((t: any) => {
-      const minDays = t?.min_days ?? 1;
-      return (
-        typeof t?.rate_per_day === 'number' &&
-        Number.isFinite(t.rate_per_day) &&
-        t.rate_per_day > 0 &&
-        typeof minDays === 'number' &&
-        Number.isInteger(minDays) &&
-        minDays >= 1
-      );
-    });
-    if (validTiers.length > 0) {
-      const shortestTier = validTiers.reduce((prev: any, curr: any) =>
-        (prev.min_days ?? 1) <= (curr.min_days ?? 1) ? prev : curr
-      );
-      return shortestTier.rate_per_day;
-    }
-  }
-
-  return typeof motorcycle?.rental_rate_per_day === 'number' &&
-    Number.isFinite(motorcycle.rental_rate_per_day) &&
-    motorcycle.rental_rate_per_day > 0
-    ? motorcycle.rental_rate_per_day
-    : null;
+export function getStandaloneDailyRate(
+  motorcycle: MotorcyclePricingRecord | null | undefined
+): number | null {
+  const dailyOffers = resolveMotorcycleRentalOffers(motorcycle)
+    .filter((o) => o.offerType === 'daily')
+    .sort((a, b) => a.minDuration - b.minDuration || a.sortOrder - b.sortOrder || a.amount - b.amount);
+  return dailyOffers.length > 0 ? dailyOffers[0].amount : null;
 }
 
-export function resolveListingHeadline(motorcycle: any): {
+export function matchesDailyPriceRange(
+  motorcycle: MotorcyclePricingRecord | null | undefined,
+  minPrice?: number,
+  maxPrice?: number
+): boolean {
+  if (minPrice === undefined && maxPrice === undefined) return true;
+  const effectiveRate = getStandaloneDailyRate(motorcycle);
+  if (effectiveRate === null) return false;
+  if (minPrice !== undefined && effectiveRate < minPrice) return false;
+  if (maxPrice !== undefined && effectiveRate > maxPrice) return false;
+  return true;
+}
+
+export function resolveListingHeadline(
+  motorcycle: MotorcyclePricingRecord | null | undefined
+): {
   headlineOffer: NormalizedRentalOffer | null;
   showFrom: boolean;
   unitLabel: string | null;
@@ -969,13 +967,16 @@ export function resolveListingHeadline(motorcycle: any): {
   };
 }
 
-function compareMotorcycleIds(a: any, b: any): number {
+function compareMotorcycleIds(
+  a: MotorcyclePricingRecord | null | undefined,
+  b: MotorcyclePricingRecord | null | undefined
+): number {
   return String(a?.id ?? '').localeCompare(String(b?.id ?? ''));
 }
 
 export function compareMotorcyclesByPrice(
-  a: any,
-  b: any,
+  a: MotorcyclePricingRecord | null | undefined,
+  b: MotorcyclePricingRecord | null | undefined,
   direction: 'asc' | 'desc'
 ): number {
   const dailyA = getStandaloneDailyRate(a);

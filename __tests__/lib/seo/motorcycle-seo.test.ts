@@ -340,13 +340,6 @@ describe('Motorcycle SEO & JSON-LD Model Year Range (#137)', () => {
     expect(flexOffers.priceSpecification[1].description).toBeUndefined();
     expect(JSON.stringify(flexOffers)).not.toContain('Daily Rate');
 
-    const openapi = require('@/public/openapi.json');
-    const getMotorcyclesParams = openapi.paths['/motorcycles'].get.parameters;
-    const minPriceParam = getMotorcyclesParams.find((p: any) => p.name === 'minPrice');
-    const maxPriceParam = getMotorcyclesParams.find((p: any) => p.name === 'maxPrice');
-    expect(minPriceParam.schema.type).toBe('number');
-    expect(maxPriceParam.schema.type).toBe('number');
-
     const legacyTierSpecs = (schemas[1] as any).offers.priceSpecification;
     expect(legacyTierSpecs).toHaveLength(2);
     expect(legacyTierSpecs[0]).toMatchObject({

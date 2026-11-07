@@ -270,7 +270,7 @@ it('exposes verbatim non-daily rentalOffers and real billing phrases with dailyR
     });
     expect(detailData.rentalOffers).toHaveLength(2);
 
-    // Unpriced motorcycle without currency must NOT invent 'THB' or 'USD'
+    // Legacy row with scalar rate but null currency must return dailyRate: null + Price on request
     mockGetMotorcycles.mockResolvedValueOnce({
         total: 1,
         motorcycles: [
@@ -280,7 +280,7 @@ it('exposes verbatim non-daily rentalOffers and real billing phrases with dailyR
                 year: 2024,
                 brands: { name: 'Honda' },
                 categories: { name: 'Scooter' },
-                rental_rate_per_day: null,
+                rental_rate_per_day: 250,
                 rental_rate_currency: null,
                 rental_rate_tiers: [],
                 rental_offers: [],
