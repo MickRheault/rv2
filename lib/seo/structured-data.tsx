@@ -4,6 +4,7 @@ import { SITE_CONFIG } from './config';
 import { getShopUrl } from '@/lib/utils/urls';
 import { formatMotorcycleYear, type MotorcycleYearRangeInput } from '@/lib/utils';
 import {
+  formatBillingIncrementPhrase,
   formatDurationUnitLabel,
   formatExtensionBillingPhrase,
   formatOfferBillingUnitPhrase,
@@ -478,6 +479,10 @@ export function generateOfferPricingSchema(rentalOffers: NormalizedRentalOffer[]
       offer.minCommitment && offer.minCommitment.unit === offer.durationUnit
         ? Math.max(offer.minDuration, offer.minCommitment.value)
         : offer.minDuration;
+    const boundedMinValue =
+      offer.maxDuration !== null && effectiveMinInOfferUnit > offer.maxDuration
+        ? offer.minDuration
+        : effectiveMinInOfferUnit;
 
     const name = offer.supplierLabel
       ? offer.isFrom
@@ -486,6 +491,9 @@ export function generateOfferPricingSchema(rentalOffers: NormalizedRentalOffer[]
       : `${offer.isFrom ? 'From ' : ''}${offer.amount} ${offer.currency} ${formatOfferBillingUnitPhrase(offer)}`;
 
     const detailClauses: string[] = [];
+    if (typeof offer.dailyEquivalent === 'number') {
+      detailClauses.push(`${offer.dailyEquivalent} ${offer.currency}/day daily equivalent`);
+    }
     if (offer.minCommitment) {
       detailClauses.push(
         `Min. commitment: ${offer.minCommitment.value} ${formatDurationUnitLabel(
@@ -495,12 +503,7 @@ export function generateOfferPricingSchema(rentalOffers: NormalizedRentalOffer[]
       );
     }
     if (offer.billingIncrement) {
-      detailClauses.push(
-        `Billed in ${offer.billingIncrement.value}-${formatDurationUnitLabel(
-          offer.billingIncrement.unit,
-          1
-        )} increments`
-      );
+      detailClauses.push(formatBillingIncrementPhrase(offer.billingIncrement));
     }
     for (const ext of offer.extensions || []) {
       detailClauses.push(
@@ -524,7 +527,7 @@ export function generateOfferPricingSchema(rentalOffers: NormalizedRentalOffer[]
       },
       eligibleQuantity: {
         '@type': 'QuantitativeValue',
-        minValue: effectiveMinInOfferUnit,
+        minValue: boundedMinValue,
         ...(offer.maxDuration !== null ? { maxValue: offer.maxDuration } : {}),
         unitCode: unitMeta.unitCode,
         unitText: unitMeta.unitText,

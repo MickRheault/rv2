@@ -71,7 +71,7 @@ describe('Motorcycle SEO & JSON-LD Model Year Range (#137)', () => {
   });
 
   it('emits accurate Schema.org UnitPriceSpecification units and meta descriptions for flexible non-daily offers (#210)', () => {
-    const seo = generateMotorcycleSEO({
+    const exactSeo = generateMotorcycleSEO({
       id: 'bike-2',
       brand: 'Honda',
       model: 'Forza 350',
@@ -84,10 +84,30 @@ describe('Motorcycle SEO & JSON-LD Model Year Range (#137)', () => {
         durationUnit: 'calendar_month',
         minDuration: 1,
         maxDuration: null,
+        isFrom: false,
       },
     });
-    expect(seo.description).toContain('from THB 6,000 per calendar month');
-    expect(seo.description).not.toContain('/day');
+    expect(exactSeo.description).toContain('at THB 6,000 per calendar month');
+    expect(exactSeo.description).not.toContain('from THB 6,000');
+    expect(exactSeo.description).not.toContain('/day');
+
+    const fromSeo = generateMotorcycleSEO({
+      id: 'bike-2',
+      brand: 'Honda',
+      model: 'Forza 350',
+      year: 2024,
+      location: 'Bangkok',
+      headlineOffer: {
+        amount: 6000,
+        currency: 'THB',
+        billingBasis: 'per_calendar_month',
+        durationUnit: 'calendar_month',
+        minDuration: 1,
+        maxDuration: null,
+        isFrom: true,
+      },
+    });
+    expect(fromSeo.description).toContain('from THB 6,000 per calendar month');
 
     const enhanced = generateEnhancedMotorcycleSchema({
       id: 'bike-2',
@@ -102,8 +122,8 @@ describe('Motorcycle SEO & JSON-LD Model Year Range (#137)', () => {
           billingBasis: 'per_hour',
           durationUnit: 'hour',
           minDuration: 1,
-          maxDuration: 8,
-          minCommitment: { value: 1, unit: 'day' },
+          maxDuration: 2,
+          minCommitment: { value: 4, unit: 'hour' },
           billingIncrement: { value: 30, unit: 'minute' },
           supplierLabel: 'City Pass',
           isFrom: true,
@@ -172,12 +192,15 @@ describe('Motorcycle SEO & JSON-LD Model Year Range (#137)', () => {
       eligibleQuantity: {
         '@type': 'QuantitativeValue',
         minValue: 1,
-        maxValue: 8,
+        maxValue: 2,
         unitCode: 'HUR',
       },
     });
+    expect(specs[0].eligibleQuantity.minValue).toBeLessThanOrEqual(
+      specs[0].eligibleQuantity.maxValue
+    );
     expect(specs[0].description).toContain('30-minute increments');
-    expect(specs[0].description).toContain('Min. commitment: 1 day');
+    expect(specs[0].description).toContain('Min. commitment: 4 hours');
     expect(specs[1]).toMatchObject({
       '@type': 'UnitPriceSpecification',
       name: 'Weekly Package',
@@ -185,6 +208,7 @@ describe('Motorcycle SEO & JSON-LD Model Year Range (#137)', () => {
       priceCurrency: 'THB',
       referenceQuantity: { '@type': 'QuantitativeValue', value: 7, unitCode: 'DAY' },
     });
+    expect(specs[1].description).toContain('428.57 THB/day daily equivalent');
     expect(specs[1].description).toContain('450 THB per extra day');
     expect(specs[2]).toMatchObject({
       '@type': 'UnitPriceSpecification',

@@ -14,7 +14,11 @@ import LocationHeroBanner from '@/components/location/LocationHeroBanner'
 import { generateMetadata as generateSEOMetadata, generateMotorcycleSEO } from '@/lib/seo/config'
 import { StructuredData, generateEnhancedMotorcycleSchema } from '@/lib/seo/structured-data'
 import { generateSlug, formatLocationName } from '@/lib/utils'
-import { hydrateRentalOffersFromRows, selectPrimaryHeadlineOffer } from '@/lib/rental-offers'
+import {
+  hydrateRentalOffersFromRows,
+  selectPrimaryHeadlineOffer,
+  shouldShowHeadlineFromPrefix,
+} from '@/lib/rental-offers'
 
 export const revalidate = 86400 // Revalidate every 24 hours
 
@@ -39,7 +43,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
             const motorcycle = await getMotorcycleById(id)
 
             const offers = hydrateRentalOffersFromRows((motorcycle as any).rental_offers)
-            const headlineOffer = selectPrimaryHeadlineOffer(offers)
+            const primaryHeadline = selectPrimaryHeadlineOffer(offers)
+            const headlineOffer = primaryHeadline
+                ? {
+                      ...primaryHeadline,
+                      isFrom: shouldShowHeadlineFromPrefix(offers, primaryHeadline),
+                  }
+                : null
 
             const seoConfig = generateMotorcycleSEO({
                 id: (motorcycle as any).id,

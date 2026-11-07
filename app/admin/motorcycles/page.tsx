@@ -180,17 +180,26 @@ function MotorcyclesAdminContent() {
         );
         setSuccess('Motorcycle updated successfully');
       } else {
-        const created = await motorcycleService.createMotorcycle(submissionData as MotorcycleInsert);
-        if (submissionData.rental_rate_per_day && submissionData.rental_rate_per_day > 0) {
-          await fetch(`/api/admin/motorcycles/${created.id}/offers`, {
+        const {
+          rental_rate_per_day: initialDailyRate,
+          rental_rate_currency: initialCurrency,
+          ...createMetadata
+        } = submissionData;
+        const created = await motorcycleService.createMotorcycle({
+          ...createMetadata,
+          rental_rate_per_day: null,
+          rental_rate_currency: null,
+        } as MotorcycleInsert);
+        if (initialDailyRate && initialDailyRate > 0) {
+          const offersRes = await fetch(`/api/admin/motorcycles/${created.id}/offers`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               offers: [
                 {
                   offerType: 'daily',
-                  amount: submissionData.rental_rate_per_day,
-                  currency: (submissionData.rental_rate_currency || 'USD').toUpperCase(),
+                  amount: initialDailyRate,
+                  currency: (initialCurrency || 'USD').toUpperCase(),
                   billingBasis: 'per_day',
                   durationUnit: 'day',
                   minDuration: 1,
@@ -199,6 +208,11 @@ function MotorcyclesAdminContent() {
               ],
             }),
           });
+          if (!offersRes.ok) {
+            await motorcycleService.deleteMotorcycle(created.id).catch(() => {});
+            const errPayload = await offersRes.json().catch(() => ({}));
+            throw new Error(errPayload?.error || 'Failed to save initial rental offers');
+          }
         }
         setSuccess('Motorcycle created successfully');
       }
@@ -302,6 +316,7 @@ function MotorcyclesAdminContent() {
   const handleCloseOffersModal = () => {
     setShowOffersModal(false);
     setOffersMotorcycle(null);
+    void loadMotorcycles();
   };
 
   // Selection handlers

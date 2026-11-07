@@ -725,8 +725,63 @@ export function convertLegacyRateTiersToOffers(rateTiers: any[]): NormalizedRent
   return validateAndNormalizeRentalOffers(mapped, { fieldPath: 'rate_tiers' });
 }
 
-export function hasNonDailyOrExtensionOffers(offers: NormalizedRentalOffer[]): boolean {
-  return offers.some((o) => o.offerType !== 'daily' || o.extensions.length > 0);
+export function hasUnrepresentableLegacyDailyOffers(offers: NormalizedRentalOffer[]): boolean {
+  return offers.some(
+    (o) =>
+      o.offerType !== 'daily' ||
+      o.extensions.length > 0 ||
+      o.supplierLabel !== null ||
+      o.minCommitment !== null ||
+      o.billingIncrement !== null ||
+      o.isFrom === true
+  );
+}
+
+export const hasNonDailyOrExtensionOffers = hasUnrepresentableLegacyDailyOffers;
+
+export function resolveFallbackRentalOffers(input: {
+  rentalOffersRows?: any;
+  rentalRateTiers?: any[] | null;
+  rentalRatePerDay?: number | null;
+  rentalRateCurrency?: string | null;
+  strictTierValidation?: boolean;
+}): NormalizedRentalOffer[] {
+  const hydrated = hydrateRentalOffersFromRows(input.rentalOffersRows);
+  if (hydrated.length > 0) {
+    return hydrated;
+  }
+
+  if (Array.isArray(input.rentalRateTiers) && input.rentalRateTiers.length > 0) {
+    if (input.strictTierValidation) {
+      return convertLegacyRateTiersToOffers(input.rentalRateTiers);
+    }
+    try {
+      return convertLegacyRateTiersToOffers(input.rentalRateTiers);
+    } catch {
+      // Fall through to scalar fallback if un-backfilled fractional legacy tiers exist
+    }
+  }
+
+  if (
+    typeof input.rentalRatePerDay === 'number' &&
+    input.rentalRatePerDay > 0 &&
+    typeof input.rentalRateCurrency === 'string' &&
+    input.rentalRateCurrency.trim().length === 3
+  ) {
+    return validateAndNormalizeRentalOffers([
+      {
+        offerType: 'daily',
+        amount: Number(input.rentalRatePerDay),
+        currency: input.rentalRateCurrency.trim().toUpperCase(),
+        billingBasis: 'per_day',
+        durationUnit: 'day',
+        minDuration: 1,
+        maxDuration: null,
+      },
+    ]);
+  }
+
+  return [];
 }
 
 export function projectOffersToLegacyDaily(offers: NormalizedRentalOffer[]): LegacyDailyProjection {
@@ -768,11 +823,33 @@ export function selectPrimaryHeadlineOffer(
   const sorted = [...offers].sort((a, b) => {
     const prioDiff = HEADLINE_FALLBACK_PRIORITY[a.offerType] - HEADLINE_FALLBACK_PRIORITY[b.offerType];
     if (prioDiff !== 0) return prioDiff;
-    if (a.minDuration !== b.minDuration) return a.minDuration - b.minDuration;
+    if (a.offerType === 'daily' && b.offerType === 'daily') {
+      if (a.minDuration !== b.minDuration) return a.minDuration - b.minDuration;
+      if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+      return a.amount - b.amount;
+    }
     if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+    if (a.minDuration !== b.minDuration) return a.minDuration - b.minDuration;
     return a.amount - b.amount;
   });
   return sorted[0] ?? null;
+}
+
+export function shouldShowHeadlineFromPrefix(
+  offers: NormalizedRentalOffer[],
+  headlineOffer: NormalizedRentalOffer | null
+): boolean {
+  if (!headlineOffer) return false;
+  if (headlineOffer.isFrom) return true;
+  if (headlineOffer.offerType === 'daily') {
+    return offers.some(
+      (o) =>
+        o.offerType === 'daily' &&
+        o.currency === headlineOffer.currency &&
+        o.amount < headlineOffer.amount
+    );
+  }
+  return false;
 }
 
 export function formatDurationUnitLabel(unit: DurationUnit | BillingIncrementUnit, count: number): string {
@@ -789,6 +866,12 @@ export function formatDurationUnitLabel(unit: DurationUnit | BillingIncrementUni
     calendar_month: 'calendar months',
   };
   return count === 1 ? singular[unit] : plural[unit];
+}
+
+export function formatBillingIncrementPhrase(
+  increment: OfferQuantitySpec<BillingIncrementUnit>
+): string {
+  return `Billed in ${increment.value}-${formatDurationUnitLabel(increment.unit, 1)} increments`;
 }
 
 export function formatOfferBillingUnitPhrase(offer: OfferDurationTerms): string {

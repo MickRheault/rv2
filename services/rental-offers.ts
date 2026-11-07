@@ -1,15 +1,69 @@
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import {
   convertLegacyRateTiersToOffers,
-  hasNonDailyOrExtensionOffers,
+  hasUnrepresentableLegacyDailyOffers,
   hydrateRentalOffersFromRows,
   NormalizedRentalOffer,
   projectOffersToLegacyDaily,
   RentalOfferConflictError,
   RentalOfferNotFoundError,
   RentalOfferValidationError,
+  resolveFallbackRentalOffers,
   validateAndNormalizeRentalOffers,
 } from '@/lib/rental-offers';
+
+export interface SavedMotorcycleOffersAndTiers {
+  offers: NormalizedRentalOffer[];
+  rateTiers: Array<{
+    id?: string;
+    motorcycle_id: string;
+    min_days: number;
+    max_days: number | null;
+    rate_per_day: number;
+    currency: string;
+  }>;
+}
+
+async function fetchSavedOffersAndRateTiers(
+  admin: any,
+  motorcycleId: string
+): Promise<SavedMotorcycleOffersAndTiers> {
+  const [offersRes, tiersRes] = await Promise.all([
+    admin
+      .from('rental_offers')
+      .select('*')
+      .eq('motorcycle_id', motorcycleId)
+      .order('sort_order', { ascending: true }),
+    admin
+      .from('rental_rate_tiers')
+      .select('*')
+      .eq('motorcycle_id', motorcycleId)
+      .order('min_days', { ascending: true }),
+  ]);
+
+  if (offersRes.error) {
+    throw new Error(offersRes.error.message);
+  }
+  if (tiersRes.error) {
+    throw new Error(tiersRes.error.message);
+  }
+
+  return {
+    offers: hydrateRentalOffersFromRows(offersRes.data || []),
+    rateTiers: (tiersRes.data as any[]) || [],
+  };
+}
+
+function applySavedPricingToEntity(
+  motorcycle: Record<string, any>,
+  saved: SavedMotorcycleOffersAndTiers
+): void {
+  const proj = projectOffersToLegacyDaily(saved.offers);
+  motorcycle.rental_offers = saved.offers;
+  motorcycle.rental_rate_tiers = saved.rateTiers;
+  motorcycle.rental_rate_per_day = proj.summaryRatePerDay;
+  motorcycle.rental_rate_currency = proj.summaryCurrency;
+}
 
 export function serializeOffersForRpc(offers: NormalizedRentalOffer[]) {
   const projection = projectOffersToLegacyDaily(offers);
@@ -75,47 +129,25 @@ export async function getMotorcycleRentalOffers(motorcycleId: string): Promise<N
     throw new Error(error.message);
   }
 
-  if (rows && rows.length > 0) {
-    return hydrateRentalOffersFromRows(rows);
-  }
-
   const { data: tierRows } = await admin
     .from('rental_rate_tiers')
     .select('*')
     .eq('motorcycle_id', motorcycleId)
     .order('min_days', { ascending: true });
 
-  if (tierRows && tierRows.length > 0) {
-    return convertLegacyRateTiersToOffers(tierRows);
-  }
-
-  if (
-    typeof (bike as any).rental_rate_per_day === 'number' &&
-    (bike as any).rental_rate_per_day > 0 &&
-    typeof (bike as any).rental_rate_currency === 'string' &&
-    (bike as any).rental_rate_currency.trim().length === 3
-  ) {
-    return validateAndNormalizeRentalOffers([
-      {
-        offerType: 'daily',
-        amount: Number((bike as any).rental_rate_per_day),
-        currency: (bike as any).rental_rate_currency.trim().toUpperCase(),
-        billingBasis: 'per_day',
-        durationUnit: 'day',
-        minDuration: 1,
-        maxDuration: null,
-      },
-    ]);
-  }
-
-  return [];
+  return resolveFallbackRentalOffers({
+    rentalOffersRows: rows,
+    rentalRateTiers: tierRows,
+    rentalRatePerDay: (bike as any).rental_rate_per_day,
+    rentalRateCurrency: (bike as any).rental_rate_currency,
+    strictTierValidation: true,
+  });
 }
 
-export async function replaceMotorcycleRentalOffers(
+async function persistNormalizedOffersAndReadBack(
   motorcycleId: string,
-  rawOffers: unknown
-): Promise<NormalizedRentalOffer[]> {
-  const normalizedOffers = validateAndNormalizeRentalOffers(rawOffers, { fieldPath: 'offers' });
+  normalizedOffers: NormalizedRentalOffer[]
+): Promise<SavedMotorcycleOffersAndTiers> {
   const admin = getSupabaseAdmin();
 
   const { data: bike, error: bikeErr } = await admin
@@ -141,77 +173,31 @@ export async function replaceMotorcycleRentalOffers(
     throw new Error(rpcError.message);
   }
 
-  const { data: savedRows, error: fetchError } = await admin
-    .from('rental_offers')
-    .select('*')
-    .eq('motorcycle_id', motorcycleId)
-    .order('sort_order', { ascending: true });
+  return fetchSavedOffersAndRateTiers(admin, motorcycleId);
+}
 
-  if (fetchError) {
-    throw new Error(fetchError.message);
-  }
-
-  return hydrateRentalOffersFromRows(savedRows || []);
+export async function replaceMotorcycleRentalOffers(
+  motorcycleId: string,
+  rawOffers: unknown
+): Promise<NormalizedRentalOffer[]> {
+  const normalizedOffers = validateAndNormalizeRentalOffers(rawOffers, { fieldPath: 'offers' });
+  const saved = await persistNormalizedOffersAndReadBack(motorcycleId, normalizedOffers);
+  return saved.offers;
 }
 
 export async function replaceMotorcycleRateTiersLegacyCompat(
   motorcycleId: string,
   rawRateTiers: unknown
-): Promise<{
-  rateTiers: Array<{
-    id?: string;
-    motorcycle_id: string;
-    min_days: number;
-    max_days: number | null;
-    rate_per_day: number;
-    currency: string;
-  }>;
-  offers: NormalizedRentalOffer[];
-}> {
+): Promise<SavedMotorcycleOffersAndTiers> {
   const currentOffers = await getMotorcycleRentalOffers(motorcycleId);
-  if (hasNonDailyOrExtensionOffers(currentOffers)) {
+  if (hasUnrepresentableLegacyDailyOffers(currentOffers)) {
     throw new RentalOfferConflictError(
-      'Cannot overwrite flexible non-daily or extension offers via legacy rate-tiers endpoint; use /offers instead.'
+      'Cannot overwrite flexible non-daily, labeled, or extension offers via legacy rate-tiers endpoint; use /offers instead.'
     );
   }
 
   const normalizedOffers = convertLegacyRateTiersToOffers(rawRateTiers as any[]);
-  const admin = getSupabaseAdmin();
-  const rpcPayload = serializeOffersForRpc(normalizedOffers);
-
-  const { error: rpcError } = await (admin as any).rpc('replace_motorcycle_rental_offers', {
-    p_motorcycle_id: motorcycleId,
-    p_payload: rpcPayload,
-  });
-
-  if (rpcError) {
-    throw new Error(rpcError.message);
-  }
-
-  const { data: savedTiers, error: tiersErr } = await admin
-    .from('rental_rate_tiers')
-    .select('*')
-    .eq('motorcycle_id', motorcycleId)
-    .order('min_days', { ascending: true });
-
-  if (tiersErr) {
-    throw new Error(tiersErr.message);
-  }
-
-  const { data: savedRows, error: offersErr } = await admin
-    .from('rental_offers')
-    .select('*')
-    .eq('motorcycle_id', motorcycleId)
-    .order('sort_order', { ascending: true });
-
-  if (offersErr) {
-    throw new Error(offersErr.message);
-  }
-
-  return {
-    rateTiers: (savedTiers as any[]) || [],
-    offers: hydrateRentalOffersFromRows(savedRows || []),
-  };
+  return persistNormalizedOffersAndReadBack(motorcycleId, normalizedOffers);
 }
 
 export interface PreparedMotorcyclePricingMutation {
@@ -246,11 +232,8 @@ export async function prepareMotorcyclePricingMutation(params: {
       summaryRatePerDay: proj.summaryRatePerDay,
       summaryCurrency: proj.summaryCurrency,
       commit: async (motorcycle) => {
-        const savedOffers = await replaceMotorcycleRentalOffers(motorcycle.id, normalized);
-        const savedProj = projectOffersToLegacyDaily(savedOffers);
-        motorcycle.rental_offers = savedOffers;
-        motorcycle.rental_rate_per_day = savedProj.summaryRatePerDay;
-        motorcycle.rental_rate_currency = savedProj.summaryCurrency;
+        const saved = await persistNormalizedOffersAndReadBack(motorcycle.id, normalized);
+        applySavedPricingToEntity(motorcycle, saved);
       },
     };
   }
@@ -258,9 +241,9 @@ export async function prepareMotorcyclePricingMutation(params: {
   if (rentalRateTiers !== undefined) {
     if (motorcycleId) {
       const currentOffers = await getMotorcycleRentalOffers(motorcycleId);
-      if (hasNonDailyOrExtensionOffers(currentOffers)) {
+      if (hasUnrepresentableLegacyDailyOffers(currentOffers)) {
         throw new RentalOfferConflictError(
-          'Cannot overwrite flexible non-daily or extension offers via legacy rental_rate_tiers; use rental_offers instead.'
+          'Cannot overwrite flexible non-daily, labeled, or extension offers via legacy rental_rate_tiers; use rental_offers instead.'
         );
       }
     }
@@ -275,11 +258,7 @@ export async function prepareMotorcyclePricingMutation(params: {
           motorcycle.id,
           rentalRateTiers
         );
-        const savedProj = projectOffersToLegacyDaily(saved.offers);
-        motorcycle.rental_rate_tiers = saved.rateTiers;
-        motorcycle.rental_offers = saved.offers;
-        motorcycle.rental_rate_per_day = savedProj.summaryRatePerDay;
-        motorcycle.rental_rate_currency = savedProj.summaryCurrency;
+        applySavedPricingToEntity(motorcycle, saved);
       },
     };
   }
@@ -292,9 +271,9 @@ export async function prepareMotorcyclePricingMutation(params: {
 
     if (motorcycleId) {
       const currentOffers = await getMotorcycleRentalOffers(motorcycleId);
-      if (hasNonDailyOrExtensionOffers(currentOffers)) {
+      if (hasUnrepresentableLegacyDailyOffers(currentOffers)) {
         throw new RentalOfferConflictError(
-          'Cannot overwrite flexible non-daily or extension offers via scalar rental_rate_per_day; use rental_offers instead.'
+          'Cannot overwrite flexible non-daily, labeled, or extension offers via scalar rental_rate_per_day; use rental_offers instead.'
         );
       }
       if (!fallbackCurrency && currentOffers.length > 0) {
@@ -308,11 +287,8 @@ export async function prepareMotorcyclePricingMutation(params: {
         summaryRatePerDay: null,
         summaryCurrency: fallbackCurrency,
         commit: async (motorcycle) => {
-          const savedOffers = await replaceMotorcycleRentalOffers(motorcycle.id, []);
-          motorcycle.rental_offers = savedOffers;
-          motorcycle.rental_rate_tiers = [];
-          motorcycle.rental_rate_per_day = null;
-          motorcycle.rental_rate_currency = null;
+          const saved = await persistNormalizedOffersAndReadBack(motorcycle.id, []);
+          applySavedPricingToEntity(motorcycle, saved);
         },
       };
     }
@@ -344,22 +320,92 @@ export async function prepareMotorcyclePricingMutation(params: {
       summaryRatePerDay: proj.summaryRatePerDay,
       summaryCurrency: proj.summaryCurrency,
       commit: async (motorcycle) => {
-        const savedOffers = await replaceMotorcycleRentalOffers(motorcycle.id, synthesized);
-        const savedProj = projectOffersToLegacyDaily(savedOffers);
-        motorcycle.rental_offers = savedOffers;
-        motorcycle.rental_rate_per_day = savedProj.summaryRatePerDay;
-        motorcycle.rental_rate_currency = savedProj.summaryCurrency;
+        const saved = await persistNormalizedOffersAndReadBack(motorcycle.id, synthesized);
+        applySavedPricingToEntity(motorcycle, saved);
       },
     };
   }
 
-  if (scalarCurrency !== undefined && motorcycleId) {
-    const currentOffers = await getMotorcycleRentalOffers(motorcycleId);
-    if (hasNonDailyOrExtensionOffers(currentOffers)) {
-      throw new RentalOfferConflictError(
-        'Cannot overwrite currency on flexible non-daily or extension offers via scalar rental_rate_currency; use rental_offers instead.'
+  if (scalarCurrency !== undefined) {
+    if (scalarCurrency === null) {
+      if (motorcycleId) {
+        const currentOffers = await getMotorcycleRentalOffers(motorcycleId);
+        if (currentOffers.length > 0) {
+          throw new RentalOfferConflictError(
+            'Cannot clear rental_rate_currency while rental offers exist; update or clear rental_offers instead.'
+          );
+        }
+      }
+      return {
+        hasPricingMutation: true,
+        summaryRatePerDay: null,
+        summaryCurrency: null,
+        commit: async (motorcycle) => {
+          if (motorcycle && typeof motorcycle === 'object') {
+            motorcycle.rental_offers = hydrateRentalOffersFromRows(motorcycle.rental_offers);
+            motorcycle.rental_rate_tiers = Array.isArray(motorcycle.rental_rate_tiers)
+              ? motorcycle.rental_rate_tiers
+              : [];
+          }
+        },
+      };
+    }
+
+    const normalizedCurrency =
+      typeof scalarCurrency === 'string' ? scalarCurrency.trim().toUpperCase() : '';
+    if (!/^[A-Z]{3}$/.test(normalizedCurrency)) {
+      throw new RentalOfferValidationError(
+        'rental_rate_currency must be a 3-letter ISO currency code'
       );
     }
+
+    if (motorcycleId) {
+      const currentOffers = await getMotorcycleRentalOffers(motorcycleId);
+      if (hasUnrepresentableLegacyDailyOffers(currentOffers)) {
+        throw new RentalOfferConflictError(
+          'Cannot overwrite currency on flexible non-daily, labeled, or extension offers via scalar rental_rate_currency; use rental_offers instead.'
+        );
+      }
+
+      if (currentOffers.length > 0) {
+        const rewritten = validateAndNormalizeRentalOffers(
+          currentOffers.map((o) => ({
+            offerType: o.offerType,
+            amount: o.amount,
+            currency: normalizedCurrency,
+            billingBasis: o.billingBasis,
+            durationUnit: o.durationUnit,
+            minDuration: o.minDuration,
+            maxDuration: o.maxDuration,
+          })),
+          { fieldPath: 'rental_offers' }
+        );
+        const proj = projectOffersToLegacyDaily(rewritten);
+        return {
+          hasPricingMutation: true,
+          summaryRatePerDay: proj.summaryRatePerDay,
+          summaryCurrency: proj.summaryCurrency,
+          commit: async (motorcycle) => {
+            const saved = await persistNormalizedOffersAndReadBack(motorcycle.id, rewritten);
+            applySavedPricingToEntity(motorcycle, saved);
+          },
+        };
+      }
+    }
+
+    return {
+      hasPricingMutation: true,
+      summaryRatePerDay: null,
+      summaryCurrency: normalizedCurrency,
+      commit: async (motorcycle) => {
+        if (motorcycle && typeof motorcycle === 'object') {
+          motorcycle.rental_offers = hydrateRentalOffersFromRows(motorcycle.rental_offers);
+          motorcycle.rental_rate_tiers = Array.isArray(motorcycle.rental_rate_tiers)
+            ? motorcycle.rental_rate_tiers
+            : [];
+        }
+      },
+    };
   }
 
   return {
@@ -367,6 +413,9 @@ export async function prepareMotorcyclePricingMutation(params: {
     commit: async (motorcycle) => {
       if (motorcycle && typeof motorcycle === 'object') {
         motorcycle.rental_offers = hydrateRentalOffersFromRows(motorcycle.rental_offers);
+        motorcycle.rental_rate_tiers = Array.isArray(motorcycle.rental_rate_tiers)
+          ? motorcycle.rental_rate_tiers
+          : [];
       }
     },
   };

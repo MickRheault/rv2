@@ -1060,6 +1060,7 @@ export const motorcycleService = {
         ),
         brands (*),
         categories (*),
+        rental_rate_tiers (*),
         rental_offers (
           ${MOTORCYCLE_LISTING_OFFERS_COLUMNS}
         )
@@ -1094,6 +1095,7 @@ export const motorcycleService = {
         ),
         brands (*),
         categories (*),
+        rental_rate_tiers (*),
         rental_offers (
           ${MOTORCYCLE_LISTING_OFFERS_COLUMNS}
         )

@@ -3,18 +3,13 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
 import { NextRequest } from 'next/server';
-import { successResponse, errors } from '@/lib/api/response';
+import { successResponse, errors, mapRentalOfferErrorToResponse } from '@/lib/api/response';
 import { requireAuth } from '@/lib/api/middleware';
 import { rateLimit, getRateLimitHeaders } from '@/lib/api/rate-limit';
 import {
   getMotorcycleRentalOffers,
   replaceMotorcycleRentalOffers,
 } from '@/services/rental-offers';
-import {
-  RentalOfferConflictError,
-  RentalOfferNotFoundError,
-  RentalOfferValidationError,
-} from '@/lib/rental-offers';
 import { purgePublicCache } from '@/lib/cache/purgePublicCache';
 
 interface RouteParams {
@@ -52,9 +47,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     return response;
   } catch (error) {
-    if (error instanceof RentalOfferNotFoundError) {
-      return errors.notFound('Motorcycle');
-    }
+    const mapped = mapRentalOfferErrorToResponse(error);
+    if (mapped) return mapped;
     console.error('Error fetching motorcycle rental offers:', error);
     return errors.internal('Failed to fetch rental offers');
   }
@@ -97,15 +91,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     return successResponse({ offers });
   } catch (error) {
-    if (error instanceof RentalOfferValidationError) {
-      return errors.badRequest(error.message);
-    }
-    if (error instanceof RentalOfferConflictError) {
-      return errors.conflict(error.message);
-    }
-    if (error instanceof RentalOfferNotFoundError) {
-      return errors.notFound('Motorcycle');
-    }
+    const mapped = mapRentalOfferErrorToResponse(error);
+    if (mapped) return mapped;
     console.error('Error updating motorcycle rental offers:', error);
     return errors.internal('Failed to update rental offers');
   }

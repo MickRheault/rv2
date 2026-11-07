@@ -9,6 +9,7 @@ import Badge from '@/components/ui/Badge';
 import Spinner from '@/components/ui/Spinner';
 import {
   computeDailyEquivalent,
+  formatBillingIncrementPhrase,
   formatDurationUnitLabel,
   formatExtensionBillingPhrase,
   formatOfferBillingUnitPhrase,
@@ -584,14 +585,7 @@ export function RentalOffersModal({
                             </span>
                           )}
                           {offer.billingIncrement && (
-                            <span>
-                              Billed in {offer.billingIncrement.value}-
-                              {formatDurationUnitLabel(
-                                offer.billingIncrement.unit,
-                                1
-                              )}{' '}
-                              increments
-                            </span>
+                            <span>{formatBillingIncrementPhrase(offer.billingIncrement)}</span>
                           )}
                         </div>
                       </div>

@@ -250,7 +250,8 @@ export function generateMotorcycleSEO(
       maximumFractionDigits: Number.isInteger(headlineOffer.amount) ? 0 : 2,
     }).format(headlineOffer.amount);
     const unitPhrase = formatOfferBillingUnitPhrase(headlineOffer);
-    priceText = ` from ${headlineOffer.currency.trim()} ${formattedAmt} ${unitPhrase}`;
+    const prefix = headlineOffer.isFrom ? 'from' : 'at';
+    priceText = ` ${prefix} ${headlineOffer.currency.trim()} ${formattedAmt} ${unitPhrase}`;
   } else if (pricePerDay && currency) {
     priceText = ` from ${currency}${pricePerDay}/day`;
   } else if (pricePerDay) {

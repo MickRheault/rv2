@@ -244,4 +244,98 @@ describe('MotorcycleDetails Flexible Rental Offers Display (#210)', () => {
     // Security deposit still uses THB currency
     expect(screen.getByText(/5,000/)).toBeInTheDocument();
   });
+
+  it('shows From prefix in header when a lower multi-day daily bracket exists and orders non-daily headline by sortOrder before minDuration', () => {
+    const tieredDailyBike = buildBaseMotorcycle({
+      rental_rate_per_day: 500,
+      rental_rate_currency: 'THB',
+      rental_offers: [
+        {
+          id: 'd-1',
+          offerType: 'daily',
+          amount: 500,
+          currency: 'THB',
+          billingBasis: 'per_day',
+          durationUnit: 'day',
+          minDuration: 1,
+          maxDuration: 6,
+          minCommitment: null,
+          billingIncrement: null,
+          supplierLabel: null,
+          isFrom: false,
+          sortOrder: 0,
+          dailyEquivalent: null,
+          extensions: [],
+        },
+        {
+          id: 'd-2',
+          offerType: 'daily',
+          amount: 400,
+          currency: 'THB',
+          billingBasis: 'per_day',
+          durationUnit: 'day',
+          minDuration: 7,
+          maxDuration: null,
+          minCommitment: null,
+          billingIncrement: null,
+          supplierLabel: null,
+          isFrom: false,
+          sortOrder: 1,
+          dailyEquivalent: null,
+          extensions: [],
+        },
+      ],
+    });
+
+    const { unmount } = render(<MotorcycleDetails motorcycle={tieredDailyBike} />);
+    expect(screen.getByText(/From\s+THB\s*500/i)).toBeInTheDocument();
+    unmount();
+
+    // Package at sortOrder 0 (7 days) should beat Package at sortOrder 1 (3 calendar months) even though 3 < 7
+    const packageOrderBike = buildBaseMotorcycle({
+      rental_rate_per_day: null,
+      rental_rate_currency: 'THB',
+      rental_offers: [
+        {
+          id: 'pkg-first',
+          offerType: 'package',
+          amount: 3000,
+          currency: 'THB',
+          billingBasis: 'package_total',
+          durationUnit: 'day',
+          minDuration: 7,
+          maxDuration: 7,
+          minCommitment: null,
+          billingIncrement: null,
+          supplierLabel: null,
+          isFrom: false,
+          sortOrder: 0,
+          dailyEquivalent: 428.57,
+          extensions: [],
+        },
+        {
+          id: 'pkg-second',
+          offerType: 'package',
+          amount: 16500,
+          currency: 'THB',
+          billingBasis: 'package_total',
+          durationUnit: 'calendar_month',
+          minDuration: 3,
+          maxDuration: 3,
+          minCommitment: null,
+          billingIncrement: null,
+          supplierLabel: null,
+          isFrom: false,
+          sortOrder: 1,
+          dailyEquivalent: null,
+          extensions: [],
+        },
+      ],
+    });
+
+    render(<MotorcycleDetails motorcycle={packageOrderBike} />);
+    // Header and card both show 'for 7 days' (2 occurrences), whereas 'for 3 calendar months' appears only in card (1 occurrence)
+    expect(screen.getAllByText(/for 7 days/i)).toHaveLength(2);
+    expect(screen.getAllByText(/for 3 calendar months/i)).toHaveLength(1);
+  });
 });

@@ -6,6 +6,7 @@ import { NextRequest } from 'next/server';
 import {
   successResponse,
   errors,
+  mapRentalOfferErrorToResponse,
   parsePaginationParams,
   parseSortParams,
 } from '@/lib/api/response';
@@ -13,10 +14,6 @@ import { requireAuth } from '@/lib/api/middleware';
 import { rateLimit, getRateLimitHeaders } from '@/lib/api/rate-limit';
 import { motorcycleService } from '@/services/motorcycles';
 import { prepareMotorcyclePricingMutation } from '@/services/rental-offers';
-import {
-  RentalOfferConflictError,
-  RentalOfferValidationError,
-} from '@/lib/rental-offers';
 import { parseAndValidateMotorcycleYearPayload } from '@/lib/utils';
 import { purgePublicCache } from '@/lib/cache/purgePublicCache';
 
@@ -150,12 +147,8 @@ export async function POST(request: NextRequest) {
 
     return successResponse(motorcycle, undefined, 201);
   } catch (error) {
-    if (error instanceof RentalOfferValidationError) {
-      return errors.badRequest(error.message);
-    }
-    if (error instanceof RentalOfferConflictError) {
-      return errors.conflict(error.message);
-    }
+    const mapped = mapRentalOfferErrorToResponse(error);
+    if (mapped) return mapped;
     console.error('Error creating motorcycle:', error);
     if (error instanceof Error) {
       return errors.badRequest(error.message);

@@ -690,4 +690,86 @@ describe('REST v1 Motorcycle Rental Offers API (#210)', () => {
     );
     expect(conflictPatchRes.status).toBe(409);
   });
+
+  it('includes rental_rate_tiers on POST/PUT/PATCH, syncs scalar currency-only updates, and guards labeled daily offers (#210 Pass 2)', async () => {
+    // 1. POST returns both rental_offers and rental_rate_tiers
+    const createRes = await createMotorcycle(
+      new NextRequest('http://localhost:3000/api/v1/motorcycles', {
+        method: 'POST',
+        body: JSON.stringify({
+          model: 'Currency Sync 150',
+          shop_id: RIDE_ON_SHOP_ID,
+          category_id: SCOOTER_CAT_ID,
+          rental_rate_per_day: 300,
+          rental_rate_currency: 'THB',
+        }),
+      })
+    );
+    expect(createRes.status).toBe(201);
+    const created = (await createRes.json()).data;
+    expect(Array.isArray(created.rental_rate_tiers)).toBe(true);
+    expect(created.rental_rate_tiers).toHaveLength(1);
+    expect(created.rental_rate_tiers[0]).toMatchObject({
+      min_days: 1,
+      rate_per_day: 300,
+      currency: 'THB',
+    });
+
+    // 2. PATCH updating only rental_rate_currency updates rental_offers and rental_rate_tiers atomically
+    const currencyPatchRes = await patchMotorcycleById(
+      new NextRequest(`http://localhost:3000/api/v1/motorcycles/${created.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ rental_rate_currency: 'USD' }),
+      }),
+      { params: Promise.resolve({ id: created.id }) }
+    );
+    expect(currencyPatchRes.status).toBe(200);
+    const currencyPatched = (await currencyPatchRes.json()).data;
+    expect(currencyPatched.rental_rate_currency).toBe('USD');
+    expect(currencyPatched.rental_offers[0].currency).toBe('USD');
+    expect(currencyPatched.rental_rate_tiers[0].currency).toBe('USD');
+
+    // 3. Labeled daily offers cannot be silently wiped by legacy /rate-tiers or scalar writes
+    const labeledRes = await putMotorcycleOffers(
+      new NextRequest(`http://localhost:3000/api/v1/motorcycles/${created.id}/offers`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          offers: [
+            {
+              offerType: 'daily',
+              amount: 350,
+              currency: 'USD',
+              billingBasis: 'per_day',
+              durationUnit: 'day',
+              minDuration: 1,
+              maxDuration: null,
+              supplierLabel: 'VIP Full Coverage Daily',
+            },
+          ],
+        }),
+      }),
+      { params: Promise.resolve({ id: created.id }) }
+    );
+    expect(labeledRes.status).toBe(200);
+
+    const legacyTierOverwrite = await putMotorcycleRateTiers(
+      new NextRequest(`http://localhost:3000/api/v1/motorcycles/${created.id}/rate-tiers`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          rate_tiers: [{ min_days: 1, max_days: null, rate_per_day: 300, currency: 'USD' }],
+        }),
+      }),
+      { params: Promise.resolve({ id: created.id }) }
+    );
+    expect(legacyTierOverwrite.status).toBe(409);
+
+    const scalarOverwrite = await patchMotorcycleById(
+      new NextRequest(`http://localhost:3000/api/v1/motorcycles/${created.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ rental_rate_per_day: 280 }),
+      }),
+      { params: Promise.resolve({ id: created.id }) }
+    );
+    expect(scalarOverwrite.status).toBe(409);
+  });
 });

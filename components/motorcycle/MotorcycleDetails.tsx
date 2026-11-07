@@ -21,13 +21,14 @@ import { isMotorcycleAvailable } from '@/services/shops'
 import { getShopUrl } from '@/lib/utils/urls'
 import { formatMotorcycleYear } from '@/lib/utils'
 import {
-  convertLegacyRateTiersToOffers,
+  formatBillingIncrementPhrase,
   formatDurationUnitLabel,
   formatExtensionBillingPhrase,
   formatOfferBillingUnitPhrase,
   formatOfferDurationRangeLabel,
-  hydrateRentalOffersFromRows,
+  resolveFallbackRentalOffers,
   selectPrimaryHeadlineOffer,
+  shouldShowHeadlineFromPrefix,
   sortRentalOffersForDisplay,
   type NormalizedRentalOffer,
   type StandaloneOfferType,
@@ -48,41 +49,13 @@ const OFFER_TYPE_LABELS: Record<StandaloneOfferType, string> = {
 }
 
 function resolveDisplayOffers(motorcycle: MotorcycleWithDetails): NormalizedRentalOffer[] {
-  const hydrated = hydrateRentalOffersFromRows((motorcycle as any).rental_offers)
-  if (hydrated.length > 0) {
-    return sortRentalOffersForDisplay(hydrated)
-  }
-
-  if (motorcycle.rental_rate_tiers && motorcycle.rental_rate_tiers.length > 0) {
-    try {
-      return sortRentalOffersForDisplay(convertLegacyRateTiersToOffers(motorcycle.rental_rate_tiers))
-    } catch {
-      // Fallback for any historical fractional rows if encountered un-backfilled
-    }
-  }
-
-  if (motorcycle.rental_rate_per_day && motorcycle.rental_rate_per_day > 0 && motorcycle.rental_rate_currency) {
-    return [
-      {
-        offerType: 'daily',
-        amount: motorcycle.rental_rate_per_day,
-        currency: motorcycle.rental_rate_currency.trim().toUpperCase(),
-        billingBasis: 'per_day',
-        durationUnit: 'day',
-        minDuration: 1,
-        maxDuration: null,
-        minCommitment: null,
-        billingIncrement: null,
-        supplierLabel: null,
-        isFrom: false,
-        sortOrder: 0,
-        dailyEquivalent: null,
-        extensions: [],
-      },
-    ]
-  }
-
-  return []
+  const fallback = resolveFallbackRentalOffers({
+    rentalOffersRows: (motorcycle as any).rental_offers,
+    rentalRateTiers: motorcycle.rental_rate_tiers,
+    rentalRatePerDay: motorcycle.rental_rate_per_day,
+    rentalRateCurrency: motorcycle.rental_rate_currency,
+  })
+  return sortRentalOffersForDisplay(fallback)
 }
 
 export default function MotorcycleDetails({
@@ -143,12 +116,8 @@ export default function MotorcycleDetails({
 
   const offers = resolveDisplayOffers(motorcycle)
   const headlineOffer = selectPrimaryHeadlineOffer(offers)
+  const showHeadlineFrom = shouldShowHeadlineFromPrefix(offers, headlineOffer)
   const fallbackCurrency = rental_rate_currency || headlineOffer?.currency || null
-
-  const formatIncrementLabel = (value: number, unit: string) => {
-    const cleanUnit = unit.replace('_', ' ')
-    return `Billed in ${value}-${cleanUnit} increments`
-  }
 
   return (
     <div className="space-y-6">
@@ -199,7 +168,7 @@ export default function MotorcycleDetails({
         <div className="text-right">
           <div className="text-3xl font-bold text-blue-600">
             {headlineOffer
-              ? `${headlineOffer.isFrom ? 'From ' : ''}${formatOfferAmount(headlineOffer.amount, headlineOffer.currency)}`
+              ? `${showHeadlineFrom ? 'From ' : ''}${formatOfferAmount(headlineOffer.amount, headlineOffer.currency)}`
               : 'Price on request'}
           </div>
           {headlineOffer && (
@@ -274,7 +243,7 @@ export default function MotorcycleDetails({
                             )}
                             {offer.billingIncrement && (
                               <div className="text-xs text-gray-600">
-                                {formatIncrementLabel(offer.billingIncrement.value, offer.billingIncrement.unit)}
+                                {formatBillingIncrementPhrase(offer.billingIncrement)}
                               </div>
                             )}
                           </div>
@@ -305,7 +274,7 @@ export default function MotorcycleDetails({
                                 <span>
                                   {ext.supplierLabel || 'Extension rate'}
                                   {ext.billingIncrement
-                                    ? ` (${formatIncrementLabel(ext.billingIncrement.value, ext.billingIncrement.unit)})`
+                                    ? ` (${formatBillingIncrementPhrase(ext.billingIncrement)})`
                                     : ''}
                                 </span>
                                 <span className="font-semibold text-gray-900">
