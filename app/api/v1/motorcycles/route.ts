@@ -14,7 +14,10 @@ import { requireAuth } from '@/lib/api/middleware';
 import { rateLimit, getRateLimitHeaders } from '@/lib/api/rate-limit';
 import { motorcycleService } from '@/services/motorcycles';
 import { prepareMotorcyclePricingMutation } from '@/services/rental-offers';
-import { parseAndValidateMotorcycleYearPayload } from '@/lib/utils';
+import {
+  parseAndValidateMotorcycleYearPayload,
+  parseOptionalFiniteNumber,
+} from '@/lib/utils';
 import { purgePublicCache } from '@/lib/cache/purgePublicCache';
 
 /**
@@ -41,12 +44,6 @@ export async function GET(request: NextRequest) {
       'newest',
       'desc'
     );
-
-    const parseOptionalFiniteNumber = (raw: string | null): number | undefined => {
-      if (raw === null || raw.trim() === '') return undefined;
-      const parsed = Number(raw);
-      return Number.isFinite(parsed) ? parsed : undefined;
-    };
 
     const filters = {
       brandId: searchParams.get('brandId') || undefined,

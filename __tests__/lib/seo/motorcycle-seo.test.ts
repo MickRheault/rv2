@@ -331,12 +331,21 @@ describe('Motorcycle SEO & JSON-LD Model Year Range (#137)', () => {
     expect(flexOffers.priceSpecification[0].description).toContain('450 THB per extra day');
     expect(flexOffers.priceSpecification[1]).toMatchObject({
       '@type': 'UnitPriceSpecification',
+      name: '6000 THB per calendar month',
       price: '6000',
       priceCurrency: 'THB',
       referenceQuantity: { '@type': 'QuantitativeValue', value: 1, unitCode: 'MON' },
     });
-    expect(flexOffers.priceSpecification[1].description).toContain('per calendar month');
+    // Unlabeled offer has billing unit in `name` and does NOT duplicate `name` into `description`
+    expect(flexOffers.priceSpecification[1].description).toBeUndefined();
     expect(JSON.stringify(flexOffers)).not.toContain('Daily Rate');
+
+    const openapi = require('@/public/openapi.json');
+    const getMotorcyclesParams = openapi.paths['/motorcycles'].get.parameters;
+    const minPriceParam = getMotorcyclesParams.find((p: any) => p.name === 'minPrice');
+    const maxPriceParam = getMotorcyclesParams.find((p: any) => p.name === 'maxPrice');
+    expect(minPriceParam.schema.type).toBe('number');
+    expect(maxPriceParam.schema.type).toBe('number');
 
     const legacyTierSpecs = (schemas[1] as any).offers.priceSpecification;
     expect(legacyTierSpecs).toHaveLength(2);

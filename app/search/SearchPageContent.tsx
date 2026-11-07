@@ -18,6 +18,7 @@ import {
 import MotorcycleTable from '@/components/motorcycle/MotorcycleTable'
 import { LocationAutocomplete } from '@/components/search'
 import { Button } from '@/components/ui'
+import { parseOptionalFiniteNumber } from '@/lib/utils'
 
 type SortByType = NonNullable<LocationBasedSearchFilters['sortBy']>
 
@@ -56,22 +57,14 @@ function RangeFilterInput({
           placeholder={minPlaceholder}
           className="w-full p-2 text-sm border rounded"
           value={minValue ?? ''}
-          onChange={(e) => {
-            const raw = e.target.value.trim()
-            const num = raw === '' ? undefined : Number(raw)
-            onMinChange(num !== undefined && Number.isFinite(num) ? num : undefined)
-          }}
+          onChange={(e) => onMinChange(parseOptionalFiniteNumber(e.target.value))}
         />
         <input
           type="number"
           placeholder={maxPlaceholder}
           className="w-full p-2 text-sm border rounded"
           value={maxValue ?? ''}
-          onChange={(e) => {
-            const raw = e.target.value.trim()
-            const num = raw === '' ? undefined : Number(raw)
-            onMaxChange(num !== undefined && Number.isFinite(num) ? num : undefined)
-          }}
+          onChange={(e) => onMaxChange(parseOptionalFiniteNumber(e.target.value))}
         />
       </div>
     </div>
@@ -188,12 +181,10 @@ export default function SearchPageContent({
       if (category) initialFilters.categoryId = category
       if (model) initialFilters.model = model
       if (sortBy) initialFilters.sortBy = sortBy as SortByType
-      if (minPrice !== null && minPrice.trim() !== '' && Number.isFinite(Number(minPrice))) {
-        initialFilters.minPrice = Number(minPrice)
-      }
-      if (maxPrice !== null && maxPrice.trim() !== '' && Number.isFinite(Number(maxPrice))) {
-        initialFilters.maxPrice = Number(maxPrice)
-      }
+      const parsedMinPrice = parseOptionalFiniteNumber(minPrice)
+      if (parsedMinPrice !== undefined) initialFilters.minPrice = parsedMinPrice
+      const parsedMaxPrice = parseOptionalFiniteNumber(maxPrice)
+      if (parsedMaxPrice !== undefined) initialFilters.maxPrice = parsedMaxPrice
       if (minEngineCapacity) initialFilters.minEngineCapacity = Number(minEngineCapacity)
       if (maxEngineCapacity) initialFilters.maxEngineCapacity = Number(maxEngineCapacity)
 

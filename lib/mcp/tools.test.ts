@@ -269,6 +269,34 @@ it('exposes verbatim non-daily rentalOffers and real billing phrases with dailyR
         priceDisplay: '3,000 THB for 7 days',
     });
     expect(detailData.rentalOffers).toHaveLength(2);
+
+    // Unpriced motorcycle without currency must NOT invent 'THB' or 'USD'
+    mockGetMotorcycles.mockResolvedValueOnce({
+        total: 1,
+        motorcycles: [
+            {
+                id: 'unpriced-bike',
+                model: 'Mystery Scooter',
+                year: 2024,
+                brands: { name: 'Honda' },
+                categories: { name: 'Scooter' },
+                rental_rate_per_day: null,
+                rental_rate_currency: null,
+                rental_rate_tiers: [],
+                rental_offers: [],
+                rental_shops: nonDailyMotorcycle.rental_shops,
+            },
+        ],
+    });
+    const unpricedRes = await executeTool('list_motorcycles', {});
+    const unpricedData = JSON.parse(formatToolResultForLLM(unpricedRes));
+    expect(unpricedData.motorcycles[0]).toMatchObject({
+        id: 'unpriced-bike',
+        dailyRate: null,
+        currency: null,
+        priceDisplay: 'Price on request',
+        rentalOffers: [],
+    });
 });
 
 

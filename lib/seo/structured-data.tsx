@@ -9,7 +9,7 @@ import {
   formatExtensionBillingPhrase,
   formatOfferBillingUnitPhrase,
   hydrateRentalOffersFromRows,
-  resolveFallbackRentalOffers,
+  resolveMotorcycleRentalOffers,
   type DurationUnit,
   type NormalizedRentalOffer,
 } from '@/lib/rental-offers';
@@ -493,7 +493,10 @@ export function generateOfferPricingSchema(rentalOffers: NormalizedRentalOffer[]
         : offer.supplierLabel
       : billingSummary;
 
-    const detailClauses: string[] = [billingSummary];
+    const detailClauses: string[] = [];
+    if (offer.supplierLabel) {
+      detailClauses.push(billingSummary);
+    }
     if (typeof offer.dailyEquivalent === 'number') {
       detailClauses.push(`${offer.dailyEquivalent} ${offer.currency}/day daily equivalent`);
     }
@@ -745,12 +748,7 @@ export function generateShopMotorcycleSchemas(shop: {
   return shop.motorcycle_rentals
     .filter((m) => Boolean(m) && m.availability_status !== 'unavailable')
     .map((motorcycle) => {
-      const resolvedOffers = resolveFallbackRentalOffers({
-        rentalOffersRows: motorcycle.rental_offers,
-        rentalRateTiers: motorcycle.rental_rate_tiers,
-        rentalRatePerDay: motorcycle.rental_rate_per_day,
-        rentalRateCurrency: motorcycle.rental_rate_currency,
-      });
+      const resolvedOffers = resolveMotorcycleRentalOffers(motorcycle);
 
       return generateEnhancedMotorcycleSchema({
         id: motorcycle.id,

@@ -267,16 +267,20 @@ export const MOTORCYCLE_LISTING_OFFERS_COLUMNS = `
   sort_order
 `
 
-export const SHOP_MOTORCYCLE_RENTALS_SELECT = `
-  ${MOTORCYCLE_LISTING_BASE_COLUMNS},
-  brands (id, name),
-  categories (id, name, description),
+export const MOTORCYCLE_LISTING_PRICING_JOINS = `
   rental_rate_tiers (
     ${MOTORCYCLE_LISTING_RATE_TIERS_COLUMNS}
   ),
   rental_offers (
     ${MOTORCYCLE_LISTING_OFFERS_COLUMNS}
   )
+`
+
+export const SHOP_MOTORCYCLE_RENTALS_SELECT = `
+  ${MOTORCYCLE_LISTING_BASE_COLUMNS},
+  brands (id, name),
+  categories (id, name, description),
+  ${MOTORCYCLE_LISTING_PRICING_JOINS}
 `
 
 // Helper function to get active business status IDs (memoized with TTL once non-empty)
@@ -326,16 +330,26 @@ export function filterAvailableMotorcycles<T extends { availability_status?: str
   return rows.filter((row) => isMotorcycleAvailable(row))
 }
 
+export function attachHydratedRentalOffers<T extends Record<string, any>>(row: T): T {
+  if (!row || typeof row !== 'object') return row
+  if ('rental_offers' in row) {
+    return {
+      ...row,
+      rental_offers: hydrateRentalOffersFromRows(row.rental_offers),
+    }
+  }
+  return row
+}
+
 function filterAvailableShopMotorcycles<T extends { motorcycle_rentals?: any[] }>(shop: T): T {
   if (!shop || !Array.isArray(shop.motorcycle_rentals)) {
     return shop
   }
   return {
     ...shop,
-    motorcycle_rentals: filterAvailableMotorcycles(shop.motorcycle_rentals).map((m: any) => ({
-      ...m,
-      rental_offers: hydrateRentalOffersFromRows(m.rental_offers),
-    })),
+    motorcycle_rentals: filterAvailableMotorcycles(shop.motorcycle_rentals).map((m: any) =>
+      attachHydratedRentalOffers(m)
+    ),
   }
 }
 

@@ -212,11 +212,15 @@ function formatPlainAmount(amount: number): string {
 }
 
 function buildMotorcycleToolPricing(m: any) {
-    const offers = resolveMotorcycleRentalOffers(m, { defaultLegacyCurrency: 'THB' });
+    const offers = resolveMotorcycleRentalOffers(m);
     const dailyRate = getStandaloneDailyRate(m);
     const headlineOffer = selectPrimaryHeadlineOffer(offers);
     const showFrom = shouldShowHeadlineFromPrefix(offers, headlineOffer);
-    const currency = headlineOffer?.currency || m?.rental_rate_currency || 'THB';
+    const fallbackCurrency =
+        typeof m?.rental_rate_currency === 'string' && m.rental_rate_currency.trim().length > 0
+            ? m.rental_rate_currency.trim().toUpperCase()
+            : null;
+    const currency = headlineOffer?.currency || fallbackCurrency;
 
     const priceDisplay = headlineOffer
         ? `${showFrom ? 'From ' : ''}${formatPlainAmount(headlineOffer.amount)} ${headlineOffer.currency} ${formatOfferBillingUnitPhrase(headlineOffer)}`

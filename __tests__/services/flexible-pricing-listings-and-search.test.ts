@@ -6,9 +6,13 @@ import { NextRequest } from 'next/server'
 import { GET as listMotorcyclesRoute } from '@/app/api/v1/motorcycles/route'
 import {
   filterAndSortMotorcycles,
-  getEffectiveDailyRate,
   motorcycleService,
 } from '@/services/motorcycles'
+import {
+  compareMotorcyclesByPrice,
+  getStandaloneDailyRate,
+  resolveListingHeadline,
+} from '@/lib/rental-offers'
 import { optimizedMotorcycleService } from '@/lib/services/optimized-motorcycles'
 import { supabase } from '@/lib/supabase/client'
 
@@ -205,13 +209,39 @@ describe('Flexible Rental Pricing — Listings, Daily-Only Price Filters & Deter
       },
     ]
 
-    it('matches standalone daily offers ONLY for minPrice/maxPrice — never package totals, daily equivalents, calendar months, or hourly rates', () => {
-      expect(getEffectiveDailyRate(inventory.find((b) => b.id === 'bike-daily-500'))).toBe(500)
-      expect(getEffectiveDailyRate(inventory.find((b) => b.id === 'bike-daily-300-labeled'))).toBe(300)
-      expect(getEffectiveDailyRate(inventory.find((b) => b.id === 'bike-package-low'))).toBeNull()
-      expect(getEffectiveDailyRate(inventory.find((b) => b.id === 'bike-monthly-cal'))).toBeNull()
-      expect(getEffectiveDailyRate(inventory.find((b) => b.id === 'bike-hourly-only'))).toBeNull()
-      expect(getEffectiveDailyRate(inventory.find((b) => b.id === 'bike-unpriced'))).toBeNull()
+    it('matches standalone daily offers ONLY for minPrice/maxPrice — never package totals, daily equivalents, calendar months, hourly rates, or fractional legacy tiers', () => {
+      expect(getStandaloneDailyRate(inventory.find((b) => b.id === 'bike-daily-500'))).toBe(500)
+      expect(getStandaloneDailyRate(inventory.find((b) => b.id === 'bike-daily-300-labeled'))).toBe(300)
+      expect(getStandaloneDailyRate(inventory.find((b) => b.id === 'bike-package-low'))).toBeNull()
+      expect(getStandaloneDailyRate(inventory.find((b) => b.id === 'bike-monthly-cal'))).toBeNull()
+      expect(getStandaloneDailyRate(inventory.find((b) => b.id === 'bike-hourly-only'))).toBeNull()
+      expect(getStandaloneDailyRate(inventory.find((b) => b.id === 'bike-unpriced'))).toBeNull()
+
+      // Legacy fractional-day tier (min_days < 1 = hourly) must NOT be treated as standalone daily
+      expect(
+        getStandaloneDailyRate({
+          id: 'legacy-fractional-hourly',
+          rental_rate_per_day: null,
+          rental_rate_currency: 'THB',
+          rental_offers: [],
+          rental_rate_tiers: [{ min_days: 0.25, max_days: 0.25, rate_per_day: 350, currency: 'THB' }],
+        })
+      ).toBeNull()
+
+      // Legacy scalar row without rental_rate_currency must NOT invent USD/THB headline currency
+      expect(
+        resolveListingHeadline({
+          id: 'legacy-no-currency',
+          rental_rate_per_day: 250,
+          rental_rate_currency: null,
+          rental_rate_tiers: [],
+          rental_offers: [],
+        })
+      ).toEqual({
+        headlineOffer: null,
+        showFrom: false,
+        unitLabel: null,
+      })
 
       // Wide range [50, 10000] covers 100/hr, 200 (6000/30), 428.57 (3000/7), 3000, 4200, and 6000 —
       // yet ONLY standalone daily bikes match!
@@ -230,6 +260,25 @@ describe('Flexible Rental Pricing — Listings, Daily-Only Price Filters & Deter
         maxPrice: 450,
       })
       expect(narrowFiltered.map((b) => b.id)).toEqual(['bike-daily-300-labeled'])
+    })
+
+    it('breaks equal daily rates and unpriced ties deterministically by id', () => {
+      const tiedBikes = [
+        { id: 'bike-unpriced-z', rental_rate_per_day: null, rental_rate_currency: null, rental_offers: [] },
+        { id: 'bike-unpriced-a', rental_rate_per_day: null, rental_rate_currency: null, rental_offers: [] },
+        { id: 'bike-daily-z', rental_rate_per_day: 300, rental_rate_currency: 'THB', rental_offers: [] },
+        { id: 'bike-daily-a', rental_rate_per_day: 300, rental_rate_currency: 'THB', rental_offers: [] },
+      ]
+
+      expect(compareMotorcyclesByPrice(tiedBikes[2], tiedBikes[3], 'asc')).toBeGreaterThan(0)
+      expect(compareMotorcyclesByPrice(tiedBikes[0], tiedBikes[1], 'asc')).toBeGreaterThan(0)
+
+      expect(filterAndSortMotorcycles(tiedBikes, { sortBy: 'price_asc' }).map((b) => b.id)).toEqual([
+        'bike-daily-a',
+        'bike-daily-z',
+        'bike-unpriced-a',
+        'bike-unpriced-z',
+      ])
     })
 
     it('sorts standalone daily first, non-daily-only second, and unpriced strictly last for both price_asc and price_desc', () => {
@@ -439,6 +488,89 @@ describe('Flexible Rental Pricing — Listings, Daily-Only Price Filters & Deter
         'api-monthly-only',
       ])
     })
+
+    it('fetches across >1000 PostgREST rows before price filtering/sorting so matches past 1000 and offset >= 1000 succeed', async () => {
+      const largeCatalog = Array.from({ length: 1050 }, (_, idx) => {
+        const isLateMatch = idx >= 1045 // 5 standalone daily matches live past row 1000!
+        return {
+          id: `catalog-${String(idx).padStart(4, '0')}`,
+          model: `Bike ${idx}`,
+          rental_rate_per_day: isLateMatch ? 200 + (idx - 1045) : 900,
+          rental_rate_currency: 'THB',
+          availability_status: 'available',
+          rental_shops: { id: 's-1', business_status_id: 1, rating: 4.5 },
+          rental_rate_tiers: [],
+          rental_offers: [
+            buildRawOfferRow({
+              id: `off-${idx}`,
+              motorcycle_id: `catalog-${String(idx).padStart(4, '0')}`,
+              offer_type: 'daily',
+              amount: isLateMatch ? 200 + (idx - 1045) : 900,
+              billing_basis: 'per_day',
+              duration_unit: 'day',
+              min_duration: 1,
+            }),
+          ],
+        }
+      })
+
+      ;(supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === 'business_statuses') {
+          return {
+            select: jest.fn().mockReturnValue({
+              in: jest.fn().mockResolvedValue({ data: [{ id: 1 }], error: null }),
+            }),
+          }
+        }
+        if (table === 'motorcycle_rentals') {
+          const builder: any = {
+            select: jest.fn(() => builder),
+            in: jest.fn(() => builder),
+            eq: jest.fn(() => builder),
+            neq: jest.fn(() => builder),
+            gte: jest.fn(() => builder),
+            lte: jest.fn(() => builder),
+            not: jest.fn(() => builder),
+            ilike: jest.fn(() => builder),
+            or: jest.fn(() => builder),
+            order: jest.fn(() => builder),
+            limit: jest.fn(() => builder),
+            range: jest.fn((from: number, to: number) =>
+              Promise.resolve({
+                data: largeCatalog.slice(from, to + 1),
+                count: largeCatalog.length,
+                error: null,
+              })
+            ),
+          }
+          return builder
+        }
+        throw new Error(`Unexpected table: ${table}`)
+      })
+
+      const filtered = await motorcycleService.getMotorcycles({
+        maxPrice: 300,
+        sortBy: 'price_asc',
+        limit: 10,
+        offset: 0,
+      })
+      expect(filtered.total).toBe(5)
+      expect(filtered.motorcycles.map((m) => m.id)).toEqual([
+        'catalog-1045',
+        'catalog-1046',
+        'catalog-1047',
+        'catalog-1048',
+        'catalog-1049',
+      ])
+
+      const deepPage = await motorcycleService.getMotorcycles({
+        sortBy: 'price_asc',
+        limit: 5,
+        offset: 1045,
+      })
+      expect(deepPage.total).toBe(1050)
+      expect(deepPage.motorcycles).toHaveLength(5)
+    })
   })
 
   describe('Featured and Listing Queries with non-daily rental_offers (rental_rate_per_day IS NULL)', () => {
@@ -566,6 +698,73 @@ describe('Flexible Rental Pricing — Listings, Daily-Only Price Filters & Deter
       for (const cols of recordedSelects) {
         expect(cols).toContain('rental_offers')
       }
+    })
+
+    it('does not starve getFeaturedMotorcycles or getFeaturedMotorcyclesOptimized when >30 unpriced rows precede priced motorcycles', async () => {
+      const leadingUnpriced = Array.from({ length: 35 }, (_, idx) => ({
+        id: `unpriced-${idx}`,
+        model: `Unpriced ${idx}`,
+        rental_rate_per_day: null,
+        rental_rate_currency: null,
+        availability_status: 'available',
+        rental_shops: { id: 's-1', business_status_id: 1, rating: 5.0 },
+        rental_rate_tiers: [],
+        rental_offers: [],
+      }))
+      const trailingPriced = Array.from({ length: 4 }, (_, idx) => ({
+        id: `priced-pkg-${idx}`,
+        model: `Package Bike ${idx}`,
+        rental_rate_per_day: null,
+        rental_rate_currency: 'THB',
+        availability_status: 'available',
+        rental_shops: { id: 's-1', business_status_id: 1, rating: 4.8 },
+        rental_rate_tiers: [],
+        rental_offers: [
+          buildRawOfferRow({
+            id: `feat-off-${idx}`,
+            motorcycle_id: `priced-pkg-${idx}`,
+            offer_type: 'package',
+            amount: 3000 + idx * 100,
+            billing_basis: 'package_total',
+            duration_unit: 'day',
+            min_duration: 7,
+            max_duration: 7,
+          }),
+        ],
+      }))
+      const allFeaturedCandidates = [...leadingUnpriced, ...trailingPriced]
+
+      ;(supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === 'motorcycle_rentals') {
+          const builder: any = {
+            select: jest.fn(() => builder),
+            or: jest.fn(() => builder),
+            order: jest.fn(() => builder),
+            limit: jest.fn((n: number) =>
+              Promise.resolve({ data: allFeaturedCandidates.slice(0, n), error: null })
+            ),
+            range: jest.fn((from: number, to: number) =>
+              Promise.resolve({ data: allFeaturedCandidates.slice(from, to + 1), error: null })
+            ),
+          }
+          return builder
+        }
+        throw new Error(`Unexpected table: ${table}`)
+      })
+
+      const featured = await motorcycleService.getFeaturedMotorcycles(3)
+      expect(featured.map((m: any) => m.id)).toEqual([
+        'priced-pkg-0',
+        'priced-pkg-1',
+        'priced-pkg-2',
+      ])
+
+      const featuredOpt = await optimizedMotorcycleService.getFeaturedMotorcyclesOptimized(3)
+      expect(featuredOpt.map((m: any) => m.id)).toEqual([
+        'priced-pkg-0',
+        'priced-pkg-1',
+        'priced-pkg-2',
+      ])
     })
   })
 })

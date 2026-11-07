@@ -51,7 +51,7 @@ export default function MotorcycleCard({
 
   const { headlineOffer, showFrom, unitLabel } = resolveListingHeadline(motorcycle)
   const price = headlineOffer
-    ? `${showFrom ? 'From ' : ''}${formatCurrency(headlineOffer.amount, headlineOffer.currency || 'USD')}`
+    ? `${showFrom ? 'From ' : ''}${formatCurrency(headlineOffer.amount, headlineOffer.currency)}`
     : 'Price on request'
 
   // Handle favorite toggle

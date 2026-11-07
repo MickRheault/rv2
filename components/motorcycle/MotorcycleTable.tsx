@@ -51,7 +51,7 @@ export default function MotorcycleTable({
             return { price: 'On request', unitLabel: null as string | null }
         }
         return {
-            price: `${showFrom ? 'From ' : ''}${formatCurrency(headlineOffer.amount, headlineOffer.currency || 'USD')}`,
+            price: `${showFrom ? 'From ' : ''}${formatCurrency(headlineOffer.amount, headlineOffer.currency)}`,
             unitLabel,
         }
     }

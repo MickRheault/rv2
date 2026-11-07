@@ -15,7 +15,7 @@ import { generateMetadata as generateSEOMetadata, generateMotorcycleSEO } from '
 import { StructuredData, generateEnhancedMotorcycleSchema } from '@/lib/seo/structured-data'
 import { generateSlug, formatLocationName } from '@/lib/utils'
 import {
-  resolveFallbackRentalOffers,
+  hydrateRentalOffersFromRows,
   selectPrimaryHeadlineOffer,
   shouldShowHeadlineFromPrefix,
 } from '@/lib/rental-offers'
@@ -42,12 +42,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
             const id = slug[0]
             const motorcycle = await getMotorcycleById(id)
 
-            const offers = resolveFallbackRentalOffers({
-                rentalOffersRows: (motorcycle as any).rental_offers,
-                rentalRateTiers: (motorcycle as any).rental_rate_tiers,
-                rentalRatePerDay: (motorcycle as any).rental_rate_per_day,
-                rentalRateCurrency: (motorcycle as any).rental_rate_currency,
-            })
+            const offers = hydrateRentalOffersFromRows((motorcycle as any).rental_offers)
             const primaryHeadline = selectPrimaryHeadlineOffer(offers)
             const headlineOffer = primaryHeadline
                 ? {
@@ -172,12 +167,7 @@ async function renderMotorcycleDetails(id: string) {
             console.error('Error fetching same model motorcycles:', err)
         }
 
-        const hydratedOffers = resolveFallbackRentalOffers({
-            rentalOffersRows: (motorcycle as any).rental_offers,
-            rentalRateTiers: (motorcycle as any).rental_rate_tiers,
-            rentalRatePerDay: (motorcycle as any).rental_rate_per_day,
-            rentalRateCurrency: (motorcycle as any).rental_rate_currency,
-        })
+        const hydratedOffers = hydrateRentalOffersFromRows((motorcycle as any).rental_offers)
 
         // Generate enhanced structured data for rich snippets
         const structuredData = generateEnhancedMotorcycleSchema({
