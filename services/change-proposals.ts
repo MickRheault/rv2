@@ -17,7 +17,6 @@ import {
   NormalizedRentalOffer,
   projectOffersToLegacyDaily,
   RentalOfferConflictError,
-  resolveFallbackRentalOffers,
   validateAndNormalizeRentalOffers,
 } from '@/lib/rental-offers';
 import {
@@ -3266,15 +3265,7 @@ export class ChangeProposalService {
                 `Item ${itemLabel}: cross-shop motorcycle '${item.entity_id}' does not belong to shop '${proposal.shop_id}'.`
               );
             } else {
-              const sortedLiveTiers = [...(liveBike.rental_rate_tiers || [])].sort(
-                (a: any, b: any) => (a.min_days ?? 1) - (b.min_days ?? 1)
-              );
-              liveOffers = resolveFallbackRentalOffers({
-                rentalOffersRows: liveBike.rental_offers,
-                rentalRateTiers: sortedLiveTiers,
-                rentalRatePerDay: liveBike.rental_rate_per_day,
-                rentalRateCurrency: liveBike.rental_rate_currency,
-              });
+              liveOffers = hydrateBaselineOffersAndRates(liveBike).offers;
               const canonicalLiveOffers = hydrateRentalOffersFromRows(liveBike.rental_offers);
               const hasCanonicalLiveOffers =
                 Array.isArray(liveBike.rental_offers) && liveBike.rental_offers.length > 0;
@@ -3693,6 +3684,7 @@ export class ChangeProposalService {
             createdBikeIdByItemId.set(item.id, createdId);
             itemCompensation = async () => {
               await cleanupInsertedBike(createdId);
+              createdBikeIdByItemId.delete(item.id);
               await (supabase.from('change_proposal_items') as any)
                 ?.update?.({ status: 'pending', entity_id: null })
                 ?.eq?.('id', item.id);
@@ -4081,7 +4073,6 @@ export class ChangeProposalService {
           console.error('Error compensating applied proposal item:', compErr);
         }
       }
-      createdBikeIdByItemId.clear();
 
       // Mark proposal application_status = 'failed' (and release 'reviewing' lock back to 'pending') and revert any unapplied ready_for_proposal candidates back to 'open'
       try {

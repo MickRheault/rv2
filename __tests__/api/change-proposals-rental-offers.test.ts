@@ -1963,6 +1963,32 @@ describe('Flexible Rental Offers across Agent Tasks & Change Proposals (#211)', 
         specifications_details: null,
       });
 
+      const ADV_CAND_ID = 'dededede-dede-4ded-8ded-dededededede';
+      dbState.unresolved_candidates.push({
+        id: ADV_CAND_ID,
+        shop_id: RIDE_ON_SHOP_ID,
+        entry_key: 'honda-adv-350',
+        brand_name: 'Honda',
+        model_name: 'ADV 350',
+        year: 2025,
+        year_to: null,
+        variant_label: null,
+        state: 'open',
+        flagged_for_review: false,
+        current_issues: [{ code: 'PRICING_NOT_REPRESENTABLE', detail: 'Weekly only previously' }],
+        latest_evidence: [],
+        next_action: 'Capture offers',
+        first_seen_at: '2026-11-01T00:00:00Z',
+        last_seen_at: '2026-11-01T00:00:00Z',
+        latest_proposal_id: null,
+        linked_proposal_item_id: null,
+        resolved_motorcycle_id: null,
+        resolution_reason: null,
+        resolved_by: null,
+        resolved_at: null,
+        version: 1,
+      });
+
       const stageBatchRes = await handleStageProposal(
         new NextRequest('http://localhost:3000/api/agent/change-proposals', {
           method: 'POST',
@@ -2029,6 +2055,7 @@ describe('Flexible Rental Offers across Agent Tasks & Change Proposals (#211)', 
                 brand: 'Honda',
                 model: 'ADV 350',
                 existingMotorcycleId: null,
+                candidateId: ADV_CAND_ID,
                 disposition: 'ready_change',
                 proposalItemRefs: ['add-adv350'],
                 evidence: [{ sourceUrl: RIDE_ON_SOURCE_URL, snippet: 'ADV 350', kind: 'fleet_card' }],
@@ -2092,12 +2119,15 @@ describe('Flexible Rental Offers across Agent Tasks & Change Proposals (#211)', 
         (dbState.rental_offers || []).filter((o) => o.motorcycle_id === SCALAR_ROLLBACK_ID)
       ).toHaveLength(0);
 
-      // Both proposal items remain pending so the proposal can be retried cleanly
+      // Both proposal items remain pending and the linked ADV 350 candidate reverts to 'open'
       expect(
         dbState.change_proposal_items
           .filter((i) => i.proposal_id === batchPropId)
           .every((i) => i.status === 'pending')
       ).toBe(true);
+      const advCandAfter = dbState.unresolved_candidates.find((c) => c.id === ADV_CAND_ID)!;
+      expect(advCandAfter.state).toBe('open');
+      expect(advCandAfter.resolved_motorcycle_id).toBeNull();
     });
   });
 });

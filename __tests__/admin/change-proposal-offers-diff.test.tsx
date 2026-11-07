@@ -603,4 +603,117 @@ describe('ChangeProposalDiffViewer Flexible Rental Offers (#211)', () => {
     expect(within(richDiff).getAllByText(/30-minute increments/i).length).toBeGreaterThanOrEqual(1);
     expect(within(richDiff).getByText(/100\s+per extra hour/i)).toBeInTheDocument();
   });
+
+  it('renders extension supplierLabel removal/rename, extension duration bounds deltas, and newly added standalone supplierLabel on modified offers', () => {
+    const proposal = buildBaseProposal();
+    const items: DiffViewerItem[] = [
+      {
+        id: 'item-ext-label-upd',
+        proposal_id: 'prop-flex-1',
+        entity_type: 'motorcycle',
+        action: 'update',
+        entity_id: 'bike-ext-lbl-1',
+        brand_name: 'Honda',
+        model_name: 'Forza 350',
+        original_data: {
+          offers: [
+            {
+              offerType: 'daily',
+              amount: 800,
+              currency: 'THB',
+              billingBasis: 'per_day',
+              durationUnit: 'day',
+              minDuration: 1,
+              maxDuration: null,
+              supplierLabel: null,
+            },
+            {
+              offerType: 'package',
+              amount: 4500,
+              currency: 'THB',
+              billingBasis: 'package_total',
+              durationUnit: 'day',
+              minDuration: 7,
+              maxDuration: 7,
+              extensions: [
+                {
+                  amount: 600,
+                  currency: 'THB',
+                  billingBasis: 'per_day',
+                  minDuration: 1,
+                  maxDuration: 3,
+                  supplierLabel: 'After 7 days',
+                },
+                {
+                  amount: 100,
+                  currency: 'THB',
+                  billingBasis: 'per_hour',
+                  supplierLabel: 'Late return',
+                },
+              ],
+            },
+          ],
+        },
+        proposed_data: {
+          offers: [
+            {
+              offerType: 'daily',
+              amount: 800,
+              currency: 'THB',
+              billingBasis: 'per_day',
+              durationUnit: 'day',
+              minDuration: 1,
+              maxDuration: null,
+              supplierLabel: 'Flash Sale',
+            },
+            {
+              offerType: 'package',
+              amount: 4500,
+              currency: 'THB',
+              billingBasis: 'package_total',
+              durationUnit: 'day',
+              minDuration: 7,
+              maxDuration: 7,
+              extensions: [
+                {
+                  amount: 600,
+                  currency: 'THB',
+                  billingBasis: 'per_day',
+                  minDuration: 1,
+                  maxDuration: 5,
+                  supplierLabel: null,
+                },
+                {
+                  amount: 100,
+                  currency: 'THB',
+                  billingBasis: 'per_hour',
+                  supplierLabel: 'Overtime hourly',
+                },
+              ],
+            },
+          ],
+        },
+        diff_summary: { offers: true },
+        status: 'pending',
+      },
+    ];
+
+    render(<ChangeProposalDiffViewer proposal={proposal} items={items} />);
+
+    const diffEl = screen.getByTestId('proposal-offers-diff-item-ext-label-upd');
+
+    // Newly added standalone supplierLabel highlights old default -> Flash Sale
+    expect(within(diffEl).getByText('Flash Sale')).toHaveClass('text-blue-700');
+
+    // Extension 1: removed supplierLabel ('After 7 days' struck through -> 'Extension rate') and duration bounds 1–3 -> 1–5 extra days
+    const removedExtLabel = within(diffEl).getByText('After 7 days');
+    expect(removedExtLabel).toHaveClass('line-through');
+    expect(within(diffEl).getByText('Extension rate')).toBeInTheDocument();
+    expect(within(diffEl).getByText(/1–3 extra days/i)).toBeInTheDocument();
+    expect(within(diffEl).getByText(/1–5 extra days/i)).toBeInTheDocument();
+
+    // Extension 2: renamed supplierLabel ('Late return' struck through -> 'Overtime hourly')
+    expect(within(diffEl).getByText('Late return')).toHaveClass('line-through');
+    expect(within(diffEl).getByText('Overtime hourly')).toBeInTheDocument();
+  });
 });

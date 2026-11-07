@@ -1095,6 +1095,21 @@ function isViewerOfferIdentical(a: NormalizedRentalOffer, b: NormalizedRentalOff
   return aExts.every((val, idx) => val === bExts[idx]);
 }
 
+function formatExtensionDurationBoundsLabel(ext: NormalizedRentalOfferExtension): string | null {
+  const min = ext.minDuration ?? 1;
+  const max = ext.maxDuration ?? null;
+  if (min <= 1 && max === null) return null;
+  const unitSingular = ext.durationUnit === 'hour' ? 'extra hour' : 'extra day';
+  const unitPlural = ext.durationUnit === 'hour' ? 'extra hours' : 'extra days';
+  if (max !== null && min === max) {
+    return `${min} ${min === 1 ? unitSingular : unitPlural}`;
+  }
+  if (max !== null) {
+    return `${min}–${max} ${unitPlural}`;
+  }
+  return `${min}+ ${unitPlural}`;
+}
+
 type ViewerOfferCardVariant = 'indigo' | 'blue' | 'red' | 'emerald' | 'gray';
 
 interface ViewerOfferListOptions {
@@ -1200,25 +1215,29 @@ function renderViewerOfferCard(
 
       {offer.extensions.length > 0 && (
         <div className="pt-1.5 border-t border-dashed border-current/20 space-y-1">
-          {offer.extensions.map((ext, extIdx) => (
-            <div
-              key={ext.id ?? `${cardKey}-ext-${extIdx}`}
-              className="flex items-center justify-between gap-2 text-[11px] bg-white/60 rounded px-2 py-1"
-            >
-              <span>
-                {ext.supplierLabel || 'Extension rate'}
-                {ext.billingIncrement
-                  ? ` (${formatBillingIncrementPhrase(ext.billingIncrement)})`
-                  : ''}
-              </span>
-              <span className="font-semibold">
-                {`+ ${ext.isFrom ? 'From ' : ''}${formatViewerOfferAmount(
-                  ext.amount,
-                  ext.currency
-                )} ${formatExtensionBillingPhrase(ext)}`}
-              </span>
-            </div>
-          ))}
+          {offer.extensions.map((ext, extIdx) => {
+            const extBounds = formatExtensionDurationBoundsLabel(ext);
+            return (
+              <div
+                key={ext.id ?? `${cardKey}-ext-${extIdx}`}
+                className="flex items-center justify-between gap-2 text-[11px] bg-white/60 rounded px-2 py-1"
+              >
+                <span>
+                  {ext.supplierLabel || 'Extension rate'}
+                  {extBounds ? ` · ${extBounds}` : ''}
+                  {ext.billingIncrement
+                    ? ` (${formatBillingIncrementPhrase(ext.billingIncrement)})`
+                    : ''}
+                </span>
+                <span className="font-semibold">
+                  {`+ ${ext.isFrom ? 'From ' : ''}${formatViewerOfferAmount(
+                    ext.amount,
+                    ext.currency
+                  )} ${formatExtensionBillingPhrase(ext)}`}
+                </span>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -1403,6 +1422,7 @@ function renderExtensionDiffRows(
     const identical =
       serializeExtensionForDiffComparison(o) === serializeExtensionForDiffComparison(n);
     if (identical) {
+      const extBounds = formatExtensionDurationBoundsLabel(n);
       rows.push(
         <div
           key={`${keyPrefix}-ext-pair-${nIdx}`}
@@ -1410,6 +1430,7 @@ function renderExtensionDiffRows(
         >
           <span>
             {n.supplierLabel || 'Extension rate'}
+            {extBounds ? ` · ${extBounds}` : ''}
             {n.billingIncrement ? ` (${formatBillingIncrementPhrase(n.billingIncrement)})` : ''}
           </span>
           <span className="font-semibold">
@@ -1419,6 +1440,10 @@ function renderExtensionDiffRows(
         </div>
       );
     } else {
+      const extLabelChanged = o.supplierLabel !== n.supplierLabel;
+      const oldBounds = formatExtensionDurationBoundsLabel(o);
+      const newBounds = formatExtensionDurationBoundsLabel(n);
+      const boundsChanged = oldBounds !== newBounds;
       const oldIncPhrase = o.billingIncrement
         ? formatBillingIncrementPhrase(o.billingIncrement)
         : null;
@@ -1437,7 +1462,33 @@ function renderExtensionDiffRows(
           className="flex items-center justify-between gap-2 flex-wrap text-[11px] bg-white/80 rounded px-2 py-1 text-gray-800"
         >
           <span className="flex items-center gap-1 flex-wrap">
-            <span>{n.supplierLabel || o.supplierLabel || 'Extension rate'}</span>
+            {extLabelChanged ? (
+              <>
+                {o.supplierLabel && (
+                  <span className="line-through text-red-500">{o.supplierLabel}</span>
+                )}
+                {o.supplierLabel && <span className="text-gray-400">→</span>}
+                <span className={n.supplierLabel ? 'text-blue-700 font-medium' : 'text-gray-700'}>
+                  {n.supplierLabel || 'Extension rate'}
+                </span>
+              </>
+            ) : (
+              <span>{n.supplierLabel || 'Extension rate'}</span>
+            )}
+            {boundsChanged ? (
+              <>
+                <span>·</span>
+                {oldBounds && (
+                  <span className="line-through text-red-500">
+                    {`${oldBounds}${!newBounds ? ' (removed)' : ''}`}
+                  </span>
+                )}
+                {oldBounds && newBounds && <span className="text-gray-400">→</span>}
+                {newBounds && <span className="text-blue-700 font-medium">{newBounds}</span>}
+              </>
+            ) : (
+              newBounds && <span>{`· ${newBounds}`}</span>
+            )}
             {incChanged ? (
               <>
                 {oldIncPhrase && (
@@ -1484,6 +1535,7 @@ function renderExtensionDiffRows(
   for (let nIdx = 0; nIdx < newExts.length; nIdx++) {
     if (usedNew.has(nIdx)) continue;
     const n = newExts[nIdx];
+    const extBounds = formatExtensionDurationBoundsLabel(n);
     rows.push(
       <div
         key={`${keyPrefix}-ext-add-${nIdx}`}
@@ -1494,6 +1546,7 @@ function renderExtensionDiffRows(
             + Added
           </span>
           {n.supplierLabel || 'Extension rate'}
+          {extBounds ? ` · ${extBounds}` : ''}
           {n.billingIncrement ? ` (${formatBillingIncrementPhrase(n.billingIncrement)})` : ''}
         </span>
         <span className="font-semibold">
@@ -1509,6 +1562,7 @@ function renderExtensionDiffRows(
   for (let oIdx = 0; oIdx < oldExts.length; oIdx++) {
     if (usedOld.has(oIdx)) continue;
     const o = oldExts[oIdx];
+    const extBounds = formatExtensionDurationBoundsLabel(o);
     rows.push(
       <div
         key={`${keyPrefix}-ext-rem-${oIdx}`}
@@ -1519,6 +1573,7 @@ function renderExtensionDiffRows(
             - Removed
           </span>
           {o.supplierLabel || 'Extension rate'}
+          {extBounds ? ` · ${extBounds}` : ''}
           {o.billingIncrement ? ` (${formatBillingIncrementPhrase(o.billingIncrement)})` : ''}
         </span>
         <span>
@@ -1596,15 +1651,20 @@ function renderRentalOffersDiff(
                   <div className="flex items-start justify-between gap-2 flex-wrap">
                     <div className="space-y-0.5">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        {labelChanged && oldOffer.supplierLabel && (
+                        {labelChanged && (
                           <>
                             <span className="line-through text-red-500 font-medium">
-                              {oldOffer.supplierLabel}
+                              {oldOffer.supplierLabel ||
+                                VIEWER_OFFER_TYPE_LABELS[oldOffer.offerType]}
                             </span>
                             <span className="text-gray-400">→</span>
                           </>
                         )}
-                        <span className="font-semibold text-gray-900">
+                        <span
+                          className={`font-semibold ${
+                            labelChanged ? 'text-blue-700' : 'text-gray-900'
+                          }`}
+                        >
                           {newOffer.supplierLabel || VIEWER_OFFER_TYPE_LABELS[newOffer.offerType]}
                         </span>
                         {newOffer.supplierLabel && (
