@@ -4,6 +4,13 @@
  */
 
 import { motorcycleService } from '@/services/motorcycles'
+import {
+  MOTORCYCLE_LISTING_OFFERS_COLUMNS,
+  MOTORCYCLE_LISTING_RATE_TIERS_COLUMNS,
+  applyAvailableMotorcycleFilterSync,
+  filterAvailableMotorcycles,
+} from '@/services/shops'
+import { hydrateRentalOffersFromRows, resolveMotorcycleRentalOffers } from '@/lib/rental-offers'
 import { queryKeys, CACHE_TIMES, STALE_TIMES } from '@/lib/cache/queryKeys'
 import { measureQueryPerformance } from '@/lib/utils/performance'
 import { supabase } from '@/lib/supabase/client'
@@ -59,6 +66,12 @@ export const optimizedMotorcycleService = {
             motorcycle_features (
               feature_id,
               features (*)
+            ),
+            rental_rate_tiers (
+              ${MOTORCYCLE_LISTING_RATE_TIERS_COLUMNS}
+            ),
+            rental_offers (
+              ${MOTORCYCLE_LISTING_OFFERS_COLUMNS}
             )
           `)
           .in('id', ids)
@@ -68,7 +81,10 @@ export const optimizedMotorcycleService = {
           throw error
         }
 
-        return data || []
+        return (data || []).map((row: any) => ({
+          ...row,
+          rental_offers: hydrateRentalOffersFromRows(row.rental_offers),
+        }))
       }
     )
   },
@@ -78,8 +94,7 @@ export const optimizedMotorcycleService = {
     return measureQueryPerformance(
       `motorcycles.featured.${limit}`,
       async () => {
-        // Use a more efficient query for featured motorcycles
-        const { data, error } = await supabase
+        let query: any = supabase
           .from('motorcycle_rentals')
           .select(`
             *,
@@ -97,18 +112,33 @@ export const optimizedMotorcycleService = {
               )
             ),
             brands (name),
-            categories (name)
+            categories (name),
+            rental_rate_tiers (
+              ${MOTORCYCLE_LISTING_RATE_TIERS_COLUMNS}
+            ),
+            rental_offers (
+              ${MOTORCYCLE_LISTING_OFFERS_COLUMNS}
+            )
           `)
-          .not('rental_rate_per_day', 'is', null)
+
+        query = applyAvailableMotorcycleFilterSync(query)
           .order('rental_shops.rating', { ascending: false, nullsFirst: false })
-          .limit(limit)
+          .limit(Math.max(limit * 3, 30))
+
+        const { data, error } = await query
 
         if (error) {
           console.error('Error fetching featured motorcycles:', error)
           throw error
         }
 
-        return data || []
+        return filterAvailableMotorcycles((data || []) as any[])
+          .map((row: any) => ({
+            ...row,
+            rental_offers: hydrateRentalOffersFromRows(row.rental_offers),
+          }))
+          .filter((row: any) => resolveMotorcycleRentalOffers(row).length > 0)
+          .slice(0, limit)
       }
     )
   },

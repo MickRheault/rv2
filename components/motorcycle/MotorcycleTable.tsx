@@ -13,6 +13,7 @@ import {
     TableCell
 } from '@/components/ui/Table'
 import { formatCurrency, formatMotorcycleYear, cn } from '@/lib/utils'
+import { compareMotorcyclesByPrice, resolveListingHeadline } from '@/lib/rental-offers'
 import { Button } from '@/components/ui'
 import { filterAvailableMotorcycles } from '@/services/shops'
 
@@ -44,15 +45,15 @@ export default function MotorcycleTable({
         }
     }, [motorcycles, preserveInitialOrder])
 
-    // Helper to get best rate for sorting
-    const getBestRateValue = (motorcycle: any) => {
-        if (motorcycle.rental_rate_tiers && motorcycle.rental_rate_tiers.length > 0) {
-            const shortestPeriodTier = motorcycle.rental_rate_tiers.reduce((prev: any, current: any) => 
-                prev.min_days < current.min_days ? prev : current
-            )
-            return shortestPeriodTier.rate_per_day
+    const formatRowPricing = (motorcycle: any) => {
+        const { headlineOffer, showFrom, unitLabel } = resolveListingHeadline(motorcycle)
+        if (!headlineOffer) {
+            return { price: 'On request', unitLabel: null as string | null }
         }
-        return motorcycle.rental_rate_per_day || 0
+        return {
+            price: `${showFrom ? 'From ' : ''}${formatCurrency(headlineOffer.amount, headlineOffer.currency || 'USD')}`,
+            unitLabel,
+        }
     }
 
     const availableMotorcycles = useMemo(() => {
@@ -64,6 +65,10 @@ export default function MotorcycleTable({
         if (!availableMotorcycles.length) return []
         if (!sortConfig) return availableMotorcycles
         return [...availableMotorcycles].sort((a, b) => {
+            if (sortConfig.key === 'price') {
+                return compareMotorcyclesByPrice(a, b, sortConfig.direction)
+            }
+
             let valA: any = ''
             let valB: any = ''
 
@@ -83,10 +88,6 @@ export default function MotorcycleTable({
                 case 'cc':
                     valA = a.engine_capacity_cc || 0
                     valB = b.engine_capacity_cc || 0
-                    break
-                case 'price':
-                    valA = getBestRateValue(a)
-                    valB = getBestRateValue(b)
                     break
             }
 
@@ -182,7 +183,7 @@ export default function MotorcycleTable({
                                 <div className="flex items-center justify-center">CC <SortIndicator columnKey="cc" /></div>
                             </TableHead>
                             <TableHead
-                                className="py-3 px-3 text-right font-bold uppercase tracking-wider text-xs text-gray-500 w-28 cursor-pointer hover:text-gray-900 transition-colors"
+                                className="py-3 px-3 text-right font-bold uppercase tracking-wider text-xs text-gray-500 w-36 cursor-pointer hover:text-gray-900 transition-colors"
                                 onClick={() => requestSort('price')}
                             >
                                 <div className="flex items-center justify-end">Price <SortIndicator columnKey="price" /></div>
@@ -192,18 +193,7 @@ export default function MotorcycleTable({
                     </TableHeader>
                     <TableBody className="divide-y">
                         {displayedMotorcycles.map((motorcycle) => {
-                            const getBestRate = () => {
-                                if (motorcycle.rental_rate_tiers && motorcycle.rental_rate_tiers.length > 0) {
-                                    const shortestPeriodTier = motorcycle.rental_rate_tiers.reduce((prev: any, current: any) =>
-                                        prev.min_days < current.min_days ? prev : current
-                                    )
-                                    return { amount: shortestPeriodTier.rate_per_day, currency: shortestPeriodTier.currency }
-                                }
-                                return { amount: motorcycle.rental_rate_per_day, currency: motorcycle.rental_rate_currency }
-                            }
-
-                            const bestRate = getBestRate()
-                            const price = bestRate.amount ? formatCurrency(bestRate.amount, bestRate.currency || 'USD') : 'On request'
+                            const { price, unitLabel } = formatRowPricing(motorcycle)
                             const formattedYear = formatMotorcycleYear(motorcycle.year, motorcycle.year_to)
 
                             return (
@@ -252,6 +242,11 @@ export default function MotorcycleTable({
                                     <TableCell className="py-2 md:py-4 px-2 md:px-3 text-right font-bold text-gray-900 whitespace-nowrap">
                                         <div className="flex flex-col items-end gap-0.5">
                                             <span className="text-sm md:text-base">{price}</span>
+                                            {unitLabel && (
+                                                <span className="text-xs text-gray-500 font-normal">
+                                                    {unitLabel}
+                                                </span>
+                                            )}
                                             <span className="md:hidden text-xs text-gray-400 font-normal">
                                                 {motorcycle.engine_capacity_cc ? `${motorcycle.engine_capacity_cc}cc` : '-'}
                                             </span>
@@ -276,18 +271,7 @@ export default function MotorcycleTable({
             {/* Mobile List View (2-Line Row) */}
             <div className="md:hidden space-y-3 mb-6">
                 {displayedMotorcycles.map((motorcycle) => {
-                    const getBestRate = () => {
-                        if (motorcycle.rental_rate_tiers && motorcycle.rental_rate_tiers.length > 0) {
-                            const shortestPeriodTier = motorcycle.rental_rate_tiers.reduce((prev: any, current: any) =>
-                                prev.min_days < current.min_days ? prev : current
-                            )
-                            return { amount: shortestPeriodTier.rate_per_day, currency: shortestPeriodTier.currency }
-                        }
-                        return { amount: motorcycle.rental_rate_per_day, currency: motorcycle.rental_rate_currency }
-                    }
-
-                    const bestRate = getBestRate()
-                    const price = bestRate.amount ? formatCurrency(bestRate.amount, bestRate.currency || 'USD') : 'On request'
+                    const { price, unitLabel } = formatRowPricing(motorcycle)
                     const formattedYear = formatMotorcycleYear(motorcycle.year, motorcycle.year_to)
 
                     return (
@@ -306,8 +290,11 @@ export default function MotorcycleTable({
                                         </span>
                                     )}
                                 </h3>
-                                <div className="text-right whitespace-nowrap">
+                                <div className="text-right whitespace-nowrap flex flex-col items-end">
                                     <span className="font-bold text-gray-900 text-sm">{price}</span>
+                                    {unitLabel && (
+                                        <span className="text-[11px] text-gray-500 font-normal">{unitLabel}</span>
+                                    )}
                                 </div>
                             </div>
 

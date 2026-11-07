@@ -42,6 +42,12 @@ export async function GET(request: NextRequest) {
       'desc'
     );
 
+    const parseOptionalFiniteNumber = (raw: string | null): number | undefined => {
+      if (raw === null || raw.trim() === '') return undefined;
+      const parsed = Number(raw);
+      return Number.isFinite(parsed) ? parsed : undefined;
+    };
+
     const filters = {
       brandId: searchParams.get('brandId') || undefined,
       categoryId: searchParams.get('categoryId') || undefined,
@@ -50,8 +56,8 @@ export async function GET(request: NextRequest) {
       cityId: searchParams.get('cityId') || undefined,
       model: searchParams.get('model') || undefined,
       query: searchParams.get('search') || searchParams.get('query') || undefined,
-      minPrice: searchParams.get('minPrice') ? parseInt(searchParams.get('minPrice')!, 10) : undefined,
-      maxPrice: searchParams.get('maxPrice') ? parseInt(searchParams.get('maxPrice')!, 10) : undefined,
+      minPrice: parseOptionalFiniteNumber(searchParams.get('minPrice')),
+      maxPrice: parseOptionalFiniteNumber(searchParams.get('maxPrice')),
       minEngineCapacity: searchParams.get('minEngineCapacity')
         ? parseInt(searchParams.get('minEngineCapacity')!, 10)
         : undefined,

@@ -4,7 +4,10 @@ import { Database } from '@/lib/supabase/database.types'
 import { SupabaseClient } from '@supabase/supabase-js'
 import { generateSlug } from '@/lib/utils'
 import {
+  compareMotorcyclesByPrice,
+  getStandaloneDailyRate,
   hydrateRentalOffersFromRows,
+  resolveMotorcycleRentalOffers,
   type NormalizedRentalOffer,
 } from '@/lib/rental-offers'
 import {
@@ -111,17 +114,7 @@ export interface FilterOptions {
 export type DerivedFilterOptions = Pick<FilterOptions, 'brands' | 'categories' | 'models'>
 
 export function getEffectiveDailyRate(motorcycle: any): number | null {
-  if (Array.isArray(motorcycle?.rental_rate_tiers) && motorcycle.rental_rate_tiers.length > 0) {
-    const shortestTier = motorcycle.rental_rate_tiers.reduce((prev: any, curr: any) =>
-      prev.min_days < curr.min_days ? prev : curr
-    )
-    if (typeof shortestTier?.rate_per_day === 'number') {
-      return shortestTier.rate_per_day
-    }
-  }
-  return typeof motorcycle?.rental_rate_per_day === 'number'
-    ? motorcycle.rental_rate_per_day
-    : null
+  return getStandaloneDailyRate(motorcycle)
 }
 
 function matchesEntityFilter(
@@ -274,9 +267,9 @@ export function filterAndSortMotorcycles<T extends Record<string, any>>(
   return [...filtered].sort((a, b) => {
     switch (sortBy) {
       case 'price_asc':
-        return compareNullableNumbers(getEffectiveDailyRate(a), getEffectiveDailyRate(b), 'asc')
+        return compareMotorcyclesByPrice(a, b, 'asc')
       case 'price_desc':
-        return compareNullableNumbers(getEffectiveDailyRate(a), getEffectiveDailyRate(b), 'desc')
+        return compareMotorcyclesByPrice(a, b, 'desc')
       case 'engine_capacity_asc':
         return compareNullableNumbers(a.engine_capacity_cc, b.engine_capacity_cc, 'asc')
       case 'engine_capacity_desc':
@@ -434,9 +427,10 @@ export const motorcycleService = {
           business_status_id${shopLocationJoin}
         ),
         rental_rate_tiers (
-          min_days,
-          rate_per_day,
-          currency
+          ${MOTORCYCLE_LISTING_RATE_TIERS_COLUMNS}
+        ),
+        rental_offers (
+          ${MOTORCYCLE_LISTING_OFFERS_COLUMNS}
         )
       `)
 
@@ -464,7 +458,9 @@ export const motorcycleService = {
       throw error
     }
 
-    const motorcycles = filterAvailableMotorcycles(data as any[]) as unknown as MotorcycleWithDetails[]
+    const motorcycles = filterAvailableMotorcycles(data as any[]).map((m) =>
+      attachHydratedRentalOffers(m)
+    ) as unknown as MotorcycleWithDetails[]
     return {
       motorcycles,
       total: motorcycles.length
@@ -533,12 +529,6 @@ export const motorcycleService = {
     if (effectiveModel) {
       query = query.ilike('model', `%${effectiveModel}%`)
     }
-    if (minPrice !== undefined) {
-      query = query.gte('rental_rate_per_day', minPrice)
-    }
-    if (maxPrice !== undefined) {
-      query = query.lte('rental_rate_per_day', maxPrice)
-    }
     if (minEngineCapacity !== undefined) {
       query = query.gte('engine_capacity_cc', minEngineCapacity)
     }
@@ -549,10 +539,10 @@ export const motorcycleService = {
     // Apply sorting
     switch (sortBy) {
       case 'price_asc':
-        query = query.order('rental_rate_per_day', { ascending: true })
+        query = query.order('rental_rate_per_day', { ascending: true, nullsFirst: false })
         break
       case 'price_desc':
-        query = query.order('rental_rate_per_day', { ascending: false })
+        query = query.order('rental_rate_per_day', { ascending: false, nullsFirst: false })
         break
       case 'engine_capacity_asc':
         query = query.order('engine_capacity_cc', { ascending: true })
@@ -570,38 +560,59 @@ export const motorcycleService = {
         break
     }
 
-    // Apply feature filtering if features are specified
-    if (features && features.length > 0) {
-      // For feature filtering, we need to get all results first, then filter, then paginate
-      // This is because Supabase doesn't easily support complex EXISTS queries
+    const hasFeaturesFilter = Boolean(features && features.length > 0)
+    const needsPricingPostProcess =
+      minPrice !== undefined ||
+      maxPrice !== undefined ||
+      sortBy === 'price_asc' ||
+      sortBy === 'price_desc'
 
-      // Remove pagination temporarily to get all results for filtering
-      const allResultsQuery = query.range(0, 999) // Get up to 1000 results for filtering
-      const { data: allData, error: allError, count: totalCount } = await allResultsQuery
+    if (hasFeaturesFilter || needsPricingPostProcess) {
+      const allResultsQuery = query.range(0, 999)
+      const { data: allData, error: allError } = await allResultsQuery
 
       if (allError) {
-        console.error('Error fetching motorcycles for feature filtering:', allError)
+        console.error('Error fetching motorcycles for post-query filtering/sorting:', allError)
         throw allError
       }
 
-      // Apply feature filtering
-      const filteredData = filterAvailableMotorcycles(allData as any[]).filter((motorcycle: any) => {
-        const motorcycleFeatures = (motorcycle as any).motorcycle_features || []
-        const motorcycleFeatureIds = motorcycleFeatures.map((mf: any) => mf.feature_id)
+      let processedData = filterAvailableMotorcycles(allData as any[]).map((m) =>
+        attachHydratedRentalOffers(m)
+      )
 
-        // Check if motorcycle has ALL required features
-        return features.every(featureId => motorcycleFeatureIds.includes(featureId))
-      })
+      if (hasFeaturesFilter && features) {
+        processedData = processedData.filter((motorcycle: any) => {
+          const motorcycleFeatures = motorcycle.motorcycle_features || []
+          const motorcycleFeatureIds = motorcycleFeatures.map((mf: any) => mf.feature_id)
+          return features.every((featureId) => motorcycleFeatureIds.includes(featureId))
+        })
+      }
 
-      // Apply pagination to filtered results
-      const paginatedData = filteredData.slice(offset, offset + limit)
+      if (minPrice !== undefined || maxPrice !== undefined) {
+        processedData = processedData.filter((motorcycle: any) => {
+          const effectiveRate = getEffectiveDailyRate(motorcycle)
+          if (effectiveRate === null) return false
+          if (minPrice !== undefined && effectiveRate < minPrice) return false
+          if (maxPrice !== undefined && effectiveRate > maxPrice) return false
+          return true
+        })
+      }
+
+      if (sortBy === 'price_asc' || sortBy === 'price_desc') {
+        const direction = sortBy === 'price_asc' ? 'asc' : 'desc'
+        processedData = [...processedData].sort((a, b) =>
+          compareMotorcyclesByPrice(a, b, direction)
+        )
+      }
+
+      const paginatedData = processedData.slice(offset, offset + limit)
 
       return {
-        motorcycles: (paginatedData as any[]).map((m) => attachHydratedRentalOffers(m)) as MotorcycleWithDetails[],
-        total: filteredData.length // Total count of filtered results
+        motorcycles: paginatedData as MotorcycleWithDetails[],
+        total: processedData.length
       }
     } else {
-      // No feature filtering - use normal pagination
+      // No feature or pricing post-process needed - use direct pagination
       const { data, error, count } = await query.range(offset, offset + limit - 1)
 
       if (error) {
@@ -794,7 +805,7 @@ export const motorcycleService = {
       throw error
     }
 
-    return filterAvailableMotorcycles(data as any[])
+    return filterAvailableMotorcycles(data as any[]).map((m) => attachHydratedRentalOffers(m))
   },
 
   // Search motorcycles by text query
@@ -808,6 +819,9 @@ export const motorcycleService = {
         categories (id, name, description),
         rental_rate_tiers (
           ${MOTORCYCLE_LISTING_RATE_TIERS_COLUMNS}
+        ),
+        rental_offers (
+          ${MOTORCYCLE_LISTING_OFFERS_COLUMNS}
         )
       `)
       .or(`model.ilike.%${searchQuery}%,brands.name.ilike.%${searchQuery}%`)
@@ -821,7 +835,9 @@ export const motorcycleService = {
       throw error
     }
 
-    return filterAvailableMotorcycles(data as any[]) as MotorcycleWithDetails[]
+    return filterAvailableMotorcycles(data as any[]).map((m) =>
+      attachHydratedRentalOffers(m)
+    ) as MotorcycleWithDetails[]
   },
 
   // Get featured/popular motorcycles
@@ -835,14 +851,16 @@ export const motorcycleService = {
         categories (id, name, description),
         rental_rate_tiers (
           ${MOTORCYCLE_LISTING_RATE_TIERS_COLUMNS}
+        ),
+        rental_offers (
+          ${MOTORCYCLE_LISTING_OFFERS_COLUMNS}
         )
       `)
-      .not('rental_rate_per_day', 'is', null)
 
     query = applyAvailableMotorcycleFilterSync(query)
       .order('rental_shops.rating', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false })
-      .limit(limit)
+      .limit(Math.max(limit * 3, 30))
 
     const { data, error } = await query
 
@@ -851,7 +869,10 @@ export const motorcycleService = {
       throw error
     }
 
-    return filterAvailableMotorcycles(data as any[]) as MotorcycleWithDetails[]
+    return filterAvailableMotorcycles(data as any[])
+      .map((m) => attachHydratedRentalOffers(m))
+      .filter((m) => resolveMotorcycleRentalOffers(m).length > 0)
+      .slice(0, limit) as MotorcycleWithDetails[]
   },
 
   // Get motorcycle statistics
@@ -1346,6 +1367,9 @@ export const motorcycleService = {
         categories (id, name, description),
         rental_rate_tiers (
           ${MOTORCYCLE_LISTING_RATE_TIERS_COLUMNS}
+        ),
+        rental_offers (
+          ${MOTORCYCLE_LISTING_OFFERS_COLUMNS}
         )
       `)
       .eq('rental_shops.cities.provinces.country_code', countryCode)
@@ -1367,7 +1391,9 @@ export const motorcycleService = {
       throw error
     }
 
-    return filterAvailableMotorcycles(data as any[]) as MotorcycleWithDetails[]
+    return filterAvailableMotorcycles(data as any[]).map((m) =>
+      attachHydratedRentalOffers(m)
+    ) as MotorcycleWithDetails[]
   },
 
   // Get structured filter options with counts based on current filters

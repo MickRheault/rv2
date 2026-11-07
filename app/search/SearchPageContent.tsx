@@ -56,14 +56,22 @@ function RangeFilterInput({
           placeholder={minPlaceholder}
           className="w-full p-2 text-sm border rounded"
           value={minValue ?? ''}
-          onChange={(e) => onMinChange(e.target.value ? Number(e.target.value) : undefined)}
+          onChange={(e) => {
+            const raw = e.target.value.trim()
+            const num = raw === '' ? undefined : Number(raw)
+            onMinChange(num !== undefined && Number.isFinite(num) ? num : undefined)
+          }}
         />
         <input
           type="number"
           placeholder={maxPlaceholder}
           className="w-full p-2 text-sm border rounded"
           value={maxValue ?? ''}
-          onChange={(e) => onMaxChange(e.target.value ? Number(e.target.value) : undefined)}
+          onChange={(e) => {
+            const raw = e.target.value.trim()
+            const num = raw === '' ? undefined : Number(raw)
+            onMaxChange(num !== undefined && Number.isFinite(num) ? num : undefined)
+          }}
         />
       </div>
     </div>
@@ -180,8 +188,12 @@ export default function SearchPageContent({
       if (category) initialFilters.categoryId = category
       if (model) initialFilters.model = model
       if (sortBy) initialFilters.sortBy = sortBy as SortByType
-      if (minPrice) initialFilters.minPrice = Number(minPrice)
-      if (maxPrice) initialFilters.maxPrice = Number(maxPrice)
+      if (minPrice !== null && minPrice.trim() !== '' && Number.isFinite(Number(minPrice))) {
+        initialFilters.minPrice = Number(minPrice)
+      }
+      if (maxPrice !== null && maxPrice.trim() !== '' && Number.isFinite(Number(maxPrice))) {
+        initialFilters.maxPrice = Number(maxPrice)
+      }
       if (minEngineCapacity) initialFilters.minEngineCapacity = Number(minEngineCapacity)
       if (maxEngineCapacity) initialFilters.maxEngineCapacity = Number(maxEngineCapacity)
 

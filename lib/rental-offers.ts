@@ -887,6 +887,138 @@ export function formatOfferBillingUnitPhrase(offer: OfferDurationTerms): string 
   return `for ${offer.minDuration} ${formatDurationUnitLabel(offer.durationUnit, offer.minDuration)}`;
 }
 
+export function formatListingHeadlineUnitLabel(offer: OfferDurationTerms): string {
+  if (offer.billingBasis === 'per_day') {
+    return '/day';
+  }
+  if (offer.billingBasis === 'per_hour') {
+    return '/ hour';
+  }
+  if (offer.billingBasis === 'per_calendar_month') {
+    return '/ calendar month';
+  }
+  return `for ${offer.minDuration} ${formatDurationUnitLabel(offer.durationUnit, offer.minDuration)}`;
+}
+
+export function resolveMotorcycleRentalOffers(
+  motorcycle: any,
+  options: { defaultLegacyCurrency?: string | null } = {}
+): NormalizedRentalOffer[] {
+  const defaultLegacyCurrency =
+    options.defaultLegacyCurrency !== undefined ? options.defaultLegacyCurrency : 'USD';
+  const rawCurrency =
+    typeof motorcycle?.rental_rate_currency === 'string' &&
+    motorcycle.rental_rate_currency.trim().length > 0
+      ? motorcycle.rental_rate_currency
+      : defaultLegacyCurrency;
+
+  return resolveFallbackRentalOffers({
+    rentalOffersRows: motorcycle?.rental_offers,
+    rentalRateTiers: motorcycle?.rental_rate_tiers,
+    rentalRatePerDay: motorcycle?.rental_rate_per_day,
+    rentalRateCurrency: rawCurrency,
+  });
+}
+
+export function getStandaloneDailyRate(motorcycle: any): number | null {
+  const canonicalOffers = hydrateRentalOffersFromRows(motorcycle?.rental_offers);
+  if (canonicalOffers.length > 0) {
+    const dailyOffers = canonicalOffers
+      .filter((o) => o.offerType === 'daily')
+      .sort((a, b) => a.minDuration - b.minDuration || a.sortOrder - b.sortOrder || a.amount - b.amount);
+    return dailyOffers.length > 0 ? dailyOffers[0].amount : null;
+  }
+
+  if (Array.isArray(motorcycle?.rental_rate_tiers) && motorcycle.rental_rate_tiers.length > 0) {
+    const validTiers = motorcycle.rental_rate_tiers.filter(
+      (t: any) => typeof t?.rate_per_day === 'number' && Number.isFinite(t.rate_per_day) && t.rate_per_day > 0
+    );
+    if (validTiers.length > 0) {
+      const shortestTier = validTiers.reduce((prev: any, curr: any) =>
+        (prev.min_days ?? 1) <= (curr.min_days ?? 1) ? prev : curr
+      );
+      return shortestTier.rate_per_day;
+    }
+  }
+
+  return typeof motorcycle?.rental_rate_per_day === 'number' &&
+    Number.isFinite(motorcycle.rental_rate_per_day) &&
+    motorcycle.rental_rate_per_day > 0
+    ? motorcycle.rental_rate_per_day
+    : null;
+}
+
+export function resolveListingHeadline(
+  motorcycle: any,
+  options: { defaultLegacyCurrency?: string | null } = {}
+): {
+  headlineOffer: NormalizedRentalOffer | null;
+  showFrom: boolean;
+  unitLabel: string | null;
+} {
+  const offers = resolveMotorcycleRentalOffers(motorcycle, options);
+  const headlineOffer = selectPrimaryHeadlineOffer(offers);
+  if (!headlineOffer) {
+    return {
+      headlineOffer: null,
+      showFrom: false,
+      unitLabel: null,
+    };
+  }
+  return {
+    headlineOffer,
+    showFrom: shouldShowHeadlineFromPrefix(offers, headlineOffer),
+    unitLabel: formatListingHeadlineUnitLabel(headlineOffer),
+  };
+}
+
+export function compareMotorcyclesByPrice(
+  a: any,
+  b: any,
+  direction: 'asc' | 'desc'
+): number {
+  const dailyA = getStandaloneDailyRate(a);
+  const dailyB = getStandaloneDailyRate(b);
+  const hasDailyA = typeof dailyA === 'number' && Number.isFinite(dailyA);
+  const hasDailyB = typeof dailyB === 'number' && Number.isFinite(dailyB);
+
+  if (hasDailyA && hasDailyB) {
+    const diff = direction === 'asc' ? dailyA - dailyB : dailyB - dailyA;
+    if (diff !== 0) return diff;
+    return 0;
+  }
+  if (hasDailyA !== hasDailyB) {
+    return hasDailyA ? -1 : 1;
+  }
+
+  const nonDailyA = selectPrimaryHeadlineOffer(resolveMotorcycleRentalOffers(a));
+  const nonDailyB = selectPrimaryHeadlineOffer(resolveMotorcycleRentalOffers(b));
+
+  if (nonDailyA && nonDailyB) {
+    const prioDiff =
+      HEADLINE_FALLBACK_PRIORITY[nonDailyA.offerType] -
+      HEADLINE_FALLBACK_PRIORITY[nonDailyB.offerType];
+    if (prioDiff !== 0) return prioDiff;
+
+    const amountDiff =
+      direction === 'asc'
+        ? nonDailyA.amount - nonDailyB.amount
+        : nonDailyB.amount - nonDailyA.amount;
+    if (amountDiff !== 0) return amountDiff;
+
+    if (nonDailyA.minDuration !== nonDailyB.minDuration) {
+      return nonDailyA.minDuration - nonDailyB.minDuration;
+    }
+    return String(a?.id ?? '').localeCompare(String(b?.id ?? ''));
+  }
+
+  if (Boolean(nonDailyA) !== Boolean(nonDailyB)) {
+    return nonDailyA ? -1 : 1;
+  }
+
+  return 0;
+}
+
 export function formatOfferDurationRangeLabel(offer: OfferDurationTerms): string {
   if (offer.billingBasis === 'package_total') {
     return `Fixed ${offer.minDuration} ${formatDurationUnitLabel(offer.durationUnit, offer.minDuration)}`;
