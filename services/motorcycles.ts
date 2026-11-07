@@ -1059,7 +1059,10 @@ export const motorcycleService = {
           )
         ),
         brands (*),
-        categories (*)
+        categories (*),
+        rental_offers (
+          ${MOTORCYCLE_LISTING_OFFERS_COLUMNS}
+        )
       `)
       .single()
 
@@ -1068,7 +1071,7 @@ export const motorcycleService = {
       throw error
     }
 
-    return data as MotorcycleWithDetails
+    return attachHydratedRentalOffers(data as any) as MotorcycleWithDetails
   },
 
   // Update existing motorcycle
@@ -1090,7 +1093,10 @@ export const motorcycleService = {
           )
         ),
         brands (*),
-        categories (*)
+        categories (*),
+        rental_offers (
+          ${MOTORCYCLE_LISTING_OFFERS_COLUMNS}
+        )
       `)
       .single()
 
@@ -1099,7 +1105,7 @@ export const motorcycleService = {
       throw error
     }
 
-    return data as MotorcycleWithDetails
+    return attachHydratedRentalOffers(data as any) as MotorcycleWithDetails
   },
 
   // Delete motorcycle

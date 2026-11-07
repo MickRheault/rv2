@@ -4,6 +4,8 @@ import { SITE_CONFIG } from './config';
 import { getShopUrl } from '@/lib/utils/urls';
 import { formatMotorcycleYear, type MotorcycleYearRangeInput } from '@/lib/utils';
 import {
+  formatDurationUnitLabel,
+  formatExtensionBillingPhrase,
   formatOfferBillingUnitPhrase,
   type DurationUnit,
   type NormalizedRentalOffer,
@@ -472,15 +474,46 @@ export function generateOfferPricingSchema(rentalOffers: NormalizedRentalOffer[]
   return rentalOffers.map((offer) => {
     const unitMeta = SCHEMA_UNIT_CODE_MAP[offer.durationUnit];
     const refQtyValue = offer.billingBasis === 'package_total' ? offer.minDuration : 1;
-    const commitmentUnitMeta = offer.minCommitment
-      ? SCHEMA_UNIT_CODE_MAP[offer.minCommitment.unit]
-      : unitMeta;
+    const effectiveMinInOfferUnit =
+      offer.minCommitment && offer.minCommitment.unit === offer.durationUnit
+        ? Math.max(offer.minDuration, offer.minCommitment.value)
+        : offer.minDuration;
+
+    const name = offer.supplierLabel
+      ? offer.isFrom
+        ? `From — ${offer.supplierLabel}`
+        : offer.supplierLabel
+      : `${offer.isFrom ? 'From ' : ''}${offer.amount} ${offer.currency} ${formatOfferBillingUnitPhrase(offer)}`;
+
+    const detailClauses: string[] = [];
+    if (offer.minCommitment) {
+      detailClauses.push(
+        `Min. commitment: ${offer.minCommitment.value} ${formatDurationUnitLabel(
+          offer.minCommitment.unit,
+          offer.minCommitment.value
+        )}`
+      );
+    }
+    if (offer.billingIncrement) {
+      detailClauses.push(
+        `Billed in ${offer.billingIncrement.value}-${formatDurationUnitLabel(
+          offer.billingIncrement.unit,
+          1
+        )} increments`
+      );
+    }
+    for (const ext of offer.extensions || []) {
+      detailClauses.push(
+        `+ ${ext.isFrom ? 'From ' : ''}${ext.amount} ${ext.currency} ${formatExtensionBillingPhrase(ext)}${
+          ext.supplierLabel ? ` (${ext.supplierLabel})` : ''
+        }`
+      );
+    }
 
     return {
       '@type': 'UnitPriceSpecification',
-      name:
-        offer.supplierLabel ||
-        `${offer.isFrom ? 'From ' : ''}${offer.amount} ${offer.currency} ${formatOfferBillingUnitPhrase(offer)}`,
+      name,
+      ...(detailClauses.length > 0 ? { description: detailClauses.join('; ') } : {}),
       price: offer.amount.toString(),
       priceCurrency: offer.currency || 'USD',
       referenceQuantity: {
@@ -491,10 +524,10 @@ export function generateOfferPricingSchema(rentalOffers: NormalizedRentalOffer[]
       },
       eligibleQuantity: {
         '@type': 'QuantitativeValue',
-        minValue: offer.minCommitment ? offer.minCommitment.value : offer.minDuration,
+        minValue: effectiveMinInOfferUnit,
         ...(offer.maxDuration !== null ? { maxValue: offer.maxDuration } : {}),
-        unitCode: commitmentUnitMeta.unitCode,
-        unitText: commitmentUnitMeta.unitText,
+        unitCode: unitMeta.unitCode,
+        unitText: unitMeta.unitText,
       },
     };
   });

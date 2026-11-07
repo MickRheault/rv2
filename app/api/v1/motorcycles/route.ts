@@ -12,16 +12,10 @@ import {
 import { requireAuth } from '@/lib/api/middleware';
 import { rateLimit, getRateLimitHeaders } from '@/lib/api/rate-limit';
 import { motorcycleService } from '@/services/motorcycles';
+import { prepareMotorcyclePricingMutation } from '@/services/rental-offers';
 import {
-  replaceMotorcycleRateTiersLegacyCompat,
-  replaceMotorcycleRentalOffers,
-} from '@/services/rental-offers';
-import {
-  convertLegacyRateTiersToOffers,
-  projectOffersToLegacyDaily,
   RentalOfferConflictError,
   RentalOfferValidationError,
-  validateAndNormalizeRentalOffers,
 } from '@/lib/rental-offers';
 import { parseAndValidateMotorcycleYearPayload } from '@/lib/utils';
 import { purgePublicCache } from '@/lib/cache/purgePublicCache';
@@ -109,17 +103,13 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { rental_rate_tiers, rental_offers, offers, yearTo, ...motorcycleData } = body;
-    const rawOffers = rental_offers !== undefined ? rental_offers : offers;
+    const { rental_rate_tiers, rental_offers, yearTo, ...motorcycleData } = body;
 
     if (!motorcycleData.model) {
       return errors.badRequest('Model is required');
     }
     if (!motorcycleData.shop_id) {
       return errors.badRequest('Shop ID is required');
-    }
-    if (rawOffers !== undefined && rental_rate_tiers !== undefined) {
-      return errors.badRequest('Provide either rental_offers or legacy rental_rate_tiers, not both');
     }
 
     const yearValidation = parseAndValidateMotorcycleYearPayload({
@@ -135,36 +125,21 @@ export async function POST(request: NextRequest) {
       motorcycleData.year_to = yearValidation.year_to;
     }
 
-    // Pre-validate offers or legacy rate tiers BEFORE inserting the motorcycle row
-    if (rawOffers !== undefined) {
-      const normalized = validateAndNormalizeRentalOffers(rawOffers, { fieldPath: 'rental_offers' });
-      const proj = projectOffersToLegacyDaily(normalized);
-      motorcycleData.rental_rate_per_day = proj.summaryRatePerDay;
-      motorcycleData.rental_rate_currency = proj.summaryCurrency;
-    } else if (rental_rate_tiers !== undefined) {
-      const normalized = convertLegacyRateTiersToOffers(rental_rate_tiers);
-      const proj = projectOffersToLegacyDaily(normalized);
-      motorcycleData.rental_rate_per_day = proj.summaryRatePerDay;
-      motorcycleData.rental_rate_currency = proj.summaryCurrency;
+    const pricingPlan = await prepareMotorcyclePricingMutation({
+      rentalOffers: rental_offers,
+      rentalRateTiers: rental_rate_tiers,
+      scalarDailyRate: motorcycleData.rental_rate_per_day,
+      scalarCurrency: motorcycleData.rental_rate_currency,
+    });
+    if (pricingPlan.hasPricingMutation) {
+      motorcycleData.rental_rate_per_day = pricingPlan.summaryRatePerDay;
+      motorcycleData.rental_rate_currency = pricingPlan.summaryCurrency;
     }
 
     const motorcycle = await motorcycleService.createMotorcycle(motorcycleData);
 
     try {
-      if (rawOffers !== undefined) {
-        const savedOffers = await replaceMotorcycleRentalOffers(motorcycle.id, rawOffers);
-        const proj = projectOffersToLegacyDaily(savedOffers);
-        (motorcycle as any).rental_offers = savedOffers;
-        (motorcycle as any).rental_rate_per_day = proj.summaryRatePerDay;
-        (motorcycle as any).rental_rate_currency = proj.summaryCurrency;
-      } else if (rental_rate_tiers !== undefined) {
-        const saved = await replaceMotorcycleRateTiersLegacyCompat(motorcycle.id, rental_rate_tiers);
-        const proj = projectOffersToLegacyDaily(saved.offers);
-        (motorcycle as any).rental_rate_tiers = saved.rateTiers;
-        (motorcycle as any).rental_offers = saved.offers;
-        (motorcycle as any).rental_rate_per_day = proj.summaryRatePerDay;
-        (motorcycle as any).rental_rate_currency = proj.summaryCurrency;
-      }
+      await pricingPlan.commit(motorcycle as any);
     } catch (offerErr) {
       // Roll back the created motorcycle so invalid/failed offer writes never leave an orphan listing
       await motorcycleService.deleteMotorcycle(motorcycle.id).catch(() => {});

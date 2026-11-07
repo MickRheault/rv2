@@ -294,6 +294,25 @@ WHERE mr.rental_rate_per_day IS NOT NULL
     SELECT 1 FROM public.rental_offers ro WHERE ro.motorcycle_id = mr.id
   );
 
+-- Retire legacy fractional-day workaround rows from rental_rate_tiers now that they live as hourly rental_offers
+DELETE FROM public.rental_rate_tiers
+WHERE min_days < 1
+   OR min_days <> trunc(min_days)
+   OR (max_days IS NOT NULL AND max_days <> trunc(max_days));
+
+-- Ensure motorcycles whose backfilled rental_offers contain only non-daily offers have NULL summary rental_rate_per_day
+UPDATE public.motorcycle_rentals mr
+SET rental_rate_per_day = NULL
+WHERE mr.rental_rate_per_day IS NOT NULL
+  AND EXISTS (
+    SELECT 1 FROM public.rental_offers ro WHERE ro.motorcycle_id = mr.id
+  )
+  AND NOT EXISTS (
+    SELECT 1 FROM public.rental_offers ro
+    WHERE ro.motorcycle_id = mr.id
+      AND ro.offer_type = 'daily'
+  );
+
 -- 5. Transactional RPC to replace a motorcycle's rental_offers + project legacy daily tiers and summary columns
 CREATE OR REPLACE FUNCTION public.replace_motorcycle_rental_offers(
   p_motorcycle_id UUID,

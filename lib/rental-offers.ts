@@ -10,6 +10,13 @@ export interface OfferQuantitySpec<U extends string = DurationUnit> {
   unit: U;
 }
 
+export interface OfferDurationTerms {
+  billingBasis: BillingBasis;
+  durationUnit: DurationUnit;
+  minDuration: number;
+  maxDuration: number | null;
+}
+
 export interface RentalOfferExtensionInput {
   amount: number;
   currency: string;
@@ -142,14 +149,12 @@ function roundQuantity(value: number): number {
   return Math.round((value + Number.EPSILON) * 10000) / 10000;
 }
 
-export function computeDailyEquivalent(offer: {
-  offerType: RentalOfferType;
-  amount: number;
-  billingBasis: BillingBasis;
-  durationUnit: DurationUnit;
-  minDuration: number;
-  maxDuration: number | null;
-}): number | null {
+export function computeDailyEquivalent(
+  offer: OfferDurationTerms & {
+    offerType: RentalOfferType;
+    amount: number;
+  }
+): number | null {
   if (
     offer.offerType !== 'extension' &&
     offer.billingBasis === 'package_total' &&
@@ -244,26 +249,26 @@ function validateExtensionInput(
     throw new RentalOfferValidationError(`${path} cannot nest further extensions`);
   }
 
-  const amount = parsePositiveAmount(ext.amount ?? ext.rate_per_day, path);
+  const amount = parsePositiveAmount(ext.amount, path);
   const currency = parseCurrency(ext.currency, path);
-  const rawBasis = ext.billingBasis ?? ext.billing_basis;
+  const rawBasis = ext.billingBasis;
   if (typeof rawBasis !== 'string' || !EXTENSION_BILLING_BASES.has(rawBasis as ExtensionBillingBasis)) {
     throw new RentalOfferValidationError(`${path}.billingBasis must be 'per_day' or 'per_hour'`);
   }
   const billingBasis = rawBasis as ExtensionBillingBasis;
   const expectedUnit: 'day' | 'hour' = billingBasis === 'per_day' ? 'day' : 'hour';
-  const rawUnit = ext.durationUnit ?? ext.duration_unit;
+  const rawUnit = ext.durationUnit;
   if (rawUnit !== undefined && rawUnit !== null && rawUnit !== expectedUnit) {
     throw new RentalOfferValidationError(
       `${path}.durationUnit must be '${expectedUnit}' when billingBasis is '${billingBasis}'`
     );
   }
 
-  const rawMin = ext.minDuration ?? ext.min_duration ?? 1;
+  const rawMin = ext.minDuration ?? 1;
   if (typeof rawMin !== 'number' || !Number.isFinite(rawMin) || rawMin <= 0) {
     throw new RentalOfferValidationError(`${path}.minDuration must be greater than 0`);
   }
-  const rawMax = ext.maxDuration ?? ext.max_duration ?? null;
+  const rawMax = ext.maxDuration ?? null;
   if (rawMax !== null && (typeof rawMax !== 'number' || !Number.isFinite(rawMax) || rawMax < rawMin)) {
     throw new RentalOfferValidationError(
       `${path}.maxDuration must be null or greater than or equal to minDuration`
@@ -271,10 +276,7 @@ function validateExtensionInput(
   }
 
   const billingIncrement = parseQuantitySpec(
-    ext.billingIncrement ??
-      (ext.billing_increment_value != null || ext.billing_increment_unit != null
-        ? { value: ext.billing_increment_value, unit: ext.billing_increment_unit }
-        : null),
+    ext.billingIncrement ?? null,
     EXTENSION_INCREMENT_UNITS,
     `${path}.billingIncrement`
   );
@@ -288,8 +290,8 @@ function validateExtensionInput(
     minDuration: roundQuantity(rawMin),
     maxDuration: rawMax === null ? null : roundQuantity(rawMax),
     billingIncrement,
-    supplierLabel: parseSupplierLabel(ext.supplierLabel ?? ext.supplier_label, path),
-    isFrom: parseIsFrom(ext.isFrom ?? ext.is_from, path),
+    supplierLabel: parseSupplierLabel(ext.supplierLabel, path),
+    isFrom: parseIsFrom(ext.isFrom, path),
     sortOrder: extIndex,
     dailyEquivalent: null,
   };
@@ -448,7 +450,7 @@ export function validateAndNormalizeRentalOffers(
       throw new RentalOfferValidationError(`${path} must be an object`);
     }
     const item = rawItem as Record<string, unknown>;
-    const rawType = item.offerType ?? item.offer_type;
+    const rawType = item.offerType;
     if (rawType === 'extension') {
       throw new RentalOfferValidationError(
         `${path}: extension charges cannot stand alone; nest them inside a parent offer's extensions[] array`
@@ -463,7 +465,7 @@ export function validateAndNormalizeRentalOffers(
     const amount = parsePositiveAmount(item.amount, path);
     const currency = parseCurrency(item.currency, path);
 
-    const rawBasis = item.billingBasis ?? item.billing_basis;
+    const rawBasis = item.billingBasis;
     if (typeof rawBasis !== 'string' || !BILLING_BASES.has(rawBasis as BillingBasis)) {
       throw new RentalOfferValidationError(
         `${path}.billingBasis must be one of: per_hour, per_day, per_calendar_month, package_total`
@@ -471,7 +473,7 @@ export function validateAndNormalizeRentalOffers(
     }
     const billingBasis = rawBasis as BillingBasis;
 
-    const rawUnit = item.durationUnit ?? item.duration_unit;
+    const rawUnit = item.durationUnit;
     if (typeof rawUnit !== 'string' || !DURATION_UNITS.has(rawUnit as DurationUnit)) {
       throw new RentalOfferValidationError(
         `${path}.durationUnit must be one of: hour, day, calendar_month`
@@ -479,13 +481,13 @@ export function validateAndNormalizeRentalOffers(
     }
     const durationUnit = rawUnit as DurationUnit;
 
-    const rawMin = item.minDuration ?? item.min_duration;
+    const rawMin = item.minDuration;
     if (typeof rawMin !== 'number' || !Number.isFinite(rawMin) || rawMin <= 0) {
       throw new RentalOfferValidationError(`${path}.minDuration must be a finite number > 0`);
     }
     const minDuration = roundQuantity(rawMin);
 
-    const rawMax = item.maxDuration !== undefined ? item.maxDuration : (item.max_duration ?? null);
+    const rawMax = item.maxDuration !== undefined ? item.maxDuration : null;
     if (rawMax !== null && (typeof rawMax !== 'number' || !Number.isFinite(rawMax) || rawMax < minDuration)) {
       throw new RentalOfferValidationError(
         `${path}.maxDuration must be null or a finite number >= minDuration`
@@ -496,27 +498,19 @@ export function validateAndNormalizeRentalOffers(
     validateTypeBasisAndDuration(offerType, billingBasis, durationUnit, minDuration, maxDuration, path);
 
     const minCommitment = parseQuantitySpec(
-      item.minCommitment !== undefined
-        ? item.minCommitment
-        : item.min_commitment_value != null || item.min_commitment_unit != null
-          ? { value: item.min_commitment_value, unit: item.min_commitment_unit }
-          : null,
+      item.minCommitment ?? null,
       DURATION_UNITS,
       `${path}.minCommitment`
     );
 
     const billingIncrement = parseQuantitySpec(
-      item.billingIncrement !== undefined
-        ? item.billingIncrement
-        : item.billing_increment_value != null || item.billing_increment_unit != null
-          ? { value: item.billing_increment_value, unit: item.billing_increment_unit }
-          : null,
+      item.billingIncrement ?? null,
       INCREMENT_UNITS,
       `${path}.billingIncrement`
     );
 
-    const supplierLabel = parseSupplierLabel(item.supplierLabel ?? item.supplier_label, path);
-    const isFrom = parseIsFrom(item.isFrom ?? item.is_from, path);
+    const supplierLabel = parseSupplierLabel(item.supplierLabel, path);
+    const isFrom = parseIsFrom(item.isFrom, path);
 
     const rawExtensions = item.extensions ?? [];
     if (!Array.isArray(rawExtensions)) {
@@ -604,10 +598,20 @@ export function sortRentalOffersForDisplay(offers: NormalizedRentalOffer[]): Nor
   });
 }
 
+function sortRentalOffersByPersistedOrder(offers: NormalizedRentalOffer[]): NormalizedRentalOffer[] {
+  return [...offers].sort((a, b) => {
+    if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+    const prioDiff = OFFER_TYPE_DISPLAY_PRIORITY[a.offerType] - OFFER_TYPE_DISPLAY_PRIORITY[b.offerType];
+    if (prioDiff !== 0) return prioDiff;
+    if (a.minDuration !== b.minDuration) return a.minDuration - b.minDuration;
+    return a.amount - b.amount;
+  });
+}
+
 export function hydrateRentalOffersFromRows(rows: any[] | null | undefined): NormalizedRentalOffer[] {
   if (!Array.isArray(rows) || rows.length === 0) return [];
   if (rows[0] && typeof rows[0] === 'object' && 'offerType' in rows[0] && 'extensions' in rows[0]) {
-    return sortRentalOffersForDisplay(rows as NormalizedRentalOffer[]);
+    return sortRentalOffersByPersistedOrder(rows as NormalizedRentalOffer[]);
   }
 
   const parentRows = rows.filter((r) => !r.parent_offer_id && r.offer_type !== 'extension');
@@ -690,7 +694,7 @@ export function hydrateRentalOffersFromRows(rows: any[] | null | undefined): Nor
     };
   });
 
-  return sortRentalOffersForDisplay(hydrated);
+  return sortRentalOffersByPersistedOrder(hydrated);
 }
 
 export function convertLegacyRateTiersToOffers(rateTiers: any[]): NormalizedRentalOffer[] {
@@ -787,12 +791,7 @@ export function formatDurationUnitLabel(unit: DurationUnit | BillingIncrementUni
   return count === 1 ? singular[unit] : plural[unit];
 }
 
-export function formatOfferBillingUnitPhrase(offer: {
-  billingBasis: BillingBasis;
-  durationUnit: DurationUnit;
-  minDuration: number;
-  maxDuration: number | null;
-}): string {
+export function formatOfferBillingUnitPhrase(offer: OfferDurationTerms): string {
   if (offer.billingBasis === 'per_day') {
     return 'per day';
   }
@@ -805,12 +804,7 @@ export function formatOfferBillingUnitPhrase(offer: {
   return `for ${offer.minDuration} ${formatDurationUnitLabel(offer.durationUnit, offer.minDuration)}`;
 }
 
-export function formatOfferDurationRangeLabel(offer: {
-  billingBasis: BillingBasis;
-  durationUnit: DurationUnit;
-  minDuration: number;
-  maxDuration: number | null;
-}): string {
+export function formatOfferDurationRangeLabel(offer: OfferDurationTerms): string {
   if (offer.billingBasis === 'package_total') {
     return `Fixed ${offer.minDuration} ${formatDurationUnitLabel(offer.durationUnit, offer.minDuration)}`;
   }

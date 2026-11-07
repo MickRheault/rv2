@@ -58,8 +58,8 @@ function MotorcyclesAdminContent() {
   const [editingMotorcycle, setEditingMotorcycle] = useState<MotorcycleWithDetails | null>(null);
   const [showConditionsModal, setShowConditionsModal] = useState(false);
   const [conditionsMotorcycle, setConditionsMotorcycle] = useState<MotorcycleWithDetails | null>(null);
-  const [showRateTiersModal, setShowRateTiersModal] = useState(false);
-  const [rateTiersMotorcycle, setRateTiersMotorcycle] = useState<MotorcycleWithDetails | null>(null);
+  const [showOffersModal, setShowOffersModal] = useState(false);
+  const [offersMotorcycle, setOffersMotorcycle] = useState<MotorcycleWithDetails | null>(null);
   
   // Form data
   const [formData, setFormData] = useState<Partial<MotorcycleInsert> & { year_to?: number | null }>({
@@ -172,10 +172,34 @@ function MotorcyclesAdminContent() {
     try {
       setFormLoading(true);
       if (editingMotorcycle) {
-        await motorcycleService.updateMotorcycle(editingMotorcycle.id, submissionData as MotorcycleUpdate);
+        const { rental_rate_per_day: _ignoredRate, rental_rate_currency: _ignoredCurr, ...metadataUpdates } =
+          submissionData;
+        await motorcycleService.updateMotorcycle(
+          editingMotorcycle.id,
+          metadataUpdates as MotorcycleUpdate
+        );
         setSuccess('Motorcycle updated successfully');
       } else {
-        await motorcycleService.createMotorcycle(submissionData as MotorcycleInsert);
+        const created = await motorcycleService.createMotorcycle(submissionData as MotorcycleInsert);
+        if (submissionData.rental_rate_per_day && submissionData.rental_rate_per_day > 0) {
+          await fetch(`/api/admin/motorcycles/${created.id}/offers`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              offers: [
+                {
+                  offerType: 'daily',
+                  amount: submissionData.rental_rate_per_day,
+                  currency: (submissionData.rental_rate_currency || 'USD').toUpperCase(),
+                  billingBasis: 'per_day',
+                  durationUnit: 'day',
+                  minDuration: 1,
+                  maxDuration: null,
+                },
+              ],
+            }),
+          });
+        }
         setSuccess('Motorcycle created successfully');
       }
       
@@ -270,15 +294,14 @@ function MotorcyclesAdminContent() {
     setConditionsMotorcycle(null);
   };
 
-  const handleManageRateTiers = (motorcycle: MotorcycleWithDetails) => {
-    setRateTiersMotorcycle(motorcycle);
-    setShowRateTiersModal(true);
+  const handleManageOffers = (motorcycle: MotorcycleWithDetails) => {
+    setOffersMotorcycle(motorcycle);
+    setShowOffersModal(true);
   };
 
-  const handleCloseRateTiersModal = () => {
-    setShowRateTiersModal(false);
-    setRateTiersMotorcycle(null);
-    loadMotorcycles();
+  const handleCloseOffersModal = () => {
+    setShowOffersModal(false);
+    setOffersMotorcycle(null);
   };
 
   // Selection handlers
@@ -556,7 +579,7 @@ function MotorcyclesAdminContent() {
                               <Button 
                                 variant="ghost" 
                                 size="sm"
-                                onClick={() => handleManageRateTiers(motorcycle)}
+                                onClick={() => handleManageOffers(motorcycle)}
                                 title="Manage Rental Offers"
                               >
                                 <CurrencyDollarIcon className="w-4 h-4" />
@@ -733,40 +756,48 @@ function MotorcyclesAdminContent() {
               />
             </div>
             
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Daily Rate
-              </label>
-              <Input
-                type="number"
-                step="0.01"
-                value={formData.rental_rate_per_day || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, rental_rate_per_day: Number(e.target.value) || null }))}
-                placeholder="25.00"
-                min="0"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Currency
-              </label>
-              <Select
-                value={formData.rental_rate_currency || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, rental_rate_currency: e.target.value || null }))}
-                options={[
-                  { value: '', label: 'Select Currency' },
-                  { value: 'USD', label: 'USD' },
-                  { value: 'EUR', label: 'EUR' },
-                  { value: 'GBP', label: 'GBP' },
-                  { value: 'THB', label: 'THB' },
-                  { value: 'VND', label: 'VND' },
-                  { value: 'IDR', label: 'IDR' },
-                  { value: 'PHP', label: 'PHP' },
-                  { value: 'MYR', label: 'MYR' }
-                ]}
-              />
-            </div>
+            {!editingMotorcycle ? (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Initial Daily Rate (optional)
+                  </label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={formData.rental_rate_per_day || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, rental_rate_per_day: Number(e.target.value) || null }))}
+                    placeholder="25.00"
+                    min="0"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Initial Currency
+                  </label>
+                  <Select
+                    value={formData.rental_rate_currency || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, rental_rate_currency: e.target.value || null }))}
+                    options={[
+                      { value: '', label: 'Select Currency' },
+                      { value: 'USD', label: 'USD' },
+                      { value: 'EUR', label: 'EUR' },
+                      { value: 'GBP', label: 'GBP' },
+                      { value: 'THB', label: 'THB' },
+                      { value: 'VND', label: 'VND' },
+                      { value: 'IDR', label: 'IDR' },
+                      { value: 'PHP', label: 'PHP' },
+                      { value: 'MYR', label: 'MYR' }
+                    ]}
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="md:col-span-2 rounded-lg bg-blue-50 border border-blue-200 px-3 py-2 text-xs text-blue-800">
+                Manage daily, package, hourly, monthly, and extension pricing using the <strong>Manage Rental Offers</strong> action on the motorcycles table.
+              </div>
+            )}
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -835,20 +866,19 @@ function MotorcyclesAdminContent() {
       )}
 
       {/* Rental Offers Modal */}
-      {rateTiersMotorcycle && (
+      {offersMotorcycle && (
         <RentalOffersModal
-          isOpen={showRateTiersModal}
-          onClose={handleCloseRateTiersModal}
+          isOpen={showOffersModal}
+          onClose={handleCloseOffersModal}
           onSaved={() => {
             setSuccess('Rental offers saved successfully');
             loadMotorcycles();
           }}
           motorcycle={{
-            id: rateTiersMotorcycle.id,
-            model: rateTiersMotorcycle.model,
-            brand: rateTiersMotorcycle.brands?.name || 'Unknown',
-            baseDailyRate: rateTiersMotorcycle.rental_rate_per_day || undefined,
-            currency: rateTiersMotorcycle.rental_rate_currency || undefined
+            id: offersMotorcycle.id,
+            model: offersMotorcycle.model,
+            brand: offersMotorcycle.brands?.name || 'Unknown',
+            currency: offersMotorcycle.rental_rate_currency || undefined
           }}
         />
       )}

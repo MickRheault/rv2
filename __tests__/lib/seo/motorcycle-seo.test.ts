@@ -102,11 +102,11 @@ describe('Motorcycle SEO & JSON-LD Model Year Range (#137)', () => {
           billingBasis: 'per_hour',
           durationUnit: 'hour',
           minDuration: 1,
-          maxDuration: null,
-          minCommitment: { value: 2, unit: 'hour' },
-          billingIncrement: null,
-          supplierLabel: null,
-          isFrom: false,
+          maxDuration: 8,
+          minCommitment: { value: 1, unit: 'day' },
+          billingIncrement: { value: 30, unit: 'minute' },
+          supplierLabel: 'City Pass',
+          isFrom: true,
           sortOrder: 0,
           dailyEquivalent: null,
           extensions: [],
@@ -125,7 +125,22 @@ describe('Motorcycle SEO & JSON-LD Model Year Range (#137)', () => {
           isFrom: false,
           sortOrder: 1,
           dailyEquivalent: 428.57,
-          extensions: [],
+          extensions: [
+            {
+              offerType: 'extension',
+              amount: 450,
+              currency: 'THB',
+              billingBasis: 'per_day',
+              durationUnit: 'day',
+              minDuration: 1,
+              maxDuration: null,
+              billingIncrement: null,
+              supplierLabel: null,
+              isFrom: false,
+              sortOrder: 0,
+              dailyEquivalent: null,
+            },
+          ],
         },
         {
           offerType: 'monthly',
@@ -150,10 +165,19 @@ describe('Motorcycle SEO & JSON-LD Model Year Range (#137)', () => {
     expect(specs).toHaveLength(3);
     expect(specs[0]).toMatchObject({
       '@type': 'UnitPriceSpecification',
+      name: 'From — City Pass',
       price: '100',
       priceCurrency: 'THB',
       referenceQuantity: { '@type': 'QuantitativeValue', value: 1, unitCode: 'HUR' },
+      eligibleQuantity: {
+        '@type': 'QuantitativeValue',
+        minValue: 1,
+        maxValue: 8,
+        unitCode: 'HUR',
+      },
     });
+    expect(specs[0].description).toContain('30-minute increments');
+    expect(specs[0].description).toContain('Min. commitment: 1 day');
     expect(specs[1]).toMatchObject({
       '@type': 'UnitPriceSpecification',
       name: 'Weekly Package',
@@ -161,6 +185,7 @@ describe('Motorcycle SEO & JSON-LD Model Year Range (#137)', () => {
       priceCurrency: 'THB',
       referenceQuantity: { '@type': 'QuantitativeValue', value: 7, unitCode: 'DAY' },
     });
+    expect(specs[1].description).toContain('450 THB per extra day');
     expect(specs[2]).toMatchObject({
       '@type': 'UnitPriceSpecification',
       price: '6000',

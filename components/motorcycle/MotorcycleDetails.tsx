@@ -28,6 +28,7 @@ import {
   formatOfferDurationRangeLabel,
   hydrateRentalOffersFromRows,
   selectPrimaryHeadlineOffer,
+  sortRentalOffersForDisplay,
   type NormalizedRentalOffer,
   type StandaloneOfferType,
 } from '@/lib/rental-offers'
@@ -49,12 +50,12 @@ const OFFER_TYPE_LABELS: Record<StandaloneOfferType, string> = {
 function resolveDisplayOffers(motorcycle: MotorcycleWithDetails): NormalizedRentalOffer[] {
   const hydrated = hydrateRentalOffersFromRows((motorcycle as any).rental_offers)
   if (hydrated.length > 0) {
-    return hydrated
+    return sortRentalOffersForDisplay(hydrated)
   }
 
   if (motorcycle.rental_rate_tiers && motorcycle.rental_rate_tiers.length > 0) {
     try {
-      return convertLegacyRateTiersToOffers(motorcycle.rental_rate_tiers)
+      return sortRentalOffersForDisplay(convertLegacyRateTiersToOffers(motorcycle.rental_rate_tiers))
     } catch {
       // Fallback for any historical fractional rows if encountered un-backfilled
     }
@@ -451,45 +452,25 @@ export default function MotorcycleDetails({
 
               {rental_shops?.rating && (
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <span key={star}>
-                        {star <= Math.round(rental_shops.rating!) ? (
-                          <StarSolid className="w-4 h-4 text-yellow-400" />
-                        ) : (
-                          <StarIcon className="w-4 h-4 text-gray-300" />
-                        )}
-                      </span>
-                    ))}
-                  </div>
+                  <StarSolid className="w-4 h-4 text-yellow-400" />
                   <span className="font-medium">{rental_shops.rating.toFixed(1)}</span>
                   {rental_shops.review_count && (
-                    <span className="text-sm text-gray-500">
+                    <span className="text-gray-600 text-sm">
                       ({rental_shops.review_count} reviews)
                     </span>
                   )}
                 </div>
               )}
 
-              {rental_shops?.business_description && (
-                <p className="text-sm text-gray-600 line-clamp-3">
-                  {rental_shops.business_description}
-                </p>
-              )}
-
-              <div className="space-y-2 pt-2">
+              <div className="space-y-2">
                 {rental_shops?.phone && (
                   <div className="flex items-center gap-2 text-sm">
                     <PhoneIcon className="w-4 h-4 text-gray-500" />
-                    <a
-                      href={`tel:${rental_shops.phone}`}
-                      className="text-blue-600 hover:text-blue-800"
-                    >
+                    <a href={`tel:${rental_shops.phone}`} className="text-blue-600 hover:underline">
                       {rental_shops.phone}
                     </a>
                   </div>
                 )}
-
                 {rental_shops?.website && (
                   <div className="flex items-center gap-2 text-sm">
                     <GlobeAltIcon className="w-4 h-4 text-gray-500" />
@@ -497,7 +478,7 @@ export default function MotorcycleDetails({
                       href={rental_shops.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                      className="text-blue-600 hover:underline flex items-center gap-1"
                     >
                       Visit Website
                       <ArrowTopRightOnSquareIcon className="w-3 h-3" />
@@ -506,14 +487,12 @@ export default function MotorcycleDetails({
                 )}
               </div>
 
-              <div className="space-y-2 pt-4">
-                {rental_shops && (
-                  <Link href={getShopUrl(rental_shops)}>
-                    <Button variant="primary" className="w-full">
-                      View Shop Details
-                    </Button>
-                  </Link>
-                )}
+              <div className="pt-4 space-y-2">
+                <Link href={rental_shops ? getShopUrl(rental_shops) : '#'}>
+                  <Button className="w-full">
+                    View Shop Details
+                  </Button>
+                </Link>
                 <Button variant="outline" className="w-full">
                   Contact Shop
                 </Button>
@@ -521,14 +500,16 @@ export default function MotorcycleDetails({
             </CardContent>
           </Card>
 
+          {/* Same Model Widget */}
           <SameModelWidget
             currentMotorcycleId={motorcycle.id}
             count={sameModelCount}
-            brandName={brands?.name || ''}
-            modelName={model || ''}
             countryName={countryName}
+            brandName={brands?.name}
+            modelName={model}
           />
 
+          {/* Quick Actions */}
           <Card>
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>

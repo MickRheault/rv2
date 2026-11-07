@@ -3,8 +3,7 @@ import { Metadata } from 'next';
 import { formatMotorcycleYear, type MotorcycleYearRangeInput } from '@/lib/utils';
 import {
   formatOfferBillingUnitPhrase,
-  type BillingBasis,
-  type DurationUnit,
+  type OfferDurationTerms,
 } from '@/lib/rental-offers';
 
 export interface SEOConfig {
@@ -229,15 +228,11 @@ export function generateMotorcycleSEO(
     location?: string;
     pricePerDay?: number;
     currency?: string;
-    headlineOffer?: {
+    headlineOffer?: (OfferDurationTerms & {
       amount: number;
       currency: string;
-      billingBasis: BillingBasis;
-      durationUnit: DurationUnit;
-      minDuration: number;
-      maxDuration: number | null;
       isFrom?: boolean;
-    } | null;
+    }) | null;
     category?: string;
     image?: string;
   }

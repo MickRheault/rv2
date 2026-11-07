@@ -7,19 +7,11 @@ import { successResponse, errors } from '@/lib/api/response';
 import { requireAuth } from '@/lib/api/middleware';
 import { rateLimit, getRateLimitHeaders } from '@/lib/api/rate-limit';
 import { motorcycleService } from '@/services/motorcycles';
+import { prepareMotorcyclePricingMutation } from '@/services/rental-offers';
 import {
-  getMotorcycleRentalOffers,
-  replaceMotorcycleRateTiersLegacyCompat,
-  replaceMotorcycleRentalOffers,
-} from '@/services/rental-offers';
-import {
-  convertLegacyRateTiersToOffers,
-  hasNonDailyOrExtensionOffers,
-  projectOffersToLegacyDaily,
   RentalOfferConflictError,
   RentalOfferNotFoundError,
   RentalOfferValidationError,
-  validateAndNormalizeRentalOffers,
 } from '@/lib/rental-offers';
 import { parseAndValidateMotorcycleYearPayload } from '@/lib/utils';
 import { purgePublicCache } from '@/lib/cache/purgePublicCache';
@@ -93,30 +85,18 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     const body = await request.json();
-    const { rental_rate_tiers, rental_offers, offers, yearTo, ...motorcycleData } = body;
-    const rawOffers = rental_offers !== undefined ? rental_offers : offers;
+    const { rental_rate_tiers, rental_offers, yearTo, ...motorcycleData } = body;
 
-    if (rawOffers !== undefined && rental_rate_tiers !== undefined) {
-      return errors.badRequest('Provide either rental_offers or legacy rental_rate_tiers, not both');
-    }
-
-    // Pre-validate offers or legacy rate-tiers (including 409 overwrite guard) before updating scalar columns
-    if (rawOffers !== undefined) {
-      const normalized = validateAndNormalizeRentalOffers(rawOffers, { fieldPath: 'rental_offers' });
-      const proj = projectOffersToLegacyDaily(normalized);
-      motorcycleData.rental_rate_per_day = proj.summaryRatePerDay;
-      motorcycleData.rental_rate_currency = proj.summaryCurrency;
-    } else if (rental_rate_tiers !== undefined) {
-      const currentOffers = await getMotorcycleRentalOffers(id);
-      if (hasNonDailyOrExtensionOffers(currentOffers)) {
-        return errors.conflict(
-          'Cannot overwrite flexible non-daily or extension offers via legacy rental_rate_tiers; use rental_offers instead.'
-        );
-      }
-      const normalized = convertLegacyRateTiersToOffers(rental_rate_tiers);
-      const proj = projectOffersToLegacyDaily(normalized);
-      motorcycleData.rental_rate_per_day = proj.summaryRatePerDay;
-      motorcycleData.rental_rate_currency = proj.summaryCurrency;
+    const pricingPlan = await prepareMotorcyclePricingMutation({
+      motorcycleId: id,
+      rentalOffers: rental_offers,
+      rentalRateTiers: rental_rate_tiers,
+      scalarDailyRate: motorcycleData.rental_rate_per_day,
+      scalarCurrency: motorcycleData.rental_rate_currency,
+    });
+    if (pricingPlan.hasPricingMutation) {
+      motorcycleData.rental_rate_per_day = pricingPlan.summaryRatePerDay;
+      motorcycleData.rental_rate_currency = pricingPlan.summaryCurrency;
     }
 
     const rawYearTo = motorcycleData.year_to !== undefined ? motorcycleData.year_to : yearTo;
@@ -144,21 +124,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     const motorcycle = await motorcycleService.updateMotorcycle(id, motorcycleData);
-
-    if (rawOffers !== undefined) {
-      const savedOffers = await replaceMotorcycleRentalOffers(motorcycle.id, rawOffers);
-      const proj = projectOffersToLegacyDaily(savedOffers);
-      (motorcycle as any).rental_offers = savedOffers;
-      (motorcycle as any).rental_rate_per_day = proj.summaryRatePerDay;
-      (motorcycle as any).rental_rate_currency = proj.summaryCurrency;
-    } else if (rental_rate_tiers !== undefined) {
-      const saved = await replaceMotorcycleRateTiersLegacyCompat(motorcycle.id, rental_rate_tiers);
-      const proj = projectOffersToLegacyDaily(saved.offers);
-      (motorcycle as any).rental_rate_tiers = saved.rateTiers;
-      (motorcycle as any).rental_offers = saved.offers;
-      (motorcycle as any).rental_rate_per_day = proj.summaryRatePerDay;
-      (motorcycle as any).rental_rate_currency = proj.summaryCurrency;
-    }
+    await pricingPlan.commit(motorcycle as any);
 
     purgePublicCache();
 

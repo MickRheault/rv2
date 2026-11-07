@@ -12,7 +12,11 @@ import {
 } from '@/app/api/admin/motorcycles/[id]/offers/route';
 import { PUT as putMotorcycleRateTiers } from '@/app/api/v1/motorcycles/[id]/rate-tiers/route';
 import { POST as createMotorcycle } from '@/app/api/v1/motorcycles/route';
-import { GET as getMotorcycleById, PUT as updateMotorcycleById } from '@/app/api/v1/motorcycles/[id]/route';
+import {
+  GET as getMotorcycleById,
+  PUT as updateMotorcycleById,
+  PATCH as patchMotorcycleById,
+} from '@/app/api/v1/motorcycles/[id]/route';
 import { GET as getShopById } from '@/app/api/v1/shops/[id]/route';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { isAuthorizedAdmin } from '@/lib/auth/admin-auth';
@@ -579,12 +583,111 @@ describe('REST v1 Motorcycle Rental Offers API (#210)', () => {
     expect(openapi.paths['/motorcycles/{id}/offers'].get).toBeDefined();
     expect(openapi.paths['/motorcycles/{id}/offers'].put).toBeDefined();
     expect(openapi.paths['/motorcycles/{id}/rate-tiers']).toBeDefined();
+    expect(openapi.paths['/motorcycles/{id}/rate-tiers'].get).toBeUndefined();
     expect(openapi.paths['/motorcycles/{id}/rate-tiers'].put.responses['409']).toBeDefined();
+    expect(openapi.paths['/motorcycles/{id}'].patch).toBeDefined();
+    expect(openapi.paths['/motorcycles/{id}'].put.responses['409']).toBeDefined();
 
     expect(openapi.components.schemas.RentalOffer).toBeDefined();
     expect(openapi.components.schemas.RentalOfferExtension).toBeDefined();
+    expect(openapi.components.schemas.RentalOfferMinCommitmentSpec.properties.unit.enum).toEqual([
+      'hour',
+      'day',
+      'calendar_month',
+    ]);
+    expect(
+      openapi.components.schemas.RentalOfferExtensionIncrementSpec.properties.unit.enum
+    ).toEqual(['minute', 'hour', 'day']);
     expect(openapi.components.schemas.Motorcycle.properties.rental_offers).toBeDefined();
     expect(openapi.components.schemas.MotorcycleCreate.properties.rental_offers).toBeDefined();
     expect(openapi.components.schemas.MotorcycleUpdate.properties.rental_offers).toBeDefined();
+    expect(openapi.components.schemas.Shop.properties.motorcycle_rentals).toBeDefined();
+  });
+
+  it('syncs scalar rental_rate_per_day to rental_offers on create/update, enforces 409 when non-daily offers exist, and preserves custom offer sortOrder', async () => {
+    // 1. POST with scalar rental_rate_per_day seeds 1+ day daily offer
+    const scalarCreateRes = await createMotorcycle(
+      new NextRequest('http://localhost:3000/api/v1/motorcycles', {
+        method: 'POST',
+        body: JSON.stringify({
+          model: 'Scalar Wave 125',
+          shop_id: RIDE_ON_SHOP_ID,
+          category_id: SCOOTER_CAT_ID,
+          rental_rate_per_day: 250,
+          rental_rate_currency: 'THB',
+        }),
+      })
+    );
+    expect(scalarCreateRes.status).toBe(201);
+    const scalarCreated = (await scalarCreateRes.json()).data;
+    expect(scalarCreated.rental_offers).toHaveLength(1);
+    expect(scalarCreated.rental_offers[0]).toMatchObject({
+      offerType: 'daily',
+      amount: 250,
+      currency: 'THB',
+      minDuration: 1,
+      maxDuration: null,
+    });
+
+    // 2. Replace with [package first, daily second] and verify custom sortOrder persists on GET
+    const reorderRes = await putMotorcycleOffers(
+      new NextRequest(`http://localhost:3000/api/v1/motorcycles/${scalarCreated.id}/offers`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          offers: [
+            {
+              offerType: 'package',
+              amount: 1500,
+              currency: 'THB',
+              billingBasis: 'package_total',
+              durationUnit: 'day',
+              minDuration: 7,
+              maxDuration: 7,
+            },
+            {
+              offerType: 'daily',
+              amount: 250,
+              currency: 'THB',
+              billingBasis: 'per_day',
+              durationUnit: 'day',
+              minDuration: 1,
+              maxDuration: null,
+            },
+          ],
+        }),
+      }),
+      { params: Promise.resolve({ id: scalarCreated.id }) }
+    );
+    expect(reorderRes.status).toBe(200);
+    const reorderedOffers = (await reorderRes.json()).data.offers;
+    expect(reorderedOffers.map((o: any) => o.offerType)).toEqual(['package', 'daily']);
+
+    const readBackRes = await getMotorcycleOffers(
+      new NextRequest(`http://localhost:3000/api/v1/motorcycles/${scalarCreated.id}/offers`),
+      { params: Promise.resolve({ id: scalarCreated.id }) }
+    );
+    expect((await readBackRes.json()).data.offers.map((o: any) => o.offerType)).toEqual([
+      'package',
+      'daily',
+    ]);
+
+    // 3. Attempting scalar rental_rate_per_day via PUT or PATCH when package offer exists returns 409 Conflict
+    const conflictPutRes = await updateMotorcycleById(
+      new NextRequest(`http://localhost:3000/api/v1/motorcycles/${scalarCreated.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ rental_rate_per_day: 300 }),
+      }),
+      { params: Promise.resolve({ id: scalarCreated.id }) }
+    );
+    expect(conflictPutRes.status).toBe(409);
+
+    const conflictPatchRes = await patchMotorcycleById(
+      new NextRequest(`http://localhost:3000/api/v1/motorcycles/${scalarCreated.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ rental_rate_per_day: 300 }),
+      }),
+      { params: Promise.resolve({ id: scalarCreated.id }) }
+    );
+    expect(conflictPatchRes.status).toBe(409);
   });
 });

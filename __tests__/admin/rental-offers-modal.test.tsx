@@ -157,9 +157,19 @@ describe('RentalOffersModal (#210)', () => {
     fireEvent.change(screen.getByLabelText(/Extension Amount/i), {
       target: { value: '450' },
     });
+    fireEvent.change(screen.getByLabelText(/Extension Currency/i), {
+      target: { value: 'USD' },
+    });
     fireEvent.change(screen.getByLabelText(/Extension Billing/i), {
       target: { value: 'per_day' },
     });
+    fireEvent.change(screen.getByLabelText(/Extension Min Duration/i), {
+      target: { value: '2' },
+    });
+    fireEvent.change(screen.getByLabelText(/Extension Increment Value/i), {
+      target: { value: '1' },
+    });
+    fireEvent.click(screen.getByLabelText(/Extension From Qualifier/i));
 
     // Stage this offer into the draft list
     fireEvent.click(screen.getByRole('button', { name: /Add Offer to List/i }));
@@ -270,8 +280,11 @@ describe('RentalOffersModal (#210)', () => {
       extensions: [
         {
           amount: 450,
-          currency: 'THB',
+          currency: 'USD',
           billingBasis: 'per_day',
+          minDuration: 2,
+          billingIncrement: { value: 1, unit: 'day' },
+          isFrom: true,
         },
       ],
     });

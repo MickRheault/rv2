@@ -233,6 +233,9 @@
                     "200": {
                         "description": "Motorcycle updated"
                     },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
                     "401": {
                         "$ref": "#/components/responses/Unauthorized"
                     },
@@ -241,6 +244,57 @@
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Partially update motorcycle",
+                "description": "Partially update a motorcycle (admin only). Returns 409 Conflict if attempting to overwrite non-daily or extension offers via legacy scalar or rate-tier fields.",
+                "operationId": "patchMotorcycle",
+                "tags": [
+                    "Motorcycles"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MotorcycleUpdate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Motorcycle updated"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
                     }
                 }
             },
@@ -387,32 +441,6 @@
             }
         },
         "/motorcycles/{id}/rate-tiers": {
-            "get": {
-                "summary": "Get legacy daily rate tiers",
-                "description": "Retrieve projected standalone daily rate tiers for a motorcycle",
-                "operationId": "getMotorcycleRateTiers",
-                "tags": [
-                    "Motorcycles"
-                ],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Daily rate tiers"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/Unauthorized"
-                    }
-                }
-            },
             "put": {
                 "summary": "Replace legacy daily rate tiers",
                 "description": "Replace standalone daily rate tiers for daily-only motorcycles. Returns 409 Conflict if non-daily or extension offers exist on the motorcycle.",
@@ -1209,7 +1237,27 @@
                     }
                 }
             },
-            "RentalOfferQuantitySpec": {
+            "RentalOfferMinCommitmentSpec": {
+                "type": "object",
+                "required": [
+                    "value",
+                    "unit"
+                ],
+                "properties": {
+                    "value": {
+                        "type": "number"
+                    },
+                    "unit": {
+                        "type": "string",
+                        "enum": [
+                            "hour",
+                            "day",
+                            "calendar_month"
+                        ]
+                    }
+                }
+            },
+            "RentalOfferBillingIncrementSpec": {
                 "type": "object",
                 "required": [
                     "value",
@@ -1226,6 +1274,26 @@
                             "hour",
                             "day",
                             "calendar_month"
+                        ]
+                    }
+                }
+            },
+            "RentalOfferExtensionIncrementSpec": {
+                "type": "object",
+                "required": [
+                    "value",
+                    "unit"
+                ],
+                "properties": {
+                    "value": {
+                        "type": "number"
+                    },
+                    "unit": {
+                        "type": "string",
+                        "enum": [
+                            "minute",
+                            "hour",
+                            "day"
                         ]
                     }
                 }
@@ -1269,7 +1337,7 @@
                         "nullable": true
                     },
                     "billingIncrement": {
-                        "$ref": "#/components/schemas/RentalOfferQuantitySpec",
+                        "$ref": "#/components/schemas/RentalOfferExtensionIncrementSpec",
                         "nullable": true
                     },
                     "supplierLabel": {
@@ -1332,11 +1400,11 @@
                         "nullable": true
                     },
                     "minCommitment": {
-                        "$ref": "#/components/schemas/RentalOfferQuantitySpec",
+                        "$ref": "#/components/schemas/RentalOfferMinCommitmentSpec",
                         "nullable": true
                     },
                     "billingIncrement": {
-                        "$ref": "#/components/schemas/RentalOfferQuantitySpec",
+                        "$ref": "#/components/schemas/RentalOfferBillingIncrementSpec",
                         "nullable": true
                     },
                     "supplierLabel": {
@@ -1409,6 +1477,13 @@
                     },
                     "rating": {
                         "type": "number"
+                    },
+                    "motorcycle_rentals": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Motorcycle"
+                        },
+                        "description": "Shop motorcycle fleet including hydrated rental_offers"
                     },
                     "created_at": {
                         "type": "string",

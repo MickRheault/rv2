@@ -65,6 +65,31 @@ function withToolErrorHandling<T>(fn: (params: any, extra: any) => Promise<T>) {
     };
 }
 
+function parseJsonArrayInput(
+    raw: string,
+    fieldName: string
+): { value: unknown[] } | { error: { content: [{ type: 'text'; text: string }]; isError: true } } {
+    try {
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) {
+            return {
+                error: {
+                    content: [{ type: 'text', text: `Error: ${fieldName} must be valid JSON string array` }],
+                    isError: true,
+                },
+            };
+        }
+        return { value: parsed };
+    } catch {
+        return {
+            error: {
+                content: [{ type: 'text', text: `Error: ${fieldName} must be valid JSON string array` }],
+                isError: true,
+            },
+        };
+    }
+}
+
 // API client for internal calls
 async function apiGet(endpoint: string, apiKey: string, params?: Record<string, string>) {
     const url = new URL(`${API_BASE_URL}${endpoint}`);
@@ -368,11 +393,9 @@ const handler = createMcpHandler(
                     }
                 }
                 if (rental_offers) {
-                    try {
-                        body.rental_offers = JSON.parse(rental_offers);
-                    } catch (e) {
-                        return { content: [{ type: 'text', text: 'Error: rental_offers must be valid JSON string array' }], isError: true };
-                    }
+                    const parsed = parseJsonArrayInput(rental_offers, 'rental_offers');
+                    if ('error' in parsed) return parsed.error;
+                    body.rental_offers = parsed.value;
                 }
 
                 const result = await apiPost('/motorcycles', MCP_KEY_ADMIN, body);
@@ -459,11 +482,9 @@ const handler = createMcpHandler(
                     }
                 }
                 if (rental_offers) {
-                    try {
-                        body.rental_offers = JSON.parse(rental_offers);
-                    } catch (e) {
-                        return { content: [{ type: 'text', text: 'Error: rental_offers must be valid JSON string array' }], isError: true };
-                    }
+                    const parsed = parseJsonArrayInput(rental_offers, 'rental_offers');
+                    if ('error' in parsed) return parsed.error;
+                    body.rental_offers = parsed.value;
                 }
 
                 const result = await apiPut(`/motorcycles/${id}`, MCP_KEY_ADMIN, body);
@@ -735,13 +756,10 @@ const handler = createMcpHandler(
                 if (getAccessLevel(extra.authInfo) !== 'admin') {
                     return { content: [{ type: 'text', text: 'Error: Admin access required' }], isError: true };
                 }
-                try {
-                    const parsed = JSON.parse(offers);
-                    const result = await apiPut(`/motorcycles/${motorcycle_id}/offers`, MCP_KEY_ADMIN, { offers: parsed });
-                    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
-                } catch (e: any) {
-                    return { content: [{ type: 'text', text: `Error: ${e.message}` }], isError: true };
-                }
+                const parsed = parseJsonArrayInput(offers, 'offers');
+                if ('error' in parsed) return parsed.error;
+                const result = await apiPut(`/motorcycles/${motorcycle_id}/offers`, MCP_KEY_ADMIN, { offers: parsed.value });
+                return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
             })
         );
 

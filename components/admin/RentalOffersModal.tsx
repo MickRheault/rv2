@@ -41,7 +41,6 @@ interface RentalOffersModalProps {
     id: string;
     model: string;
     brand?: string;
-    baseDailyRate?: number;
     currency?: string;
   };
 }
@@ -50,6 +49,8 @@ interface DraftExtension {
   amount: string;
   currency: string;
   billingBasis: ExtensionBillingBasis;
+  minDuration: string;
+  maxDuration: string;
   supplierLabel: string;
   isFrom: boolean;
   billingIncrementValue: string;
@@ -130,6 +131,8 @@ function normalizedOfferToDraftForm(offer: NormalizedRentalOffer): DraftOfferFor
       amount: String(ext.amount),
       currency: ext.currency,
       billingBasis: ext.billingBasis,
+      minDuration: String(ext.minDuration),
+      maxDuration: ext.maxDuration !== null ? String(ext.maxDuration) : '',
       supplierLabel: ext.supplierLabel || '',
       isFrom: ext.isFrom,
       billingIncrementValue: ext.billingIncrement ? String(ext.billingIncrement.value) : '',
@@ -170,8 +173,8 @@ function draftFormToOfferInput(draft: DraftOfferForm): RentalOfferInput {
     currency: (ext.currency || currency).trim().toUpperCase(),
     billingBasis: ext.billingBasis,
     durationUnit: ext.billingBasis === 'per_day' ? 'day' : 'hour',
-    minDuration: 1,
-    maxDuration: null,
+    minDuration: ext.minDuration.trim() === '' ? 1 : Number(ext.minDuration),
+    maxDuration: ext.maxDuration.trim() === '' ? null : Number(ext.maxDuration),
     billingIncrement:
       ext.billingIncrementValue.trim() !== ''
         ? {
@@ -413,6 +416,8 @@ export function RentalOffersModal({
           amount: '',
           currency: prev.currency || defaultCurrency,
           billingBasis: prev.durationUnit === 'hour' ? 'per_hour' : 'per_day',
+          minDuration: '1',
+          maxDuration: '',
           supplierLabel: '',
           isFrom: false,
           billingIncrementValue: '',
@@ -1069,79 +1074,198 @@ export function RentalOffersModal({
               {draft.extensions.map((ext, extIdx) => (
                 <div
                   key={`ext-draft-${extIdx}`}
-                  className="grid grid-cols-1 md:grid-cols-4 gap-2 items-end bg-white p-3 rounded-lg border border-gray-200"
+                  className="bg-white p-3 rounded-lg border border-gray-200 space-y-2"
                 >
-                  <div>
-                    <label
-                      htmlFor={`ext-amount-${extIdx}`}
-                      className="block text-xs font-medium text-gray-700 mb-1"
-                    >
-                      Extension Amount
-                    </label>
-                    <Input
-                      id={`ext-amount-${extIdx}`}
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      value={ext.amount}
-                      onChange={(e) =>
-                        handleUpdateExtensionDraft(extIdx, { amount: e.target.value })
-                      }
-                      placeholder="450"
-                      required
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
+                    <div>
+                      <label
+                        htmlFor={`ext-amount-${extIdx}`}
+                        className="block text-xs font-medium text-gray-700 mb-1"
+                      >
+                        Extension Amount
+                      </label>
+                      <Input
+                        id={`ext-amount-${extIdx}`}
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        value={ext.amount}
+                        onChange={(e) =>
+                          handleUpdateExtensionDraft(extIdx, { amount: e.target.value })
+                        }
+                        placeholder="450"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor={`ext-currency-${extIdx}`}
+                        className="block text-xs font-medium text-gray-700 mb-1"
+                      >
+                        Extension Currency
+                      </label>
+                      <Input
+                        id={`ext-currency-${extIdx}`}
+                        type="text"
+                        maxLength={3}
+                        value={ext.currency}
+                        onChange={(e) =>
+                          handleUpdateExtensionDraft(extIdx, {
+                            currency: e.target.value.toUpperCase(),
+                          })
+                        }
+                        placeholder="THB"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor={`ext-billing-${extIdx}`}
+                        className="block text-xs font-medium text-gray-700 mb-1"
+                      >
+                        Extension Billing
+                      </label>
+                      <select
+                        id={`ext-billing-${extIdx}`}
+                        value={ext.billingBasis}
+                        onChange={(e) => {
+                          const nextBasis = e.target.value as ExtensionBillingBasis;
+                          handleUpdateExtensionDraft(extIdx, {
+                            billingBasis: nextBasis,
+                            billingIncrementUnit: nextBasis === 'per_hour' ? 'hour' : 'day',
+                          });
+                        }}
+                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+                      >
+                        <option value="per_day">Per extra day</option>
+                        <option value="per_hour">Per extra hour</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label
+                        htmlFor={`ext-label-${extIdx}`}
+                        className="block text-xs font-medium text-gray-700 mb-1"
+                      >
+                        Extension Label (optional)
+                      </label>
+                      <Input
+                        id={`ext-label-${extIdx}`}
+                        type="text"
+                        value={ext.supplierLabel}
+                        onChange={(e) =>
+                          handleUpdateExtensionDraft(extIdx, {
+                            supplierLabel: e.target.value,
+                          })
+                        }
+                        placeholder="Optional note"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label
-                      htmlFor={`ext-billing-${extIdx}`}
-                      className="block text-xs font-medium text-gray-700 mb-1"
-                    >
-                      Extension Billing
-                    </label>
-                    <select
-                      id={`ext-billing-${extIdx}`}
-                      value={ext.billingBasis}
-                      onChange={(e) =>
-                        handleUpdateExtensionDraft(extIdx, {
-                          billingBasis: e.target.value as ExtensionBillingBasis,
-                        })
-                      }
-                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
-                    >
-                      <option value="per_day">Per extra day</option>
-                      <option value="per_hour">Per extra hour</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label
-                      htmlFor={`ext-label-${extIdx}`}
-                      className="block text-xs font-medium text-gray-700 mb-1"
-                    >
-                      Extension Label (optional)
-                    </label>
-                    <Input
-                      id={`ext-label-${extIdx}`}
-                      type="text"
-                      value={ext.supplierLabel}
-                      onChange={(e) =>
-                        handleUpdateExtensionDraft(extIdx, {
-                          supplierLabel: e.target.value,
-                        })
-                      }
-                      placeholder="Optional note"
-                    />
-                  </div>
-                  <div className="flex justify-end">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveExtensionDraft(extIdx)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <TrashIcon className="w-4 h-4 mr-1" />
-                      Remove
-                    </Button>
+
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-2 items-end">
+                    <div>
+                      <label
+                        htmlFor={`ext-min-dur-${extIdx}`}
+                        className="block text-xs font-medium text-gray-700 mb-1"
+                      >
+                        Extension Min Duration
+                      </label>
+                      <Input
+                        id={`ext-min-dur-${extIdx}`}
+                        type="number"
+                        step="0.25"
+                        min="0.25"
+                        value={ext.minDuration}
+                        onChange={(e) =>
+                          handleUpdateExtensionDraft(extIdx, { minDuration: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor={`ext-max-dur-${extIdx}`}
+                        className="block text-xs font-medium text-gray-700 mb-1"
+                      >
+                        Extension Max Duration
+                      </label>
+                      <Input
+                        id={`ext-max-dur-${extIdx}`}
+                        type="number"
+                        step="0.25"
+                        value={ext.maxDuration}
+                        onChange={(e) =>
+                          handleUpdateExtensionDraft(extIdx, { maxDuration: e.target.value })
+                        }
+                        placeholder="Open-ended"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor={`ext-inc-val-${extIdx}`}
+                        className="block text-xs font-medium text-gray-700 mb-1"
+                      >
+                        Extension Increment Value
+                      </label>
+                      <Input
+                        id={`ext-inc-val-${extIdx}`}
+                        type="number"
+                        step="0.25"
+                        min="0.25"
+                        value={ext.billingIncrementValue}
+                        onChange={(e) =>
+                          handleUpdateExtensionDraft(extIdx, {
+                            billingIncrementValue: e.target.value,
+                          })
+                        }
+                        placeholder="Optional"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor={`ext-inc-unit-${extIdx}`}
+                        className="block text-xs font-medium text-gray-700 mb-1"
+                      >
+                        Extension Increment Unit
+                      </label>
+                      <select
+                        id={`ext-inc-unit-${extIdx}`}
+                        value={ext.billingIncrementUnit}
+                        onChange={(e) =>
+                          handleUpdateExtensionDraft(extIdx, {
+                            billingIncrementUnit: e.target.value as 'minute' | 'hour' | 'day',
+                          })
+                        }
+                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+                      >
+                        <option value="minute">Minutes</option>
+                        <option value="hour">Hours</option>
+                        <option value="day">Days</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center justify-between gap-2 pb-1">
+                      <label className="inline-flex items-center gap-1.5 text-xs text-gray-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          aria-label="Extension From Qualifier"
+                          checked={ext.isFrom}
+                          onChange={(e) =>
+                            handleUpdateExtensionDraft(extIdx, { isFrom: e.target.checked })
+                          }
+                          className="rounded border-gray-300"
+                        />
+                        &ldquo;From&rdquo;
+                      </label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveExtensionDraft(extIdx)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <TrashIcon className="w-4 h-4 mr-1" />
+                        Remove
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}
