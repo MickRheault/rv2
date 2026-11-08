@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase/client'
 import { Database } from '@/lib/supabase/database.types'
 import { SupabaseClient } from '@supabase/supabase-js'
 import { PremiumFeatureConfig } from '@/types/premium-listings'
+import { hydrateRentalOffersFromRows } from '@/lib/rental-offers'
 
 const typedSupabase = supabase as unknown as SupabaseClient<Database>
 
@@ -246,12 +247,35 @@ export const MOTORCYCLE_LISTING_RATE_TIERS_COLUMNS = `
   currency
 `
 
+export const MOTORCYCLE_LISTING_OFFERS_COLUMNS = `
+  id,
+  motorcycle_id,
+  parent_offer_id,
+  offer_type,
+  amount,
+  currency,
+  billing_basis,
+  duration_unit,
+  min_duration,
+  max_duration,
+  min_commitment_value,
+  min_commitment_unit,
+  billing_increment_value,
+  billing_increment_unit,
+  supplier_label,
+  is_from,
+  sort_order
+`
+
 export const SHOP_MOTORCYCLE_RENTALS_SELECT = `
   ${MOTORCYCLE_LISTING_BASE_COLUMNS},
   brands (id, name),
   categories (id, name, description),
   rental_rate_tiers (
     ${MOTORCYCLE_LISTING_RATE_TIERS_COLUMNS}
+  ),
+  rental_offers (
+    ${MOTORCYCLE_LISTING_OFFERS_COLUMNS}
   )
 `
 
@@ -308,7 +332,10 @@ function filterAvailableShopMotorcycles<T extends { motorcycle_rentals?: any[] }
   }
   return {
     ...shop,
-    motorcycle_rentals: filterAvailableMotorcycles(shop.motorcycle_rentals),
+    motorcycle_rentals: filterAvailableMotorcycles(shop.motorcycle_rentals).map((m: any) => ({
+      ...m,
+      rental_offers: hydrateRentalOffersFromRows(m.rental_offers),
+    })),
   }
 }
 

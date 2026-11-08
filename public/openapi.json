@@ -233,6 +233,9 @@
                     "200": {
                         "description": "Motorcycle updated"
                     },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
                     "401": {
                         "$ref": "#/components/responses/Unauthorized"
                     },
@@ -241,6 +244,57 @@
                     },
                     "404": {
                         "$ref": "#/components/responses/NotFound"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Partially update motorcycle",
+                "description": "Partially update a motorcycle (admin only). Returns 409 Conflict if attempting to overwrite non-daily or extension offers via legacy scalar or rate-tier fields.",
+                "operationId": "patchMotorcycle",
+                "tags": [
+                    "Motorcycles"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MotorcycleUpdate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Motorcycle updated"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
                     }
                 }
             },
@@ -270,6 +324,200 @@
                     },
                     "403": {
                         "$ref": "#/components/responses/Forbidden"
+                    }
+                }
+            }
+        },
+        "/motorcycles/{id}/offers": {
+            "get": {
+                "summary": "Get motorcycle rental offers",
+                "description": "Retrieve canonical structured Rental Offers (with nested Extension Charges and read-only dailyEquivalent) for a motorcycle",
+                "operationId": "getMotorcycleOffers",
+                "tags": [
+                    "Motorcycles"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Motorcycle ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of rental offers",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "offers": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/RentalOffer"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Replace motorcycle rental offers",
+                "description": "Atomically replace all Rental Offers and attached Extension Charges for a motorcycle, automatically projecting standalone unlabeled daily offers to legacy daily rate tiers (admin only)",
+                "operationId": "replaceMotorcycleOffers",
+                "tags": [
+                    "Motorcycles"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Motorcycle ID"
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "offers"
+                                ],
+                                "properties": {
+                                    "offers": {
+                                        "type": "array",
+                                        "items": {
+                                            "$ref": "#/components/schemas/RentalOfferInput"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated rental offers"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
+                }
+            }
+        },
+        "/motorcycles/{id}/rate-tiers": {
+            "put": {
+                "summary": "Replace legacy daily rate tiers",
+                "description": "Replace standalone daily rate tiers for daily-only motorcycles. Returns 409 Conflict if non-daily or extension offers exist on the motorcycle.",
+                "operationId": "replaceMotorcycleRateTiers",
+                "tags": [
+                    "Motorcycles"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "rate_tiers"
+                                ],
+                                "properties": {
+                                    "rate_tiers": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "required": [
+                                                "min_days",
+                                                "rate_per_day",
+                                                "currency"
+                                            ],
+                                            "properties": {
+                                                "min_days": {
+                                                    "type": "integer",
+                                                    "minimum": 1
+                                                },
+                                                "max_days": {
+                                                    "type": "integer",
+                                                    "nullable": true
+                                                },
+                                                "rate_per_day": {
+                                                    "type": "number"
+                                                },
+                                                "currency": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Rate tiers updated"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
                     }
                 }
             }
@@ -792,6 +1040,16 @@
                     }
                 }
             },
+            "Conflict": {
+                "description": "Conflict with existing resource state (e.g. non-daily offers exist on motorcycle)",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/ErrorResponse"
+                        }
+                    }
+                }
+            },
             "RateLimited": {
                 "description": "Too many requests",
                 "content": {
@@ -894,6 +1152,13 @@
                     "is_available": {
                         "type": "boolean"
                     },
+                    "rental_offers": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RentalOffer"
+                        },
+                        "description": "Hydrated canonical Rental Offers (including nested extensions and read-only dailyEquivalent)"
+                    },
                     "created_at": {
                         "type": "string",
                         "format": "date-time"
@@ -929,6 +1194,12 @@
                         "type": "integer",
                         "nullable": true,
                         "description": "End model year for multi-year generation ranges (inclusive)"
+                    },
+                    "rental_offers": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RentalOfferInput"
+                        }
                     }
                 }
             },
@@ -957,8 +1228,223 @@
                     },
                     "is_available": {
                         "type": "boolean"
+                    },
+                    "rental_offers": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RentalOfferInput"
+                        }
                     }
                 }
+            },
+            "RentalOfferMinCommitmentSpec": {
+                "type": "object",
+                "required": [
+                    "value",
+                    "unit"
+                ],
+                "properties": {
+                    "value": {
+                        "type": "number"
+                    },
+                    "unit": {
+                        "type": "string",
+                        "enum": [
+                            "hour",
+                            "day",
+                            "calendar_month"
+                        ]
+                    }
+                }
+            },
+            "RentalOfferBillingIncrementSpec": {
+                "type": "object",
+                "required": [
+                    "value",
+                    "unit"
+                ],
+                "properties": {
+                    "value": {
+                        "type": "number"
+                    },
+                    "unit": {
+                        "type": "string",
+                        "enum": [
+                            "minute",
+                            "hour",
+                            "day",
+                            "calendar_month"
+                        ]
+                    }
+                }
+            },
+            "RentalOfferExtensionIncrementSpec": {
+                "type": "object",
+                "required": [
+                    "value",
+                    "unit"
+                ],
+                "properties": {
+                    "value": {
+                        "type": "number"
+                    },
+                    "unit": {
+                        "type": "string",
+                        "enum": [
+                            "minute",
+                            "hour",
+                            "day"
+                        ]
+                    }
+                }
+            },
+            "RentalOfferExtension": {
+                "type": "object",
+                "required": [
+                    "amount",
+                    "currency",
+                    "billingBasis"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "amount": {
+                        "type": "number"
+                    },
+                    "currency": {
+                        "type": "string"
+                    },
+                    "billingBasis": {
+                        "type": "string",
+                        "enum": [
+                            "per_hour",
+                            "per_day"
+                        ]
+                    },
+                    "durationUnit": {
+                        "type": "string",
+                        "enum": [
+                            "hour",
+                            "day"
+                        ]
+                    },
+                    "minDuration": {
+                        "type": "number"
+                    },
+                    "maxDuration": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "billingIncrement": {
+                        "$ref": "#/components/schemas/RentalOfferExtensionIncrementSpec",
+                        "nullable": true
+                    },
+                    "supplierLabel": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "isFrom": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "RentalOfferInput": {
+                "type": "object",
+                "required": [
+                    "offerType",
+                    "amount",
+                    "currency",
+                    "billingBasis",
+                    "durationUnit",
+                    "minDuration"
+                ],
+                "properties": {
+                    "offerType": {
+                        "type": "string",
+                        "enum": [
+                            "daily",
+                            "package",
+                            "hourly",
+                            "monthly"
+                        ]
+                    },
+                    "amount": {
+                        "type": "number"
+                    },
+                    "currency": {
+                        "type": "string"
+                    },
+                    "billingBasis": {
+                        "type": "string",
+                        "enum": [
+                            "per_hour",
+                            "per_day",
+                            "per_calendar_month",
+                            "package_total"
+                        ]
+                    },
+                    "durationUnit": {
+                        "type": "string",
+                        "enum": [
+                            "hour",
+                            "day",
+                            "calendar_month"
+                        ]
+                    },
+                    "minDuration": {
+                        "type": "number"
+                    },
+                    "maxDuration": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "minCommitment": {
+                        "$ref": "#/components/schemas/RentalOfferMinCommitmentSpec",
+                        "nullable": true
+                    },
+                    "billingIncrement": {
+                        "$ref": "#/components/schemas/RentalOfferBillingIncrementSpec",
+                        "nullable": true
+                    },
+                    "supplierLabel": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "isFrom": {
+                        "type": "boolean"
+                    },
+                    "extensions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RentalOfferExtension"
+                        }
+                    }
+                }
+            },
+            "RentalOffer": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/RentalOfferInput"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "string"
+                            },
+                            "sortOrder": {
+                                "type": "integer"
+                            },
+                            "dailyEquivalent": {
+                                "type": "number",
+                                "nullable": true,
+                                "readOnly": true,
+                                "description": "Read-only daily equivalent computed exclusively for fixed-day package_total offers (days > 1); null for calendar_month, hourly, daily, and extension offers."
+                            }
+                        }
+                    }
+                ]
             },
             "ShopListResponse": {
                 "type": "object",
@@ -991,6 +1477,13 @@
                     },
                     "rating": {
                         "type": "number"
+                    },
+                    "motorcycle_rentals": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Motorcycle"
+                        },
+                        "description": "Shop motorcycle fleet including hydrated rental_offers"
                     },
                     "created_at": {
                         "type": "string",

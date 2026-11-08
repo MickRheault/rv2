@@ -1,9 +1,15 @@
 import { supabase } from '@/lib/supabase/client'
+import { getSupabaseAdmin as getSharedSupabaseAdmin } from '@/lib/supabase/admin'
 import { Database } from '@/lib/supabase/database.types'
 import { SupabaseClient } from '@supabase/supabase-js'
 import { generateSlug } from '@/lib/utils'
 import {
+  hydrateRentalOffersFromRows,
+  type NormalizedRentalOffer,
+} from '@/lib/rental-offers'
+import {
   MOTORCYCLE_LISTING_BASE_COLUMNS,
+  MOTORCYCLE_LISTING_OFFERS_COLUMNS,
   MOTORCYCLE_LISTING_RATE_TIERS_COLUMNS,
   SHOP_MOTORCYCLE_RENTALS_SELECT,
   applyAvailableMotorcycleFilterSync,
@@ -64,6 +70,7 @@ export interface MotorcycleWithDetails extends MotorcycleRental {
     condition_types: ConditionType | null
   }>
   rental_rate_tiers?: RentalRateTier[]
+  rental_offers?: NormalizedRentalOffer[]
 }
 
 export interface SearchFilters {
@@ -350,28 +357,23 @@ function applyLocationAndActiveShopFiltersSync(
   return applyActiveShopStatusFilterSync(query, activeStatusIds)
 }
 
-// Helper to get admin client
-let supabaseAdminSingleton: SupabaseClient<Database> | null = null;
-
 function getSupabaseAdmin(): SupabaseClient<Database> {
-  if (supabaseAdminSingleton) return supabaseAdminSingleton;
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    console.warn('SUPABASE_SERVICE_ROLE_KEY is missing. Admin operations may fail.')
+  try {
+    return getSharedSupabaseAdmin();
+  } catch {
     return typedSupabase;
   }
+}
 
-  supabaseAdminSingleton = new SupabaseClient<Database>(supabaseUrl, serviceRoleKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  });
-
-  return supabaseAdminSingleton;
+function attachHydratedRentalOffers<T extends Record<string, any>>(row: T): T {
+  if (!row || typeof row !== 'object') return row;
+  if ('rental_offers' in row) {
+    return {
+      ...row,
+      rental_offers: hydrateRentalOffersFromRows(row.rental_offers),
+    };
+  }
+  return row;
 }
 
 export const motorcycleService = {
@@ -506,6 +508,9 @@ export const motorcycleService = {
         categories (id, name, description)${featureSelectFragment},
         rental_rate_tiers (
           ${MOTORCYCLE_LISTING_RATE_TIERS_COLUMNS}
+        ),
+        rental_offers (
+          ${MOTORCYCLE_LISTING_OFFERS_COLUMNS}
         )
       `, { count: 'exact' })
 
@@ -592,7 +597,7 @@ export const motorcycleService = {
       const paginatedData = filteredData.slice(offset, offset + limit)
 
       return {
-        motorcycles: paginatedData as MotorcycleWithDetails[],
+        motorcycles: (paginatedData as any[]).map((m) => attachHydratedRentalOffers(m)) as MotorcycleWithDetails[],
         total: filteredData.length // Total count of filtered results
       }
     } else {
@@ -604,7 +609,9 @@ export const motorcycleService = {
         throw error
       }
 
-      const availableRows = filterAvailableMotorcycles(data as any[]) as MotorcycleWithDetails[]
+      const availableRows = filterAvailableMotorcycles(data as any[]).map((m) =>
+        attachHydratedRentalOffers(m)
+      ) as MotorcycleWithDetails[]
       return {
         motorcycles: availableRows,
         total: count ?? availableRows.length // Use the database count
@@ -646,6 +653,9 @@ export const motorcycleService = {
         ),
         rental_rate_tiers (
           *
+        ),
+        rental_offers (
+          *
         )
       `)
       .eq('id', id)
@@ -662,7 +672,7 @@ export const motorcycleService = {
       throw new Error('Motorcycle not found or not available')
     }
 
-    return data
+    return attachHydratedRentalOffers(data as any)
   },
 
   // Get all brands for filters
@@ -1049,7 +1059,11 @@ export const motorcycleService = {
           )
         ),
         brands (*),
-        categories (*)
+        categories (*),
+        rental_rate_tiers (*),
+        rental_offers (
+          ${MOTORCYCLE_LISTING_OFFERS_COLUMNS}
+        )
       `)
       .single()
 
@@ -1058,7 +1072,7 @@ export const motorcycleService = {
       throw error
     }
 
-    return data as MotorcycleWithDetails
+    return attachHydratedRentalOffers(data as any) as MotorcycleWithDetails
   },
 
   // Update existing motorcycle
@@ -1080,7 +1094,11 @@ export const motorcycleService = {
           )
         ),
         brands (*),
-        categories (*)
+        categories (*),
+        rental_rate_tiers (*),
+        rental_offers (
+          ${MOTORCYCLE_LISTING_OFFERS_COLUMNS}
+        )
       `)
       .single()
 
@@ -1089,7 +1107,7 @@ export const motorcycleService = {
       throw error
     }
 
-    return data as MotorcycleWithDetails
+    return attachHydratedRentalOffers(data as any) as MotorcycleWithDetails
   },
 
   // Delete motorcycle
@@ -1163,7 +1181,10 @@ export const motorcycleService = {
           )
         ),
         brands (*),
-        categories (*)
+        categories (*),
+        rental_offers (
+          ${MOTORCYCLE_LISTING_OFFERS_COLUMNS}
+        )
       `, { count: 'exact' })
 
     // Apply search filter
@@ -1215,7 +1236,9 @@ export const motorcycleService = {
     }
 
     return {
-      motorcycles: (data || []) as MotorcycleWithDetails[],
+      motorcycles: ((data || []) as any[]).map((m) =>
+        attachHydratedRentalOffers(m)
+      ) as MotorcycleWithDetails[],
       total: count || 0
     }
   },

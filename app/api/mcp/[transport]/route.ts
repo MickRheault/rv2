@@ -65,6 +65,31 @@ function withToolErrorHandling<T>(fn: (params: any, extra: any) => Promise<T>) {
     };
 }
 
+function parseJsonArrayInput(
+    raw: string,
+    fieldName: string
+): { value: unknown[] } | { error: { content: [{ type: 'text'; text: string }]; isError: true } } {
+    try {
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) {
+            return {
+                error: {
+                    content: [{ type: 'text', text: `Error: ${fieldName} must be valid JSON string array` }],
+                    isError: true,
+                },
+            };
+        }
+        return { value: parsed };
+    } catch {
+        return {
+            error: {
+                content: [{ type: 'text', text: `Error: ${fieldName} must be valid JSON string array` }],
+                isError: true,
+            },
+        };
+    }
+}
+
 // API client for internal calls
 async function apiGet(endpoint: string, apiKey: string, params?: Record<string, string>) {
     const url = new URL(`${API_BASE_URL}${endpoint}`);
@@ -332,7 +357,8 @@ const handler = createMcpHandler(
                     specifications_details: z.string().optional().describe('Specifications details as JSON string'),
                     conditions: z.string().optional().describe('Structured conditions as JSON string: [{"condition_type_id": "...", "notes": "..."}]'),
                     feature_ids: z.array(z.string()).optional().describe('Array of feature IDs to assign'),
-                    rental_rate_tiers: z.string().optional().describe('Pricing tiers as JSON string array: [{"min_days": 1, "max_days": 6, "rate_per_day": 100, "currency": "USD"}]'),
+                    rental_rate_tiers: z.string().optional().describe('Legacy daily pricing tiers as JSON string array: [{"min_days": 1, "max_days": 6, "rate_per_day": 100, "currency": "USD"}]'),
+                    rental_offers: z.string().optional().describe('Canonical flexible rental offers as JSON string array supporting daily, package, hourly, monthly + nested extensions[]'),
                 },
             },
             withToolErrorHandling(async (params, extra) => {
@@ -340,7 +366,7 @@ const handler = createMcpHandler(
                     return { content: [{ type: 'text', text: 'Error: Admin access required' }], isError: true };
                 }
 
-                const { daily_rate, engine_capacity, conditions_details, specifications_details, conditions, feature_ids, rental_rate_tiers, ...rest } = params as any;
+                const { daily_rate, engine_capacity, conditions_details, specifications_details, conditions, feature_ids, rental_rate_tiers, rental_offers, ...rest } = params as any;
                 const body: Record<string, any> = { ...rest };
 
                 if (daily_rate !== undefined) body.rental_rate_per_day = daily_rate;
@@ -365,6 +391,11 @@ const handler = createMcpHandler(
                     } catch (e) {
                         return { content: [{ type: 'text', text: 'Error: rental_rate_tiers must be valid JSON string array' }], isError: true };
                     }
+                }
+                if (rental_offers) {
+                    const parsed = parseJsonArrayInput(rental_offers, 'rental_offers');
+                    if ('error' in parsed) return parsed.error;
+                    body.rental_offers = parsed.value;
                 }
 
                 const result = await apiPost('/motorcycles', MCP_KEY_ADMIN, body);
@@ -415,7 +446,8 @@ const handler = createMcpHandler(
                     specifications_details: z.string().optional().describe('Specifications details as JSON string'),
                     conditions: z.string().optional().describe('Structured conditions as JSON string: [{"condition_type_id": "...", "notes": "..."}]'),
                     feature_ids: z.array(z.string()).optional().describe('Array of feature IDs to assign'),
-                    rental_rate_tiers: z.string().optional().describe('Pricing tiers as JSON string array: [{"min_days": 1, "max_days": 6, "rate_per_day": 100, "currency": "USD"}]'),
+                    rental_rate_tiers: z.string().optional().describe('Legacy daily pricing tiers as JSON string array: [{"min_days": 1, "max_days": 6, "rate_per_day": 100, "currency": "USD"}]'),
+                    rental_offers: z.string().optional().describe('Canonical flexible rental offers as JSON string array supporting daily, package, hourly, monthly + nested extensions[]'),
                 },
             },
             withToolErrorHandling(async ({ id, ...data }, extra) => {
@@ -423,7 +455,7 @@ const handler = createMcpHandler(
                     return { content: [{ type: 'text', text: 'Error: Admin access required' }], isError: true };
                 }
 
-                const { daily_rate, engine_capacity, conditions_details, specifications_details, conditions, feature_ids, rental_rate_tiers, ...rest } = data as any;
+                const { daily_rate, engine_capacity, conditions_details, specifications_details, conditions, feature_ids, rental_rate_tiers, rental_offers, ...rest } = data as any;
                 const body: Record<string, any> = { ...rest };
 
                 if (daily_rate !== undefined) body.rental_rate_per_day = daily_rate;
@@ -448,6 +480,11 @@ const handler = createMcpHandler(
                     } catch (e) {
                         return { content: [{ type: 'text', text: 'Error: rental_rate_tiers must be valid JSON string array' }], isError: true };
                     }
+                }
+                if (rental_offers) {
+                    const parsed = parseJsonArrayInput(rental_offers, 'rental_offers');
+                    if ('error' in parsed) return parsed.error;
+                    body.rental_offers = parsed.value;
                 }
 
                 const result = await apiPut(`/motorcycles/${id}`, MCP_KEY_ADMIN, body);
@@ -702,6 +739,27 @@ const handler = createMcpHandler(
                 } catch (e: any) {
                     return { content: [{ type: 'text', text: `Error: ${e.message}` }], isError: true };
                 }
+            })
+        );
+
+        server.registerTool(
+            'set_motorcycle_offers',
+            {
+                title: 'Set Motorcycle Rental Offers',
+                description: 'Bulk-set canonical flexible rental offers (daily, package, hourly, monthly + nested extensions) for a motorcycle',
+                inputSchema: {
+                    motorcycle_id: z.string().describe('Motorcycle ID'),
+                    offers: z.string().describe('JSON string array of RentalOfferInput objects with optional nested extensions[]'),
+                },
+            },
+            withToolErrorHandling(async ({ motorcycle_id, offers }, extra) => {
+                if (getAccessLevel(extra.authInfo) !== 'admin') {
+                    return { content: [{ type: 'text', text: 'Error: Admin access required' }], isError: true };
+                }
+                const parsed = parseJsonArrayInput(offers, 'offers');
+                if ('error' in parsed) return parsed.error;
+                const result = await apiPut(`/motorcycles/${motorcycle_id}/offers`, MCP_KEY_ADMIN, { offers: parsed.value });
+                return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
             })
         );
 

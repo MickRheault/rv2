@@ -169,6 +169,7 @@ export default async function ShopPage({ params }: ShopPageProps) {
         description: `${motorcycle.brands?.name || ''} ${motorcycle.model || ''} motorcycle rental at ${shop.provider_name}`.trim(),
         engineSize: motorcycle.engine_capacity_cc || undefined,
         availability: motorcycle.availability_status === 'available',
+        rentalOffers: (motorcycle as any).rental_offers,
         // Basic rental rates from shop's motorcycle rentals
         rentalRates: motorcycle.rental_rate_per_day ? [{
           rateText: 'Daily Rate',

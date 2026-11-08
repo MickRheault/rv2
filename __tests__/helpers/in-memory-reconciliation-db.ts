@@ -1,12 +1,14 @@
 import crypto from 'crypto';
 
 export interface InMemoryReconciliationState {
+  business_statuses?: any[];
   rental_shops: any[];
   shop_agent_configs: any[];
   categories: any[];
   condition_types: any[];
   brands: any[];
   motorcycle_rentals: any[];
+  rental_offers?: any[];
   rental_rate_tiers: any[];
   motorcycle_conditions: any[];
   rental_shop_inclusions: any[];
@@ -24,6 +26,7 @@ export interface InMemoryReconciliationState {
 
 export function createRideOnSeedState(): InMemoryReconciliationState {
   return {
+    business_statuses: [{ id: 1, name: 'Operational', status_code: 'Operational' }],
     rental_shops: [
       {
         id: '53529565-40d9-41f5-98e4-d2ed1f1d7ffd',
@@ -133,6 +136,46 @@ export function createRideOnSeedState(): InMemoryReconciliationState {
         currency: 'EUR',
       },
     ],
+    rental_offers: [
+      {
+        id: 'offer-pcx-1',
+        motorcycle_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+        parent_offer_id: null,
+        offer_type: 'daily',
+        amount: 35,
+        currency: 'EUR',
+        billing_basis: 'per_day',
+        duration_unit: 'day',
+        min_duration: 1,
+        max_duration: 3,
+        min_commitment_value: null,
+        min_commitment_unit: null,
+        billing_increment_value: null,
+        billing_increment_unit: null,
+        supplier_label: null,
+        is_from: false,
+        sort_order: 0,
+      },
+      {
+        id: 'offer-pcx-4',
+        motorcycle_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+        parent_offer_id: null,
+        offer_type: 'daily',
+        amount: 29,
+        currency: 'EUR',
+        billing_basis: 'per_day',
+        duration_unit: 'day',
+        min_duration: 4,
+        max_duration: null,
+        min_commitment_value: null,
+        min_commitment_unit: null,
+        billing_increment_value: null,
+        billing_increment_unit: null,
+        supplier_label: null,
+        is_from: false,
+        sort_order: 1,
+      },
+    ],
     motorcycle_conditions: [
       {
         id: 'mc-pcx-1',
@@ -165,14 +208,36 @@ function enrichRow(table: string, row: any, state: InMemoryReconciliationState) 
     const prop = state.change_proposals.find((p) => p.id === row.proposal_id) || null;
     clone.change_proposals = prop ? structuredClone(prop) : null;
   }
+  if (table === 'rental_shops') {
+    clone.motorcycle_rentals = state.motorcycle_rentals
+      .filter((m) => m.shop_id === row.id)
+      .map((m) => enrichRow('motorcycle_rentals', m, state));
+    clone.rental_shop_inclusions = state.rental_shop_inclusions
+      .filter((i) => i.shop_id === row.id)
+      .map((i) => structuredClone(i));
+    clone.rental_shop_conditions = state.rental_shop_conditions
+      .filter((c) => c.shop_id === row.id)
+      .map((c) => structuredClone(c));
+    clone.rental_shop_tours = [];
+    clone.rental_shop_service_locations = [];
+  }
   if (table === 'motorcycle_rentals') {
+    const shop = state.rental_shops.find((s) => s.id === row.shop_id) || null;
+    if (shop && clone.rental_shops === undefined) {
+      clone.rental_shops = structuredClone(shop);
+    }
     const brand = state.brands.find((b) => b.id === row.brand_id) || null;
     const cat = state.categories.find((c) => c.id === row.category_id) || null;
-    clone.brands = brand ? { name: brand.name } : null;
+    clone.brands = brand ? { id: brand.id, name: brand.name } : null;
     clone.categories = cat ? { id: cat.id, name: cat.name } : null;
+    clone.motorcycle_images = clone.motorcycle_images || [];
+    clone.motorcycle_features = clone.motorcycle_features || [];
     clone.rental_rate_tiers = state.rental_rate_tiers
       .filter((t) => t.motorcycle_id === row.id)
       .map((t) => structuredClone(t));
+    clone.rental_offers = (state.rental_offers || [])
+      .filter((o) => o.motorcycle_id === row.id)
+      .map((o) => structuredClone(o));
     clone.motorcycle_conditions = state.motorcycle_conditions
       .filter((mc) => mc.motorcycle_id === row.id)
       .map((mc) => {
@@ -233,6 +298,9 @@ export function createInMemorySupabaseClient(
     let expectMaybeSingle = false;
 
     const execute = async () => {
+      if (!state[table]) {
+        (state as any)[table] = [];
+      }
       const tableRows = state[table] as any[];
 
       if (op === 'insert') {
@@ -556,7 +624,110 @@ export function createInMemorySupabaseClient(
     from(table: keyof InMemoryReconciliationState) {
       return createQueryBuilder(table);
     },
-    async rpc(fnName: string, args: { p_payload: any }) {
+    async rpc(fnName: string, args: any) {
+      if (fnName === 'replace_motorcycle_rental_offers') {
+        if (options.failRpcMessage) {
+          return { data: null, error: { message: options.failRpcMessage } };
+        }
+        const snapshot = structuredClone(state);
+        try {
+          const motorcycleId = args.p_motorcycle_id;
+          const payload = args.p_payload || {};
+          const bike = state.motorcycle_rentals.find((b) => b.id === motorcycleId);
+          if (!bike) {
+            return { data: null, error: { message: `Motorcycle ${motorcycleId} not found` } };
+          }
+          if (!state.rental_offers) {
+            state.rental_offers = [];
+          }
+          state.rental_offers = state.rental_offers.filter((o) => o.motorcycle_id !== motorcycleId);
+          state.rental_rate_tiers = state.rental_rate_tiers.filter((t) => t.motorcycle_id !== motorcycleId);
+          const now = new Date().toISOString();
+
+          for (const [idx, rawOffer] of (payload.offers || []).entries()) {
+            const parentId = makeUuid();
+            state.rental_offers.push({
+              id: parentId,
+              motorcycle_id: motorcycleId,
+              parent_offer_id: null,
+              offer_type: rawOffer.offer_type,
+              amount: Number(rawOffer.amount),
+              currency: String(rawOffer.currency).trim().toUpperCase(),
+              billing_basis: rawOffer.billing_basis,
+              duration_unit: rawOffer.duration_unit,
+              min_duration: Number(rawOffer.min_duration),
+              max_duration: rawOffer.max_duration ?? null,
+              min_commitment_value: rawOffer.min_commitment_value ?? null,
+              min_commitment_unit: rawOffer.min_commitment_unit ?? null,
+              billing_increment_value: rawOffer.billing_increment_value ?? null,
+              billing_increment_unit: rawOffer.billing_increment_unit ?? null,
+              supplier_label: rawOffer.supplier_label ?? null,
+              is_from: Boolean(rawOffer.is_from),
+              sort_order: rawOffer.sort_order ?? idx,
+              created_at: now,
+              updated_at: now,
+            });
+
+            for (const [extIdx, rawExt] of (rawOffer.extensions || []).entries()) {
+              state.rental_offers.push({
+                id: makeUuid(),
+                motorcycle_id: motorcycleId,
+                parent_offer_id: parentId,
+                offer_type: 'extension',
+                amount: Number(rawExt.amount),
+                currency: String(rawExt.currency).trim().toUpperCase(),
+                billing_basis: rawExt.billing_basis,
+                duration_unit: rawExt.duration_unit,
+                min_duration: Number(rawExt.min_duration),
+                max_duration: rawExt.max_duration ?? null,
+                min_commitment_value: null,
+                min_commitment_unit: null,
+                billing_increment_value: rawExt.billing_increment_value ?? null,
+                billing_increment_unit: rawExt.billing_increment_unit ?? null,
+                supplier_label: rawExt.supplier_label ?? null,
+                is_from: Boolean(rawExt.is_from),
+                sort_order: rawExt.sort_order ?? extIdx,
+                created_at: now,
+                updated_at: now,
+              });
+            }
+          }
+
+          for (const rawTier of payload.legacy_rate_tiers || []) {
+            state.rental_rate_tiers.push({
+              id: makeUuid(),
+              motorcycle_id: motorcycleId,
+              min_days: Number(rawTier.min_days),
+              max_days: rawTier.max_days ?? null,
+              rate_per_day: Number(rawTier.rate_per_day),
+              currency: String(rawTier.currency).trim().toUpperCase(),
+            });
+          }
+
+          bike.rental_rate_per_day =
+            payload.summary_rate_per_day === null || payload.summary_rate_per_day === undefined
+              ? null
+              : Number(payload.summary_rate_per_day);
+          bike.rental_rate_currency =
+            payload.summary_currency === null || payload.summary_currency === undefined
+              ? null
+              : String(payload.summary_currency).trim().toUpperCase();
+          bike.updated_at = now;
+
+          return {
+            data: {
+              motorcycleId,
+              summaryRatePerDay: bike.rental_rate_per_day,
+              summaryCurrency: bike.rental_rate_currency,
+            },
+            error: null,
+          };
+        } catch (err: any) {
+          Object.assign(state, snapshot);
+          return { data: null, error: { message: err.message } };
+        }
+      }
+
       if (fnName !== 'stage_change_proposal_with_report') {
         return { data: null, error: { message: `Unknown RPC ${fnName}` } };
       }
