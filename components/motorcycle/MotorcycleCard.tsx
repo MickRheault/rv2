@@ -13,6 +13,7 @@ import {
 import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid'
 import { Card, Badge, PremiumBadge } from '@/components/ui'
 import { MotorcycleWithDetails } from '@/services/motorcycles'
+import { resolveListingHeadline } from '@/lib/rental-offers'
 import { formatCurrency, formatEngineCapacity, formatMotorcycleYear } from '@/lib/utils'
 
 interface MotorcycleCardProps {
@@ -48,25 +49,9 @@ export default function MotorcycleCard({
     ? `${shop.cities.name}, ${shop.cities.provinces?.name || ''}`
     : shop?.full_address || 'Location not specified'
 
-  // Get the best (lowest) daily rate from rate tiers or fallback to base rate
-  // This matches the logic in MotorcycleDetails component
-  const getBestRate = () => {
-    if (motorcycle.rental_rate_tiers && motorcycle.rental_rate_tiers.length > 0) {
-      // Find the tier with the shortest min_days
-      const shortestPeriodTier = motorcycle.rental_rate_tiers.reduce((prev, current) => 
-        prev.min_days < current.min_days ? prev : current
-      )
-      return { amount: shortestPeriodTier.rate_per_day, currency: shortestPeriodTier.currency }
-    }
-    return { amount: motorcycle.rental_rate_per_day, currency: motorcycle.rental_rate_currency }
-  }
-
-  const bestRate = getBestRate()
-  const hasRateTiers = motorcycle.rental_rate_tiers && motorcycle.rental_rate_tiers.length > 0
-  
-  // Format pricing
-  const price = bestRate.amount
-    ? formatCurrency(bestRate.amount, bestRate.currency || 'USD')
+  const { headlineOffer, showFrom, unitLabel } = resolveListingHeadline(motorcycle)
+  const price = headlineOffer
+    ? `${showFrom ? 'From ' : ''}${formatCurrency(headlineOffer.amount, headlineOffer.currency)}`
     : 'Price on request'
 
   // Handle favorite toggle
@@ -170,9 +155,11 @@ export default function MotorcycleCard({
               <div className="text-sm font-bold text-gray-900">
                 {price}
               </div>
-              <div className="text-xs text-gray-500">
-                {hasRateTiers ? 'starting from' : '/day'}
-              </div>
+              {unitLabel && (
+                <div className="text-xs text-gray-500">
+                  {unitLabel}
+                </div>
+              )}
             </div>
           </div>
 

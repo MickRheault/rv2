@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import MotorcycleTable from './MotorcycleTable';
 import MotorcycleDetails from './MotorcycleDetails';
 
@@ -145,6 +145,232 @@ describe('MotorcycleTable & MotorcycleDetails Availability Handling (#151)', () 
     expect(screen.getByText('Rental Conditions')).toBeInTheDocument();
     expect(screen.getByText('Security Deposit')).toBeInTheDocument();
     expect(screen.getByText('THB 3,000')).toBeInTheDocument();
+  });
+
+  it('renders verbatim non-daily headlines and sorts standalone daily first, non-daily second, and unpriced On request strictly last on both price-asc and price-desc (#212)', () => {
+    const fleet = [
+      {
+        id: 'bike-unpriced',
+        model: 'Alpha Unpriced',
+        year: 2024,
+        engine_capacity_cc: 150,
+        rental_rate_per_day: null,
+        rental_rate_currency: null,
+        availability_status: 'available',
+        brands: { name: 'Honda' },
+        categories: { name: 'Scooter' },
+        rental_rate_tiers: [],
+        rental_offers: [],
+      },
+      {
+        id: 'bike-monthly',
+        model: 'Bravo Monthly',
+        year: 2024,
+        engine_capacity_cc: 160,
+        rental_rate_per_day: null,
+        rental_rate_currency: 'THB',
+        availability_status: 'available',
+        brands: { name: 'Yamaha' },
+        categories: { name: 'Scooter' },
+        rental_rate_tiers: [],
+        rental_offers: [
+          {
+            id: 'off-m',
+            offerType: 'monthly',
+            amount: 6000,
+            currency: 'THB',
+            billingBasis: 'per_calendar_month',
+            durationUnit: 'calendar_month',
+            minDuration: 1,
+            maxDuration: null,
+            minCommitment: null,
+            billingIncrement: null,
+            supplierLabel: null,
+            isFrom: false,
+            sortOrder: 0,
+            dailyEquivalent: null,
+            extensions: [],
+          },
+        ],
+      },
+      {
+        id: 'bike-daily-high',
+        model: 'Charlie Daily 500',
+        year: 2024,
+        engine_capacity_cc: 300,
+        rental_rate_per_day: 500,
+        rental_rate_currency: 'THB',
+        availability_status: 'available',
+        brands: { name: 'Honda' },
+        categories: { name: 'Adventure' },
+        rental_rate_tiers: [],
+        rental_offers: [
+          {
+            id: 'off-d-500',
+            offerType: 'daily',
+            amount: 500,
+            currency: 'THB',
+            billingBasis: 'per_day',
+            durationUnit: 'day',
+            minDuration: 1,
+            maxDuration: 6,
+            minCommitment: null,
+            billingIncrement: null,
+            supplierLabel: null,
+            isFrom: false,
+            sortOrder: 0,
+            dailyEquivalent: null,
+            extensions: [],
+          },
+          {
+            id: 'off-d-400',
+            offerType: 'daily',
+            amount: 400,
+            currency: 'THB',
+            billingBasis: 'per_day',
+            durationUnit: 'day',
+            minDuration: 7,
+            maxDuration: null,
+            minCommitment: null,
+            billingIncrement: null,
+            supplierLabel: null,
+            isFrom: false,
+            sortOrder: 1,
+            dailyEquivalent: null,
+            extensions: [],
+          },
+        ],
+      },
+      {
+        id: 'bike-package',
+        model: 'Delta Weekly',
+        year: 2024,
+        engine_capacity_cc: 155,
+        rental_rate_per_day: null,
+        rental_rate_currency: 'THB',
+        availability_status: 'available',
+        brands: { name: 'Yamaha' },
+        categories: { name: 'Scooter' },
+        rental_rate_tiers: [],
+        rental_offers: [
+          {
+            id: 'off-pkg-7',
+            offerType: 'package',
+            amount: 3000,
+            currency: 'THB',
+            billingBasis: 'package_total',
+            durationUnit: 'day',
+            minDuration: 7,
+            maxDuration: 7,
+            minCommitment: null,
+            billingIncrement: null,
+            supplierLabel: null,
+            isFrom: false,
+            sortOrder: 0,
+            dailyEquivalent: 428.57,
+            extensions: [],
+          },
+        ],
+      },
+      {
+        id: 'bike-daily-low',
+        model: 'Echo Daily 300',
+        year: 2024,
+        engine_capacity_cc: 125,
+        rental_rate_per_day: 300,
+        rental_rate_currency: 'THB',
+        availability_status: 'available',
+        brands: { name: 'Honda' },
+        categories: { name: 'Scooter' },
+        rental_rate_tiers: [],
+        rental_offers: [
+          {
+            id: 'off-d-300',
+            offerType: 'daily',
+            amount: 300,
+            currency: 'THB',
+            billingBasis: 'per_day',
+            durationUnit: 'day',
+            minDuration: 1,
+            maxDuration: null,
+            minCommitment: null,
+            billingIncrement: null,
+            supplierLabel: null,
+            isFrom: false,
+            sortOrder: 0,
+            dailyEquivalent: null,
+            extensions: [],
+          },
+        ],
+      },
+      {
+        id: 'bike-hourly',
+        model: 'Foxtrot Hourly',
+        year: 2024,
+        engine_capacity_cc: 110,
+        rental_rate_per_day: null,
+        rental_rate_currency: 'THB',
+        availability_status: 'available',
+        brands: { name: 'Honda' },
+        categories: { name: 'Scooter' },
+        rental_rate_tiers: [],
+        rental_offers: [
+          {
+            id: 'off-hr',
+            offerType: 'hourly',
+            amount: 100,
+            currency: 'THB',
+            billingBasis: 'per_hour',
+            durationUnit: 'hour',
+            minDuration: 1,
+            maxDuration: null,
+            minCommitment: null,
+            billingIncrement: null,
+            supplierLabel: null,
+            isFrom: false,
+            sortOrder: 0,
+            dailyEquivalent: null,
+            extensions: [],
+          },
+        ],
+      },
+    ];
+
+    render(<MotorcycleTable motorcycles={fleet} />);
+
+    // Both desktop and mobile render verbatim non-daily headlines with real units
+    expect(screen.getAllByText(/for 7 days/i).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText(/\/ calendar month/i).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText(/\/ hour/i).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText(/From\s+THB\s*500/i).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText('On request').length).toBeGreaterThanOrEqual(2);
+
+    const table = screen.getByRole('table');
+    const priceHeader = within(table).getByText(/^Price/i);
+
+    // Click once -> price asc: daily asc (300 -> 500), then non-daily (package -> monthly -> hourly), then unpriced strictly last
+    fireEvent.click(priceHeader);
+    const ascRows = within(table).getAllByRole('row').slice(1);
+    expect(ascRows.map((row) => row.textContent)).toEqual([
+      expect.stringContaining('Echo Daily 300'),
+      expect.stringContaining('Charlie Daily 500'),
+      expect.stringContaining('Delta Weekly'),
+      expect.stringContaining('Bravo Monthly'),
+      expect.stringContaining('Foxtrot Hourly'),
+      expect.stringContaining('Alpha Unpriced'),
+    ]);
+
+    // Click again -> price desc: daily desc (500 -> 300), then non-daily, and unpriced STILL strictly last
+    fireEvent.click(priceHeader);
+    const descRows = within(table).getAllByRole('row').slice(1);
+    expect(descRows.map((row) => row.textContent)).toEqual([
+      expect.stringContaining('Charlie Daily 500'),
+      expect.stringContaining('Echo Daily 300'),
+      expect.stringContaining('Delta Weekly'),
+      expect.stringContaining('Bravo Monthly'),
+      expect.stringContaining('Foxtrot Hourly'),
+      expect.stringContaining('Alpha Unpriced'),
+    ]);
   });
 });
 

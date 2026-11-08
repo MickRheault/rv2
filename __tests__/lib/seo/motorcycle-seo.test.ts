@@ -3,6 +3,7 @@ import {
   generateMotorcycleSchema,
   generateVehicleSchema,
   generateEnhancedMotorcycleSchema,
+  generateShopMotorcycleSchemas,
 } from '@/lib/seo/structured-data';
 
 describe('Motorcycle SEO & JSON-LD Model Year Range (#137)', () => {
@@ -215,6 +216,141 @@ describe('Motorcycle SEO & JSON-LD Model Year Range (#137)', () => {
       price: '6000',
       priceCurrency: 'THB',
       referenceQuantity: { '@type': 'QuantitativeValue', value: 1, unitCode: 'MON' },
+    });
+  });
+
+  it('generates shop-page motorcycle JSON-LD schemas with real non-daily billing units, null-status availability, and fallback rate tiers (#212)', () => {
+    const schemas = generateShopMotorcycleSchemas({
+      provider_name: 'Patoy Moto',
+      motorcycle_rentals: [
+        {
+          id: 'shop-bike-pkg',
+          model: 'ADV 350',
+          year: 2024,
+          engine_capacity_cc: 330,
+          availability_status: null, // null means available per isMotorcycleAvailable
+          rental_rate_per_day: null,
+          rental_rate_currency: 'THB',
+          brands: { name: 'Honda' },
+          categories: { name: 'Scooter' },
+          rental_rate_tiers: [],
+          // Raw DB rows or hydrated offers both supported
+          rental_offers: [
+            {
+              id: 'raw-pkg-7',
+              motorcycle_id: 'shop-bike-pkg',
+              parent_offer_id: null,
+              offer_type: 'package',
+              amount: 3000,
+              currency: 'THB',
+              billing_basis: 'package_total',
+              duration_unit: 'day',
+              min_duration: 7,
+              max_duration: 7,
+              min_commitment_value: null,
+              min_commitment_unit: null,
+              billing_increment_value: null,
+              billing_increment_unit: null,
+              supplier_label: 'Weekly Deal',
+              is_from: false,
+              sort_order: 0,
+            },
+            {
+              id: 'raw-pkg-ext',
+              motorcycle_id: 'shop-bike-pkg',
+              parent_offer_id: 'raw-pkg-7',
+              offer_type: 'extension',
+              amount: 450,
+              currency: 'THB',
+              billing_basis: 'per_day',
+              duration_unit: 'day',
+              min_duration: 1,
+              max_duration: null,
+              min_commitment_value: null,
+              min_commitment_unit: null,
+              billing_increment_value: null,
+              billing_increment_unit: null,
+              supplier_label: null,
+              is_from: false,
+              sort_order: 0,
+            },
+            {
+              id: 'raw-cal-month',
+              motorcycle_id: 'shop-bike-pkg',
+              parent_offer_id: null,
+              offer_type: 'monthly',
+              amount: 6000,
+              currency: 'THB',
+              billing_basis: 'per_calendar_month',
+              duration_unit: 'calendar_month',
+              min_duration: 1,
+              max_duration: null,
+              min_commitment_value: null,
+              min_commitment_unit: null,
+              billing_increment_value: null,
+              billing_increment_unit: null,
+              supplier_label: null,
+              is_from: false,
+              sort_order: 1,
+            },
+          ],
+        },
+        {
+          id: 'shop-bike-legacy-tiers',
+          model: 'Click 125',
+          year: 2023,
+          engine_capacity_cc: 125,
+          availability_status: 'available',
+          rental_rate_per_day: 250,
+          rental_rate_currency: 'THB',
+          brands: { name: 'Honda' },
+          categories: { name: 'Scooter' },
+          rental_offers: [],
+          rental_rate_tiers: [
+            { min_days: 1, max_days: 6, rate_per_day: 250, currency: 'THB' },
+            { min_days: 7, max_days: null, rate_per_day: 200, currency: 'THB' },
+          ],
+        },
+      ],
+    });
+
+    expect(schemas).toHaveLength(2);
+
+    const flexOffers = (schemas[0] as any).offers;
+    expect(flexOffers.availability).toBe('https://schema.org/InStock');
+    expect(flexOffers.priceSpecification).toHaveLength(2);
+    expect(flexOffers.priceSpecification[0]).toMatchObject({
+      '@type': 'UnitPriceSpecification',
+      name: 'Weekly Deal',
+      price: '3000',
+      priceCurrency: 'THB',
+      referenceQuantity: { '@type': 'QuantitativeValue', value: 7, unitCode: 'DAY' },
+    });
+    expect(flexOffers.priceSpecification[0].description).toContain('for 7 days');
+    expect(flexOffers.priceSpecification[0].description).toContain('428.57 THB/day daily equivalent');
+    expect(flexOffers.priceSpecification[0].description).toContain('450 THB per extra day');
+    expect(flexOffers.priceSpecification[1]).toMatchObject({
+      '@type': 'UnitPriceSpecification',
+      name: '6000 THB per calendar month',
+      price: '6000',
+      priceCurrency: 'THB',
+      referenceQuantity: { '@type': 'QuantitativeValue', value: 1, unitCode: 'MON' },
+    });
+    // Unlabeled offer has billing unit in `name` and does NOT duplicate `name` into `description`
+    expect(flexOffers.priceSpecification[1].description).toBeUndefined();
+    expect(JSON.stringify(flexOffers)).not.toContain('Daily Rate');
+
+    const legacyTierSpecs = (schemas[1] as any).offers.priceSpecification;
+    expect(legacyTierSpecs).toHaveLength(2);
+    expect(legacyTierSpecs[0]).toMatchObject({
+      price: '250',
+      priceCurrency: 'THB',
+      referenceQuantity: { '@type': 'QuantitativeValue', value: 1, unitCode: 'DAY' },
+    });
+    expect(legacyTierSpecs[1]).toMatchObject({
+      price: '200',
+      priceCurrency: 'THB',
+      referenceQuantity: { '@type': 'QuantitativeValue', value: 1, unitCode: 'DAY' },
     });
   });
 });

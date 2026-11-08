@@ -152,5 +152,152 @@ it('includes canonical relative url in get_shop tool results and falls back to s
     });
 });
 
+it('exposes verbatim non-daily rentalOffers and real billing phrases with dailyRate: null in list_motorcycles, get_motorcycle, and get_shop (#212)', async () => {
+    const nonDailyMotorcycle = {
+        id: 'pkg-bike-1',
+        model: 'Forza 350',
+        year: 2024,
+        brands: { name: 'Honda' },
+        categories: { name: 'Scooter' },
+        rental_rate_per_day: null,
+        rental_rate_currency: 'THB',
+        rental_rate_tiers: [],
+        rental_offers: [
+            {
+                id: 'off-pkg-7',
+                offerType: 'package',
+                amount: 3000,
+                currency: 'THB',
+                billingBasis: 'package_total',
+                durationUnit: 'day',
+                minDuration: 7,
+                maxDuration: 7,
+                minCommitment: null,
+                billingIncrement: null,
+                supplierLabel: 'Weekly Package',
+                isFrom: false,
+                sortOrder: 0,
+                dailyEquivalent: 428.57,
+                extensions: [
+                    {
+                        id: 'ext-1',
+                        offerType: 'extension',
+                        amount: 450,
+                        currency: 'THB',
+                        billingBasis: 'per_day',
+                        durationUnit: 'day',
+                        minDuration: 1,
+                        maxDuration: null,
+                        billingIncrement: null,
+                        supplierLabel: null,
+                        isFrom: false,
+                        sortOrder: 0,
+                        dailyEquivalent: null,
+                    },
+                ],
+            },
+            {
+                id: 'off-cal-m',
+                offerType: 'monthly',
+                amount: 6000,
+                currency: 'THB',
+                billingBasis: 'per_calendar_month',
+                durationUnit: 'calendar_month',
+                minDuration: 1,
+                maxDuration: null,
+                minCommitment: { value: 3, unit: 'calendar_month' },
+                billingIncrement: null,
+                supplierLabel: null,
+                isFrom: false,
+                sortOrder: 1,
+                dailyEquivalent: null,
+                extensions: [],
+            },
+        ],
+        rental_shops: {
+            provider_name: 'Patoy Moto',
+            slug: 'patoy-moto',
+            rating: 4.9,
+            cities: {
+                name: 'Bangkok',
+                provinces: { countries: { name: 'Thailand' } },
+            },
+        },
+    };
+
+    mockGetMotorcycles.mockResolvedValueOnce({ total: 1, motorcycles: [nonDailyMotorcycle] });
+    const listRes = await executeTool('list_motorcycles', {});
+    expect(listRes.success).toBe(true);
+    const listData = JSON.parse(formatToolResultForLLM(listRes));
+    expect(listData.motorcycles[0]).toMatchObject({
+        id: 'pkg-bike-1',
+        dailyRate: null,
+        currency: 'THB',
+        priceDisplay: '3,000 THB for 7 days',
+    });
+    expect(listData.motorcycles[0].rentalOffers).toEqual([
+        expect.objectContaining({
+            offerType: 'package',
+            amount: 3000,
+            currency: 'THB',
+            billingUnitPhrase: 'for 7 days',
+            dailyEquivalent: 428.57,
+            extensions: [
+                expect.objectContaining({
+                    amount: 450,
+                    currency: 'THB',
+                    billingPhrase: 'per extra day',
+                }),
+            ],
+        }),
+        expect.objectContaining({
+            offerType: 'monthly',
+            amount: 6000,
+            currency: 'THB',
+            billingUnitPhrase: 'per calendar month',
+            dailyEquivalent: null,
+            minCommitment: { value: 3, unit: 'calendar_month' },
+        }),
+    ]);
+
+    mockGetMotorcycleById.mockResolvedValueOnce(nonDailyMotorcycle);
+    const detailRes = await executeTool('get_motorcycle', { id: 'pkg-bike-1' });
+    const detailData = JSON.parse(formatToolResultForLLM(detailRes));
+    expect(detailData).toMatchObject({
+        id: 'pkg-bike-1',
+        dailyRate: null,
+        priceDisplay: '3,000 THB for 7 days',
+    });
+    expect(detailData.rentalOffers).toHaveLength(2);
+
+    // Legacy row with scalar rate but null currency must return dailyRate: null + Price on request
+    mockGetMotorcycles.mockResolvedValueOnce({
+        total: 1,
+        motorcycles: [
+            {
+                id: 'unpriced-bike',
+                model: 'Mystery Scooter',
+                year: 2024,
+                brands: { name: 'Honda' },
+                categories: { name: 'Scooter' },
+                rental_rate_per_day: 250,
+                rental_rate_currency: null,
+                rental_rate_tiers: [],
+                rental_offers: [],
+                rental_shops: nonDailyMotorcycle.rental_shops,
+            },
+        ],
+    });
+    const unpricedRes = await executeTool('list_motorcycles', {});
+    const unpricedData = JSON.parse(formatToolResultForLLM(unpricedRes));
+    expect(unpricedData.motorcycles[0]).toMatchObject({
+        id: 'unpriced-bike',
+        dailyRate: null,
+        currency: null,
+        priceDisplay: 'Price on request',
+        rentalOffers: [],
+    });
+});
+
 
 

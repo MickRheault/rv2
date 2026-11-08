@@ -314,6 +314,15 @@ it('instructs SYSTEM_PROMPT to decline repetition, padding, layout tests, and bu
     expect(SYSTEM_PROMPT).toMatch(/padding|layout/i);
 });
 
+it('instructs SYSTEM_PROMPT to format non-daily offers with their real billing units instead of assuming /day (#212)', () => {
+    expect(SYSTEM_PROMPT).toMatch(/for\s+\{?\w*\}?\s*days|for 7 days/i);
+    expect(SYSTEM_PROMPT).toMatch(/calendar month/i);
+    expect(SYSTEM_PROMPT).toMatch(/\/hour|per hour/i);
+    expect(SYSTEM_PROMPT).toMatch(/daily equivalent/i);
+    expect(SYSTEM_PROMPT).toMatch(/per extra day|extension/i);
+    expect(SYSTEM_PROMPT).not.toContain('Format prices as: ฿{price}/day or ${price}/day (if no price, say "Price on request")');
+});
+
 it('rejects messages longer than 500 characters with 400 before calling OpenAI', async () => {
     const longMessage = 'a'.repeat(501);
     const response = await POST(request(`Bearer ${configuredSecret}`, longMessage));

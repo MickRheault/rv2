@@ -5,7 +5,7 @@ import { shopService } from '@/services/shops'
 import { PremiumUtilsService } from '@/services/premium-listings'
 import ShopDetails from '@/components/shop/ShopDetails'
 import { generateMetadata as generateSEOMetadata, generateShopSEO } from '@/lib/seo/config'
-import { StructuredData, generateRentalShopSchema, generateRentalServiceSchema, generateTourSchema, generateEnhancedMotorcycleSchema } from '@/lib/seo/structured-data'
+import { StructuredData, generateRentalShopSchema, generateRentalServiceSchema, generateTourSchema, generateShopMotorcycleSchemas } from '@/lib/seo/structured-data'
 import { parseShopLocation, validateShopLocation } from '@/lib/utils/urls'
 
 export const revalidate = 86400 // Revalidate every 24 hours
@@ -158,34 +158,7 @@ export default async function ShopPage({ params }: ShopPageProps) {
     ).flat() || []
 
     // Generate enhanced motorcycle schemas for all motorcycles offered by this shop
-    const motorcycleSchemas = shop.motorcycle_rentals?.map(motorcycle => 
-      generateEnhancedMotorcycleSchema({
-        id: motorcycle.id,
-        model: motorcycle.model || undefined,
-        brand: motorcycle.brands?.name || undefined,
-        year: motorcycle.year || undefined,
-        year_to: (motorcycle as any).year_to || undefined,
-        category: motorcycle.categories?.name || undefined,
-        description: `${motorcycle.brands?.name || ''} ${motorcycle.model || ''} motorcycle rental at ${shop.provider_name}`.trim(),
-        engineSize: motorcycle.engine_capacity_cc || undefined,
-        availability: motorcycle.availability_status === 'available',
-        rentalOffers: (motorcycle as any).rental_offers,
-        // Basic rental rates from shop's motorcycle rentals
-        rentalRates: motorcycle.rental_rate_per_day ? [{
-          rateText: 'Daily Rate',
-          minDays: 1,
-          maxDays: undefined,
-          ratePerDay: motorcycle.rental_rate_per_day,
-          currency: motorcycle.rental_rate_currency || undefined,
-        }] : [],
-        // Parse specifications from JSON if available
-        specifications: motorcycle.specifications_details ? 
-          (typeof motorcycle.specifications_details === 'object' ? 
-            motorcycle.specifications_details : 
-            undefined
-          ) : undefined,
-      })
-    ) || []
+    const motorcycleSchemas = generateShopMotorcycleSchemas(shop)
 
     return (
       <>

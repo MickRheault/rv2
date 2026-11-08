@@ -8,6 +8,8 @@ import {
   formatDurationUnitLabel,
   formatExtensionBillingPhrase,
   formatOfferBillingUnitPhrase,
+  hydrateRentalOffersFromRows,
+  resolveMotorcycleRentalOffers,
   type DurationUnit,
   type NormalizedRentalOffer,
 } from '@/lib/rental-offers';
@@ -484,13 +486,17 @@ export function generateOfferPricingSchema(rentalOffers: NormalizedRentalOffer[]
         ? offer.minDuration
         : effectiveMinInOfferUnit;
 
+    const billingSummary = `${offer.isFrom ? 'From ' : ''}${offer.amount} ${offer.currency} ${formatOfferBillingUnitPhrase(offer)}`;
     const name = offer.supplierLabel
       ? offer.isFrom
         ? `From — ${offer.supplierLabel}`
         : offer.supplierLabel
-      : `${offer.isFrom ? 'From ' : ''}${offer.amount} ${offer.currency} ${formatOfferBillingUnitPhrase(offer)}`;
+      : billingSummary;
 
     const detailClauses: string[] = [];
+    if (offer.supplierLabel) {
+      detailClauses.push(billingSummary);
+    }
     if (typeof offer.dailyEquivalent === 'number') {
       detailClauses.push(`${offer.dailyEquivalent} ${offer.currency}/day daily equivalent`);
     }
@@ -698,9 +704,10 @@ export function generateEnhancedMotorcycleSchema(
   }
 ) {
   const baseVehicleSchema = generateVehicleSchema(motorcycle);
+  const normalizedOffers = hydrateRentalOffersFromRows(motorcycle.rentalOffers as any);
   const pricingSchemas =
-    motorcycle.rentalOffers && motorcycle.rentalOffers.length > 0
-      ? generateOfferPricingSchema(motorcycle.rentalOffers)
+    normalizedOffers.length > 0
+      ? generateOfferPricingSchema(normalizedOffers)
       : motorcycle.rentalRates
         ? generatePricingSchema(motorcycle.rentalRates)
         : [];
@@ -730,6 +737,36 @@ export function generateEnhancedMotorcycleSchema(
       additionalService: generateInsuranceSchema(motorcycle.insuranceDetails),
     } : {}),
   };
+}
+
+export function generateShopMotorcycleSchemas(shop: {
+  provider_name: string;
+  motorcycle_rentals?: any[] | null;
+}) {
+  if (!Array.isArray(shop.motorcycle_rentals)) return [];
+
+  return shop.motorcycle_rentals
+    .filter((m) => Boolean(m) && m.availability_status !== 'unavailable')
+    .map((motorcycle) => {
+      const resolvedOffers = resolveMotorcycleRentalOffers(motorcycle);
+
+      return generateEnhancedMotorcycleSchema({
+        id: motorcycle.id,
+        model: motorcycle.model || undefined,
+        brand: motorcycle.brands?.name || undefined,
+        year: motorcycle.year || undefined,
+        year_to: motorcycle.year_to || undefined,
+        category: motorcycle.categories?.name || undefined,
+        description: `${motorcycle.brands?.name || ''} ${motorcycle.model || ''} motorcycle rental at ${shop.provider_name}`.trim(),
+        engineSize: motorcycle.engine_capacity_cc || undefined,
+        availability: motorcycle.availability_status !== 'unavailable',
+        rentalOffers: resolvedOffers,
+        specifications:
+          motorcycle.specifications_details && typeof motorcycle.specifications_details === 'object'
+            ? motorcycle.specifications_details
+            : undefined,
+      });
+    });
 }
 
 // Generic schema component for easy embedding
