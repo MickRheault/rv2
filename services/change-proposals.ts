@@ -12,8 +12,18 @@ import {
 import { normalizeMotorcycleYearRange } from '@/lib/utils';
 import { getShopUrl } from '@/lib/utils/urls';
 import {
+  convertLegacyRateTiersToOffers,
+  hydrateRentalOffersFromRows,
+  NormalizedRentalOffer,
+  projectOffersToLegacyDaily,
+  RentalOfferConflictError,
+  validateAndNormalizeRentalOffers,
+} from '@/lib/rental-offers';
+import {
   ApplicationStatus,
   CoverageStatus,
+  hasStrictNonDailyOrExtensionOffers,
+  hydrateBaselineOffersAndRates,
   MAX_PROPOSAL_ITEMS,
   MAX_SHORT_LABEL_LENGTH,
   MAX_TEXT_FIELD_LENGTH,
@@ -23,14 +33,18 @@ import {
   ReconciliationStatus,
   computeCanonicalSha256Digest,
   normalizeAndValidateReconciliationReport,
+  normalizeOptionalProposalOriginalOffers,
   normalizeScopeForComparison,
   planCandidateOperations,
+  stripIdsFromNormalizedOffers,
+  validateAndNormalizeProposalMotorcyclePricing,
   validateBoundedString,
   validateHttpUrl,
   validateMotorcycleRateTiers,
   validateRequiredUuid,
 } from '@/lib/reconciliation-report';
 import { TaskSchedulerService } from './task-scheduler';
+import { serializeOffersForRpc } from './rental-offers';
 
 export { CANONICAL_CONDITION_TYPE_NAMES, ProposalIdempotencyConflictError, ProposalVersionConflictError };
 
@@ -589,6 +603,80 @@ function areRateTierStatesEqual(
   return true;
 }
 
+function canonicalizeOffersForComparison(rawOffers: any[]): any[] {
+  if (!Array.isArray(rawOffers) || rawOffers.length === 0) return [];
+  let normalized: NormalizedRentalOffer[];
+  try {
+    normalized =
+      rawOffers[0] && typeof rawOffers[0] === 'object' && 'offer_type' in rawOffers[0]
+        ? hydrateRentalOffersFromRows(rawOffers)
+        : validateAndNormalizeRentalOffers(rawOffers, { requireNonEmpty: false });
+  } catch {
+    return rawOffers;
+  }
+
+  return normalized
+    .map((o) => ({
+      offerType: o.offerType,
+      amount: Number(o.amount),
+      currency: String(o.currency || '').trim().toUpperCase(),
+      billingBasis: o.billingBasis,
+      durationUnit: o.durationUnit,
+      minDuration: Number(o.minDuration),
+      maxDuration: o.maxDuration ?? null,
+      minCommitment: o.minCommitment
+        ? { value: Number(o.minCommitment.value), unit: o.minCommitment.unit }
+        : null,
+      billingIncrement: o.billingIncrement
+        ? { value: Number(o.billingIncrement.value), unit: o.billingIncrement.unit }
+        : null,
+      supplierLabel: o.supplierLabel ?? null,
+      isFrom: Boolean(o.isFrom),
+      extensions: [...(o.extensions || [])]
+        .map((ext) => ({
+          amount: Number(ext.amount),
+          currency: String(ext.currency || '').trim().toUpperCase(),
+          billingBasis: ext.billingBasis,
+          durationUnit: ext.durationUnit,
+          minDuration: Number(ext.minDuration),
+          maxDuration: ext.maxDuration ?? null,
+          billingIncrement: ext.billingIncrement
+            ? { value: Number(ext.billingIncrement.value), unit: ext.billingIncrement.unit }
+            : null,
+          supplierLabel: ext.supplierLabel ?? null,
+          isFrom: Boolean(ext.isFrom),
+        }))
+        .sort((a, b) =>
+          canonicalizeSortKey(a).localeCompare(canonicalizeSortKey(b))
+        ),
+    }))
+    .sort((a, b) => canonicalizeSortKey(a).localeCompare(canonicalizeSortKey(b)));
+}
+
+function canonicalizeSortKey(obj: Record<string, any>): string {
+  return JSON.stringify([
+    obj.offerType ?? 'extension',
+    obj.billingBasis,
+    obj.durationUnit,
+    obj.minDuration,
+    obj.maxDuration,
+    obj.currency,
+    obj.supplierLabel ?? '',
+    obj.amount,
+  ]);
+}
+
+function areOfferStatesEqual(
+  expectedOriginalOffers: any[],
+  liveOffers: NormalizedRentalOffer[]
+): boolean {
+  const expectedDigest = computeCanonicalSha256Digest(
+    canonicalizeOffersForComparison(expectedOriginalOffers)
+  );
+  const liveDigest = computeCanonicalSha256Digest(canonicalizeOffersForComparison(liveOffers));
+  return expectedDigest === liveDigest;
+}
+
 function assertFreshMotorcycleCategory(
   origBike: Record<string, any>,
   liveBike: Record<string, any>,
@@ -1036,6 +1124,111 @@ export function normalizeProposalStatusDimensions(prop: any): {
   return { coverageStatus, reconciliationStatus, applicationStatus, version };
 }
 
+function enforceAndCaptureProposalItemOfferBaseline(item: any, liveRow: any): void {
+  if (!liveRow || item.entity_type !== 'motorcycle' || !item.entity_id) return;
+
+  const { offers: liveOffers, rates: liveProjectedRates } = hydrateBaselineOffersAndRates(liveRow);
+  const hasOffersUpdate = item.proposed_data?.offers !== undefined;
+  const hasRatesUpdate = Array.isArray(item.proposed_data?.rates);
+
+  if (
+    item.action === 'update' &&
+    !hasOffersUpdate &&
+    hasRatesUpdate &&
+    hasStrictNonDailyOrExtensionOffers(liveOffers)
+  ) {
+    throw new RentalOfferConflictError(
+      `Cannot stage legacy rates-only update for motorcycle '${item.entity_id}' because it currently holds non-daily or extension rental offers; submit proposedData.offers instead.`
+    );
+  }
+
+  if (item.action === 'delist' || (item.action === 'update' && (hasOffersUpdate || hasRatesUpdate))) {
+    const nextOrig = item.original_data ? { ...item.original_data } : {};
+    let mutatedOrig = false;
+    if (nextOrig.offers === undefined) {
+      nextOrig.offers = stripIdsFromNormalizedOffers(liveOffers);
+      mutatedOrig = true;
+    }
+    if (
+      nextOrig.rates === undefined &&
+      (item.action === 'delist' || hasOffersUpdate) &&
+      liveProjectedRates.length > 0
+    ) {
+      nextOrig.rates = liveProjectedRates;
+      mutatedOrig = true;
+    }
+    if (mutatedOrig) {
+      item.original_data = nextOrig;
+    }
+  }
+}
+
+async function persistMotorcyclePricingOnApply(params: {
+  supabase: any;
+  motorcycleId: string;
+  validatedOffers: NormalizedRentalOffer[] | undefined;
+  legacyRates: Array<{ minDays: number; maxDays: number | null; ratePerDay: number; currency?: string }>;
+  fallbackCurrency?: string | null;
+  hasOffersRpc: boolean;
+  clearExistingLegacyTiers?: boolean;
+  onFailureRollback: () => Promise<void>;
+}): Promise<{ replacedOffersViaRpc: boolean }> {
+  const {
+    supabase,
+    motorcycleId,
+    validatedOffers,
+    legacyRates,
+    fallbackCurrency,
+    hasOffersRpc,
+    clearExistingLegacyTiers = false,
+    onFailureRollback,
+  } = params;
+
+  if (validatedOffers) {
+    if (!hasOffersRpc) {
+      await onFailureRollback();
+      throw new Error('replace_motorcycle_rental_offers RPC is required to persist rental offers');
+    }
+    const rpcRes = await supabase.rpc('replace_motorcycle_rental_offers', {
+      p_motorcycle_id: motorcycleId,
+      p_payload: serializeOffersForRpc(validatedOffers),
+    });
+    if (rpcRes?.error) {
+      await onFailureRollback();
+      throw new Error(`Failed to persist motorcycle rental offers: ${rpcRes.error.message}`);
+    }
+    return { replacedOffersViaRpc: true };
+  }
+
+  if (legacyRates.length > 0) {
+    if (hasOffersRpc) {
+      const resolvedFallbackCurr = fallbackCurrency || 'THB';
+      const convertedOffers = convertLegacyRateTiersToOffers(
+        legacyRates.map((r) => ({
+          ...r,
+          currency: r.currency || resolvedFallbackCurr,
+        }))
+      );
+      const rpcRes = await supabase.rpc('replace_motorcycle_rental_offers', {
+        p_motorcycle_id: motorcycleId,
+        p_payload: serializeOffersForRpc(convertedOffers),
+      });
+      if (rpcRes?.error) {
+        await onFailureRollback();
+        throw new Error(`Failed to persist motorcycle rate tiers: ${rpcRes.error.message}`);
+      }
+      return { replacedOffersViaRpc: true };
+    }
+
+    if (clearExistingLegacyTiers) {
+      await supabase.from('rental_rate_tiers').delete().eq('motorcycle_id', motorcycleId);
+    }
+    await insertRateTiers(supabase, motorcycleId, legacyRates, fallbackCurrency || undefined);
+  }
+
+  return { replacedOffersViaRpc: false };
+}
+
 function mapLiveMotorcycleToBaselineData(
   liveBike: any,
   fallbackBrand: string | null = null,
@@ -1051,9 +1244,9 @@ function mapLiveMotorcycleToBaselineData(
     categoryId && typeof rawCategoryName === 'string' && rawCategoryName.trim().length > 0
       ? rawCategoryName.trim()
       : null;
-  const sortedTiers = [...(liveBike.rental_rate_tiers || [])].sort(
-    (a: any, b: any) => (a.min_days ?? 1) - (b.min_days ?? 1)
-  );
+  const { offers, rates: projectedRates } = hydrateBaselineOffersAndRates(liveBike, {
+    fallbackLegacyCurrency: 'THB',
+  });
   return {
     brand: liveBike.brands?.name ?? fallbackBrand,
     model: liveBike.model ?? fallbackModel,
@@ -1063,12 +1256,8 @@ function mapLiveMotorcycleToBaselineData(
     year_to: liveBike.year_to ?? null,
     engineCapacityCc: liveBike.engine_capacity_cc ?? null,
     sourceUrl: liveBike.source_url ?? null,
-    rates: sortedTiers.map((r: any) => ({
-      minDays: r.min_days,
-      maxDays: r.max_days ?? null,
-      ratePerDay: r.rate_per_day,
-      currency: r.currency || 'THB',
-    })),
+    rates: projectedRates,
+    offers,
     conditions: (liveBike.motorcycle_conditions || []).map((mc: any) => ({
       condition_type_id: mc.condition_type_id,
       name: resolveConditionName(mc),
@@ -1189,6 +1378,16 @@ export class ChangeProposalService {
               extractedProposedCat.normalizedId
             );
           }
+          if (normalizedProposedData.offers !== undefined) {
+            normalizedProposedData = validateAndNormalizeProposalMotorcyclePricing(
+              normalizedProposedData,
+              {
+                itemLabel,
+                required: action === 'add',
+                validationErrorCtor: ProposalItemValidationError,
+              }
+            );
+          }
         } else if (hasExplicitCategoryField(proposedData)) {
           const extractedInformationalCat = extractAndValidateCategorySyntax(proposedData, {
             itemLabel,
@@ -1220,6 +1419,13 @@ export class ChangeProposalService {
                 : undefined
             );
           }
+        }
+
+        if (normalizedOriginalData) {
+          normalizedOriginalData = normalizeOptionalProposalOriginalOffers(normalizedOriginalData, {
+            itemLabel,
+            validationErrorCtor: ProposalItemValidationError,
+          });
         }
       }
 
@@ -1340,25 +1546,32 @@ export class ChangeProposalService {
       }
     }
 
-    // Verify shop ownership for any referenced motorcycle entityIds when database rows are returned
+    // Verify shop ownership & legacy rates-only overwrite guard for any referenced motorcycle entityIds
     const motorcycleEntityIds = normalizedItems
       .filter((i) => i.entity_type === 'motorcycle' && i.entity_id)
       .map((i) => i.entity_id as string);
     if (motorcycleEntityIds.length > 0) {
       const ownershipQuery = (supabase.from('motorcycle_rentals') as any)
-        ?.select?.('id, shop_id')
+        ?.select?.(
+          'id, shop_id, rental_rate_per_day, rental_rate_currency, rental_offers ( * ), rental_rate_tiers ( min_days, max_days, rate_per_day, currency )'
+        )
         ?.in?.('id', motorcycleEntityIds);
       if (ownershipQuery) {
         const { data: existingRows } = await ownershipQuery;
         if (Array.isArray(existingRows) && existingRows.length > 0) {
-          const byId = new Map(existingRows.map((r: any) => [r.id, r.shop_id]));
+          const rowById = new Map<string, any>(existingRows.map((r: any) => [r.id, r]));
           for (const targetId of motorcycleEntityIds) {
-            const ownerShopId = byId.get(targetId);
+            const liveRow = rowById.get(targetId);
+            const ownerShopId = liveRow?.shop_id;
             if (!ownerShopId || ownerShopId !== input.shopId) {
               throw new ProposalItemValidationError(
                 `Motorcycle entityId '${targetId}' does not belong to shop '${input.shopId}'.`
               );
             }
+          }
+          for (const item of normalizedItems) {
+            if (item.entity_type !== 'motorcycle' || !item.entity_id) continue;
+            enforceAndCaptureProposalItemOfferBaseline(item, rowById.get(item.entity_id));
           }
         }
       }
@@ -1649,12 +1862,15 @@ export class ChangeProposalService {
             );
           }
 
-          // Enforce complete positive pricing on add and on update whenever rates is supplied
-          validateMotorcycleRateTiers(proposedData, {
-            itemLabel,
-            required: action === 'add',
-            validationErrorCtor: ProposalItemValidationError,
-          });
+          // Enforce complete positive pricing (offers or legacy rates) on add and on update whenever supplied
+          normalizedProposedData = validateAndNormalizeProposalMotorcyclePricing(
+            normalizedProposedData,
+            {
+              itemLabel,
+              required: action === 'add',
+              validationErrorCtor: ProposalItemValidationError,
+            }
+          );
         } else if (hasExplicitCategoryField(proposedData)) {
           const extractedInformationalCat = extractAndValidateCategorySyntax(proposedData, {
             itemLabel,
@@ -1686,6 +1902,13 @@ export class ChangeProposalService {
                 : undefined
             );
           }
+        }
+
+        if (normalizedOriginalData) {
+          normalizedOriginalData = normalizeOptionalProposalOriginalOffers(normalizedOriginalData, {
+            itemLabel,
+            validationErrorCtor: ProposalItemValidationError,
+          });
         }
       }
 
@@ -1836,21 +2059,24 @@ export class ChangeProposalService {
       ])
     );
 
+    const liveReferencedBikeById = new Map<string, any>();
     if (referencedBikeIds.length > 0) {
       const { data: bikeRows, error: bikeOwnershipErr } = await (supabase
         .from('motorcycle_rentals') as any)
-        .select('id, shop_id')
+        .select(
+          'id, shop_id, rental_rate_per_day, rental_rate_currency, rental_offers ( * ), rental_rate_tiers ( min_days, max_days, rate_per_day, currency )'
+        )
         .in('id', referencedBikeIds);
 
       if (bikeOwnershipErr) {
         throw new Error(`Failed to verify motorcycle ownership: ${bikeOwnershipErr.message}`);
       }
 
-      const ownerByBikeId = new Map<string, string>(
-        (bikeRows || []).map((r: any) => [r.id, r.shop_id])
-      );
+      for (const r of bikeRows || []) {
+        liveReferencedBikeById.set(r.id, r);
+      }
       for (const bikeId of referencedBikeIds) {
-        const ownerShopId = ownerByBikeId.get(bikeId);
+        const ownerShopId = liveReferencedBikeById.get(bikeId)?.shop_id;
         if (!ownerShopId || ownerShopId !== shopId) {
           throw new ProposalItemValidationError(
             `Motorcycle ID '${bikeId}' does not exist or does not belong to shop '${shopId}'.`
@@ -1879,8 +2105,8 @@ export class ChangeProposalService {
       learnedConfig: normalizedLearnedConfig,
     });
 
-    // Load active shop baseline motorcycles & existing unresolved candidates
-    const [activeBikesRes, existingCandidatesRes, priorPendingProposalsRes] = await Promise.all([
+    // Load active shop baseline motorcycles & existing unresolved candidates & existing shop proposals
+    const [activeBikesRes, existingCandidatesRes, shopProposalsRes] = await Promise.all([
       (supabase.from('motorcycle_rentals') as any)
         .select('id, availability_status')
         .eq('shop_id', shopId)
@@ -1889,10 +2115,20 @@ export class ChangeProposalService {
         .select('*')
         .eq('shop_id', shopId),
       (supabase.from('change_proposals') as any)
-        .select('id, agent_run_id, status')
-        .eq('shop_id', shopId)
-        .eq('status', 'pending'),
+        .select('id, agent_run_id, status, payload_digest')
+        .eq('shop_id', shopId),
     ]);
+
+    const isIdenticalReplay = (shopProposalsRes?.data || []).some(
+      (p: any) => p.agent_run_id === agentRunId && p.payload_digest === payloadDigest
+    );
+
+    if (!isIdenticalReplay) {
+      for (const item of normalizedItems) {
+        if (item.entity_type !== 'motorcycle' || !item.entity_id) continue;
+        enforceAndCaptureProposalItemOfferBaseline(item, liveReferencedBikeById.get(item.entity_id));
+      }
+    }
 
     const activeBaselineIds = new Set<string>(
       (activeBikesRes?.data || []).map((b: any) => b.id)
@@ -1900,8 +2136,8 @@ export class ChangeProposalService {
     const existingCandidates = existingCandidatesRes?.data || [];
 
     // Determine prior pending proposals for the same (shopId, scope) to supersede BEFORE planning candidates
-    const priorPendingIds = (priorPendingProposalsRes?.data || [])
-      .filter((p: any) => p.agent_run_id !== agentRunId)
+    const priorPendingIds = (shopProposalsRes?.data || [])
+      .filter((p: any) => p.status === 'pending' && p.agent_run_id !== agentRunId)
       .map((p: any) => p.id as string);
     let supersededProposalIds: string[] = [];
     if (priorPendingIds.length > 0) {
@@ -2316,8 +2552,11 @@ export class ChangeProposalService {
           year_to,
           engine_capacity_cc,
           source_url,
+          rental_rate_per_day,
+          rental_rate_currency,
           brands ( name ),
           categories ( id, name ),
+          rental_offers ( * ),
           rental_rate_tiers ( min_days, max_days, rate_per_day, currency ),
           motorcycle_conditions (
             condition_type_id,
@@ -2530,8 +2769,11 @@ export class ChangeProposalService {
               year_to,
               engine_capacity_cc,
               source_url,
+              rental_rate_per_day,
+              rental_rate_currency,
               brands ( name ),
               categories ( id, name ),
+              rental_offers ( * ),
               rental_rate_tiers ( min_days, max_days, rate_per_day, currency ),
               motorcycle_conditions (
                 condition_type_id,
@@ -2928,6 +3170,16 @@ export class ChangeProposalService {
       string,
       MotorcycleConditionProposalEntry[] | undefined
     >();
+    const validatedOffersByItemId = new Map<string, NormalizedRentalOffer[]>();
+    const liveBikeSnapshotByItemId = new Map<
+      string,
+      {
+        liveBike: any;
+        liveOffers: NormalizedRentalOffer[];
+        canonicalLiveOffers: NormalizedRentalOffer[];
+        hasCanonicalLiveOffers: boolean;
+      }
+    >();
     const liveConditionSnapshotByItemId = new Map<
       string,
       Array<{ motorcycle_id: string; condition_type_id: string; notes: string | null }>
@@ -2954,14 +3206,17 @@ export class ChangeProposalService {
           );
         }
 
-        // Positive pricing & tier syntax revalidation on add / update
+        // Positive pricing, offer & tier syntax revalidation on add / update
         if (item.action === 'add' || item.action === 'update') {
-          if (isReconciliationProposal) {
-            validateMotorcycleRateTiers(rawProposed, {
+          if (isReconciliationProposal || rawProposed.offers !== undefined) {
+            const normalizedPricing = validateAndNormalizeProposalMotorcyclePricing(rawProposed, {
               itemLabel,
               required: item.action === 'add',
               validationErrorCtor: ProposalItemValidationError,
             });
+            if (Array.isArray(normalizedPricing.offers)) {
+              validatedOffersByItemId.set(item.id, normalizedPricing.offers);
+            }
           } else if (Array.isArray(rawProposed.rates)) {
             for (let tIdx = 0; tIdx < rawProposed.rates.length; tIdx++) {
               const r = rawProposed.rates[tIdx];
@@ -2978,11 +3233,12 @@ export class ChangeProposalService {
 
         // Live shop_id ownership & before-state concurrency revalidation on update / delist
         let liveBike: any = null;
+        let liveOffers: NormalizedRentalOffer[] = [];
         if ((item.action === 'update' || item.action === 'delist') && item.entity_id) {
           const mrTable = supabase.from('motorcycle_rentals') as any;
           const mrChain = mrTable
             ?.select?.(
-              'id, shop_id, brand_id, category_id, model, year, year_to, engine_capacity_cc, brands ( name ), rental_rate_tiers ( min_days, max_days, rate_per_day, currency )'
+              'id, shop_id, brand_id, category_id, model, year, year_to, engine_capacity_cc, availability_status, rental_rate_per_day, rental_rate_currency, source_url, specifications_details, brands ( name ), rental_offers ( * ), rental_rate_tiers ( min_days, max_days, rate_per_day, currency )'
             )
             ?.eq?.('id', item.entity_id);
 
@@ -3008,8 +3264,31 @@ export class ChangeProposalService {
               throw new ProposalItemValidationError(
                 `Item ${itemLabel}: cross-shop motorcycle '${item.entity_id}' does not belong to shop '${proposal.shop_id}'.`
               );
+            } else {
+              liveOffers = hydrateBaselineOffersAndRates(liveBike).offers;
+              const canonicalLiveOffers = hydrateRentalOffersFromRows(liveBike.rental_offers);
+              const hasCanonicalLiveOffers =
+                Array.isArray(liveBike.rental_offers) && liveBike.rental_offers.length > 0;
+              liveBikeSnapshotByItemId.set(item.id, {
+                liveBike: structuredClone(liveBike),
+                liveOffers: structuredClone(liveOffers),
+                canonicalLiveOffers: structuredClone(canonicalLiveOffers),
+                hasCanonicalLiveOffers,
+              });
             }
           }
+        }
+
+        if (
+          item.action === 'update' &&
+          liveBike &&
+          rawProposed.offers === undefined &&
+          Array.isArray(rawProposed.rates) &&
+          hasStrictNonDailyOrExtensionOffers(liveOffers)
+        ) {
+          throw new RentalOfferConflictError(
+            `Cannot apply legacy rates-only update to motorcycle '${item.entity_id}' because it currently holds non-daily or extension rental offers.`
+          );
         }
 
         if (
@@ -3148,8 +3427,16 @@ export class ChangeProposalService {
             }
           }
 
-          if (Array.isArray(origBike.rates) && Array.isArray(liveBike.rental_rate_tiers)) {
+          if (Array.isArray(origBike.offers)) {
+            if (!areOfferStatesEqual(origBike.offers, liveOffers)) {
+              throw new StaleMotorcycleStateError(
+                `Stale motorcycle offers for '${item.entity_id}': live rental_offers diverged from original_data.offers.`
+              );
+            }
             if (
+              rawProposed.offers === undefined &&
+              Array.isArray(origBike.rates) &&
+              Array.isArray(liveBike.rental_rate_tiers) &&
               !areRateTierStatesEqual(
                 origBike.rates,
                 liveBike.rental_rate_tiers,
@@ -3158,6 +3445,24 @@ export class ChangeProposalService {
             ) {
               throw new StaleMotorcycleStateError(
                 `Stale motorcycle rates for '${item.entity_id}': live rental_rate_tiers diverged from original_data.rates.`
+              );
+            }
+          } else if (Array.isArray(origBike.rates)) {
+            if (
+              Array.isArray(liveBike.rental_rate_tiers) &&
+              !areRateTierStatesEqual(
+                origBike.rates,
+                liveBike.rental_rate_tiers,
+                origBike.currency
+              )
+            ) {
+              throw new StaleMotorcycleStateError(
+                `Stale motorcycle rates for '${item.entity_id}': live rental_rate_tiers diverged from original_data.rates.`
+              );
+            }
+            if (hasStrictNonDailyOrExtensionOffers(liveOffers)) {
+              throw new StaleMotorcycleStateError(
+                `Stale motorcycle offers for '${item.entity_id}': concurrent non-daily or extension rental_offers added since proposal staging.`
               );
             }
           }
@@ -3262,21 +3567,58 @@ export class ChangeProposalService {
     let appliedCount = 0;
     const brandCache = new Map<string, Promise<string | null>>();
     const createdBikeIdByItemId = new Map<string, string>();
+    const completedItemCompensations: Array<() => Promise<void>> = [];
 
     // 4. Apply each approved pending item in bounded concurrent batches
     const applySingleItem = async (item: (typeof approvedItems)[number]) => {
       const proposed = (item.proposed_data as Record<string, any>) || {};
+      let itemCompensation: (() => Promise<void>) | null = null;
 
       if (item.entity_type === 'motorcycle') {
         const normalizedBike = normalizeProposedMotorcycle(proposed);
         const validatedCategoryId = validatedCategoryByItemId.get(item.id);
         const normalizedConditions = validatedConditionsByItemId.get(item.id);
+        const validatedOffers = validatedOffersByItemId.get(item.id);
+        const offersProjection = validatedOffers
+          ? projectOffersToLegacyDaily(validatedOffers)
+          : null;
         const primaryTier = normalizedBike.rates?.[0];
-        const primaryRate =
-          primaryTier?.ratePerDay !== undefined && !isNaN(Number(primaryTier.ratePerDay))
-            ? Number(primaryTier.ratePerDay)
-            : null;
-        const primaryCurrency = proposed?.currency || primaryTier?.currency;
+        const primaryRate = offersProjection
+          ? offersProjection.summaryRatePerDay
+          : primaryTier?.ratePerDay !== undefined && !isNaN(Number(primaryTier.ratePerDay))
+          ? Number(primaryTier.ratePerDay)
+          : null;
+        const primaryCurrency = offersProjection
+          ? offersProjection.summaryCurrency
+          : proposed?.currency || primaryTier?.currency;
+        const hasOffersRpc = typeof (supabase as any).rpc === 'function';
+
+        const cleanupInsertedBike = async (bikeId: string) => {
+          try {
+            await (supabase.from('motorcycle_conditions') as any)
+              ?.delete?.()
+              ?.eq?.('motorcycle_id', bikeId);
+          } catch {
+            // Best-effort cleanup
+          }
+          try {
+            await (supabase.from('rental_offers') as any)?.delete?.()?.eq?.('motorcycle_id', bikeId);
+          } catch {
+            // Best-effort cleanup
+          }
+          try {
+            await (supabase.from('rental_rate_tiers') as any)
+              ?.delete?.()
+              ?.eq?.('motorcycle_id', bikeId);
+          } catch {
+            // Best-effort cleanup
+          }
+          try {
+            await (supabase.from('motorcycle_rentals') as any)?.delete?.()?.eq?.('id', bikeId);
+          } catch {
+            // Best-effort cleanup
+          }
+        };
 
         if (item.action === 'add') {
           const brandId = await resolveOrCreateBrandId(
@@ -3308,8 +3650,16 @@ export class ChangeProposalService {
             throw new Error(`Failed to insert motorcycle: ${bikeError.message}`);
           }
 
-          if (newBike && normalizedBike.rates.length > 0) {
-            await insertRateTiers(supabase, newBike.id, normalizedBike.rates, proposed.currency);
+          if (newBike) {
+            await persistMotorcyclePricingOnApply({
+              supabase,
+              motorcycleId: newBike.id,
+              validatedOffers,
+              legacyRates: normalizedBike.rates,
+              fallbackCurrency: proposed.currency || 'THB',
+              hasOffersRpc,
+              onFailureRollback: () => cleanupInsertedBike(newBike.id),
+            });
           }
 
           if (newBike && normalizedConditions && normalizedConditions.length > 0) {
@@ -3320,13 +3670,7 @@ export class ChangeProposalService {
               normalizedConditions
             );
             if (addCondErr) {
-              try {
-                await (supabase.from('motorcycle_rentals') as any)
-                  .delete?.()
-                  ?.eq?.('id', newBike.id);
-              } catch {
-                // Best-effort cleanup of newly inserted motorcycle on condition failure
-              }
+              await cleanupInsertedBike(newBike.id);
               throw new Error(
                 `Failed to persist motorcycle conditions: ${
                   addCondErr.message || String(addCondErr)
@@ -3336,12 +3680,99 @@ export class ChangeProposalService {
           }
 
           if (newBike?.id) {
-            createdBikeIdByItemId.set(item.id, newBike.id);
+            const createdId = newBike.id;
+            createdBikeIdByItemId.set(item.id, createdId);
+            itemCompensation = async () => {
+              await cleanupInsertedBike(createdId);
+              createdBikeIdByItemId.delete(item.id);
+              await (supabase.from('change_proposal_items') as any)
+                ?.update?.({ status: 'pending', entity_id: null })
+                ?.eq?.('id', item.id);
+            };
           }
           appliedCount++;
         } else if (item.action === 'update' && item.entity_id) {
           const origBike = (item.original_data as Record<string, any>) || {};
           const liveConditionSnapshot = liveConditionSnapshotByItemId.get(item.id) || [];
+          const prevBikeSnapshot = liveBikeSnapshotByItemId.get(item.id);
+
+          const rollbackUpdate = async (restoreOffersViaRpc: boolean) => {
+            if (!prevBikeSnapshot?.liveBike) return;
+            const prev = prevBikeSnapshot.liveBike;
+            if (restoreOffersViaRpc && hasOffersRpc) {
+              try {
+                const rpcRestorePayload = prevBikeSnapshot.hasCanonicalLiveOffers
+                  ? serializeOffersForRpc(prevBikeSnapshot.canonicalLiveOffers)
+                  : {
+                      offers: [],
+                      legacy_rate_tiers: [...(prev.rental_rate_tiers || [])]
+                        .sort((a: any, b: any) => (a.min_days ?? 1) - (b.min_days ?? 1))
+                        .map((t: any) => ({
+                          min_days: Number(t.min_days ?? 1),
+                          max_days: t.max_days ?? null,
+                          rate_per_day: Number(t.rate_per_day),
+                          currency: t.currency || prev.rental_rate_currency || 'THB',
+                        })),
+                      summary_rate_per_day: prev.rental_rate_per_day ?? null,
+                      summary_currency: prev.rental_rate_currency ?? null,
+                    };
+                await (supabase as any).rpc('replace_motorcycle_rental_offers', {
+                  p_motorcycle_id: item.entity_id,
+                  p_payload: rpcRestorePayload,
+                });
+              } catch {
+                // Best-effort offers rollback
+              }
+            } else if (!hasOffersRpc && Array.isArray(prev.rental_rate_tiers)) {
+              try {
+                await supabase
+                  .from('rental_rate_tiers')
+                  .delete()
+                  .eq('motorcycle_id', item.entity_id as string);
+                if (prev.rental_rate_tiers.length > 0) {
+                  await insertRateTiers(
+                    supabase,
+                    item.entity_id as string,
+                    prev.rental_rate_tiers.map((t: any) => ({
+                      minDays: Number(t.min_days ?? 1),
+                      maxDays: t.max_days ?? null,
+                      ratePerDay: Number(t.rate_per_day),
+                      currency: t.currency,
+                    })),
+                    prev.rental_rate_currency
+                  );
+                }
+              } catch {
+                // Best-effort legacy tier rollback
+              }
+            }
+            const restoreScalarPayload: Record<string, any> = {};
+            for (const col of [
+              'brand_id',
+              'category_id',
+              'model',
+              'year',
+              'year_to',
+              'engine_capacity_cc',
+              'rental_rate_per_day',
+              'rental_rate_currency',
+              'source_url',
+              'specifications_details',
+            ]) {
+              if (col in prev) {
+                restoreScalarPayload[col] = prev[col];
+              }
+            }
+            if (Object.keys(restoreScalarPayload).length > 0) {
+              try {
+                await (supabase.from('motorcycle_rentals') as any)
+                  .update(restoreScalarPayload)
+                  .eq('id', item.entity_id);
+              } catch {
+                // Best-effort scalar rollback
+              }
+            }
+          };
 
           // Update specifications directly from proposed_data / item metadata while preserving motorcycle ID
           const updatePayload: Record<string, any> = {};
@@ -3389,7 +3820,7 @@ export class ChangeProposalService {
           ) {
             updatePayload.engine_capacity_cc = normalizedBike.engineCapacityCc;
           }
-          if (primaryRate !== null) {
+          if (!validatedOffers && primaryRate !== null) {
             updatePayload.rental_rate_per_day = primaryRate;
             if (primaryCurrency) {
               updatePayload.rental_rate_currency = primaryCurrency;
@@ -3431,26 +3862,33 @@ export class ChangeProposalService {
           }
 
           if (Object.keys(updatePayload).length > 0) {
-            await (supabase
+            const updRes = await (supabase
               .from('motorcycle_rentals') as any)
               .update(updatePayload)
               .eq('id', item.entity_id);
+            if (updRes?.error) {
+              throw new Error(`Failed to update motorcycle: ${updRes.error.message}`);
+            }
           }
 
-          if (normalizedBike.rates.length > 0) {
-            await supabase
-              .from('rental_rate_tiers')
-              .delete()
-              .eq('motorcycle_id', item.entity_id);
-
-            await insertRateTiers(supabase, item.entity_id, normalizedBike.rates, proposed.currency);
-          }
+          const { replacedOffersViaRpc } = await persistMotorcyclePricingOnApply({
+            supabase,
+            motorcycleId: item.entity_id,
+            validatedOffers,
+            legacyRates: normalizedBike.rates,
+            fallbackCurrency:
+              proposed.currency || prevBikeSnapshot?.liveBike?.rental_rate_currency || 'THB',
+            hasOffersRpc,
+            clearExistingLegacyTiers: true,
+            onFailureRollback: () => rollbackUpdate(false),
+          });
 
           // Synchronize motorcycle_conditions atomically when proposedData.conditions is provided
           if (normalizedConditions !== undefined) {
             const mcTable = supabase.from('motorcycle_conditions') as any;
             const delRes = await mcTable.delete().eq('motorcycle_id', item.entity_id);
             if (delRes?.error) {
+              await rollbackUpdate(replacedOffersViaRpc);
               throw new Error(
                 `Failed to clear existing motorcycle conditions: ${delRes.error.message}`
               );
@@ -3467,6 +3905,7 @@ export class ChangeProposalService {
                 if (liveConditionSnapshot.length > 0) {
                   await mcTable.insert(liveConditionSnapshot);
                 }
+                await rollbackUpdate(replacedOffersViaRpc);
                 throw new Error(
                   `Failed to persist motorcycle conditions: ${
                     insertErr.message || String(insertErr)
@@ -3476,13 +3915,46 @@ export class ChangeProposalService {
             }
           }
 
+          itemCompensation = async () => {
+            if (normalizedConditions !== undefined) {
+              try {
+                const mcTable = supabase.from('motorcycle_conditions') as any;
+                await mcTable?.delete?.()?.eq?.('motorcycle_id', item.entity_id);
+                if (liveConditionSnapshot.length > 0) {
+                  await mcTable?.insert?.(liveConditionSnapshot);
+                }
+              } catch {
+                // Best-effort conditions rollback
+              }
+            }
+            await rollbackUpdate(replacedOffersViaRpc);
+            await (supabase.from('change_proposal_items') as any)
+              ?.update?.({ status: 'pending' })
+              ?.eq?.('id', item.id);
+          };
+
           appliedCount++;
         } else if (item.action === 'delist' && item.entity_id) {
+          const prevAvailability =
+            liveBikeSnapshotByItemId.get(item.id)?.liveBike?.availability_status ?? 'available';
           // Soft-deactivate missing inventory
           await (supabase
             .from('motorcycle_rentals') as any)
             .update({ availability_status: 'unavailable' })
             .eq('id', item.entity_id);
+
+          itemCompensation = async () => {
+            try {
+              await (supabase.from('motorcycle_rentals') as any)
+                ?.update?.({ availability_status: prevAvailability })
+                ?.eq?.('id', item.entity_id);
+            } catch {
+              // Best-effort delist rollback
+            }
+            await (supabase.from('change_proposal_items') as any)
+              ?.update?.({ status: 'pending' })
+              ?.eq?.('id', item.id);
+          };
 
           appliedCount++;
         }
@@ -3582,6 +4054,10 @@ export class ChangeProposalService {
         .from('change_proposal_items') as any)
         .update(itemAppliedPayload)
         .eq('id', item.id);
+
+      if (itemCompensation) {
+        completedItemCompensations.push(itemCompensation);
+      }
     };
 
     try {
@@ -3590,6 +4066,14 @@ export class ChangeProposalService {
         await Promise.all(batch.map((item) => applySingleItem(item)));
       }
     } catch (applyErr: any) {
+      for (let cIdx = completedItemCompensations.length - 1; cIdx >= 0; cIdx--) {
+        try {
+          await completedItemCompensations[cIdx]();
+        } catch (compErr) {
+          console.error('Error compensating applied proposal item:', compErr);
+        }
+      }
+
       // Mark proposal application_status = 'failed' (and release 'reviewing' lock back to 'pending') and revert any unapplied ready_for_proposal candidates back to 'open'
       try {
         await (supabase.from('change_proposals') as any)

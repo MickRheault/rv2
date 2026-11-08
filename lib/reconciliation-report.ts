@@ -1,5 +1,13 @@
 import crypto from 'crypto';
 import { normalizeMotorcycleYearRange } from '@/lib/utils';
+import {
+  convertLegacyRateTiersToOffers,
+  NormalizedRentalOffer,
+  projectOffersToLegacyDaily,
+  RentalOfferValidationError,
+  resolveFallbackRentalOffers,
+  validateAndNormalizeRentalOffers,
+} from '@/lib/rental-offers';
 
 export const MAX_PROPOSAL_PAYLOAD_BYTES = 2 * 1024 * 1024; // 2 MB
 export const MAX_PROPOSAL_ITEMS = 500;
@@ -332,6 +340,211 @@ export function validateMotorcycleRateTiers(
       );
     }
   });
+}
+
+export function stripIdsFromNormalizedOffers(
+  offers: NormalizedRentalOffer[]
+): NormalizedRentalOffer[] {
+  return offers.map((offer, idx) => {
+    const { id: _ignoredOfferId, ...offerRest } = offer;
+    return {
+      ...offerRest,
+      sortOrder: offer.sortOrder ?? idx,
+      extensions: (offer.extensions || []).map((ext, extIdx) => {
+        const { id: _ignoredExtId, ...extRest } = ext;
+        return {
+          ...extRest,
+          sortOrder: ext.sortOrder ?? extIdx,
+        };
+      }),
+    };
+  });
+}
+
+export function hasStrictNonDailyOrExtensionOffers(offers: NormalizedRentalOffer[]): boolean {
+  return offers.some((o) => o.offerType !== 'daily' || o.extensions.length > 0);
+}
+
+export interface HydratedMotorcycleBaselinePricing {
+  hasCanonicalOffers: boolean;
+  offers: NormalizedRentalOffer[];
+  rates: Array<{
+    minDays: number;
+    maxDays: number | null;
+    ratePerDay: number;
+    currency: string;
+  }>;
+}
+
+export function hydrateBaselineOffersAndRates(
+  liveBike: any,
+  options?: { fallbackLegacyCurrency?: string }
+): HydratedMotorcycleBaselinePricing {
+  const sortedTiers = [...(liveBike?.rental_rate_tiers || [])].sort(
+    (a: any, b: any) => (a.min_days ?? 1) - (b.min_days ?? 1)
+  );
+  const offers = resolveFallbackRentalOffers({
+    rentalOffersRows: liveBike?.rental_offers,
+    rentalRateTiers: sortedTiers,
+    rentalRatePerDay: liveBike?.rental_rate_per_day,
+    rentalRateCurrency: liveBike?.rental_rate_currency,
+  });
+  const hasCanonicalOffers =
+    Array.isArray(liveBike?.rental_offers) && liveBike.rental_offers.length > 0;
+  const rates = hasCanonicalOffers
+    ? projectOffersToLegacyDaily(offers).legacyRateTiers.map((t) => ({
+        minDays: t.min_days,
+        maxDays: t.max_days,
+        ratePerDay: t.rate_per_day,
+        currency: t.currency,
+      }))
+    : sortedTiers.map((r: any) => ({
+        minDays: r.min_days ?? 1,
+        maxDays: r.max_days ?? null,
+        ratePerDay: Number(r.rate_per_day),
+        currency: r.currency ?? options?.fallbackLegacyCurrency,
+      }));
+
+  return { hasCanonicalOffers, offers, rates };
+}
+
+export function validateAndNormalizeProposalMotorcyclePricing(
+  proposedData: Record<string, any> | null | undefined,
+  options: {
+    itemLabel: string;
+    required: boolean;
+    validationErrorCtor: new (msg: string) => Error;
+  }
+): Record<string, any> {
+  const Err = options.validationErrorCtor;
+  const record = proposedData && typeof proposedData === 'object' ? proposedData : {};
+  const hasOffersProp =
+    Object.prototype.hasOwnProperty.call(record, 'offers') && record.offers !== undefined;
+  const hasRatesProp =
+    Object.prototype.hasOwnProperty.call(record, 'rates') && record.rates !== undefined;
+
+  if (!hasOffersProp) {
+    validateMotorcycleRateTiers(record, options);
+    return record;
+  }
+
+  let normalizedOffers: NormalizedRentalOffer[];
+  try {
+    normalizedOffers = stripIdsFromNormalizedOffers(
+      validateAndNormalizeRentalOffers(record.offers, {
+        requireNonEmpty: true,
+        fieldPath: `Item ${options.itemLabel} (proposedData.offers)`,
+      })
+    );
+  } catch (err: any) {
+    if (err instanceof RentalOfferValidationError || err?.name === 'RentalOfferValidationError') {
+      throw new Err(err.message);
+    }
+    throw err;
+  }
+
+  const projectedLegacyTiers = projectOffersToLegacyDaily(normalizedOffers).legacyRateTiers;
+
+  if (hasRatesProp) {
+    if (!Array.isArray(record.rates)) {
+      throw new Err(
+        `Item ${options.itemLabel} (field 'rates'): rates must be an array when provided alongside offers.`
+      );
+    }
+    if (record.rates.length === 0) {
+      if (projectedLegacyTiers.length > 0) {
+        throw new Err(
+          `Item ${options.itemLabel}: proposedData.rates ([]) contradicts standalone daily offers in proposedData.offers.`
+        );
+      }
+    } else {
+      validateMotorcycleRateTiers(record, {
+        itemLabel: options.itemLabel,
+        required: true,
+        validationErrorCtor: Err,
+      });
+      const fallbackCurrency =
+        typeof record.currency === 'string' && record.currency.trim().length > 0
+          ? record.currency.trim().toUpperCase()
+          : null;
+      let submittedProjection: typeof projectedLegacyTiers;
+      try {
+        const submittedOffers = convertLegacyRateTiersToOffers(
+          record.rates.map((tier: any) => ({
+            minDays: tier.minDays ?? tier.min_days ?? 1,
+            maxDays: (tier.maxDays !== undefined ? tier.maxDays : tier.max_days) ?? null,
+            ratePerDay:
+              tier.ratePerDay !== undefined
+                ? tier.ratePerDay
+                : tier.dailyRate !== undefined
+                ? tier.dailyRate
+                : tier.rate_per_day,
+            currency:
+              typeof tier.currency === 'string' && tier.currency.trim().length > 0
+                ? tier.currency
+                : fallbackCurrency || '',
+          }))
+        );
+        submittedProjection = projectOffersToLegacyDaily(submittedOffers).legacyRateTiers;
+      } catch {
+        throw new Err(
+          `Item ${options.itemLabel}: proposedData.rates contradicts the standalone daily projection of proposedData.offers.`
+        );
+      }
+
+      if (JSON.stringify(submittedProjection) !== JSON.stringify(projectedLegacyTiers)) {
+        throw new Err(
+          `Item ${options.itemLabel}: proposedData.rates contradicts the standalone daily projection of proposedData.offers.`
+        );
+      }
+    }
+  }
+
+  return {
+    ...record,
+    offers: normalizedOffers,
+    ...(hasRatesProp
+      ? {
+          rates: projectedLegacyTiers.map((t) => ({
+            minDays: t.min_days,
+            maxDays: t.max_days,
+            ratePerDay: t.rate_per_day,
+            currency: t.currency,
+          })),
+        }
+      : {}),
+  };
+}
+
+export function normalizeOptionalProposalOriginalOffers(
+  originalData: Record<string, any> | null,
+  options: {
+    itemLabel: string;
+    validationErrorCtor: new (msg: string) => Error;
+  }
+): Record<string, any> | null {
+  if (!originalData || typeof originalData !== 'object') return originalData;
+  if (!Object.prototype.hasOwnProperty.call(originalData, 'offers') || originalData.offers === undefined) {
+    return originalData;
+  }
+  if (originalData.offers === null) {
+    return { ...originalData, offers: [] };
+  }
+  const Err = options.validationErrorCtor;
+  try {
+    const normalizedOffers = stripIdsFromNormalizedOffers(
+      validateAndNormalizeRentalOffers(originalData.offers, {
+        requireNonEmpty: false,
+        fieldPath: `Item ${options.itemLabel} (originalData.offers)`,
+      })
+    );
+    return { ...originalData, offers: normalizedOffers };
+  } catch (err: any) {
+    if (err instanceof RentalOfferValidationError || err?.name === 'RentalOfferValidationError') {
+      throw new Err(err.message);
+    }
+    throw err;
+  }
 }
 
 /**
@@ -932,6 +1145,10 @@ export function normalizeAndValidateReconciliationReport(
           'pricing',
           'rate',
           'rates',
+          'offer',
+          'offers',
+          'rental_offers',
+          'rentaloffers',
           'tariff',
           'tariffs',
           'daily_rate',

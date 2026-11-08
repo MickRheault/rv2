@@ -73,7 +73,8 @@ export async function POST(
       error?.name === 'StaleConditionStateError' ||
       error?.name === 'StaleCategoryStateError' ||
       error?.name === 'StaleMotorcycleStateError' ||
-      error?.name === 'ProposalVersionConflictError'
+      error?.name === 'ProposalVersionConflictError' ||
+      error?.name === 'RentalOfferConflictError'
     ) {
       return NextResponse.json({ error: error.message }, { status: 409 });
     }
