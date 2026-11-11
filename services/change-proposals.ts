@@ -92,6 +92,39 @@ export class CandidateNotFoundError extends Error {
   }
 }
 
+export class ProposalNotFoundError extends Error {
+  readonly statusCode = 404;
+  constructor(proposalId: string) {
+    super(`Proposal not found: ${proposalId}`);
+    this.name = 'ProposalNotFoundError';
+  }
+}
+
+export class ProposalRejectionConflictError extends Error {
+  readonly statusCode = 409;
+  readonly currentStatus: string;
+  readonly currentVersion: number;
+  constructor(message: string, currentStatus: string, currentVersion: number) {
+    super(message);
+    this.name = 'ProposalRejectionConflictError';
+    this.currentStatus = currentStatus;
+    this.currentVersion = currentVersion;
+  }
+}
+
+export const PROPOSAL_FILTER_STATUSES = new Set([
+  'pending',
+  'reviewing',
+  'applied',
+  'partially_applied',
+  'rejected',
+  'acknowledged',
+  'superseded',
+] as const);
+
+export type ProposalFilterStatus =
+  typeof PROPOSAL_FILTER_STATUSES extends Set<infer T> ? T : never;
+
 export interface CategoryCatalogEntry {
   id: string;
   name: string;
@@ -705,6 +738,134 @@ function assertFreshMotorcycleCategory(
       )}').`
     );
   }
+}
+
+async function loadFallbackCandidateItemMap(
+  supabase: any,
+  proposalId: string
+): Promise<Map<string, string>> {
+  const fallbackItemIdByCandidateId = new Map<string, string>();
+  const repTable = supabase.from('reconciliation_reports') as any;
+  const repEntriesTable = supabase.from('reconciliation_report_entries') as any;
+  const repLinksTable = supabase.from('reconciliation_entry_item_links') as any;
+  if (
+    typeof repTable?.select !== 'function' ||
+    typeof repEntriesTable?.select !== 'function' ||
+    typeof repLinksTable?.select !== 'function'
+  ) {
+    return fallbackItemIdByCandidateId;
+  }
+
+  const repRes =
+    (await repTable.select('id')?.eq?.('proposal_id', proposalId)?.maybeSingle?.()) || {
+      data: null,
+      error: null,
+    };
+  const repId = repRes?.data?.id;
+  if (!repId) {
+    return fallbackItemIdByCandidateId;
+  }
+
+  const entRes =
+    (await repEntriesTable
+      .select('id, candidate_id, disposition')
+      ?.eq?.('report_id', repId)) || { data: [], error: null };
+  const readyEntriesWithCand = (entRes?.data || []).filter(
+    (e: any) => e.candidate_id && e.disposition === 'ready_change'
+  );
+  if (readyEntriesWithCand.length === 0) {
+    return fallbackItemIdByCandidateId;
+  }
+
+  const entryIds = readyEntriesWithCand.map((e: any) => e.id);
+  const linksRes =
+    (await repLinksTable
+      .select('entry_id, proposal_item_id')
+      ?.in?.('entry_id', entryIds)) || { data: [], error: null };
+  if (linksRes?.error) {
+    throw new Error(
+      `Failed to load reconciliation entry item links: ${linksRes.error.message}`
+    );
+  }
+
+  const itemByEntryId = new Map<string, string>();
+  for (const lnk of linksRes?.data || []) {
+    if (lnk.entry_id && lnk.proposal_item_id) {
+      itemByEntryId.set(lnk.entry_id, lnk.proposal_item_id);
+    }
+  }
+  for (const e of readyEntriesWithCand) {
+    const mappedItemId = itemByEntryId.get(e.id);
+    if (mappedItemId) {
+      fallbackItemIdByCandidateId.set(e.candidate_id, mappedItemId);
+    }
+  }
+  return fallbackItemIdByCandidateId;
+}
+
+async function revertReadyCandidateOnRejection(params: {
+  candTable: any;
+  candEventsTable: any;
+  cand: any;
+  proposalId: string;
+  shopId: string;
+  agentRunId: string | null;
+  actorType: 'admin' | 'agent';
+  actorId: string | null;
+  reason: string | null;
+}): Promise<{ insertedEventId: string | null }> {
+  const {
+    candTable,
+    candEventsTable,
+    cand,
+    proposalId,
+    shopId,
+    agentRunId,
+    actorType,
+    actorId,
+    reason,
+  } = params;
+
+  const updCandRes = await candTable
+    .update({
+      state: 'open',
+      linked_proposal_item_id: null,
+      version: (cand.version ?? 1) + 1,
+    })
+    .eq('id', cand.id);
+  if (updCandRes?.error) {
+    throw new Error(`Failed to revert candidate '${cand.id}': ${updCandRes.error.message}`);
+  }
+
+  let insertedEventId: string | null = null;
+  if (typeof candEventsTable?.insert === 'function') {
+    const insertBuilder = candEventsTable.insert({
+      candidate_id: cand.id,
+      shop_id: shopId,
+      event_type: 'proposal_rejected',
+      actor_type: actorType,
+      actor_id: actorId,
+      agent_run_id: agentRunId,
+      proposal_id: proposalId,
+      previous_state: 'ready_for_proposal',
+      new_state: 'open',
+      reason: reason ?? 'Linked proposal item was rejected; candidate returned to open backlog',
+      issues_snapshot: cand.current_issues ?? null,
+      evidence_snapshot: cand.latest_evidence ?? null,
+    });
+    const evRes =
+      typeof insertBuilder?.select === 'function'
+        ? await insertBuilder.select('id')
+        : await insertBuilder;
+    if (evRes?.error) {
+      throw new Error(`Failed to record candidate rejection event: ${evRes.error.message}`);
+    }
+    if (Array.isArray(evRes?.data) && evRes.data[0]?.id) {
+      insertedEventId = evRes.data[0].id;
+    }
+  }
+
+  return { insertedEventId };
 }
 
 async function computeShopProposalReconciliationStatus(
@@ -2313,14 +2474,16 @@ export class ChangeProposalService {
   }
 
   /**
-   * Retrieves pending or filtered proposals for the admin review dashboard.
+   * Retrieves pending or filtered proposals for the admin review dashboard and agent list API.
    */
-  static async getProposals(options: { status?: string; limit?: number; offset?: number } = {}) {
+  static async getProposals(
+    options: { status?: string; shopId?: string; limit?: number; offset?: number } = {}
+  ) {
     const supabase = getSupabaseAdmin();
-    const limit = options.limit || 20;
-    const offset = options.offset || 0;
+    const limit = options.limit ?? 20;
+    const offset = options.offset ?? 0;
 
-    let query = supabase
+    let orderedQuery: any = supabase
       .from('change_proposals')
       .select(
         `
@@ -2340,11 +2503,19 @@ export class ChangeProposalService {
       `,
         { count: 'exact' }
       )
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .order('created_at', { ascending: false });
+
+    if (typeof orderedQuery?.order === 'function') {
+      orderedQuery = orderedQuery.order('id', { ascending: true });
+    }
+
+    let query = orderedQuery.range(offset, offset + limit - 1);
 
     if (options.status) {
       query = query.eq('status', options.status as any);
+    }
+    if (options.shopId) {
+      query = query.eq('shop_id', options.shopId);
     }
 
     const { data, count, error } = await query;
@@ -2370,31 +2541,41 @@ export class ChangeProposalService {
       }
     }
 
+    const proposals = (data || []).map((row: any) => {
+      const rep = reportSummaryByProposalId.get(row.id) || null;
+      const dims = normalizeProposalStatusDimensions(row);
+      return {
+        id: row.id,
+        shopId: row.shop_id,
+        shopName: row.rental_shops?.provider_name,
+        shopSlug: row.rental_shops?.slug,
+        shopUrl: resolveProposalShopUrl(row.rental_shops),
+        agentRunId: row.agent_run_id,
+        sourceUrl: row.source_url,
+        status: row.status,
+        coverageStatus: dims.coverageStatus,
+        reconciliationStatus: dims.reconciliationStatus,
+        applicationStatus: dims.applicationStatus,
+        version: dims.version,
+        summaryCounts: row.summary_counts,
+        serverCounts: rep?.server_counts ?? null,
+        hasReconciliationReport: Boolean(rep),
+        createdAt: row.created_at,
+        reviewedAt: row.reviewed_at,
+      };
+    });
+
+    const totalCount = count || 0;
+    const hasMore = offset + proposals.length < totalCount;
+    const nextOffset = hasMore ? offset + proposals.length : null;
+
     return {
-      proposals: (data || []).map((row: any) => {
-        const rep = reportSummaryByProposalId.get(row.id) || null;
-        const dims = normalizeProposalStatusDimensions(row);
-        return {
-          id: row.id,
-          shopId: row.shop_id,
-          shopName: row.rental_shops?.provider_name,
-          shopSlug: row.rental_shops?.slug,
-          shopUrl: resolveProposalShopUrl(row.rental_shops),
-          agentRunId: row.agent_run_id,
-          sourceUrl: row.source_url,
-          status: row.status,
-          coverageStatus: dims.coverageStatus,
-          reconciliationStatus: dims.reconciliationStatus,
-          applicationStatus: dims.applicationStatus,
-          version: dims.version,
-          summaryCounts: row.summary_counts,
-          serverCounts: rep?.server_counts ?? null,
-          hasReconciliationReport: Boolean(rep),
-          createdAt: row.created_at,
-          reviewedAt: row.reviewed_at,
-        };
-      }),
-      totalCount: count || 0,
+      proposals,
+      totalCount,
+      limit,
+      offset,
+      hasMore,
+      nextOffset,
     };
   }
 
@@ -2925,8 +3106,10 @@ export class ChangeProposalService {
       reconciliationStatus: dims.reconciliationStatus,
       applicationStatus: dims.applicationStatus,
       summaryCounts: prop.summary_counts,
+      notes: prop.notes ?? null,
       createdAt: prop.created_at,
       updatedAt: prop.updated_at,
+      reviewedAt: prop.reviewed_at ?? null,
       items: detail.items.map((it: any) => ({
         id: it.id,
         clientItemId: it.client_item_id ?? null,
@@ -3057,6 +3240,365 @@ export class ChangeProposalService {
       applicationStatus: 'not_applicable' as const,
       version: nextVersion,
     };
+  }
+
+  /**
+   * Narrow, rejection-only decision path for a `pending` Change Proposal (ADR 0019 / #217).
+   * Structurally incapable of approving items or mutating live catalog/shop tables.
+   */
+  static async rejectProposal(
+    proposalId: string,
+    input: {
+      expectedVersion?: unknown;
+      reason?: unknown;
+      notes?: unknown;
+      actorType?: 'agent' | 'admin';
+      authMethod?: 'agent_api_key' | 'admin_session';
+      actorId?: string | null;
+    }
+  ) {
+    const normalizedProposalId = validateRequiredUuid(
+      proposalId,
+      'proposalId',
+      ProposalItemValidationError
+    );
+    const parsedExpectedVersion = validateExpectedVersion(input?.expectedVersion, {
+      required: true,
+    }) as number;
+
+    const hasReason = input?.reason !== undefined && input?.reason !== null;
+    const hasNotes = input?.notes !== undefined && input?.notes !== null;
+    let normalizedReason: string;
+    if (hasReason && hasNotes) {
+      const trimmedReason = validateBoundedString(
+        input.reason,
+        'reason',
+        MAX_TEXT_FIELD_LENGTH,
+        ProposalItemValidationError,
+        false
+      );
+      const trimmedNotes = validateBoundedString(
+        input.notes,
+        'notes',
+        MAX_TEXT_FIELD_LENGTH,
+        ProposalItemValidationError,
+        false
+      );
+      if (trimmedReason !== trimmedNotes) {
+        throw new ProposalItemValidationError(
+          'Conflicting reason and notes values supplied; provide a single consistent rejection reason.'
+        );
+      }
+      normalizedReason = trimmedReason;
+    } else if (hasReason) {
+      normalizedReason = validateBoundedString(
+        input.reason,
+        'reason',
+        MAX_TEXT_FIELD_LENGTH,
+        ProposalItemValidationError,
+        false
+      );
+    } else if (hasNotes) {
+      normalizedReason = validateBoundedString(
+        input.notes,
+        'reason',
+        MAX_TEXT_FIELD_LENGTH,
+        ProposalItemValidationError,
+        false
+      );
+    } else {
+      throw new ProposalItemValidationError('reason is required and must be a non-empty string.');
+    }
+
+    const actorType: 'agent' | 'admin' = input?.actorType ?? 'agent';
+    const authMethod: 'agent_api_key' | 'admin_session' =
+      input?.authMethod ?? (actorType === 'agent' ? 'agent_api_key' : 'admin_session');
+    const actorId = sanitizeOptionalUuid(input?.actorId);
+
+    const supabase = getSupabaseAdmin();
+    const { data: proposal, error: fetchError } = await (supabase
+      .from('change_proposals') as any)
+      .select(
+        'id, shop_id, status, coverage_status, reconciliation_status, application_status, version, agent_run_id, created_at, notes'
+      )
+      .eq('id', normalizedProposalId)
+      .single();
+
+    if (fetchError) {
+      const code = (fetchError as any).code;
+      const errMsg = String(fetchError.message || '');
+      if (
+        code === 'PGRST116' ||
+        code === '22P02' ||
+        /not found|0 rows|no rows/i.test(errMsg)
+      ) {
+        throw new ProposalNotFoundError(normalizedProposalId);
+      }
+      throw new Error(`Failed to load proposal '${normalizedProposalId}': ${errMsg}`);
+    }
+    if (!proposal) {
+      throw new ProposalNotFoundError(normalizedProposalId);
+    }
+
+    const currentStatus = String(proposal.status);
+    const currentVersion = proposal.version ?? 1;
+
+    if (currentStatus !== 'pending') {
+      throw new ProposalRejectionConflictError(
+        `Cannot reject proposal '${normalizedProposalId}' because its current status is '${currentStatus}' (only 'pending' proposals can be rejected).`,
+        currentStatus,
+        currentVersion
+      );
+    }
+
+    if (parsedExpectedVersion !== currentVersion) {
+      throw new ProposalRejectionConflictError(
+        `Version conflict on proposal '${normalizedProposalId}': expected version ${parsedExpectedVersion}, found version ${currentVersion}.`,
+        currentStatus,
+        currentVersion
+      );
+    }
+
+    const { data: allItems, error: itemsError } = await supabase
+      .from('change_proposal_items')
+      .select('id, entity_type, action, status')
+      .eq('proposal_id', normalizedProposalId);
+
+    if (itemsError || !allItems) {
+      throw new Error(
+        `Failed to load items for proposal '${normalizedProposalId}': ${itemsError?.message}`
+      );
+    }
+
+    // Atomically claim 'pending' -> 'reviewing' via CAS so concurrent apply/acknowledge/reject cannot race
+    const { data: claimedRows, error: claimErr } = await (supabase
+      .from('change_proposals') as any)
+      .update({ status: 'reviewing' })
+      .eq('id', normalizedProposalId)
+      .eq('status', 'pending')
+      .eq('version', currentVersion)
+      .select('id');
+
+    if (claimErr) {
+      throw new Error(
+        `Failed to claim proposal '${normalizedProposalId}' for rejection: ${claimErr.message}`
+      );
+    }
+    if (!Array.isArray(claimedRows) || claimedRows.length === 0) {
+      const { data: latestRow } =
+        (await (supabase.from('change_proposals') as any)
+          .select('status, version')
+          .eq('id', normalizedProposalId)
+          .maybeSingle?.()) || { data: null };
+      throw new ProposalRejectionConflictError(
+        `Concurrent modification detected while rejecting proposal '${normalizedProposalId}'.`,
+        String(latestRow?.status ?? 'reviewing'),
+        latestRow?.version ?? currentVersion
+      );
+    }
+
+    const isReportOnly =
+      proposal.application_status === 'not_applicable' || allItems.length === 0;
+    const isReconciliationProposal = Boolean(
+      proposal.reconciliation_status && proposal.reconciliation_status !== 'unknown'
+    );
+    const pendingMutableItems = allItems.filter(
+      (i: any) => isActionableProposalAction(i.action) && (!i.status || i.status === 'pending')
+    );
+    const previousItemStatuses = pendingMutableItems.map((i: any) => ({
+      id: i.id as string,
+      status: (i.status ?? 'pending') as string,
+    }));
+    const revertedCandidatesSnapshot: Array<{
+      id: string;
+      linked_proposal_item_id: string | null;
+      version: number;
+      insertedEventId: string | null;
+    }> = [];
+    let proposalFinalized = false;
+
+    try {
+      if (pendingMutableItems.length > 0) {
+        const updItemsRes = await (supabase.from('change_proposal_items') as any)
+          .update({ status: 'rejected' })
+          .in(
+            'id',
+            pendingMutableItems.map((i: any) => i.id)
+          );
+        if (updItemsRes?.error) {
+          throw new Error(
+            `Failed to mark proposal items rejected: ${updItemsRes.error.message}`
+          );
+        }
+      }
+
+      const candTable = supabase.from('unresolved_candidates') as any;
+      const candEventsTable = supabase.from('unresolved_candidate_events') as any;
+      if (typeof candTable?.select === 'function' && typeof candTable?.update === 'function') {
+        const rejectedItemIds = new Set<string>(pendingMutableItems.map((i: any) => i.id));
+        const fallbackItemIdByCandidateId =
+          isReconciliationProposal && rejectedItemIds.size > 0
+            ? await loadFallbackCandidateItemMap(supabase, normalizedProposalId)
+            : new Map<string, string>();
+
+        const candRes =
+          (await candTable.select('*')?.eq?.('shop_id', proposal.shop_id)) || {
+            data: [],
+            error: null,
+          };
+        if (candRes?.error) {
+          throw new Error(`Failed to load unresolved candidates: ${candRes.error.message}`);
+        }
+
+        for (const cand of candRes?.data || []) {
+          const effectiveLinkedItemId =
+            cand.linked_proposal_item_id ?? fallbackItemIdByCandidateId.get(cand.id) ?? null;
+          if (
+            cand.state === 'ready_for_proposal' &&
+            ((effectiveLinkedItemId && rejectedItemIds.has(effectiveLinkedItemId)) ||
+              cand.latest_proposal_id === normalizedProposalId)
+          ) {
+            const prevCandVersion = cand.version ?? 1;
+            const prevLinkedItemId = cand.linked_proposal_item_id ?? null;
+            const { insertedEventId } = await revertReadyCandidateOnRejection({
+              candTable,
+              candEventsTable,
+              cand,
+              proposalId: normalizedProposalId,
+              shopId: proposal.shop_id,
+              agentRunId: proposal.agent_run_id ?? null,
+              actorType,
+              actorId,
+              reason: normalizedReason,
+            });
+            revertedCandidatesSnapshot.push({
+              id: cand.id,
+              linked_proposal_item_id: prevLinkedItemId,
+              version: prevCandVersion,
+              insertedEventId,
+            });
+          }
+        }
+      }
+
+      const nextApplicationStatus: ApplicationStatus = isReportOnly
+        ? 'not_applicable'
+        : 'rejected';
+      const nextReconciliationStatus: ReconciliationStatus | undefined = isReconciliationProposal
+        ? await computeShopProposalReconciliationStatus(supabase, proposal, {
+            hasRejectedMutableItems: pendingMutableItems.length > 0,
+          })
+        : undefined;
+
+      const nowIso = new Date().toISOString();
+      const nextVersion = currentVersion + 1;
+
+      const finalizeRes = await (supabase.from('change_proposals') as any)
+        .update({
+          status: 'rejected',
+          application_status: nextApplicationStatus,
+          ...(nextReconciliationStatus !== undefined
+            ? { reconciliation_status: nextReconciliationStatus }
+            : {}),
+          reviewed_at: nowIso,
+          reviewed_by: actorId,
+          notes: normalizedReason,
+          version: nextVersion,
+        })
+        .eq('id', normalizedProposalId)
+        .eq('status', 'reviewing')
+        .eq('version', currentVersion)
+        .select('id');
+
+      if (finalizeRes?.error) {
+        throw new Error(
+          `Failed to finalize proposal rejection: ${finalizeRes.error.message}`
+        );
+      }
+      if (!Array.isArray(finalizeRes?.data) || finalizeRes.data.length === 0) {
+        throw new ProposalRejectionConflictError(
+          `Concurrent modification detected while finalizing rejection for proposal '${normalizedProposalId}'.`,
+          'reviewing',
+          currentVersion
+        );
+      }
+      proposalFinalized = true;
+
+      const decTable = supabase.from('proposal_decision_events') as any;
+      if (typeof decTable?.insert === 'function') {
+        const decRes = await decTable.insert({
+          proposal_id: normalizedProposalId,
+          shop_id: proposal.shop_id,
+          decision: 'reject',
+          actor_id: actorId,
+          proposal_version: nextVersion,
+          notes: normalizedReason,
+          metadata: {
+            actorType,
+            authMethod,
+            rejectedItemCount: pendingMutableItems.length,
+          },
+        });
+        if (decRes?.error) {
+          throw new Error(`Failed to record proposal decision event: ${decRes.error.message}`);
+        }
+      }
+
+      return {
+        success: true as const,
+        proposalId: normalizedProposalId,
+        status: 'rejected' as const,
+        version: nextVersion,
+        coverageStatus: (proposal.coverage_status ?? 'unknown') as CoverageStatus,
+        reconciliationStatus: (nextReconciliationStatus ??
+          proposal.reconciliation_status ??
+          'unknown') as ReconciliationStatus,
+        applicationStatus: nextApplicationStatus,
+        rejectedItemCount: pendingMutableItems.length,
+        reviewedAt: nowIso,
+        notes: normalizedReason,
+      };
+    } catch (rejectErr) {
+      // Best-effort rollback so failed mid-rejection never strands the proposal or items
+      try {
+        const candTable = supabase.from('unresolved_candidates') as any;
+        const candEventsTable = supabase.from('unresolved_candidate_events') as any;
+        for (const snap of revertedCandidatesSnapshot) {
+          if (snap.insertedEventId && typeof candEventsTable?.delete === 'function') {
+            await candEventsTable.delete().eq('id', snap.insertedEventId);
+          }
+          if (typeof candTable?.update === 'function') {
+            await candTable
+              .update({
+                state: 'ready_for_proposal',
+                linked_proposal_item_id: snap.linked_proposal_item_id,
+                version: snap.version,
+              })
+              .eq('id', snap.id);
+          }
+        }
+        for (const prev of previousItemStatuses) {
+          await (supabase.from('change_proposal_items') as any)
+            .update({ status: prev.status })
+            .eq('id', prev.id);
+        }
+        await (supabase.from('change_proposals') as any)
+          .update({
+            status: 'pending',
+            application_status: proposal.application_status ?? 'pending',
+            reconciliation_status: proposal.reconciliation_status ?? 'unknown',
+            reviewed_at: null,
+            reviewed_by: null,
+            notes: proposal.notes ?? null,
+            version: currentVersion,
+          })
+          .eq('id', normalizedProposalId)
+          .eq('status', proposalFinalized ? 'rejected' : 'reviewing');
+      } catch (rollbackErr) {
+        console.error('Error rolling back failed proposal rejection:', rollbackErr);
+      }
+      throw rejectErr;
+    }
   }
 
   /**
@@ -4201,57 +4743,10 @@ export class ChangeProposalService {
       const rejectedItemIds = new Set<string>(unapprovedItems.map((i) => i.id));
 
       // Build fallback (candidate_id -> proposal_item_id) map from report entry links in case a prior mid-apply revert occurred
-      const fallbackItemIdByCandidateId = new Map<string, string>();
-      if (isReconciliationProposal && (appliedAddItemIds.size > 0 || rejectedItemIds.size > 0)) {
-        const repTable = supabase.from('reconciliation_reports') as any;
-        const repEntriesTable = supabase.from('reconciliation_report_entries') as any;
-        const repLinksTable = supabase.from('reconciliation_entry_item_links') as any;
-        if (
-          typeof repTable?.select === 'function' &&
-          typeof repEntriesTable?.select === 'function' &&
-          typeof repLinksTable?.select === 'function'
-        ) {
-          const repRes =
-            (await repTable.select('id')?.eq?.('proposal_id', proposalId)?.maybeSingle?.()) || {
-              data: null,
-              error: null,
-            };
-          const repId = repRes?.data?.id;
-          if (repId) {
-            const entRes =
-              (await repEntriesTable
-                .select('id, candidate_id, disposition')
-                ?.eq?.('report_id', repId)) || { data: [], error: null };
-            const readyEntriesWithCand = (entRes?.data || []).filter(
-              (e: any) => e.candidate_id && e.disposition === 'ready_change'
-            );
-            if (readyEntriesWithCand.length > 0) {
-              const entryIds = readyEntriesWithCand.map((e: any) => e.id);
-              const linksRes =
-                (await repLinksTable
-                  .select('entry_id, proposal_item_id')
-                  ?.in?.('entry_id', entryIds)) || { data: [], error: null };
-              if (linksRes?.error) {
-                throw new Error(
-                  `Failed to load reconciliation entry item links: ${linksRes.error.message}`
-                );
-              }
-              const itemByEntryId = new Map<string, string>();
-              for (const lnk of linksRes?.data || []) {
-                if (lnk.entry_id && lnk.proposal_item_id) {
-                  itemByEntryId.set(lnk.entry_id, lnk.proposal_item_id);
-                }
-              }
-              for (const e of readyEntriesWithCand) {
-                const mappedItemId = itemByEntryId.get(e.id);
-                if (mappedItemId) {
-                  fallbackItemIdByCandidateId.set(e.candidate_id, mappedItemId);
-                }
-              }
-            }
-          }
-        }
-      }
+      const fallbackItemIdByCandidateId =
+        isReconciliationProposal && (appliedAddItemIds.size > 0 || rejectedItemIds.size > 0)
+          ? await loadFallbackCandidateItemMap(supabase, proposalId)
+          : new Map<string, string>();
 
       const candRes =
         (await candTable.select('*')?.eq?.('shop_id', proposal.shop_id)) || {
@@ -4310,37 +4805,17 @@ export class ChangeProposalService {
           ((effectiveLinkedItemId && rejectedItemIds.has(effectiveLinkedItemId)) ||
             (finalStatus === 'rejected' && cand.latest_proposal_id === proposalId))
         ) {
-          const updCandRes = await candTable
-            .update({
-              state: 'open',
-              linked_proposal_item_id: null,
-              version: (cand.version ?? 1) + 1,
-            })
-            .eq('id', cand.id);
-          if (updCandRes?.error) {
-            throw new Error(`Failed to revert candidate '${cand.id}': ${updCandRes.error.message}`);
-          }
-          if (typeof candEventsTable?.insert === 'function') {
-            const evRes = await candEventsTable.insert({
-              candidate_id: cand.id,
-              shop_id: proposal.shop_id,
-              event_type: 'proposal_rejected',
-              actor_type: 'admin',
-              actor_id: actorId,
-              agent_run_id: proposal.agent_run_id ?? null,
-              proposal_id: proposalId,
-              previous_state: 'ready_for_proposal',
-              new_state: 'open',
-              reason:
-                options.notes ??
-                'Linked proposal item was rejected; candidate returned to open backlog',
-              issues_snapshot: cand.current_issues ?? null,
-              evidence_snapshot: cand.latest_evidence ?? null,
-            });
-            if (evRes?.error) {
-              throw new Error(`Failed to record candidate rejection event: ${evRes.error.message}`);
-            }
-          }
+          await revertReadyCandidateOnRejection({
+            candTable,
+            candEventsTable,
+            cand,
+            proposalId,
+            shopId: proposal.shop_id,
+            agentRunId: proposal.agent_run_id ?? null,
+            actorType: 'admin',
+            actorId,
+            reason: options.notes ?? null,
+          });
         }
       }
     }

@@ -5,6 +5,8 @@ import { validateAgentApiKey } from '@/lib/auth/agent-auth';
 import { RentalOfferConflictError } from '@/lib/rental-offers';
 import {
   ChangeProposalService,
+  PROPOSAL_FILTER_STATUSES,
+  ProposalFilterStatus,
   ProposalItemValidationError,
   GeodataImmutabilityError,
   ProposalIdempotencyConflictError,
@@ -15,12 +17,134 @@ import {
   PayloadTooLargeError,
   validateBoundedString,
   validateHttpUrl,
+  validateRequiredUuid,
 } from '@/lib/reconciliation-report';
 import { recordCrawlRun } from '@/services/crawl-runs';
 import {
   extractLearnedAgentConfig,
   updateShopLearnedConfig,
 } from '@/services/shop-agent-configs';
+
+const DEFAULT_AGENT_LIST_LIMIT = 50;
+const MAX_AGENT_LIST_LIMIT = 100;
+const MAX_AGENT_LIST_OFFSET = 100_000;
+
+/**
+ * GET /api/agent/change-proposals
+ *
+ * Agent-authenticated paginated listing of Change Proposals (defaults to `status=pending`).
+ * Supports `?status=pending|reviewing|applied|partially_applied|rejected|acknowledged|superseded|all`,
+ * optional `?shopId=<uuid>`, `?limit=1..100` (default 50), and `?offset=0..100000` (default 0).
+ */
+export async function GET(request: NextRequest) {
+  const isAuthorized = validateAgentApiKey(request.headers.get('authorization'));
+  if (!isAuthorized) {
+    return NextResponse.json(
+      { error: 'Unauthorized. Valid Bearer AGENT_API_KEY required.' },
+      { status: 401 }
+    );
+  }
+
+  try {
+    const { searchParams } = new URL(request.url);
+    const statusRaw = searchParams.get('status');
+    let statusFilter: string | undefined = 'pending';
+    if (statusRaw !== null) {
+      const trimmedStatus = statusRaw.trim();
+      if (trimmedStatus === 'all') {
+        statusFilter = undefined;
+      } else if (PROPOSAL_FILTER_STATUSES.has(trimmedStatus as ProposalFilterStatus)) {
+        statusFilter = trimmedStatus;
+      } else {
+        return NextResponse.json(
+          {
+            error: `Invalid status '${trimmedStatus}'. Expected one of: ${Array.from(
+              PROPOSAL_FILTER_STATUSES
+            ).join(', ')}, all.`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    const shopIdRaw = searchParams.get('shopId');
+    let shopId: string | undefined;
+    if (shopIdRaw !== null) {
+      shopId = validateRequiredUuid(shopIdRaw, 'shopId', ProposalItemValidationError);
+    }
+
+    const limitRaw = searchParams.get('limit');
+    let limit = DEFAULT_AGENT_LIST_LIMIT;
+    if (limitRaw !== null) {
+      const trimmedLimit = limitRaw.trim();
+      if (!/^\d+$/.test(trimmedLimit)) {
+        return NextResponse.json(
+          { error: `Invalid limit. Must be an integer between 1 and ${MAX_AGENT_LIST_LIMIT}.` },
+          { status: 400 }
+        );
+      }
+      const parsedLimit = Number(trimmedLimit);
+      if (parsedLimit < 1 || parsedLimit > MAX_AGENT_LIST_LIMIT) {
+        return NextResponse.json(
+          { error: `Invalid limit. Must be an integer between 1 and ${MAX_AGENT_LIST_LIMIT}.` },
+          { status: 400 }
+        );
+      }
+      limit = parsedLimit;
+    }
+
+    const offsetRaw = searchParams.get('offset');
+    let offset = 0;
+    if (offsetRaw !== null) {
+      const trimmedOffset = offsetRaw.trim();
+      if (!/^\d+$/.test(trimmedOffset)) {
+        return NextResponse.json(
+          {
+            error: `Invalid offset. Must be an integer between 0 and ${MAX_AGENT_LIST_OFFSET}.`,
+          },
+          { status: 400 }
+        );
+      }
+      const parsedOffset = Number(trimmedOffset);
+      if (parsedOffset < 0 || parsedOffset > MAX_AGENT_LIST_OFFSET) {
+        return NextResponse.json(
+          {
+            error: `Invalid offset. Must be an integer between 0 and ${MAX_AGENT_LIST_OFFSET}.`,
+          },
+          { status: 400 }
+        );
+      }
+      offset = parsedOffset;
+    }
+
+    const data = await ChangeProposalService.getProposals({
+      status: statusFilter,
+      shopId,
+      limit,
+      offset,
+    });
+
+    return NextResponse.json(
+      {
+        success: true,
+        ...data,
+      },
+      { status: 200 }
+    );
+  } catch (error: any) {
+    if (
+      error instanceof ProposalItemValidationError ||
+      error?.name === 'ProposalItemValidationError'
+    ) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    console.error('Error listing agent change proposals:', error);
+    return NextResponse.json(
+      { error: 'Internal server error listing change proposals', details: error.message },
+      { status: 500 }
+    );
+  }
+}
 
 /**
  * POST /api/agent/change-proposals
