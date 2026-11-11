@@ -4,6 +4,10 @@
  */
 
 import { motorcycleService } from '@/services/motorcycles'
+import {
+  MOTORCYCLE_LISTING_PRICING_JOINS,
+  attachHydratedRentalOffers,
+} from '@/services/shops'
 import { queryKeys, CACHE_TIMES, STALE_TIMES } from '@/lib/cache/queryKeys'
 import { measureQueryPerformance } from '@/lib/utils/performance'
 import { supabase } from '@/lib/supabase/client'
@@ -59,7 +63,8 @@ export const optimizedMotorcycleService = {
             motorcycle_features (
               feature_id,
               features (*)
-            )
+            ),
+            ${MOTORCYCLE_LISTING_PRICING_JOINS}
           `)
           .in('id', ids)
 
@@ -68,7 +73,7 @@ export const optimizedMotorcycleService = {
           throw error
         }
 
-        return data || []
+        return (data || []).map((row: any) => attachHydratedRentalOffers(row))
       }
     )
   },
@@ -77,39 +82,7 @@ export const optimizedMotorcycleService = {
   async getFeaturedMotorcyclesOptimized(limit: number = 10) {
     return measureQueryPerformance(
       `motorcycles.featured.${limit}`,
-      async () => {
-        // Use a more efficient query for featured motorcycles
-        const { data, error } = await supabase
-          .from('motorcycle_rentals')
-          .select(`
-            *,
-            rental_shops!inner (
-              id,
-              provider_name,
-              rating,
-              city_id,
-              cities (
-                name,
-                provinces (
-                  name,
-                  countries (name)
-                )
-              )
-            ),
-            brands (name),
-            categories (name)
-          `)
-          .not('rental_rate_per_day', 'is', null)
-          .order('rental_shops.rating', { ascending: false, nullsFirst: false })
-          .limit(limit)
-
-        if (error) {
-          console.error('Error fetching featured motorcycles:', error)
-          throw error
-        }
-
-        return data || []
-      }
+      async () => motorcycleService.getFeaturedMotorcycles(limit)
     )
   },
 

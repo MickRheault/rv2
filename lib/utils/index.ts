@@ -659,4 +659,12 @@ export function isReservedRoute(param: string): boolean {
   ]
   
   return reservedRoutes.includes(param.toLowerCase())
-} 
+}
+
+export function parseOptionalFiniteNumber(
+  raw: string | null | undefined
+): number | undefined {
+  if (raw === null || raw === undefined || raw.trim() === '') return undefined
+  const parsed = Number(raw)
+  return Number.isFinite(parsed) ? parsed : undefined
+}

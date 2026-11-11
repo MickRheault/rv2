@@ -90,6 +90,10 @@ describe('SearchFilters', () => {
     expect(screen.getByText('Brand')).toBeInTheDocument()
     expect(screen.getByText('Category')).toBeInTheDocument()
     expect(screen.getByText('Model')).toBeInTheDocument()
+    expect(screen.getByText('Price Range (Daily)')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /Price Range \(Daily\)/i }))
+    expect(screen.getByText('Range: 10 - 100')).toBeInTheDocument()
   })
 
   it('allows selecting a brand filter', async () => {

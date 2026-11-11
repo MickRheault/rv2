@@ -3,7 +3,9 @@ import {
   resolveConditionName,
   resolveConditionNotes,
 } from '@/lib/motorcycle-conditions-helpers';
+import { NormalizedRentalOffer } from '@/lib/rental-offers';
 import {
+  hydrateBaselineOffersAndRates,
   MAX_TEXT_FIELD_LENGTH,
   validateBoundedString,
   validateHttpUrl,
@@ -91,6 +93,7 @@ export interface ExistingInventoryBike {
     ratePerDay: number;
     currency: string;
   }>;
+  offers: NormalizedRentalOffer[];
   conditions: ExistingInventoryBikeCondition[];
 }
 
@@ -378,12 +381,17 @@ export class TaskSchedulerService {
         engine_capacity_cc,
         availability_status,
         source_url,
+        rental_rate_per_day,
+        rental_rate_currency,
         brands (
           name
         ),
         categories (
           id,
           name
+        ),
+        rental_offers (
+          *
         ),
         rental_rate_tiers (
           min_days,
@@ -547,6 +555,11 @@ export class TaskSchedulerService {
           notes: resolveConditionNotes(mc),
         }));
 
+        const { offers: bikeOffers, rates: projectedLegacyRates } = hydrateBaselineOffersAndRates(
+          bike,
+          { fallbackLegacyCurrency: 'THB' }
+        );
+
         return {
           id: bike.id,
           brand: brandName,
@@ -558,12 +571,8 @@ export class TaskSchedulerService {
           engineCapacityCc: bike.engine_capacity_cc ?? null,
           availabilityStatus: bike.availability_status ?? null,
           sourceUrl: bike.source_url ?? null,
-          rates: (bike.rental_rate_tiers || []).map((r: any) => ({
-            minDays: r.min_days ?? 1,
-            maxDays: r.max_days ?? null,
-            ratePerDay: Number(r.rate_per_day),
-            currency: r.currency || 'THB',
-          })),
+          rates: projectedLegacyRates,
+          offers: bikeOffers,
           conditions: bikeConditions,
         };
       });

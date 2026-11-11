@@ -9,6 +9,15 @@ import { brandService } from '@/services/brands';
 import { categoryService } from '@/services/categories';
 import { locationService } from '@/services/locations';
 import { getMotorcycleUrl, getOptionalShopUrl, getShopUrl } from '@/lib/utils/urls';
+import {
+    formatExtensionBillingPhrase,
+    formatOfferBillingUnitPhrase,
+    getStandaloneDailyRate,
+    resolveListingHeadline,
+    resolveMotorcycleRentalOffers,
+    sortRentalOffersForDisplay,
+    type MotorcyclePricingRecord,
+} from '@/lib/rental-offers';
 import type { ChatCompletionTool } from 'openai/resources/chat/completions';
 
 // ============================================
@@ -195,6 +204,67 @@ export interface ToolResult {
     error?: string;
 }
 
+function formatPlainAmount(amount: number): string {
+    return new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+    }).format(amount);
+}
+
+function buildMotorcycleToolPricing(m: MotorcyclePricingRecord | null | undefined) {
+    const offers = resolveMotorcycleRentalOffers(m);
+    const dailyRate = getStandaloneDailyRate(m);
+    const { headlineOffer, showFrom } = resolveListingHeadline(m);
+    const fallbackCurrency =
+        typeof m?.rental_rate_currency === 'string' && m.rental_rate_currency.trim().length > 0
+            ? m.rental_rate_currency.trim().toUpperCase()
+            : null;
+    const currency = headlineOffer?.currency || fallbackCurrency;
+
+    const priceDisplay = headlineOffer
+        ? `${showFrom ? 'From ' : ''}${formatPlainAmount(headlineOffer.amount)} ${headlineOffer.currency} ${formatOfferBillingUnitPhrase(headlineOffer)}`
+        : 'Price on request';
+
+    const rentalOffers = sortRentalOffersForDisplay(offers).map((o) => {
+        const billingUnitPhrase = formatOfferBillingUnitPhrase(o);
+        return {
+            offerType: o.offerType,
+            amount: o.amount,
+            currency: o.currency,
+            billingBasis: o.billingBasis,
+            durationUnit: o.durationUnit,
+            minDuration: o.minDuration,
+            maxDuration: o.maxDuration,
+            billingUnitPhrase,
+            formattedOffer: `${o.isFrom ? 'From ' : ''}${formatPlainAmount(o.amount)} ${o.currency} ${billingUnitPhrase}`,
+            dailyEquivalent: o.dailyEquivalent,
+            minCommitment: o.minCommitment,
+            billingIncrement: o.billingIncrement,
+            supplierLabel: o.supplierLabel,
+            isFrom: o.isFrom,
+            extensions: o.extensions.map((ext) => ({
+                amount: ext.amount,
+                currency: ext.currency,
+                billingBasis: ext.billingBasis,
+                durationUnit: ext.durationUnit,
+                minDuration: ext.minDuration,
+                maxDuration: ext.maxDuration,
+                billingPhrase: formatExtensionBillingPhrase(ext),
+                billingIncrement: ext.billingIncrement,
+                supplierLabel: ext.supplierLabel,
+                isFrom: ext.isFrom,
+            })),
+        };
+    });
+
+    return {
+        dailyRate,
+        currency,
+        priceDisplay,
+        rentalOffers,
+    };
+}
+
 export async function executeTool(
     name: string,
     args: Record<string, unknown>
@@ -245,23 +315,7 @@ export async function executeTool(
                     motorcycles: result.motorcycles.map(m => {
                         const shop = m.rental_shops;
                         const shopUrl = getOptionalShopUrl(shop);
-
-                        // Get price from the direct daily rate or first tier.
-                        let dailyRate = m.rental_rate_per_day;
-                        let currency = m.rental_rate_currency;
-
-                        // If no direct rate, try to get from tiered pricing (first/lowest tier)
-                        if (!dailyRate && m.rental_rate_tiers && m.rental_rate_tiers.length > 0) {
-                            // Sort by min_days to get the base rate (usually 1-day rate)
-                            const sortedTiers = [...m.rental_rate_tiers].sort((a, b) =>
-                                (a.min_days || 0) - (b.min_days || 0)
-                            );
-                            const baseTier = sortedTiers[0];
-                            if (baseTier?.rate_per_day) {
-                                dailyRate = baseTier.rate_per_day;
-                                currency = baseTier.currency || currency;
-                            }
-                        }
+                        const pricing = buildMotorcycleToolPricing(m);
 
                         return {
                             id: m.id,
@@ -271,8 +325,10 @@ export async function executeTool(
                             year_to: getYearTo(m),
                             brand: m.brands?.name,
                             category: m.categories?.name,
-                            dailyRate,
-                            currency: currency || 'THB',
+                            dailyRate: pricing.dailyRate,
+                            currency: pricing.currency,
+                            priceDisplay: pricing.priceDisplay,
+                            rentalOffers: pricing.rentalOffers,
                             shop: shop?.provider_name,
                             shopUrl,
                             shopRating: shop?.rating,
@@ -289,6 +345,7 @@ export async function executeTool(
                     return { success: false, error: 'Motorcycle not found' };
                 }
                 const shopUrl = getOptionalShopUrl(motorcycle.rental_shops);
+                const pricing = buildMotorcycleToolPricing(motorcycle);
                 return {
                     success: true,
                     data: {
@@ -296,6 +353,9 @@ export async function executeTool(
                         url: getMotorcycleUrl(motorcycle.id),
                         ...(shopUrl ? { shopUrl } : {}),
                         year_to: getYearTo(motorcycle),
+                        dailyRate: pricing.dailyRate,
+                        priceDisplay: pricing.priceDisplay,
+                        rentalOffers: pricing.rentalOffers,
                     },
                 };
             }
@@ -352,10 +412,23 @@ export async function executeTool(
                 if (!shop) {
                     return { success: false, error: 'Shop not found' };
                 }
+                const enrichedMotorcycles = Array.isArray((shop as any).motorcycle_rentals)
+                    ? (shop as any).motorcycle_rentals.map((m: any) => {
+                          const pricing = buildMotorcycleToolPricing(m);
+                          return {
+                              ...m,
+                              url: getMotorcycleUrl(m.id),
+                              dailyRate: pricing.dailyRate,
+                              priceDisplay: pricing.priceDisplay,
+                              rentalOffers: pricing.rentalOffers,
+                          };
+                      })
+                    : undefined;
                 return {
                     success: true,
                     data: {
                         ...shop,
+                        ...(enrichedMotorcycles ? { motorcycle_rentals: enrichedMotorcycles } : {}),
                         url: getShopUrl(shop),
                     },
                 };

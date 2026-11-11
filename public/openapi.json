@@ -80,17 +80,17 @@
                         "name": "minPrice",
                         "in": "query",
                         "schema": {
-                            "type": "integer"
+                            "type": "number"
                         },
-                        "description": "Minimum daily price"
+                        "description": "Minimum standalone daily price"
                     },
                     {
                         "name": "maxPrice",
                         "in": "query",
                         "schema": {
-                            "type": "integer"
+                            "type": "number"
                         },
-                        "description": "Maximum daily price"
+                        "description": "Maximum standalone daily price"
                     },
                     {
                         "name": "sortBy",

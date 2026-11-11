@@ -3,7 +3,7 @@
 
 -- 1. Create canonical rental_offers table
 CREATE TABLE IF NOT EXISTS public.rental_offers (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   motorcycle_id UUID NOT NULL REFERENCES public.motorcycle_rentals(id) ON DELETE CASCADE,
   parent_offer_id UUID NULL REFERENCES public.rental_offers(id) ON DELETE CASCADE,
   offer_type TEXT NOT NULL

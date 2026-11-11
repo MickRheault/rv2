@@ -24,6 +24,23 @@ import {
   toConditionDisplayMap,
 } from '@/lib/motorcycle-conditions-helpers';
 import { getShopUrl } from '@/lib/utils/urls';
+import {
+  computeDailyEquivalent,
+  formatBillingIncrementPhrase,
+  formatDurationUnitLabel,
+  formatExtensionBillingPhrase,
+  formatOfferBillingUnitPhrase,
+  formatOfferDurationRangeLabel,
+  hydrateRentalOffersFromRows,
+  sortRentalOffersForDisplay,
+  type BillingBasis,
+  type BillingIncrementUnit,
+  type DurationUnit,
+  type ExtensionBillingBasis,
+  type NormalizedRentalOffer,
+  type NormalizedRentalOfferExtension,
+  type StandaloneOfferType,
+} from '@/lib/rental-offers';
 
 /**
  * Validates that an untrusted URL string uses strictly http: or https: before rendering as a link.
@@ -897,6 +914,942 @@ function renderRateTiersDiff(
   return null;
 }
 
+const VIEWER_OFFER_TYPE_LABELS: Record<StandaloneOfferType, string> = {
+  daily: 'Daily Rate',
+  hourly: 'Hourly Rental',
+  package: 'Fixed Package',
+  monthly: 'Monthly Rental',
+};
+
+function formatViewerOfferAmount(
+  amount: number,
+  currency: string,
+  preserveDecimals = false
+): string {
+  const normalizedCurrency = String(currency || 'THB').trim().toUpperCase();
+  const hasFraction = preserveDecimals || !Number.isInteger(amount);
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: normalizedCurrency,
+      minimumFractionDigits: hasFraction ? 2 : 0,
+      maximumFractionDigits: hasFraction ? 2 : 0,
+    }).format(amount);
+  } catch {
+    return `${getCurrencySymbol(normalizedCurrency)}${amount.toLocaleString('en-US', {
+      minimumFractionDigits: hasFraction ? 2 : 0,
+      maximumFractionDigits: hasFraction ? 2 : 0,
+    })}`;
+  }
+}
+
+function normalizeOffersForViewer(
+  rawOffers: any[] | undefined,
+  defaultCurrency?: string
+): NormalizedRentalOffer[] {
+  if (!Array.isArray(rawOffers) || rawOffers.length === 0) return [];
+  if (
+    rawOffers[0] &&
+    typeof rawOffers[0] === 'object' &&
+    'offer_type' in rawOffers[0] &&
+    !('offerType' in rawOffers[0])
+  ) {
+    return sortRentalOffersForDisplay(hydrateRentalOffersFromRows(rawOffers));
+  }
+
+  const mapped: NormalizedRentalOffer[] = rawOffers.map((o: any, idx: number) => {
+    const offerType = (o?.offerType || 'daily') as StandaloneOfferType;
+    const amount = Number(o?.amount || 0);
+    const currency = String(o?.currency || defaultCurrency || 'THB')
+      .trim()
+      .toUpperCase();
+    const billingBasis = (o?.billingBasis || 'per_day') as BillingBasis;
+    const durationUnit = (o?.durationUnit || 'day') as DurationUnit;
+    const minDuration = Number(o?.minDuration ?? 1);
+    const maxDuration =
+      o?.maxDuration === null || o?.maxDuration === undefined ? null : Number(o.maxDuration);
+
+    const minCommitment =
+      o?.minCommitment && typeof o.minCommitment === 'object'
+        ? {
+            value: Number(o.minCommitment.value),
+            unit: o.minCommitment.unit as DurationUnit,
+          }
+        : null;
+
+    const billingIncrement =
+      o?.billingIncrement && typeof o.billingIncrement === 'object'
+        ? {
+            value: Number(o.billingIncrement.value),
+            unit: o.billingIncrement.unit as BillingIncrementUnit,
+          }
+        : null;
+
+    const supplierLabel =
+      typeof o?.supplierLabel === 'string' && o.supplierLabel.trim().length > 0
+        ? o.supplierLabel.trim()
+        : null;
+    const isFrom = Boolean(o?.isFrom);
+    const sortOrder = typeof o?.sortOrder === 'number' ? o.sortOrder : idx;
+    const dailyEquivalent = computeDailyEquivalent({
+      offerType,
+      amount,
+      billingBasis,
+      durationUnit,
+      minDuration,
+      maxDuration,
+    });
+
+    const extensions: NormalizedRentalOfferExtension[] = Array.isArray(o?.extensions)
+      ? o.extensions.map((ext: any, extIdx: number) => {
+          const extBillingBasis = (ext?.billingBasis || 'per_day') as ExtensionBillingBasis;
+          const extDurationUnit = (ext?.durationUnit ||
+            (extBillingBasis === 'per_hour' ? 'hour' : 'day')) as 'hour' | 'day';
+          return {
+            id: ext?.id,
+            offerType: 'extension',
+            amount: Number(ext?.amount || 0),
+            currency: String(ext?.currency || currency)
+              .trim()
+              .toUpperCase(),
+            billingBasis: extBillingBasis,
+            durationUnit: extDurationUnit,
+            minDuration: Number(ext?.minDuration ?? 1),
+            maxDuration:
+              ext?.maxDuration === null || ext?.maxDuration === undefined
+                ? null
+                : Number(ext.maxDuration),
+            billingIncrement:
+              ext?.billingIncrement && typeof ext.billingIncrement === 'object'
+                ? {
+                    value: Number(ext.billingIncrement.value),
+                    unit: ext.billingIncrement.unit as 'minute' | 'hour' | 'day',
+                  }
+                : null,
+            supplierLabel:
+              typeof ext?.supplierLabel === 'string' && ext.supplierLabel.trim().length > 0
+                ? ext.supplierLabel.trim()
+                : null,
+            isFrom: Boolean(ext?.isFrom),
+            sortOrder: typeof ext?.sortOrder === 'number' ? ext.sortOrder : extIdx,
+            dailyEquivalent: null,
+          };
+        })
+      : [];
+
+    return {
+      id: o?.id,
+      offerType,
+      amount,
+      currency,
+      billingBasis,
+      durationUnit,
+      minDuration,
+      maxDuration,
+      minCommitment,
+      billingIncrement,
+      supplierLabel,
+      isFrom,
+      sortOrder,
+      dailyEquivalent,
+      extensions,
+    };
+  });
+
+  return sortRentalOffersForDisplay(mapped);
+}
+
+function serializeExtensionForDiffComparison(ext: NormalizedRentalOfferExtension): string {
+  return JSON.stringify({
+    amount: ext.amount,
+    currency: ext.currency,
+    billingBasis: ext.billingBasis,
+    durationUnit: ext.durationUnit,
+    minDuration: ext.minDuration,
+    maxDuration: ext.maxDuration,
+    billingIncrement: ext.billingIncrement,
+    supplierLabel: ext.supplierLabel,
+    isFrom: ext.isFrom,
+  });
+}
+
+function isViewerOfferIdentical(a: NormalizedRentalOffer, b: NormalizedRentalOffer): boolean {
+  if (
+    a.offerType !== b.offerType ||
+    Math.abs(a.amount - b.amount) >= 0.005 ||
+    a.currency !== b.currency ||
+    a.billingBasis !== b.billingBasis ||
+    a.durationUnit !== b.durationUnit ||
+    a.minDuration !== b.minDuration ||
+    a.maxDuration !== b.maxDuration ||
+    a.supplierLabel !== b.supplierLabel ||
+    a.isFrom !== b.isFrom ||
+    JSON.stringify(a.minCommitment) !== JSON.stringify(b.minCommitment) ||
+    JSON.stringify(a.billingIncrement) !== JSON.stringify(b.billingIncrement)
+  ) {
+    return false;
+  }
+  if (a.extensions.length !== b.extensions.length) return false;
+  const aExts = a.extensions.map(serializeExtensionForDiffComparison).sort();
+  const bExts = b.extensions.map(serializeExtensionForDiffComparison).sort();
+  return aExts.every((val, idx) => val === bExts[idx]);
+}
+
+function formatExtensionDurationBoundsLabel(ext: NormalizedRentalOfferExtension): string | null {
+  const min = ext.minDuration ?? 1;
+  const max = ext.maxDuration ?? null;
+  if (min <= 1 && max === null) return null;
+  const unitSingular = ext.durationUnit === 'hour' ? 'extra hour' : 'extra day';
+  const unitPlural = ext.durationUnit === 'hour' ? 'extra hours' : 'extra days';
+  if (max !== null && min === max) {
+    return `${min} ${min === 1 ? unitSingular : unitPlural}`;
+  }
+  if (max !== null) {
+    return `${min}–${max} ${unitPlural}`;
+  }
+  return `${min}+ ${unitPlural}`;
+}
+
+type ViewerOfferCardVariant = 'indigo' | 'blue' | 'red' | 'emerald' | 'gray';
+
+interface ViewerOfferListOptions {
+  variant?: ViewerOfferCardVariant;
+  strikeThrough?: boolean;
+  showUnchangedCheck?: boolean;
+  defaultCurrency?: string;
+}
+
+function renderViewerOfferCard(
+  offer: NormalizedRentalOffer,
+  options: {
+    cardKey: string;
+    testId?: string;
+    variant: ViewerOfferCardVariant;
+    strikeThrough?: boolean;
+    badge?: 'added' | 'removed' | 'unchanged';
+  }
+) {
+  const { cardKey, testId, variant, strikeThrough = false, badge } = options;
+  const cardClasses =
+    variant === 'emerald'
+      ? 'bg-emerald-50/90 text-emerald-950 border-emerald-300'
+      : variant === 'indigo'
+      ? 'bg-indigo-50/70 text-indigo-950 border-indigo-200'
+      : variant === 'blue'
+      ? 'bg-blue-50/70 text-blue-950 border-blue-200'
+      : variant === 'red'
+      ? 'bg-red-50/70 text-red-800 border-red-200'
+      : 'bg-gray-50 text-gray-800 border-gray-200';
+
+  return (
+    <div
+      key={cardKey}
+      data-testid={testId}
+      className={`rounded-lg border px-3 py-2 text-xs space-y-1.5 ${cardClasses} ${
+        strikeThrough ? 'line-through' : ''
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="font-semibold">
+              {offer.supplierLabel || VIEWER_OFFER_TYPE_LABELS[offer.offerType]}
+            </span>
+            {offer.supplierLabel && (
+              <span className="px-1.5 py-0.5 rounded bg-white/80 border border-current/20 text-[10px] font-medium no-underline">
+                {VIEWER_OFFER_TYPE_LABELS[offer.offerType]}
+              </span>
+            )}
+            <span className="opacity-85">· {formatOfferDurationRangeLabel(offer)}</span>
+          </div>
+          {offer.minCommitment && (
+            <div className="text-[11px] opacity-85">
+              {`Min. commitment: ${offer.minCommitment.value} ${formatDurationUnitLabel(
+                offer.minCommitment.unit,
+                offer.minCommitment.value
+              )}`}
+            </div>
+          )}
+          {offer.billingIncrement && (
+            <div className="text-[11px] opacity-85">
+              {formatBillingIncrementPhrase(offer.billingIncrement)}
+            </div>
+          )}
+        </div>
+
+        <div className="text-right ml-auto">
+          <div className="flex items-center justify-end gap-1.5 flex-wrap">
+            <span className="font-bold">
+              {`${offer.isFrom ? 'From ' : ''}${formatViewerOfferAmount(
+                offer.amount,
+                offer.currency
+              )} ${formatOfferBillingUnitPhrase(offer)}`}
+            </span>
+            {badge === 'added' && (
+              <span className="bg-indigo-100 text-indigo-800 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider no-underline">
+                + Added
+              </span>
+            )}
+            {badge === 'removed' && (
+              <span className="bg-red-200 text-red-900 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider no-underline">
+                - Removed
+              </span>
+            )}
+            {badge === 'unchanged' && (
+              <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider no-underline">
+                ✓ Unchanged
+              </span>
+            )}
+          </div>
+          {offer.dailyEquivalent !== null && (
+            <div className="text-[11px] opacity-80">
+              {`${formatViewerOfferAmount(
+                offer.dailyEquivalent,
+                offer.currency,
+                true
+              )}/day daily equivalent`}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {offer.extensions.length > 0 && (
+        <div className="pt-1.5 border-t border-dashed border-current/20 space-y-1">
+          {offer.extensions.map((ext, extIdx) => {
+            const extBounds = formatExtensionDurationBoundsLabel(ext);
+            return (
+              <div
+                key={ext.id ?? `${cardKey}-ext-${extIdx}`}
+                className="flex items-center justify-between gap-2 text-[11px] bg-white/60 rounded px-2 py-1"
+              >
+                <span>
+                  {ext.supplierLabel || 'Extension rate'}
+                  {extBounds ? ` · ${extBounds}` : ''}
+                  {ext.billingIncrement
+                    ? ` (${formatBillingIncrementPhrase(ext.billingIncrement)})`
+                    : ''}
+                </span>
+                <span className="font-semibold">
+                  {`+ ${ext.isFrom ? 'From ' : ''}${formatViewerOfferAmount(
+                    ext.amount,
+                    ext.currency
+                  )} ${formatExtensionBillingPhrase(ext)}`}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function renderRentalOffersList(
+  rawOffers: any[] | undefined,
+  keyPrefix: string,
+  options: ViewerOfferListOptions = {}
+) {
+  const {
+    variant = 'indigo',
+    strikeThrough = false,
+    showUnchangedCheck = false,
+    defaultCurrency,
+  } = options;
+  const offers = normalizeOffersForViewer(rawOffers, defaultCurrency);
+  if (offers.length === 0) return null;
+
+  return (
+    <div className="mt-2 space-y-1.5" data-testid={`proposal-offers-list-${keyPrefix}`}>
+      {offers.map((offer, idx) =>
+        renderViewerOfferCard(offer, {
+          cardKey: String(offer.id ?? `${keyPrefix}-${idx}`),
+          testId: `proposal-offer-${keyPrefix}-${idx}`,
+          variant,
+          strikeThrough,
+          badge: showUnchangedCheck ? 'unchanged' : undefined,
+        })
+      )}
+    </div>
+  );
+}
+
+type ViewerOfferDiffEntry =
+  | { status: 'unchanged'; oldOffer: NormalizedRentalOffer; newOffer: NormalizedRentalOffer }
+  | { status: 'modified'; oldOffer: NormalizedRentalOffer; newOffer: NormalizedRentalOffer }
+  | { status: 'added'; newOffer: NormalizedRentalOffer }
+  | { status: 'removed'; oldOffer: NormalizedRentalOffer };
+
+function computeRentalOffersDiff(
+  oldRaw: any[] | undefined,
+  newRaw: any[] | undefined,
+  defaultCurrency?: string,
+  treatUnpairedNewAsUnchanged = false
+): ViewerOfferDiffEntry[] | null {
+  if (newRaw === undefined) {
+    const oldOffers = normalizeOffersForViewer(oldRaw, defaultCurrency);
+    if (oldOffers.length === 0) return null;
+    return oldOffers.map((o) => ({ status: 'unchanged', oldOffer: o, newOffer: o }));
+  }
+
+  if (!Array.isArray(oldRaw)) {
+    const newOffers = normalizeOffersForViewer(newRaw, defaultCurrency);
+    if (treatUnpairedNewAsUnchanged && newOffers.length > 0) {
+      return newOffers.map((o) => ({ status: 'unchanged', oldOffer: o, newOffer: o }));
+    }
+    return null;
+  }
+
+  const oldOffers = normalizeOffersForViewer(oldRaw, defaultCurrency);
+  const newOffers = normalizeOffersForViewer(newRaw, defaultCurrency);
+  if (oldOffers.length === 0 && newOffers.length === 0) return null;
+
+  const usedOld = new Set<number>();
+  const usedNew = new Set<number>();
+  const entries: ViewerOfferDiffEntry[] = [];
+
+  const normLabel = (lbl: string | null) => (lbl || '').trim().toLowerCase();
+
+  // Pass 1: exact (offerType, billingBasis, durationUnit, minDuration, maxDuration, currency, label)
+  for (let nIdx = 0; nIdx < newOffers.length; nIdx++) {
+    const n = newOffers[nIdx];
+    const oIdx = oldOffers.findIndex(
+      (o, idx) =>
+        !usedOld.has(idx) &&
+        o.offerType === n.offerType &&
+        o.billingBasis === n.billingBasis &&
+        o.durationUnit === n.durationUnit &&
+        o.minDuration === n.minDuration &&
+        o.maxDuration === n.maxDuration &&
+        o.currency === n.currency &&
+        normLabel(o.supplierLabel) === normLabel(n.supplierLabel)
+    );
+    if (oIdx === -1) continue;
+    usedOld.add(oIdx);
+    usedNew.add(nIdx);
+    const o = oldOffers[oIdx];
+    entries.push({
+      status: isViewerOfferIdentical(o, n) ? 'unchanged' : 'modified',
+      oldOffer: o,
+      newOffer: n,
+    });
+  }
+
+  // Pass 2: same (offerType, billingBasis, durationUnit, minDuration, currency, label) where maxDuration changed
+  for (let nIdx = 0; nIdx < newOffers.length; nIdx++) {
+    if (usedNew.has(nIdx)) continue;
+    const n = newOffers[nIdx];
+    const oIdx = oldOffers.findIndex(
+      (o, idx) =>
+        !usedOld.has(idx) &&
+        o.offerType === n.offerType &&
+        o.billingBasis === n.billingBasis &&
+        o.durationUnit === n.durationUnit &&
+        o.minDuration === n.minDuration &&
+        o.currency === n.currency &&
+        normLabel(o.supplierLabel) === normLabel(n.supplierLabel)
+    );
+    if (oIdx === -1) continue;
+    usedOld.add(oIdx);
+    usedNew.add(nIdx);
+    entries.push({ status: 'modified', oldOffer: oldOffers[oIdx], newOffer: n });
+  }
+
+  // Pass 3: same (offerType, billingBasis, durationUnit, minDuration, maxDuration, currency) where supplierLabel changed
+  for (let nIdx = 0; nIdx < newOffers.length; nIdx++) {
+    if (usedNew.has(nIdx)) continue;
+    const n = newOffers[nIdx];
+    const oIdx = oldOffers.findIndex(
+      (o, idx) =>
+        !usedOld.has(idx) &&
+        o.offerType === n.offerType &&
+        o.billingBasis === n.billingBasis &&
+        o.durationUnit === n.durationUnit &&
+        o.minDuration === n.minDuration &&
+        o.maxDuration === n.maxDuration &&
+        o.currency === n.currency
+    );
+    if (oIdx === -1) continue;
+    usedOld.add(oIdx);
+    usedNew.add(nIdx);
+    entries.push({ status: 'modified', oldOffer: oldOffers[oIdx], newOffer: n });
+  }
+
+  // Remaining proposed offers are added
+  for (let nIdx = 0; nIdx < newOffers.length; nIdx++) {
+    if (usedNew.has(nIdx)) continue;
+    entries.push({ status: 'added', newOffer: newOffers[nIdx] });
+  }
+
+  // Remaining original offers are removed
+  for (let oIdx = 0; oIdx < oldOffers.length; oIdx++) {
+    if (usedOld.has(oIdx)) continue;
+    entries.push({ status: 'removed', oldOffer: oldOffers[oIdx] });
+  }
+
+  return entries;
+}
+
+function renderExtensionDiffRows(
+  oldExts: NormalizedRentalOfferExtension[],
+  newExts: NormalizedRentalOfferExtension[],
+  keyPrefix: string
+) {
+  if (oldExts.length === 0 && newExts.length === 0) return null;
+
+  const usedOld = new Set<number>();
+  const usedNew = new Set<number>();
+  const rows: React.ReactNode[] = [];
+  const normLabel = (lbl: string | null) => (lbl || '').trim().toLowerCase();
+
+  for (let nIdx = 0; nIdx < newExts.length; nIdx++) {
+    const n = newExts[nIdx];
+    let oIdx = oldExts.findIndex(
+      (o, idx) =>
+        !usedOld.has(idx) &&
+        o.billingBasis === n.billingBasis &&
+        o.currency === n.currency &&
+        normLabel(o.supplierLabel) === normLabel(n.supplierLabel)
+    );
+    if (oIdx === -1) {
+      oIdx = oldExts.findIndex(
+        (o, idx) => !usedOld.has(idx) && o.billingBasis === n.billingBasis && o.currency === n.currency
+      );
+    }
+    if (oIdx === -1) continue;
+    usedOld.add(oIdx);
+    usedNew.add(nIdx);
+    const o = oldExts[oIdx];
+    const identical =
+      serializeExtensionForDiffComparison(o) === serializeExtensionForDiffComparison(n);
+    if (identical) {
+      const extBounds = formatExtensionDurationBoundsLabel(n);
+      rows.push(
+        <div
+          key={`${keyPrefix}-ext-pair-${nIdx}`}
+          className="flex items-center justify-between gap-2 text-[11px] bg-white/70 rounded px-2 py-1 text-gray-700"
+        >
+          <span>
+            {n.supplierLabel || 'Extension rate'}
+            {extBounds ? ` · ${extBounds}` : ''}
+            {n.billingIncrement ? ` (${formatBillingIncrementPhrase(n.billingIncrement)})` : ''}
+          </span>
+          <span className="font-semibold">
+            + {n.isFrom ? 'From ' : ''}
+            {formatViewerOfferAmount(n.amount, n.currency)} {formatExtensionBillingPhrase(n)}
+          </span>
+        </div>
+      );
+    } else {
+      const extLabelChanged = o.supplierLabel !== n.supplierLabel;
+      const oldBounds = formatExtensionDurationBoundsLabel(o);
+      const newBounds = formatExtensionDurationBoundsLabel(n);
+      const boundsChanged = oldBounds !== newBounds;
+      const oldIncPhrase = o.billingIncrement
+        ? formatBillingIncrementPhrase(o.billingIncrement)
+        : null;
+      const newIncPhrase = n.billingIncrement
+        ? formatBillingIncrementPhrase(n.billingIncrement)
+        : null;
+      const incChanged = oldIncPhrase !== newIncPhrase;
+      const extAmountChanged =
+        Math.abs(n.amount - o.amount) >= 0.005 ||
+        o.isFrom !== n.isFrom ||
+        o.billingBasis !== n.billingBasis;
+
+      rows.push(
+        <div
+          key={`${keyPrefix}-ext-mod-${nIdx}`}
+          className="flex items-center justify-between gap-2 flex-wrap text-[11px] bg-white/80 rounded px-2 py-1 text-gray-800"
+        >
+          <span className="flex items-center gap-1 flex-wrap">
+            {extLabelChanged ? (
+              <>
+                {o.supplierLabel && (
+                  <span className="line-through text-red-500">{o.supplierLabel}</span>
+                )}
+                {o.supplierLabel && <span className="text-gray-400">→</span>}
+                <span className={n.supplierLabel ? 'text-blue-700 font-medium' : 'text-gray-700'}>
+                  {n.supplierLabel || 'Extension rate'}
+                </span>
+              </>
+            ) : (
+              <span>{n.supplierLabel || 'Extension rate'}</span>
+            )}
+            {boundsChanged ? (
+              <>
+                <span>·</span>
+                {oldBounds && (
+                  <span className="line-through text-red-500">
+                    {`${oldBounds}${!newBounds ? ' (removed)' : ''}`}
+                  </span>
+                )}
+                {oldBounds && newBounds && <span className="text-gray-400">→</span>}
+                {newBounds && <span className="text-blue-700 font-medium">{newBounds}</span>}
+              </>
+            ) : (
+              newBounds && <span>{`· ${newBounds}`}</span>
+            )}
+            {incChanged ? (
+              <>
+                {oldIncPhrase && (
+                  <span className="line-through text-red-500">{`(${oldIncPhrase}${
+                    !newIncPhrase ? ' removed' : ''
+                  })`}</span>
+                )}
+                {oldIncPhrase && newIncPhrase && <span className="text-gray-400">→</span>}
+                {newIncPhrase && <span className="text-blue-700">{`(${newIncPhrase})`}</span>}
+              </>
+            ) : (
+              newIncPhrase && <span>{`(${newIncPhrase})`}</span>
+            )}
+          </span>
+          {extAmountChanged ? (
+            <span className="flex items-center gap-1.5 flex-wrap">
+              <span className="line-through text-red-500 font-medium">
+                {`+ ${o.isFrom ? 'From ' : ''}${formatViewerOfferAmount(
+                  o.amount,
+                  o.currency
+                )} ${formatExtensionBillingPhrase(o)}`}
+              </span>
+              <span className="text-gray-400">→</span>
+              <span className="text-blue-700 font-bold">
+                {`+ ${n.isFrom ? 'From ' : ''}${formatViewerOfferAmount(
+                  n.amount,
+                  n.currency
+                )} ${formatExtensionBillingPhrase(n)}`}
+              </span>
+            </span>
+          ) : (
+            <span className="font-semibold">
+              {`+ ${n.isFrom ? 'From ' : ''}${formatViewerOfferAmount(
+                n.amount,
+                n.currency
+              )} ${formatExtensionBillingPhrase(n)}`}
+            </span>
+          )}
+        </div>
+      );
+    }
+  }
+
+  for (let nIdx = 0; nIdx < newExts.length; nIdx++) {
+    if (usedNew.has(nIdx)) continue;
+    const n = newExts[nIdx];
+    const extBounds = formatExtensionDurationBoundsLabel(n);
+    rows.push(
+      <div
+        key={`${keyPrefix}-ext-add-${nIdx}`}
+        className="flex items-center justify-between gap-2 text-[11px] bg-indigo-50/80 border border-indigo-200 rounded px-2 py-1 text-indigo-900"
+      >
+        <span>
+          <span className="bg-indigo-100 text-indigo-800 text-[10px] font-bold px-1 py-0.5 rounded uppercase mr-1.5">
+            + Added
+          </span>
+          {n.supplierLabel || 'Extension rate'}
+          {extBounds ? ` · ${extBounds}` : ''}
+          {n.billingIncrement ? ` (${formatBillingIncrementPhrase(n.billingIncrement)})` : ''}
+        </span>
+        <span className="font-semibold">
+          {`+ ${n.isFrom ? 'From ' : ''}${formatViewerOfferAmount(
+            n.amount,
+            n.currency
+          )} ${formatExtensionBillingPhrase(n)}`}
+        </span>
+      </div>
+    );
+  }
+
+  for (let oIdx = 0; oIdx < oldExts.length; oIdx++) {
+    if (usedOld.has(oIdx)) continue;
+    const o = oldExts[oIdx];
+    const extBounds = formatExtensionDurationBoundsLabel(o);
+    rows.push(
+      <div
+        key={`${keyPrefix}-ext-rem-${oIdx}`}
+        className="flex items-center justify-between gap-2 text-[11px] bg-red-50/80 border border-red-200 rounded px-2 py-1 text-red-700 line-through"
+      >
+        <span>
+          <span className="bg-red-200 text-red-900 text-[10px] font-bold px-1 py-0.5 rounded uppercase mr-1.5 no-underline">
+            - Removed
+          </span>
+          {o.supplierLabel || 'Extension rate'}
+          {extBounds ? ` · ${extBounds}` : ''}
+          {o.billingIncrement ? ` (${formatBillingIncrementPhrase(o.billingIncrement)})` : ''}
+        </span>
+        <span>
+          {`+ ${o.isFrom ? 'From ' : ''}${formatViewerOfferAmount(
+            o.amount,
+            o.currency
+          )} ${formatExtensionBillingPhrase(o)}`}
+        </span>
+      </div>
+    );
+  }
+
+  return <div className="pt-1.5 border-t border-dashed border-blue-200 space-y-1">{rows}</div>;
+}
+
+function renderRentalOffersDiff(
+  keyPrefix: string,
+  originalOffers?: any[],
+  proposedOffers?: any[],
+  defaultCurrency?: string,
+  hasPrecomputedSummary = false
+) {
+  const entries = computeRentalOffersDiff(
+    originalOffers,
+    proposedOffers,
+    defaultCurrency,
+    hasPrecomputedSummary && originalOffers === undefined
+  );
+
+  if (entries && entries.length > 0) {
+    return (
+      <div className="mt-2 space-y-1.5" data-testid={`proposal-offers-diff-${keyPrefix}`}>
+        <div className="text-xs font-semibold text-gray-700">Rental Offers:</div>
+        <div className="flex flex-col gap-1.5">
+          {entries.map((entry, idx) => {
+            if (entry.status === 'modified') {
+              const { oldOffer, newOffer } = entry;
+              const oldRange = formatOfferDurationRangeLabel(oldOffer);
+              const newRange = formatOfferDurationRangeLabel(newOffer);
+              const rangeChanged = oldRange !== newRange;
+              const amountChanged =
+                Math.abs(newOffer.amount - oldOffer.amount) >= 0.005 ||
+                oldOffer.isFrom !== newOffer.isFrom;
+              const labelChanged = oldOffer.supplierLabel !== newOffer.supplierLabel;
+
+              const oldCommitmentText = oldOffer.minCommitment
+                ? `${oldOffer.minCommitment.value} ${formatDurationUnitLabel(
+                    oldOffer.minCommitment.unit,
+                    oldOffer.minCommitment.value
+                  )}`
+                : null;
+              const newCommitmentText = newOffer.minCommitment
+                ? `${newOffer.minCommitment.value} ${formatDurationUnitLabel(
+                    newOffer.minCommitment.unit,
+                    newOffer.minCommitment.value
+                  )}`
+                : null;
+              const commitmentChanged = oldCommitmentText !== newCommitmentText;
+
+              const oldIncrementText = oldOffer.billingIncrement
+                ? formatBillingIncrementPhrase(oldOffer.billingIncrement)
+                : null;
+              const newIncrementText = newOffer.billingIncrement
+                ? formatBillingIncrementPhrase(newOffer.billingIncrement)
+                : null;
+              const incrementChanged = oldIncrementText !== newIncrementText;
+
+              const dailyEqChanged = oldOffer.dailyEquivalent !== newOffer.dailyEquivalent;
+
+              return (
+                <div
+                  key={`${keyPrefix}-diff-${idx}`}
+                  className="text-xs bg-blue-50/60 border border-blue-200 rounded-lg p-2.5 space-y-1.5"
+                >
+                  <div className="flex items-start justify-between gap-2 flex-wrap">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {labelChanged && (
+                          <>
+                            <span className="line-through text-red-500 font-medium">
+                              {oldOffer.supplierLabel ||
+                                VIEWER_OFFER_TYPE_LABELS[oldOffer.offerType]}
+                            </span>
+                            <span className="text-gray-400">→</span>
+                          </>
+                        )}
+                        <span
+                          className={`font-semibold ${
+                            labelChanged ? 'text-blue-700' : 'text-gray-900'
+                          }`}
+                        >
+                          {newOffer.supplierLabel || VIEWER_OFFER_TYPE_LABELS[newOffer.offerType]}
+                        </span>
+                        {newOffer.supplierLabel && (
+                          <span className="px-1.5 py-0.5 rounded bg-white border border-blue-200 text-[10px] font-medium text-blue-900">
+                            {VIEWER_OFFER_TYPE_LABELS[newOffer.offerType]}
+                          </span>
+                        )}
+                        <span className="text-gray-600">
+                          ·{' '}
+                          {rangeChanged ? (
+                            <>
+                              <span className="line-through text-red-500 mr-1">{oldRange}</span>
+                              <span className="text-gray-400">→</span> {newRange}
+                            </>
+                          ) : (
+                            newRange
+                          )}
+                        </span>
+                      </div>
+                      {commitmentChanged ? (
+                        <div className="text-[11px] text-gray-600 flex items-center gap-1 flex-wrap">
+                          <span>Min. commitment:</span>
+                          {oldCommitmentText && newCommitmentText && (
+                            <>
+                              <span className="line-through text-red-500">{oldCommitmentText}</span>
+                              <span className="text-gray-400">→</span>
+                              <span className="text-blue-700 font-medium">{newCommitmentText}</span>
+                            </>
+                          )}
+                          {oldCommitmentText && !newCommitmentText && (
+                            <span className="text-red-600">{`${oldCommitmentText} (removed)`}</span>
+                          )}
+                          {!oldCommitmentText && newCommitmentText && (
+                            <span className="text-blue-700 font-medium">{newCommitmentText}</span>
+                          )}
+                        </div>
+                      ) : (
+                        newCommitmentText && (
+                          <div className="text-[11px] text-gray-600">
+                            {`Min. commitment: ${newCommitmentText}`}
+                          </div>
+                        )
+                      )}
+                      {incrementChanged ? (
+                        <div className="text-[11px] text-gray-600 flex items-center gap-1 flex-wrap">
+                          {oldIncrementText && newIncrementText && (
+                            <>
+                              <span className="line-through text-red-500">{oldIncrementText}</span>
+                              <span className="text-gray-400">→</span>
+                              <span className="text-blue-700 font-medium">{newIncrementText}</span>
+                            </>
+                          )}
+                          {oldIncrementText && !newIncrementText && (
+                            <span className="text-red-600">{`${oldIncrementText} (removed)`}</span>
+                          )}
+                          {!oldIncrementText && newIncrementText && (
+                            <span className="text-blue-700 font-medium">{newIncrementText}</span>
+                          )}
+                        </div>
+                      ) : (
+                        newIncrementText && (
+                          <div className="text-[11px] text-gray-600">{newIncrementText}</div>
+                        )
+                      )}
+                    </div>
+
+                    <div className="text-right ml-auto">
+                      <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                        {amountChanged ? (
+                          <>
+                            <span className="line-through text-red-500 font-medium">
+                              {`${oldOffer.isFrom ? 'From ' : ''}${formatViewerOfferAmount(
+                                oldOffer.amount,
+                                oldOffer.currency
+                              )} ${formatOfferBillingUnitPhrase(oldOffer)}`}
+                            </span>
+                            <span className="text-gray-400">→</span>
+                            <span className="text-blue-700 font-bold">
+                              {`${newOffer.isFrom ? 'From ' : ''}${formatViewerOfferAmount(
+                                newOffer.amount,
+                                newOffer.currency
+                              )} ${formatOfferBillingUnitPhrase(newOffer)}`}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="font-bold text-gray-900">
+                            {`${newOffer.isFrom ? 'From ' : ''}${formatViewerOfferAmount(
+                              newOffer.amount,
+                              newOffer.currency
+                            )} ${formatOfferBillingUnitPhrase(newOffer)}`}
+                          </span>
+                        )}
+                      </div>
+                      {(oldOffer.dailyEquivalent !== null || newOffer.dailyEquivalent !== null) && (
+                        <div className="text-[11px] text-gray-600 flex items-center justify-end gap-1 flex-wrap">
+                          {dailyEqChanged ? (
+                            <>
+                              {oldOffer.dailyEquivalent !== null && (
+                                <span className="line-through text-red-500">
+                                  {`${formatViewerOfferAmount(
+                                    oldOffer.dailyEquivalent,
+                                    oldOffer.currency,
+                                    true
+                                  )}/day`}
+                                </span>
+                              )}
+                              {oldOffer.dailyEquivalent !== null &&
+                                newOffer.dailyEquivalent !== null && (
+                                  <span className="text-gray-400">→</span>
+                                )}
+                              {newOffer.dailyEquivalent !== null ? (
+                                <span className="text-blue-700 font-medium">
+                                  {`${formatViewerOfferAmount(
+                                    newOffer.dailyEquivalent,
+                                    newOffer.currency,
+                                    true
+                                  )}/day daily equivalent`}
+                                </span>
+                              ) : (
+                                <span className="text-red-600">daily equivalent removed</span>
+                              )}
+                            </>
+                          ) : (
+                            newOffer.dailyEquivalent !== null && (
+                              <span>
+                                {`${formatViewerOfferAmount(
+                                  newOffer.dailyEquivalent,
+                                  newOffer.currency,
+                                  true
+                                )}/day daily equivalent`}
+                              </span>
+                            )
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {renderExtensionDiffRows(
+                    oldOffer.extensions,
+                    newOffer.extensions,
+                    `${keyPrefix}-mod-${idx}`
+                  )}
+                </div>
+              );
+            }
+
+            if (entry.status === 'added') {
+              return renderViewerOfferCard(entry.newOffer, {
+                cardKey: `${keyPrefix}-diff-${idx}`,
+                variant: 'indigo',
+                badge: 'added',
+              });
+            }
+
+            if (entry.status === 'removed') {
+              return renderViewerOfferCard(entry.oldOffer, {
+                cardKey: `${keyPrefix}-diff-${idx}`,
+                variant: 'red',
+                strikeThrough: true,
+                badge: 'removed',
+              });
+            }
+
+            return renderViewerOfferCard(entry.newOffer, {
+              cardKey: `${keyPrefix}-diff-${idx}`,
+              variant: 'emerald',
+              badge: 'unchanged',
+            });
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  if (Array.isArray(proposedOffers) && proposedOffers.length > 0) {
+    return renderRentalOffersList(proposedOffers, keyPrefix, {
+      variant: 'blue',
+      defaultCurrency,
+    });
+  }
+
+  return null;
+}
+
 function resolveProposalExtractionHints(proposal: DiffViewerProposal): string | null {
   const candidates = [
     proposal.extraction_hints,
@@ -1762,11 +2715,17 @@ export function ChangeProposalDiffViewer({
                       {year != null && <span>Year: {year}</span>}
                       {engineCc != null && <span>Engine: {engineCc}cc</span>}
                     </div>
-                    {renderRateTiers(
-                      item.proposed_data?.rates,
-                      item.proposed_data?.currency,
-                      'indigo'
-                    )}
+                    {Array.isArray(item.proposed_data?.offers) &&
+                    item.proposed_data.offers.length > 0
+                      ? renderRentalOffersList(item.proposed_data.offers, item.id, {
+                          variant: 'indigo',
+                          defaultCurrency: item.proposed_data?.currency,
+                        })
+                      : renderRateTiers(
+                          item.proposed_data?.rates,
+                          item.proposed_data?.currency,
+                          'indigo'
+                        )}
                     {renderMotorcycleConditionsList(item.proposed_data?.conditions, 'amber')}
                   </div>
                 </div>
@@ -1954,6 +2913,20 @@ export function ChangeProposalDiffViewer({
                   ? base.rates
                   : undefined;
 
+              const effectiveOrigOffers =
+                orig.offers !== undefined
+                  ? orig.offers
+                  : allowBaseForMutated || prop.offers === undefined
+                  ? base.offers
+                  : undefined;
+
+              const shouldRenderOffersDiff =
+                Array.isArray(prop.offers) ||
+                (!Array.isArray(prop.rates) &&
+                  !summary.rates &&
+                  Array.isArray(effectiveOrigOffers) &&
+                  effectiveOrigOffers.length > 0);
+
               const bikeTitle = [item.brand_name, item.model_name]
                 .filter(Boolean)
                 .join(' ')
@@ -2082,13 +3055,21 @@ export function ChangeProposalDiffViewer({
                         </div>
                       ))}
 
-                      {renderRateTiersDiff(
-                        summary.rates,
-                        effectiveOrigRates,
-                        prop.rates,
-                        prop.currency || orig.currency,
-                        hasPrecomputedSummary
-                      )}
+                      {shouldRenderOffersDiff
+                        ? renderRentalOffersDiff(
+                            item.id,
+                            effectiveOrigOffers,
+                            prop.offers,
+                            prop.currency || orig.currency || base.currency,
+                            hasPrecomputedSummary
+                          )
+                        : renderRateTiersDiff(
+                            summary.rates,
+                            effectiveOrigRates,
+                            prop.rates,
+                            prop.currency || orig.currency,
+                            hasPrecomputedSummary
+                          )}
 
                       {(unchangedSpecs.length > 0 || unchangedConditions.length > 0) && (
                         <div
@@ -2165,12 +3146,23 @@ export function ChangeProposalDiffViewer({
                     </span>
                     {renderItemDecisionBadge(item.status)}
                   </div>
-                  {renderRateTiers(
-                    item.original_data?.rates ?? item.baseline_data?.rates,
-                    item.original_data?.currency,
-                    'red',
-                    true
-                  )}
+                  {(() => {
+                    const delistOffers = item.original_data?.offers ?? item.baseline_data?.offers;
+                    if (Array.isArray(delistOffers) && delistOffers.length > 0) {
+                      return renderRentalOffersList(delistOffers, item.id, {
+                        variant: 'red',
+                        strikeThrough: true,
+                        defaultCurrency:
+                          item.original_data?.currency ?? item.baseline_data?.currency,
+                      });
+                    }
+                    return renderRateTiers(
+                      item.original_data?.rates ?? item.baseline_data?.rates,
+                      item.original_data?.currency,
+                      'red',
+                      true
+                    );
+                  })()}
                 </div>
               </div>
             ))}
@@ -2649,7 +3641,13 @@ export function ChangeProposalDiffViewer({
                           </div>
                         )}
 
-                        {renderRateTiers(base.rates, base.currency, 'emerald', false, true)}
+                        {Array.isArray(base.offers) && base.offers.length > 0
+                          ? renderRentalOffersList(base.offers, entry.id || entry.entryKey, {
+                              variant: 'emerald',
+                              showUnchangedCheck: true,
+                              defaultCurrency: base.currency,
+                            })
+                          : renderRateTiers(base.rates, base.currency, 'emerald', false, true)}
                         {renderMotorcycleConditionsList(base.conditions, 'emerald')}
                         {renderEvidenceList(entry.evidence)}
                       </div>
@@ -2965,8 +3963,9 @@ export function ChangeProposalDiffViewer({
                     orig.sourceUrl ??
                     base.source_url ??
                     base.sourceUrl;
+                  const offers = prop.offers ?? orig.offers ?? base.offers;
                   const rates = prop.rates ?? orig.rates ?? base.rates;
-                  const currency = prop.currency ?? orig.currency;
+                  const currency = prop.currency ?? orig.currency ?? base.currency;
                   const conditions = prop.conditions ?? orig.conditions ?? base.conditions;
 
                   return (
@@ -2993,7 +3992,13 @@ export function ChangeProposalDiffViewer({
                             <span className="break-all">Source URL: {sourceUrl.trim()}</span>
                           )}
                         </div>
-                        {renderRateTiers(rates, currency, 'emerald', false, true)}
+                        {Array.isArray(offers) && offers.length > 0
+                          ? renderRentalOffersList(offers, item.id, {
+                              variant: 'emerald',
+                              showUnchangedCheck: true,
+                              defaultCurrency: currency,
+                            })
+                          : renderRateTiers(rates, currency, 'emerald', false, true)}
                         {renderMotorcycleConditionsList(conditions, 'emerald')}
                       </div>
                     </div>

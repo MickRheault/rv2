@@ -414,7 +414,7 @@ export default function SearchFilters({
           {/* Price Range Filter */}
           {renderPanel(
             'price',
-            'Price Range',
+            'Price Range (Daily)',
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <Input
@@ -436,7 +436,7 @@ export default function SearchFilters({
               </div>
               {filterOptions?.priceRange && (
                 <p className="text-xs text-gray-500">
-                  Range: ${filterOptions.priceRange.min} - ${filterOptions.priceRange.max}
+                  Range: {filterOptions.priceRange.min} - {filterOptions.priceRange.max}
                 </p>
               )}
             </div>

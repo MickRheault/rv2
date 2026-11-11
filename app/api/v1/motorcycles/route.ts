@@ -14,7 +14,10 @@ import { requireAuth } from '@/lib/api/middleware';
 import { rateLimit, getRateLimitHeaders } from '@/lib/api/rate-limit';
 import { motorcycleService } from '@/services/motorcycles';
 import { prepareMotorcyclePricingMutation } from '@/services/rental-offers';
-import { parseAndValidateMotorcycleYearPayload } from '@/lib/utils';
+import {
+  parseAndValidateMotorcycleYearPayload,
+  parseOptionalFiniteNumber,
+} from '@/lib/utils';
 import { purgePublicCache } from '@/lib/cache/purgePublicCache';
 
 /**
@@ -50,8 +53,8 @@ export async function GET(request: NextRequest) {
       cityId: searchParams.get('cityId') || undefined,
       model: searchParams.get('model') || undefined,
       query: searchParams.get('search') || searchParams.get('query') || undefined,
-      minPrice: searchParams.get('minPrice') ? parseInt(searchParams.get('minPrice')!, 10) : undefined,
-      maxPrice: searchParams.get('maxPrice') ? parseInt(searchParams.get('maxPrice')!, 10) : undefined,
+      minPrice: parseOptionalFiniteNumber(searchParams.get('minPrice')),
+      maxPrice: parseOptionalFiniteNumber(searchParams.get('maxPrice')),
       minEngineCapacity: searchParams.get('minEngineCapacity')
         ? parseInt(searchParams.get('minEngineCapacity')!, 10)
         : undefined,

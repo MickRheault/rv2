@@ -225,6 +225,7 @@ describe('Search Location N+1 Elimination (#113)', () => {
         brand_id: 'b-yamaha',
         category_id: 'c-sport',
         rental_rate_per_day: 60,
+        rental_rate_currency: 'USD',
         engine_capacity_cc: 689,
         created_at: '2026-01-02T00:00:00Z',
         brands: { id: 'b-yamaha', name: 'Yamaha' },
