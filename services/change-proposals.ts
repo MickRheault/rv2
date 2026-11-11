@@ -93,7 +93,6 @@ export class CandidateNotFoundError extends Error {
 }
 
 export class ProposalNotFoundError extends Error {
-  readonly statusCode = 404;
   constructor(proposalId: string) {
     super(`Proposal not found: ${proposalId}`);
     this.name = 'ProposalNotFoundError';
@@ -101,7 +100,6 @@ export class ProposalNotFoundError extends Error {
 }
 
 export class ProposalRejectionConflictError extends Error {
-  readonly statusCode = 409;
   readonly currentStatus: string;
   readonly currentVersion: number;
   constructor(message: string, currentStatus: string, currentVersion: number) {
@@ -3297,6 +3295,24 @@ export class ChangeProposalService {
     };
   }
 
+  private static async throwConcurrentRejectionConflict(
+    supabase: any,
+    proposalId: string,
+    fallbackVersion: number,
+    message: string
+  ): Promise<never> {
+    const { data: latestRow } =
+      (await (supabase.from('change_proposals') as any)
+        .select('status, version')
+        .eq('id', proposalId)
+        .maybeSingle?.()) || { data: null };
+    throw new ProposalRejectionConflictError(
+      message,
+      String(latestRow?.status ?? 'reviewing'),
+      latestRow?.version ?? fallbackVersion
+    );
+  }
+
   /**
    * Narrow, agent-authenticated rejection-only decision path for a `pending` Change Proposal (ADR 0019 / #217).
    * Structurally incapable of approving items or mutating live catalog/shop tables.
@@ -3304,9 +3320,8 @@ export class ChangeProposalService {
   static async rejectProposal(
     proposalId: string,
     input: {
-      expectedVersion?: unknown;
-      reason?: unknown;
-      notes?: unknown;
+      expectedVersion: number;
+      reason: string;
     }
   ) {
     const normalizedProposalId = validateRequiredUuid(
@@ -3317,50 +3332,13 @@ export class ChangeProposalService {
     const parsedExpectedVersion = validateExpectedVersion(input?.expectedVersion, {
       required: true,
     }) as number;
-
-    const hasReason = input?.reason !== undefined && input?.reason !== null;
-    const hasNotes = input?.notes !== undefined && input?.notes !== null;
-    let normalizedReason: string;
-    if (hasReason && hasNotes) {
-      const trimmedReason = validateBoundedString(
-        input.reason,
-        'reason',
-        MAX_TEXT_FIELD_LENGTH,
-        ProposalItemValidationError,
-        false
-      );
-      const trimmedNotes = validateBoundedString(
-        input.notes,
-        'notes',
-        MAX_TEXT_FIELD_LENGTH,
-        ProposalItemValidationError,
-        false
-      );
-      if (trimmedReason !== trimmedNotes) {
-        throw new ProposalItemValidationError(
-          'Conflicting reason and notes values supplied; provide a single consistent rejection reason.'
-        );
-      }
-      normalizedReason = trimmedReason;
-    } else if (hasReason) {
-      normalizedReason = validateBoundedString(
-        input.reason,
-        'reason',
-        MAX_TEXT_FIELD_LENGTH,
-        ProposalItemValidationError,
-        false
-      );
-    } else if (hasNotes) {
-      normalizedReason = validateBoundedString(
-        input.notes,
-        'reason',
-        MAX_TEXT_FIELD_LENGTH,
-        ProposalItemValidationError,
-        false
-      );
-    } else {
-      throw new ProposalItemValidationError('reason is required and must be a non-empty string.');
-    }
+    const normalizedReason = validateBoundedString(
+      input?.reason,
+      'reason',
+      MAX_TEXT_FIELD_LENGTH,
+      ProposalItemValidationError,
+      false
+    );
 
     const supabase = getSupabaseAdmin();
     const { data: proposal, error: fetchError } = await (supabase
@@ -3432,15 +3410,11 @@ export class ChangeProposalService {
       );
     }
     if (!Array.isArray(claimedRows) || claimedRows.length === 0) {
-      const { data: latestRow } =
-        (await (supabase.from('change_proposals') as any)
-          .select('status, version')
-          .eq('id', normalizedProposalId)
-          .maybeSingle?.()) || { data: null };
-      throw new ProposalRejectionConflictError(
-        `Concurrent modification detected while rejecting proposal '${normalizedProposalId}'.`,
-        String(latestRow?.status ?? 'reviewing'),
-        latestRow?.version ?? currentVersion
+      await ChangeProposalService.throwConcurrentRejectionConflict(
+        supabase,
+        normalizedProposalId,
+        currentVersion,
+        `Concurrent modification detected while rejecting proposal '${normalizedProposalId}'.`
       );
     }
 
@@ -3502,15 +3476,11 @@ export class ChangeProposalService {
         );
       }
       if (!Array.isArray(finalizeRes?.data) || finalizeRes.data.length === 0) {
-        const { data: latestRow } =
-          (await (supabase.from('change_proposals') as any)
-            .select('status, version')
-            .eq('id', normalizedProposalId)
-            .maybeSingle?.()) || { data: null };
-        throw new ProposalRejectionConflictError(
-          `Concurrent modification detected while finalizing rejection for proposal '${normalizedProposalId}'.`,
-          String(latestRow?.status ?? 'reviewing'),
-          latestRow?.version ?? currentVersion
+        await ChangeProposalService.throwConcurrentRejectionConflict(
+          supabase,
+          normalizedProposalId,
+          currentVersion,
+          `Concurrent modification detected while finalizing rejection for proposal '${normalizedProposalId}'.`
         );
       }
       proposalFinalized = true;

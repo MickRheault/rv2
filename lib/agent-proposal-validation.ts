@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
   MAX_TEXT_FIELD_LENGTH,
   PayloadTooLargeError,
+  validateBoundedString,
   validateRequiredUuid,
 } from '@/lib/reconciliation-report';
 import {
@@ -198,25 +199,27 @@ export function parseAgentProposalRejectBody(body: Record<string, unknown>): {
   }
 
   const { expectedVersion, reason, notes } = parsed.data;
-  const trimmedReason = reason !== undefined ? reason.trim() : undefined;
-  const trimmedNotes = notes !== undefined ? notes.trim() : undefined;
+  const trimmedReason =
+    reason !== undefined
+      ? validateBoundedString(
+          reason,
+          'reason',
+          MAX_TEXT_FIELD_LENGTH,
+          ProposalItemValidationError,
+          false
+        )
+      : undefined;
+  const trimmedNotes =
+    notes !== undefined
+      ? validateBoundedString(
+          notes,
+          'notes',
+          MAX_TEXT_FIELD_LENGTH,
+          ProposalItemValidationError,
+          false
+        )
+      : undefined;
 
-  if (trimmedReason !== undefined && trimmedReason.length === 0) {
-    throw new ProposalItemValidationError('reason is required and must be a non-empty string.');
-  }
-  if (trimmedNotes !== undefined && trimmedNotes.length === 0) {
-    throw new ProposalItemValidationError('notes must be a non-empty string when provided.');
-  }
-  if (trimmedReason !== undefined && trimmedReason.length > MAX_TEXT_FIELD_LENGTH) {
-    throw new ProposalItemValidationError(
-      `reason exceeds maximum length of ${MAX_TEXT_FIELD_LENGTH} characters.`
-    );
-  }
-  if (trimmedNotes !== undefined && trimmedNotes.length > MAX_TEXT_FIELD_LENGTH) {
-    throw new ProposalItemValidationError(
-      `notes exceeds maximum length of ${MAX_TEXT_FIELD_LENGTH} characters.`
-    );
-  }
   if (
     trimmedReason !== undefined &&
     trimmedNotes !== undefined &&
