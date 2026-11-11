@@ -13,6 +13,9 @@ import {
     formatExtensionBillingPhrase,
     formatOfferBillingUnitPhrase,
     getStandaloneDailyRate,
+    parseDurationDaysParam,
+    parseIsoCurrencyParam,
+    parseKnownPriceOnlyParam,
     resolveListingHeadline,
     resolveMotorcycleRentalOffers,
     sortRentalOffersForDisplay,
@@ -286,51 +289,29 @@ export async function executeTool(
             // Motorcycles
             case 'search_motorcycles':
             case 'list_motorcycles': {
-                let currency: string | undefined;
-                if (args.currency !== undefined && args.currency !== null && String(args.currency).trim() !== '') {
-                    const normalized = String(args.currency).trim().toUpperCase();
-                    if (!/^[A-Z]{3}$/.test(normalized)) {
-                        return {
-                            success: false,
-                            error: 'Invalid currency code; expected 3-letter ISO code',
-                        };
-                    }
-                    currency = normalized;
+                const parsedCurrency = parseIsoCurrencyParam(args.currency);
+                if (!parsedCurrency.valid) {
+                    return { success: false, error: parsedCurrency.error };
                 }
 
-                let durationDays: number | undefined;
-                if (args.durationDays !== undefined && args.durationDays !== null && String(args.durationDays).trim() !== '') {
-                    const parsedDuration =
-                        typeof args.durationDays === 'number'
-                            ? args.durationDays
-                            : Number(String(args.durationDays).trim());
-                    if (!Number.isSafeInteger(parsedDuration) || parsedDuration < 1 || parsedDuration > 3650) {
-                        return {
-                            success: false,
-                            error: 'durationDays must be a positive integer',
-                        };
-                    }
-                    durationDays = parsedDuration;
+                const parsedDurationDays = parseDurationDaysParam(args.durationDays);
+                if (!parsedDurationDays.valid) {
+                    return { success: false, error: parsedDurationDays.error };
                 }
 
-                let knownPriceOnly: boolean | undefined;
-                if (args.knownPriceOnly !== undefined && args.knownPriceOnly !== null && String(args.knownPriceOnly).trim() !== '') {
-                    if (typeof args.knownPriceOnly === 'boolean') {
-                        knownPriceOnly = args.knownPriceOnly;
-                    } else {
-                        const normalizedBool = String(args.knownPriceOnly).trim().toLowerCase();
-                        if (normalizedBool === 'true' || normalizedBool === '1') {
-                            knownPriceOnly = true;
-                        } else if (normalizedBool === 'false' || normalizedBool === '0') {
-                            knownPriceOnly = false;
-                        } else {
-                            return {
-                                success: false,
-                                error: 'knownPriceOnly must be true or false',
-                            };
-                        }
-                    }
+                const parsedKnownPriceOnly = parseKnownPriceOnlyParam(args.knownPriceOnly);
+                if (!parsedKnownPriceOnly.valid) {
+                    return { success: false, error: parsedKnownPriceOnly.error };
                 }
+
+                const minPrice =
+                    typeof args.minPrice === 'number' && Number.isFinite(args.minPrice)
+                        ? args.minPrice
+                        : undefined;
+                const maxPrice =
+                    typeof args.maxPrice === 'number' && Number.isFinite(args.maxPrice)
+                        ? args.maxPrice
+                        : undefined;
 
                 // Resolve names to IDs/codes
                 let cityId: string | undefined;
@@ -361,11 +342,11 @@ export async function executeTool(
                     countryCode,
                     cityId,
                     model: args.query as string | undefined,
-                    minPrice: args.minPrice as number | undefined,
-                    maxPrice: args.maxPrice as number | undefined,
-                    currency,
-                    durationDays,
-                    knownPriceOnly,
+                    minPrice,
+                    maxPrice,
+                    currency: parsedCurrency.value,
+                    durationDays: parsedDurationDays.value,
+                    knownPriceOnly: parsedKnownPriceOnly.value,
                     limit: Math.min((args.limit as number) || 10, 20),
                     offset: 0,
                 });

@@ -179,6 +179,11 @@ describe('Motorcycle Search Service — Currency, Duration & Known-Price Filteri
         }
       }
       if (table === 'motorcycle_rentals') {
+        const resultPromise = Promise.resolve({
+          data: catalogRows,
+          count: catalogRows.length,
+          error: null,
+        })
         const builder: any = {
           select: jest.fn(() => builder),
           in: jest.fn(() => builder),
@@ -198,6 +203,7 @@ describe('Motorcycle Search Service — Currency, Duration & Known-Price Filteri
               error: null,
             })
           ),
+          then: resultPromise.then.bind(resultPromise),
         }
         return builder
       }
@@ -263,5 +269,20 @@ describe('Motorcycle Search Service — Currency, Duration & Known-Price Filteri
         knownPriceOnly: true,
       }).map((m) => m.id)
     ).toHaveLength(5)
+
+    // 7. Null minPrice/maxPrice from untyped runtime callers are treated as undefined in both getMotorcycles and filterAndSortMotorcycles
+    const nullMinUsd = await motorcycleService.getMotorcycles({
+      minPrice: null as unknown as number | undefined,
+      maxPrice: 10,
+      currency: 'USD',
+    })
+    expect(nullMinUsd.total).toBe(1)
+    expect(nullMinUsd.motorcycles.map((m) => m.id)).toEqual(['hanoi-usd-8'])
+
+    const bothNullNoFilter = await motorcycleService.getMotorcycles({
+      minPrice: null as unknown as number | undefined,
+      maxPrice: null as unknown as number | undefined,
+    })
+    expect(bothNullNoFilter.total).toBe(6)
   })
 })

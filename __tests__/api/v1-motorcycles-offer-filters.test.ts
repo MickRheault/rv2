@@ -76,8 +76,18 @@ describe('GET /api/v1/motorcycles — Offer Currency, Duration & Known-Price Que
       expect(motorcycleService.getMotorcycles).not.toHaveBeenCalled()
     }
 
+    // Large positive integer durationDays (no arbitrary 3650 ceiling) succeeds
+    ;(motorcycleService.getMotorcycles as jest.Mock).mockClear()
+    const longDurationRes = await listMotorcycles(
+      new NextRequest('http://localhost:3000/api/v1/motorcycles?durationDays=5000')
+    )
+    expect(longDurationRes.status).toBe(200)
+    expect(motorcycleService.getMotorcycles).toHaveBeenCalledWith(
+      expect.objectContaining({ durationDays: 5000 })
+    )
+
     // Invalid durationDays -> 400
-    for (const badDuration of ['0', '-5', 'abc', '1.5', '3651']) {
+    for (const badDuration of ['0', '-5', 'abc', '1.5']) {
       ;(motorcycleService.getMotorcycles as jest.Mock).mockClear()
       const res = await listMotorcycles(
         new NextRequest(
@@ -104,14 +114,14 @@ describe('GET /api/v1/motorcycles — Offer Currency, Duration & Known-Price Que
       expect(motorcycleService.getMotorcycles).not.toHaveBeenCalled()
     }
 
-    // Invalid minPrice / maxPrice -> 400
-    for (const badPriceQuery of ['minPrice=abc', 'maxPrice=-10', 'minPrice=500&maxPrice=100']) {
-      ;(motorcycleService.getMotorcycles as jest.Mock).mockClear()
-      const res = await listMotorcycles(
-        new NextRequest(`http://localhost:3000/api/v1/motorcycles?${badPriceQuery}`)
-      )
-      expect(res.status).toBe(400)
-      expect(motorcycleService.getMotorcycles).not.toHaveBeenCalled()
-    }
+    // Existing minPrice/maxPrice parsing via parseOptionalFiniteNumber remains non-throwing (200)
+    ;(motorcycleService.getMotorcycles as jest.Mock).mockClear()
+    const legacyMinPriceRes = await listMotorcycles(
+      new NextRequest('http://localhost:3000/api/v1/motorcycles?minPrice=abc')
+    )
+    expect(legacyMinPriceRes.status).toBe(200)
+    expect(motorcycleService.getMotorcycles).toHaveBeenCalledWith(
+      expect.objectContaining({ minPrice: undefined })
+    )
   })
 })

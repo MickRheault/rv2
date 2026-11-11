@@ -313,6 +313,7 @@ it('exposes currency, durationDays, and knownPriceOnly in list_motorcycles tool 
 
     mockGetMotorcycles.mockResolvedValueOnce({ total: 1, motorcycles: [motorcycle] });
     const res = await executeTool('list_motorcycles', {
+        minPrice: null,
         maxPrice: 10,
         currency: ' usd ',
         durationDays: 7,
@@ -321,11 +322,20 @@ it('exposes currency, durationDays, and knownPriceOnly in list_motorcycles tool 
     expect(res.success).toBe(true);
     expect(mockGetMotorcycles).toHaveBeenCalledWith(
         expect.objectContaining({
+            minPrice: undefined,
             maxPrice: 10,
             currency: 'USD',
             durationDays: 7,
             knownPriceOnly: true,
         })
+    );
+
+    mockGetMotorcycles.mockClear();
+    mockGetMotorcycles.mockResolvedValueOnce({ total: 1, motorcycles: [motorcycle] });
+    const longDurationRes = await executeTool('list_motorcycles', { durationDays: 5000 });
+    expect(longDurationRes.success).toBe(true);
+    expect(mockGetMotorcycles).toHaveBeenCalledWith(
+        expect.objectContaining({ durationDays: 5000 })
     );
 
     mockGetMotorcycles.mockClear();

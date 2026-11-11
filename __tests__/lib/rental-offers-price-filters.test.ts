@@ -126,9 +126,20 @@ describe('Rental Offer Price Filter — Currency, Duration & Known-Price Evaluat
     expect(matchesRentalOfferFilter(hanoiVndDaily, { currency: 'USD' })).toBe(false)
     expect(matchesRentalOfferFilter(unpricedWithLeftoverCurrency, { currency: 'USD' })).toBe(false)
 
-    // Backward-compatible matchesDailyPriceRange signature with optional 4th options arg
-    expect(matchesDailyPriceRange(hanoiUsdDaily, undefined, 10, { currency: 'USD' })).toBe(true)
-    expect(matchesDailyPriceRange(hanoiUsdDaily, undefined, 200000, { currency: 'VND' })).toBe(false)
+    // Null minPrice/maxPrice (e.g. emitted by LLM tool calls) are treated as undefined
+    expect(
+      matchesRentalOfferFilter(hanoiUsdDaily, { minPrice: null, maxPrice: 10, currency: 'USD' })
+    ).toBe(true)
+    expect(
+      matchesRentalOfferFilter(hanoiUsdDaily, { minPrice: 5, maxPrice: null, currency: 'USD' })
+    ).toBe(true)
+    expect(
+      matchesRentalOfferFilter(unpricedWithLeftoverCurrency, { minPrice: null, maxPrice: null })
+    ).toBe(true)
+
+    // Original 3-argument matchesDailyPriceRange signature remains intact
+    expect(matchesDailyPriceRange(hanoiUsdDaily, undefined, 10)).toBe(true)
+    expect(matchesDailyPriceRange(hanoiUsdDaily, 10, 20)).toBe(false)
     expect(matchesDailyPriceRange(unpricedWithLeftoverCurrency)).toBe(true)
   })
 
@@ -453,6 +464,46 @@ describe('Rental Offer Price Filter — Currency, Duration & Known-Price Evaluat
       ],
     }
 
+    const oneDayPackageBike = {
+      id: 'pkg-1-day',
+      rental_rate_per_day: null,
+      rental_rate_currency: 'THB',
+      rental_rate_tiers: [],
+      rental_offers: [
+        buildOfferRow({
+          id: 'off-pkg-1',
+          motorcycle_id: 'pkg-1-day',
+          offer_type: 'package',
+          amount: 400,
+          currency: 'THB',
+          billing_basis: 'package_total',
+          duration_unit: 'day',
+          min_duration: 1,
+          max_duration: 1,
+        }),
+      ],
+    }
+
+    const openEndedMalformedPackageBike = {
+      id: 'pkg-null-max',
+      rental_rate_per_day: null,
+      rental_rate_currency: 'THB',
+      rental_rate_tiers: [],
+      rental_offers: [
+        buildOfferRow({
+          id: 'off-pkg-null-max',
+          motorcycle_id: 'pkg-null-max',
+          offer_type: 'package',
+          amount: 3000,
+          currency: 'THB',
+          billing_basis: 'package_total',
+          duration_unit: 'day',
+          min_duration: 7,
+          max_duration: null,
+        }),
+      ],
+    }
+
     const unpricedBike = {
       id: 'unpriced',
       rental_rate_per_day: null,
@@ -476,16 +527,27 @@ describe('Rental Offer Price Filter — Currency, Duration & Known-Price Evaluat
       matchesRentalOfferFilter(weeklyPackageWithExtension, { durationDays: 30, maxPrice: 1000 })
     ).toBe(false)
 
-    // 8000 THB / 30 days = 266.67 THB/day
+    // 8000 THB / 30 days = 266.67 THB/day ONLY on offer_type === 'package' (NOT offer_type === 'monthly')
     expect(
       matchesRentalOfferFilter(fixed30DayPackage, { durationDays: 30, maxPrice: 270 })
     ).toBe(true)
     expect(
       matchesRentalOfferFilter(fixed30DayMonthlyPass, { durationDays: 30, maxPrice: 270 })
-    ).toBe(true)
+    ).toBe(false)
+    expect(matchesRentalOfferFilter(fixed30DayMonthlyPass, { durationDays: 30 })).toBe(false)
     expect(matchesRentalOfferFilter(fixed30DayPackage, { durationDays: 7, maxPrice: 500 })).toBe(
       false
     )
+
+    // 1-day package (dailyEquivalent === null) and max_duration: null package rows NEVER synthesize daily equivalents
+    expect(matchesRentalOfferFilter(oneDayPackageBike, { durationDays: 1, maxPrice: 500 })).toBe(
+      false
+    )
+    expect(matchesRentalOfferFilter(oneDayPackageBike, { durationDays: 1 })).toBe(false)
+    expect(
+      matchesRentalOfferFilter(openEndedMalformedPackageBike, { durationDays: 7, maxPrice: 500 })
+    ).toBe(false)
+    expect(matchesRentalOfferFilter(openEndedMalformedPackageBike, { durationDays: 7 })).toBe(false)
 
     // Coexisting 500/day open-ended + 2450/7d (350/day equivalent) matches under 400 THB/day for 7 days
     expect(

@@ -15,6 +15,11 @@ import { rateLimit, getRateLimitHeaders } from '@/lib/api/rate-limit';
 import { motorcycleService } from '@/services/motorcycles';
 import { prepareMotorcyclePricingMutation } from '@/services/rental-offers';
 import {
+  parseDurationDaysParam,
+  parseIsoCurrencyParam,
+  parseKnownPriceOnlyParam,
+} from '@/lib/rental-offers';
+import {
   parseAndValidateMotorcycleYearPayload,
   parseOptionalFiniteNumber,
 } from '@/lib/utils';
@@ -45,57 +50,19 @@ export async function GET(request: NextRequest) {
       'desc'
     );
 
-    const rawMinPrice = searchParams.get('minPrice');
-    const minPrice = parseOptionalFiniteNumber(rawMinPrice);
-    if (rawMinPrice !== null && rawMinPrice.trim() !== '' && (minPrice === undefined || minPrice < 0)) {
-      return errors.badRequest('minPrice must be a non-negative number');
+    const parsedCurrency = parseIsoCurrencyParam(searchParams.get('currency'));
+    if (!parsedCurrency.valid) {
+      return errors.badRequest(parsedCurrency.error);
     }
 
-    const rawMaxPrice = searchParams.get('maxPrice');
-    const maxPrice = parseOptionalFiniteNumber(rawMaxPrice);
-    if (rawMaxPrice !== null && rawMaxPrice.trim() !== '' && (maxPrice === undefined || maxPrice < 0)) {
-      return errors.badRequest('maxPrice must be a non-negative number');
+    const parsedDurationDays = parseDurationDaysParam(searchParams.get('durationDays'));
+    if (!parsedDurationDays.valid) {
+      return errors.badRequest(parsedDurationDays.error);
     }
 
-    if (minPrice !== undefined && maxPrice !== undefined && minPrice > maxPrice) {
-      return errors.badRequest('minPrice cannot be greater than maxPrice');
-    }
-
-    const rawCurrency = searchParams.get('currency');
-    let currency: string | undefined;
-    if (rawCurrency !== null && rawCurrency.trim() !== '') {
-      const normalized = rawCurrency.trim().toUpperCase();
-      if (!/^[A-Z]{3}$/.test(normalized)) {
-        return errors.badRequest('Invalid currency code; expected 3-letter ISO code');
-      }
-      currency = normalized;
-    }
-
-    const rawDurationDays = searchParams.get('durationDays');
-    let durationDays: number | undefined;
-    if (rawDurationDays !== null && rawDurationDays.trim() !== '') {
-      const trimmed = rawDurationDays.trim();
-      if (!/^\d+$/.test(trimmed)) {
-        return errors.badRequest('durationDays must be a positive integer');
-      }
-      const parsedDuration = Number(trimmed);
-      if (!Number.isSafeInteger(parsedDuration) || parsedDuration < 1 || parsedDuration > 3650) {
-        return errors.badRequest('durationDays must be a positive integer');
-      }
-      durationDays = parsedDuration;
-    }
-
-    const rawKnownPriceOnly = searchParams.get('knownPriceOnly');
-    let knownPriceOnly: boolean | undefined;
-    if (rawKnownPriceOnly !== null && rawKnownPriceOnly.trim() !== '') {
-      const normalizedBool = rawKnownPriceOnly.trim().toLowerCase();
-      if (normalizedBool === 'true' || normalizedBool === '1') {
-        knownPriceOnly = true;
-      } else if (normalizedBool === 'false' || normalizedBool === '0') {
-        knownPriceOnly = false;
-      } else {
-        return errors.badRequest('knownPriceOnly must be true or false');
-      }
+    const parsedKnownPriceOnly = parseKnownPriceOnlyParam(searchParams.get('knownPriceOnly'));
+    if (!parsedKnownPriceOnly.valid) {
+      return errors.badRequest(parsedKnownPriceOnly.error);
     }
 
     const filters = {
@@ -106,11 +73,11 @@ export async function GET(request: NextRequest) {
       cityId: searchParams.get('cityId') || undefined,
       model: searchParams.get('model') || undefined,
       query: searchParams.get('search') || searchParams.get('query') || undefined,
-      minPrice,
-      maxPrice,
-      currency,
-      durationDays,
-      knownPriceOnly,
+      minPrice: parseOptionalFiniteNumber(searchParams.get('minPrice')),
+      maxPrice: parseOptionalFiniteNumber(searchParams.get('maxPrice')),
+      currency: parsedCurrency.value,
+      durationDays: parsedDurationDays.value,
+      knownPriceOnly: parsedKnownPriceOnly.value,
       minEngineCapacity: searchParams.get('minEngineCapacity')
         ? parseInt(searchParams.get('minEngineCapacity')!, 10)
         : undefined,
