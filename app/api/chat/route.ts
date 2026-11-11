@@ -12,6 +12,7 @@ import {
     MAX_TOOL_ITERATIONS,
     MAX_TOTAL_TOOL_CALLS,
     SYSTEM_PROMPT,
+    finalizeAssistantResponse,
     isRepetitionOrPaddingPrompt,
     sanitizeConversationHistory,
 } from '@/lib/chat/prompt';
@@ -188,8 +189,12 @@ export async function POST(request: NextRequest) {
         }
 
         // Return final response
+        const finalResponse = finalizeAssistantResponse(
+            assistantMessage.content,
+            response.choices[0]?.finish_reason
+        );
         return NextResponse.json({
-            response: assistantMessage.content,
+            response: finalResponse,
             toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
         });
     } catch (error) {

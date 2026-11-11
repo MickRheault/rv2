@@ -20,6 +20,7 @@ interface Message {
     role: 'user' | 'assistant';
     content: string;
     toolCalls?: { name: string; args: string; result: string }[];
+    isError?: boolean;
 }
 
 export default function ChatContent({ accessRequired }: { accessRequired: boolean }) {
@@ -36,8 +37,15 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
     const formRef = useRef<HTMLFormElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const messagesRef = useRef<Message[]>([]);
     const abortControllerRef = useRef<AbortController | null>(null);
     const autoSentQueryRef = useRef<string | null>(null);
+
+    const updateMessages = useCallback((updater: Message[] | ((prev: Message[]) => Message[])) => {
+        const next = typeof updater === 'function' ? updater(messagesRef.current) : updater;
+        messagesRef.current = next;
+        setMessages(next);
+    }, []);
 
     useEffect(() => {
         if (!isLoading) {
@@ -61,8 +69,23 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
         if (!userMessage) return;
         const { appendUserMessage = true } = options;
 
+        const currentMessages = messagesRef.current;
+        const priorMessages =
+            !appendUserMessage &&
+            currentMessages[currentMessages.length - 1]?.role === 'user' &&
+            currentMessages[currentMessages.length - 1]?.content === userMessage
+                ? currentMessages.slice(0, -1)
+                : currentMessages;
+
+        const conversationHistory = priorMessages
+            .filter(msg => !msg.isError)
+            .map(({ role, content }) => ({
+                role,
+                content,
+            }));
+
         if (appendUserMessage) {
-            setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+            updateMessages(prev => [...prev, { role: 'user', content: userMessage }]);
         }
         setIsLoading(true);
 
@@ -77,7 +100,7 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
                     'Content-Type': 'application/json',
                     ...(accessRequired && secret ? { Authorization: `Bearer ${secret}` } : {}),
                 },
-                body: JSON.stringify({ message: userMessage }),
+                body: JSON.stringify({ message: userMessage, conversationHistory }),
             });
 
             const fallbackError = res.status === 504
@@ -95,8 +118,8 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
 
             if (!res.ok || data.error) {
                 throw new Error(typeof data.error === 'string' ? data.error : fallbackError);
-            } else {
-                setMessages(prev => [
+            } else if (!controller.signal.aborted) {
+                updateMessages(prev => [
                     ...prev,
                     {
                         role: 'assistant',
@@ -106,12 +129,16 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
                 ]);
             }
         } catch (error) {
-            if (error instanceof Error && error.name === 'AbortError') {
+            if ((error instanceof Error && error.name === 'AbortError') || controller.signal.aborted) {
                 return;
             }
-            setMessages(prev => [
+            updateMessages(prev => [
                 ...prev,
-                { role: 'assistant', content: `Error: ${error instanceof Error ? error.message : 'Unable to contact the chat server. Please try again.'}` },
+                {
+                    role: 'assistant',
+                    content: `Error: ${error instanceof Error ? error.message : 'Unable to contact the chat server. Please try again.'}`,
+                    isError: true,
+                },
             ]);
         } finally {
             if (abortControllerRef.current === controller) {
@@ -119,7 +146,7 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
                 setIsLoading(false);
             }
         }
-    }, [accessRequired, secret]);
+    }, [accessRequired, secret, updateMessages]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView?.({ behavior: 'smooth' });
@@ -168,7 +195,7 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
             abortControllerRef.current.abort();
             abortControllerRef.current = null;
         }
-        setMessages([]);
+        updateMessages([]);
         setInput('');
         setIsLoading(false);
     };

@@ -79,7 +79,7 @@ it.each([undefined, '', '   '])('renders usable public chat without an access co
     await waitFor(() => expect(fetch).toHaveBeenCalledWith('/api/chat', expect.objectContaining({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: 'Find scooters in Bangkok' }),
+        body: JSON.stringify({ message: 'Find scooters in Bangkok', conversationHistory: [] }),
     })));
     expect(await screen.findByText('Here are some scooters.')).toBeInTheDocument();
 });
@@ -140,7 +140,7 @@ it('sends the user-supplied access code with the chat request', async () => {
             'Content-Type': 'application/json',
             Authorization: 'Bearer test-only-user-supplied-access-code',
         },
-        body: JSON.stringify({ message: 'Find scooters in Bangkok' }),
+        body: JSON.stringify({ message: 'Find scooters in Bangkok', conversationHistory: [] }),
     })));
     expect(await screen.findByText('Here are some scooters.')).toBeInTheDocument();
 });
@@ -204,7 +204,7 @@ it('submits on Enter keypress and allows newline on Shift+Enter', async () => {
     fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false });
     await waitFor(() => expect(fetch).toHaveBeenCalledWith('/api/chat', expect.objectContaining({
         method: 'POST',
-        body: JSON.stringify({ message: 'First line' }),
+        body: JSON.stringify({ message: 'First line', conversationHistory: [] }),
     })));
 });
 
@@ -262,7 +262,7 @@ it('automatically sends the initial prompt from the ?q= query parameter once on 
     expect(fetch).toHaveBeenCalledWith('/api/chat', expect.objectContaining({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: 'Find scooters in Bangkok' }),
+        body: JSON.stringify({ message: 'Find scooters in Bangkok', conversationHistory: [] }),
     }));
     expect(await screen.findByText('Here are some scooters.')).toBeInTheDocument();
 
@@ -435,5 +435,188 @@ it('displays playful motorcycle-themed rotating status messages while searching 
         jest.useRealTimers();
     }
 });
+
+it('sends prior user and assistant turns in conversationHistory on follow-up messages while excluding the outgoing prompt', async () => {
+    delete process.env.AI_CHAT_ACCESS_SECRET;
+    jest.mocked(fetch)
+        .mockResolvedValueOnce({
+            ok: true,
+            status: 200,
+            text: async () =>
+                JSON.stringify({
+                    response: 'Riders Corner in Chiang Mai lists the Honda ADV 160.',
+                    toolCalls: [{ name: 'list_motorcycles', args: '{"model":"ADV 160"}', result: '{}' }],
+                }),
+        } as Response)
+        .mockResolvedValueOnce({
+            ok: true,
+            status: 200,
+            text: async () => JSON.stringify({ response: 'Riders Corner is open daily 09:00–18:00.' }),
+        } as Response)
+        .mockResolvedValueOnce({
+            ok: true,
+            status: 200,
+            text: async () => JSON.stringify({ response: 'Here are motorcycles in Rome.' }),
+        } as Response);
+
+    const { container } = render(<ChatPage />);
+    const textarea = screen.getByPlaceholderText('Ask about bikes or shops...');
+    const form = container.querySelector('form')!;
+
+    fireEvent.change(textarea, { target: { value: 'Where can I rent a Honda ADV 160?' } });
+    fireEvent.submit(form);
+    expect(await screen.findByText('Riders Corner in Chiang Mai lists the Honda ADV 160.')).toBeInTheDocument();
+
+    fireEvent.change(textarea, { target: { value: 'What are their opening hours?' } });
+    fireEvent.submit(form);
+    expect(await screen.findByText('Riders Corner is open daily 09:00–18:00.')).toBeInTheDocument();
+
+    expect(JSON.parse(String(jest.mocked(fetch).mock.calls[0][1]?.body))).toEqual({
+        message: 'Where can I rent a Honda ADV 160?',
+        conversationHistory: [],
+    });
+    expect(JSON.parse(String(jest.mocked(fetch).mock.calls[1][1]?.body))).toEqual({
+        message: 'What are their opening hours?',
+        conversationHistory: [
+            { role: 'user', content: 'Where can I rent a Honda ADV 160?' },
+            { role: 'assistant', content: 'Riders Corner in Chiang Mai lists the Honda ADV 160.' },
+        ],
+    });
+
+    // Clicking New Chat clears conversationHistory for subsequent sessions
+    fireEvent.click(screen.getByRole('button', { name: /New Chat/i }));
+    fireEvent.change(textarea, { target: { value: 'Motorcycles in Rome' } });
+    fireEvent.submit(form);
+    expect(await screen.findByText('Here are motorcycles in Rome.')).toBeInTheDocument();
+
+    expect(JSON.parse(String(jest.mocked(fetch).mock.calls[2][1]?.body))).toEqual({
+        message: 'Motorcycles in Rome',
+        conversationHistory: [],
+    });
+});
+
+it('excludes synthetic client-side error messages from conversationHistory on subsequent turns', async () => {
+    delete process.env.AI_CHAT_ACCESS_SECRET;
+    jest.mocked(fetch)
+        .mockResolvedValueOnce({
+            ok: true,
+            status: 200,
+            text: async () => JSON.stringify({ response: 'They have a Honda ADV 160 and CRF300L.' }),
+        } as Response)
+        .mockResolvedValueOnce({
+            ok: false,
+            status: 503,
+            text: async () => JSON.stringify({ error: 'AI service error. Please try again.' }),
+        } as Response)
+        .mockRejectedValueOnce(new Error('Failed to fetch'))
+        .mockResolvedValueOnce({
+            ok: true,
+            status: 200,
+            text: async () => JSON.stringify({ response: 'Open daily 09:00–18:00.' }),
+        } as Response);
+
+    const { container } = render(<ChatPage />);
+    const textarea = screen.getByPlaceholderText('Ask about bikes or shops...');
+    const form = container.querySelector('form')!;
+
+    fireEvent.change(textarea, { target: { value: 'What bikes does Riders Corner have?' } });
+    fireEvent.submit(form);
+    expect(await screen.findByText('They have a Honda ADV 160 and CRF300L.')).toBeInTheDocument();
+
+    fireEvent.change(textarea, { target: { value: 'What are their opening hours?' } });
+    fireEvent.submit(form);
+    expect(await screen.findByText('Error: AI service error. Please try again.')).toBeInTheDocument();
+
+    fireEvent.change(textarea, { target: { value: 'How much is the deposit?' } });
+    fireEvent.submit(form);
+    expect(await screen.findByText('Error: Failed to fetch')).toBeInTheDocument();
+
+    fireEvent.change(textarea, { target: { value: 'Try opening hours again' } });
+    fireEvent.submit(form);
+    expect(await screen.findByText('Open daily 09:00–18:00.')).toBeInTheDocument();
+
+    const fourthRequestBody = JSON.parse(String(jest.mocked(fetch).mock.calls[3][1]?.body));
+    expect(fourthRequestBody).toEqual({
+        message: 'Try opening hours again',
+        conversationHistory: [
+            { role: 'user', content: 'What bikes does Riders Corner have?' },
+            { role: 'assistant', content: 'They have a Honda ADV 160 and CRF300L.' },
+            { role: 'user', content: 'What are their opening hours?' },
+            { role: 'user', content: 'How much is the deposit?' },
+        ],
+    });
+});
+
+it('retains the initial ?q= prompt and assistant reply in conversationHistory on follow-up turns without duplicating the ?q= prompt under StrictMode', async () => {
+    delete process.env.AI_CHAT_ACCESS_SECRET;
+    jest.mocked(useSearchParams).mockReturnValue(new URLSearchParams({
+        q: 'Where can I rent a Honda ADV 160?',
+    }) as ReturnType<typeof useSearchParams>);
+
+    const completedBodies: unknown[] = [];
+    jest.mocked(fetch).mockImplementation((_url, init) => {
+        const signal = (init as RequestInit)?.signal as AbortSignal | undefined;
+        const parsedBody = JSON.parse(String((init as RequestInit)?.body));
+        return new Promise((resolve, reject) => {
+            if (signal?.aborted) {
+                const abortErr = new Error('The operation was aborted.');
+                abortErr.name = 'AbortError';
+                reject(abortErr);
+                return;
+            }
+            const timer = setTimeout(() => {
+                completedBodies.push(parsedBody);
+                const reply =
+                    completedBodies.length === 1
+                        ? 'Available in Bangkok, Chiang Mai, and Phuket.'
+                        : 'In Chiang Mai, Riders Corner has the Honda ADV 160 for ฿600/day.';
+                resolve({
+                    ok: true,
+                    status: 200,
+                    text: async () => JSON.stringify({ response: reply }),
+                } as Response);
+            }, 10);
+            signal?.addEventListener('abort', () => {
+                clearTimeout(timer);
+                const abortErr = new Error('The operation was aborted.');
+                abortErr.name = 'AbortError';
+                reject(abortErr);
+            });
+        });
+    });
+
+    const { container } = render(
+        <StrictMode>
+            <ChatPage />
+        </StrictMode>
+    );
+
+    expect(await screen.findByText('Available in Bangkok, Chiang Mai, and Phuket.')).toBeInTheDocument();
+
+    const textarea = screen.getByPlaceholderText('Ask about bikes or shops...');
+    fireEvent.change(textarea, { target: { value: 'In Chiang Mai' } });
+    fireEvent.submit(container.querySelector('form')!);
+
+    expect(
+        await screen.findByText('In Chiang Mai, Riders Corner has the Honda ADV 160 for ฿600/day.')
+    ).toBeInTheDocument();
+
+    expect(completedBodies).toEqual([
+        {
+            message: 'Where can I rent a Honda ADV 160?',
+            conversationHistory: [],
+        },
+        {
+            message: 'In Chiang Mai',
+            conversationHistory: [
+                { role: 'user', content: 'Where can I rent a Honda ADV 160?' },
+                { role: 'assistant', content: 'Available in Bangkok, Chiang Mai, and Phuket.' },
+            ],
+        },
+    ]);
+});
+
+
+
 
 
