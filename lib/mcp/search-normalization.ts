@@ -32,6 +32,32 @@ export function normalizeLocationKey(input: string): string {
         .trim();
 }
 
+export function toSlugKey(value: string): string {
+    return stripDiacritics(value)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
+export function matchesWholeTokenSequence(haystack: string, needle: string): boolean {
+    const hTokens = normalizeLocationKey(haystack).split(' ').filter(Boolean);
+    const nTokens = normalizeLocationKey(needle).split(' ').filter(Boolean);
+    if (hTokens.length === 0 || nTokens.length === 0 || nTokens.length > hTokens.length) {
+        return false;
+    }
+    for (let i = 0; i <= hTokens.length - nTokens.length; i++) {
+        let allMatch = true;
+        for (let j = 0; j < nTokens.length; j++) {
+            if (hTokens[i + j] !== nTokens[j]) {
+                allMatch = false;
+                break;
+            }
+        }
+        if (allMatch) return true;
+    }
+    return false;
+}
+
 export function normalizeCountryTargetKey(input: string): string {
     const normalized = normalizeLocationKey(input);
     return COUNTRY_ALIASES[normalized] ?? normalized;
@@ -125,7 +151,9 @@ export function doesCityMatchCountry(
 
     const effectiveCode =
         expectedCountryCode?.trim().toUpperCase() ||
-        (rawCountryQualifier ? matchCountryFromCatalog(rawCountryQualifier, catalogCountries) ?? undefined : undefined);
+        (rawCountryQualifier
+            ? (matchCountryFromCatalog(rawCountryQualifier, catalogCountries) ?? undefined)
+            : undefined);
 
     if (effectiveCode) {
         if (cityCode) {
@@ -189,13 +217,6 @@ export function doesShopMatchScope(
     return true;
 }
 
-function toSlugKey(value: string): string {
-    return stripDiacritics(value)
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '');
-}
-
 export function pickBestMatchingShopId(
     shops: Array<{ id?: string; provider_name?: string | null; slug?: string | null }>,
     rawShopInput: string
@@ -222,17 +243,15 @@ export function pickBestMatchingShopId(
     });
     if (byExactName?.id) return byExactName.id;
 
-    const byPartial = shops.find((s) => {
-        const nameKey = s?.provider_name ? normalizeLocationKey(s.provider_name) : '';
-        const slugVal = s?.slug?.trim().toLowerCase() ?? '';
+    const byWholeToken = shops.find((s) => {
         const providerSlug = s?.provider_name ? toSlugKey(s.provider_name) : '';
         return (
-            (targetNameKey.length >= 2 && nameKey.includes(targetNameKey)) ||
-            (targetSlug.length >= 2 && slugVal.includes(targetSlug)) ||
+            (s?.provider_name ? matchesWholeTokenSequence(s.provider_name, trimmed) : false) ||
+            (s?.slug ? matchesWholeTokenSequence(s.slug, trimmed) : false) ||
             (providerSlug.length >= 3 && targetSlug.startsWith(`${providerSlug}-`))
         );
     });
-    return byPartial?.id ?? null;
+    return byWholeToken?.id ?? null;
 }
 
 function escapeRegExp(value: string): string {
@@ -284,47 +303,12 @@ export function normalizeModelKey(value: string): string {
         .replace(/[^a-z0-9]+/g, '');
 }
 
-export interface ModelSearchPlan {
-    ilikePattern: string;
-    orExpression?: string;
-    normalizedKey: string;
-    requiresPostFilter: boolean;
-}
-
-export function buildModelSearchPlan(rawModel: string): ModelSearchPlan {
-    const trimmed = rawModel.trim();
-    const normalizedKey = normalizeModelKey(trimmed);
-
-    if (normalizedKey.length < 2) {
-        return {
-            ilikePattern: `%${trimmed}%`,
-            normalizedKey,
-            requiresPostFilter: false,
-        };
-    }
-
-    const charPattern = `%${normalizedKey.split('').join('%')}%`;
-    const safeLiteral = trimmed
-        .replace(/[(),%]/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-    const orExpression =
-        safeLiteral.length > 0
-            ? `model.ilike.%${safeLiteral}%,model.ilike.${charPattern}`
-            : `model.ilike.${charPattern}`;
-
-    return {
-        ilikePattern: charPattern,
-        orExpression,
-        normalizedKey,
-        requiresPostFilter: true,
-    };
-}
-
 export function matchesNormalizedModel(
     candidateModel: string | null | undefined,
-    normalizedTargetKey: string
+    targetModel: string | null | undefined
 ): boolean {
-    if (!candidateModel || !normalizedTargetKey) return false;
-    return normalizeModelKey(candidateModel).includes(normalizedTargetKey);
+    if (!candidateModel || !targetModel) return false;
+    const targetKey = normalizeModelKey(targetModel);
+    if (!targetKey) return false;
+    return normalizeModelKey(candidateModel).includes(targetKey);
 }

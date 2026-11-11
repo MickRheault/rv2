@@ -8,6 +8,7 @@ import {
   doesShopMatchScope,
   pickBestMatchingShopId,
   stripDiacritics,
+  toSlugKey,
 } from '@/lib/mcp/search-normalization'
 
 const typedSupabase = supabase as unknown as SupabaseClient<Database>
@@ -717,10 +718,7 @@ export const shopService = {
         : null
     }
 
-    const safeSlug = stripDiacritics(trimmed)
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
+    const safeSlug = toSlugKey(trimmed)
     const safeName = stripDiacritics(trimmed)
       .replace(/[-_]+/g, ' ')
       .replace(/[(),%]/g, ' ')

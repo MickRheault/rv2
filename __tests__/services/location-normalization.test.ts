@@ -26,6 +26,39 @@ describe('locationService.searchLocations normalization, accented catalog matchi
             },
         },
         {
+            id: 'city-venice',
+            name: 'Venice',
+            province_id: 'prov-veneto',
+            provinces: {
+                id: 'prov-veneto',
+                name: 'Veneto',
+                country_code: 'IT',
+                countries: { code: 'IT', name: 'Italy' },
+            },
+        },
+        {
+            id: 'city-cordoba-ar',
+            name: 'Cordoba',
+            province_id: 'prov-cba-ar',
+            provinces: {
+                id: 'prov-cba-ar',
+                name: 'Cordoba',
+                country_code: 'AR',
+                countries: { code: 'AR', name: 'Argentina' },
+            },
+        },
+        {
+            id: 'city-cordoba-es',
+            name: 'Córdoba',
+            province_id: 'prov-andalusia',
+            provinces: {
+                id: 'prov-andalusia',
+                name: 'Andalusia',
+                country_code: 'ES',
+                countries: { code: 'ES', name: 'Spain' },
+            },
+        },
+        {
             id: 'city-malaga',
             name: 'Málaga',
             province_id: 'prov-andalusia',
@@ -83,6 +116,7 @@ describe('locationService.searchLocations normalization, accented catalog matchi
     ];
 
     const catalogCountries = [
+        { code: 'AR', name: 'Argentina' },
         { code: 'IT', name: 'Italy' },
         { code: 'ES', name: 'Spain' },
         { code: 'TH', name: 'Thailand' },
@@ -179,7 +213,23 @@ describe('locationService.searchLocations normalization, accented catalog matchi
         const hanoiVietNamRes = await locationService.searchLocations('Hanoi, Viet Nam');
         expect(hanoiVietNamRes.cities.map((c) => c.id)).toEqual(['city-hanoi']);
 
+        // "Cordoba, Spain" must resolve accented "Córdoba" in Spain even when ASCII "Cordoba" in Argentina matched SQL ILIKE first
+        const cordobaSpainRes = await locationService.searchLocations('Cordoba, Spain', 1);
+        expect(cordobaSpainRes.cities.map((c) => c.id)).toEqual(['city-cordoba-es']);
+
+        // Mid-word substring collisions ("Nice" in "Venice", "Nan" in "Da Nang") must NOT match
+        const niceRes = await locationService.searchLocations('Nice');
+        expect(niceRes.cities).toEqual([]);
+
+        const nanRes = await locationService.searchLocations('Nan');
+        expect(nanRes.cities).toEqual([]);
+
+        // Mismatched "City, Country" returns empty cities AND empty countries
         const romeThailandRes = await locationService.searchLocations('Rome, Thailand');
-        expect(romeThailandRes.cities).toEqual([]);
+        expect(romeThailandRes).toEqual({
+            cities: [],
+            provinces: [],
+            countries: [],
+        });
     });
 });

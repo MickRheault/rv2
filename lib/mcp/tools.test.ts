@@ -9,6 +9,7 @@ const mockGetShopById = jest.fn();
 const mockGetBrands = jest.fn();
 const mockGetCategories = jest.fn();
 const mockGetCountries = jest.fn();
+const mockGetCities = jest.fn();
 const mockSearchLocations = jest.fn();
 jest.mock('@/services/motorcycles', () => ({
     motorcycleService: {
@@ -35,6 +36,7 @@ jest.mock('@/services/categories', () => ({
 jest.mock('@/services/locations', () => ({
     locationService: {
         getCountries: (...args: unknown[]) => mockGetCountries(...args),
+        getCities: (...args: unknown[]) => mockGetCities(...args),
         searchLocations: (...args: unknown[]) => mockSearchLocations(...args),
     },
 }));
@@ -44,6 +46,7 @@ beforeEach(() => {
     mockGetBrands.mockResolvedValue([]);
     mockGetCategories.mockResolvedValue([]);
     mockGetCountries.mockResolvedValue([]);
+    mockGetCities.mockResolvedValue([]);
     mockSearchLocations.mockResolvedValue({ cities: [], provinces: [], countries: [] });
 });
 
@@ -334,6 +337,77 @@ it('returns zero motorcycles with unresolvedFilters and skips getMotorcycles whe
         motorcycles: [],
         unresolvedFilters: [{ filter: 'city', value: 'Atlantis' }],
     });
+    expect(mockGetCities).not.toHaveBeenCalled();
+    expect(mockGetMotorcycles).not.toHaveBeenCalled();
+
+    // Mid-word substring collisions ("Nice" in "Venice", "Nan" in "Da Nang", "Go" in "Amigo") must NOT resolve
+    mockSearchLocations.mockResolvedValueOnce({
+        cities: [
+            {
+                id: 'city-venice',
+                name: 'Venice',
+                provinces: { country_code: 'IT', countries: { code: 'IT', name: 'Italy' } },
+            },
+        ],
+        provinces: [],
+        countries: [],
+    });
+    const niceAgainstVenice = await executeTool('list_motorcycles', { city: 'Nice' });
+    expect(JSON.parse(formatToolResultForLLM(niceAgainstVenice))).toEqual({
+        total: 0,
+        motorcycles: [],
+        unresolvedFilters: [{ filter: 'city', value: 'Nice' }],
+    });
+    expect(mockGetMotorcycles).not.toHaveBeenCalled();
+
+    mockSearchLocations.mockResolvedValueOnce({
+        cities: [
+            {
+                id: 'city-da-nang',
+                name: 'Da Nang',
+                provinces: { country_code: 'VN', countries: { code: 'VN', name: 'Vietnam' } },
+            },
+        ],
+        provinces: [],
+        countries: [],
+    });
+    const nanAgainstDaNang = await executeTool('list_motorcycles', { city: 'Nan' });
+    expect(JSON.parse(formatToolResultForLLM(nanAgainstDaNang))).toEqual({
+        total: 0,
+        motorcycles: [],
+        unresolvedFilters: [{ filter: 'city', value: 'Nan' }],
+    });
+    expect(mockGetMotorcycles).not.toHaveBeenCalled();
+
+    mockGetShops.mockResolvedValueOnce({
+        total: 1,
+        shops: [{ id: 'shop-amigo', provider_name: 'Amigo', slug: 'amigo' }],
+    });
+    const goAgainstAmigo = await executeTool('list_motorcycles', { shop: 'Go' });
+    expect(JSON.parse(formatToolResultForLLM(goAgainstAmigo))).toEqual({
+        total: 0,
+        motorcycles: [],
+        unresolvedFilters: [{ filter: 'shop', value: 'Go' }],
+    });
+    expect(mockGetMotorcycles).not.toHaveBeenCalled();
+
+    // Cross-tool countryCode on list_motorcycles (both valid and unresolved)
+    mockGetCountries.mockResolvedValueOnce([{ code: 'IT', name: 'Italy' }]);
+    mockGetMotorcycles.mockResolvedValueOnce({ total: 1, motorcycles: [motorcycle] });
+    const validMotoCountryCode = await executeTool('list_motorcycles', { countryCode: 'IT' });
+    expect(validMotoCountryCode.success).toBe(true);
+    expect(mockGetMotorcycles).toHaveBeenLastCalledWith(
+        expect.objectContaining({ countryCode: 'IT' })
+    );
+
+    mockGetMotorcycles.mockClear();
+    mockGetCountries.mockResolvedValueOnce([{ code: 'IT', name: 'Italy' }]);
+    const badMotoCountryCode = await executeTool('list_motorcycles', { countryCode: 'ZZ' });
+    expect(JSON.parse(formatToolResultForLLM(badMotoCountryCode))).toEqual({
+        total: 0,
+        motorcycles: [],
+        unresolvedFilters: [{ filter: 'countryCode', value: 'ZZ' }],
+    });
     expect(mockGetMotorcycles).not.toHaveBeenCalled();
 
     mockGetCountries.mockResolvedValueOnce([{ code: 'TH', name: 'Thailand' }]);
@@ -413,6 +487,25 @@ it('resolves countryCode by ISO code, country name, or diacritic/alias variant i
         ],
     });
     expect(mockGetShops).not.toHaveBeenCalled();
+
+    // Cross-tool country on list_shops (both valid and unresolved)
+    mockGetCountries.mockResolvedValueOnce(countries);
+    mockGetShops.mockResolvedValueOnce({ total: 1, shops: [sampleShop] });
+    const shopWithCountryAlias = await executeTool('list_shops', { country: 'Italy' });
+    expect(shopWithCountryAlias.success).toBe(true);
+    expect(mockGetShops).toHaveBeenLastCalledWith(
+        expect.objectContaining({ countryCode: 'IT' })
+    );
+
+    mockGetShops.mockClear();
+    mockGetCountries.mockResolvedValueOnce(countries);
+    const shopWithBadCountry = await executeTool('list_shops', { country: 'Narnia' });
+    expect(JSON.parse(formatToolResultForLLM(shopWithBadCountry))).toEqual({
+        total: 0,
+        shops: [],
+        unresolvedFilters: [{ filter: 'country', value: 'Narnia' }],
+    });
+    expect(mockGetShops).not.toHaveBeenCalled();
 });
 
 it('normalizes diacritics (including accented catalog cities), curated aliases, and "City, Country" inputs in a single searchLocations call while rejecting mismatched country qualifiers (#224)', async () => {
@@ -482,7 +575,8 @@ it('normalizes diacritics (including accented catalog cities), curated aliases, 
 
     mockGetCountries.mockResolvedValue(catalogCountries);
     mockSearchLocations.mockImplementation(async (query: string) => {
-        const key = stripTestAccents(query).replace(/\s+/g, ' ').trim();
+        const cityOnly = query.split(',')[0] ?? query;
+        const key = stripTestAccents(cityOnly).replace(/\s+/g, ' ').trim();
         const targets = [key, ...(aliasTargets[key] ?? [])];
         return {
             cities: catalogCities.filter((c) =>
@@ -548,7 +642,8 @@ it('normalizes diacritics (including accented catalog cities), curated aliases, 
     );
 
     mockSearchLocations.mockImplementation(async (query: string) => {
-        const key = stripTestAccents(query).replace(/\s+/g, ' ').trim();
+        const cityOnly = query.split(',')[0] ?? query;
+        const key = stripTestAccents(cityOnly).replace(/\s+/g, ' ').trim();
         const targets = [key, ...(aliasTargets[key] ?? [])];
         return {
             cities: catalogCities.filter((c) =>

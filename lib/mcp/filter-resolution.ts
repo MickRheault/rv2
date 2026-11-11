@@ -10,6 +10,7 @@ import {
     expandCityCandidates,
     extractBrandPrefixFromQuery,
     matchCountryFromCatalog,
+    matchesWholeTokenSequence,
     normalizeLocationKey,
     normalizeModelKey,
     parseCityCountryInput,
@@ -59,25 +60,20 @@ export async function resolveCountryCodeOrName(
 
 function selectBestCityMatch(
     cities: Array<{ id: string; name?: string }>,
-    candidateKeys: Set<string>,
-    primaryKey: string
+    candidates: string[]
 ): string | null {
+    const candidateKeys = new Set(candidates.map((c) => normalizeLocationKey(c)).filter(Boolean));
     const exact = cities.find((c) => {
         const nameKey = c.name ? normalizeLocationKey(c.name) : '';
         return nameKey.length > 0 && candidateKeys.has(nameKey);
     });
     if (exact) return exact.id;
 
-    const partial = cities.find((c) => {
-        const nameKey = c.name ? normalizeLocationKey(c.name) : '';
-        if (!nameKey) return false;
-        if (primaryKey.length >= 3 && nameKey.includes(primaryKey)) return true;
-        for (const candKey of candidateKeys) {
-            if (candKey.length >= 3 && nameKey.includes(candKey)) return true;
-        }
-        return false;
+    const wholeToken = cities.find((c) => {
+        if (!c.name) return false;
+        return candidates.some((cand) => matchesWholeTokenSequence(c.name!, cand));
     });
-    return partial?.id ?? null;
+    return wholeToken?.id ?? null;
 }
 
 export async function resolveCityId(
@@ -87,6 +83,8 @@ export async function resolveCityId(
         catalogCountries?: Array<{ code: string; name: string }>;
     } = {}
 ): Promise<string | null> {
+    if (typeof locationService?.searchLocations !== 'function') return null;
+
     const { cityPart, countryPart } = parseCityCountryInput(cityInput);
     if (!cityPart) return null;
 
@@ -114,42 +112,26 @@ export async function resolveCityId(
     const candidates = expandCityCandidates(cityPart);
     if (candidates.length === 0) return null;
 
-    const candidateKeys = new Set(candidates.map((c) => normalizeLocationKey(c)));
-    const primaryKey = normalizeLocationKey(cityPart);
+    const searchQuery =
+        countryPart
+            ? cityInput.trim()
+            : effectiveCountryCode
+              ? `${cityPart}, ${effectiveCountryCode}`
+              : cityPart;
 
-    const filterByCountry = (rows: any[]) =>
-        rows.filter((city) =>
-            doesCityMatchCountry(
-                city,
-                {
-                    expectedCountryCode: effectiveCountryCode,
-                    rawCountryQualifier: countryPart,
-                },
-                countries ?? []
-            )
-        );
+    const results = await locationService.searchLocations(searchQuery, 10);
+    const filteredCities = (results?.cities ?? []).filter((city: any) =>
+        doesCityMatchCountry(
+            city,
+            {
+                expectedCountryCode: effectiveCountryCode,
+                rawCountryQualifier: countryPart,
+            },
+            countries ?? []
+        )
+    );
 
-    if (typeof locationService?.searchLocations === 'function') {
-        const results = await locationService.searchLocations(cityPart, 10);
-        const matchedFromSearch = selectBestCityMatch(
-            filterByCountry(results?.cities ?? []),
-            candidateKeys,
-            primaryKey
-        );
-        if (matchedFromSearch) return matchedFromSearch;
-    }
-
-    if (typeof locationService?.getCities === 'function') {
-        const allCities = (await locationService.getCities()) ?? [];
-        const matchedFromCatalog = selectBestCityMatch(
-            filterByCountry(allCities),
-            candidateKeys,
-            primaryKey
-        );
-        if (matchedFromCatalog) return matchedFromCatalog;
-    }
-
-    return null;
+    return selectBestCityMatch(filteredCities, candidates);
 }
 
 export async function resolveShopFilter(
@@ -160,8 +142,9 @@ export async function resolveShopFilter(
     const trimmed = shopInput.trim();
     if (!trimmed) return null;
 
-    const countries =
-        scope.countryCode ? catalogCountries ?? (await loadCatalogCountries()) : catalogCountries ?? [];
+    const countries = scope.countryCode
+        ? (catalogCountries ?? (await loadCatalogCountries()))
+        : (catalogCountries ?? []);
 
     if (typeof (shopService as any)?.resolveShopReference === 'function') {
         return await (shopService as any).resolveShopReference(trimmed, scope, countries);
@@ -255,10 +238,13 @@ export async function resolveMotorcycleToolFilters(
     let categoryId: string | undefined;
 
     const rawCountry = asNonEmptyString(args.country);
+    const rawCountryCode = asNonEmptyString(args.countryCode);
     const rawCity = asNonEmptyString(args.city);
     const rawShop = asNonEmptyString(args.shop);
 
-    const needsCountries = Boolean(rawCountry || (rawCity && rawCity.includes(',')));
+    const needsCountries = Boolean(
+        rawCountry || rawCountryCode || (rawCity && rawCity.includes(','))
+    );
     const catalogCountries = needsCountries ? await loadCatalogCountries() : undefined;
 
     if (rawCountry) {
@@ -267,6 +253,15 @@ export async function resolveMotorcycleToolFilters(
             countryCode = resolved;
         } else {
             unresolvedFilters.push({ filter: 'country', value: rawCountry });
+        }
+    }
+
+    if (rawCountryCode) {
+        const resolved = await resolveCountryCodeOrName(rawCountryCode, catalogCountries);
+        if (!resolved || (countryCode && countryCode.toUpperCase() !== resolved.toUpperCase())) {
+            unresolvedFilters.push({ filter: 'countryCode', value: rawCountryCode });
+        } else {
+            countryCode = resolved;
         }
     }
 
@@ -344,9 +339,10 @@ export async function resolveShopToolFilters(
     let cityId: string | undefined;
 
     const rawCountryCode = asNonEmptyString(args.countryCode);
+    const rawCountry = asNonEmptyString(args.country);
     const rawCity = asNonEmptyString(args.city);
     const catalogCountries =
-        rawCountryCode || (rawCity && rawCity.includes(','))
+        rawCountryCode || rawCountry || (rawCity && rawCity.includes(','))
             ? await loadCatalogCountries()
             : undefined;
 
@@ -356,6 +352,15 @@ export async function resolveShopToolFilters(
             countryCode = resolved;
         } else {
             unresolvedFilters.push({ filter: 'countryCode', value: rawCountryCode });
+        }
+    }
+
+    if (rawCountry) {
+        const resolved = await resolveCountryCodeOrName(rawCountry, catalogCountries);
+        if (!resolved || (countryCode && countryCode.toUpperCase() !== resolved.toUpperCase())) {
+            unresolvedFilters.push({ filter: 'country', value: rawCountry });
+        } else {
+            countryCode = resolved;
         }
     }
 

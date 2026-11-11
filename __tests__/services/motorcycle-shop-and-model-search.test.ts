@@ -214,6 +214,10 @@ describe('Motorcycle Shop Filtering, Pagination & Universal Canonical Model Vari
     ];
 
     let shopSelects: string[] = [];
+    let motorcycleSelects: string[] = [];
+    let motorcycleOrExprs: string[] = [];
+    let motorcycleRanges: Array<[number, number]> = [];
+    let motorcycleEqCalls: Array<[string, any]> = [];
 
     function getNestedField(row: any, path: string): any {
         return path.split('.').reduce((acc, part) => (acc ? acc[part] : undefined), row);
@@ -284,6 +288,10 @@ describe('Motorcycle Shop Filtering, Pagination & Universal Canonical Model Vari
         jest.clearAllMocks();
         clearAllTtlCaches();
         shopSelects = [];
+        motorcycleSelects = [];
+        motorcycleOrExprs = [];
+        motorcycleRanges = [];
+        motorcycleEqCalls = [];
         (supabase.from as jest.Mock).mockImplementation((table: string) => {
             if (table === 'business_statuses') {
                 return {
@@ -299,7 +307,25 @@ describe('Motorcycle Shop Filtering, Pagination & Universal Canonical Model Vari
                 return createFilterableBuilder(catalogShops, (cols) => shopSelects.push(cols));
             }
             if (table === 'motorcycle_rentals') {
-                return createFilterableBuilder(catalogRows);
+                const builder = createFilterableBuilder(catalogRows, (cols) =>
+                    motorcycleSelects.push(cols)
+                );
+                const origOr = builder.or;
+                builder.or = jest.fn((expr: string) => {
+                    motorcycleOrExprs.push(expr);
+                    return origOr(expr);
+                });
+                const origRange = builder.range;
+                builder.range = jest.fn((from: number, to: number) => {
+                    motorcycleRanges.push([from, to]);
+                    return origRange(from, to);
+                });
+                const origEq = builder.eq;
+                builder.eq = jest.fn((col: string, val: any) => {
+                    motorcycleEqCalls.push([col, val]);
+                    return origEq(col, val);
+                });
+                return builder;
             }
             throw new Error(`Unexpected table: ${table}`);
         });
@@ -378,14 +404,51 @@ describe('Motorcycle Shop Filtering, Pagination & Universal Canonical Model Vari
         expect(detechPhrase.total).toBe(1);
         expect(detechPhrase.motorcycles.map((m) => m.id)).toEqual(['bike-detech-1']);
 
-        // Universal space/hyphen-insensitive model matching (arbitrary compound/hyphenated models)
-        const versysCompact = await motorcycleService.getMotorcycles({ model: 'versysx 300' });
+        // Universal space/hyphen-insensitive model matching via cached canonical model pre-resolution (zero 1000-row batch scans & zero %c%h%a%r% SQL patterns)
+        motorcycleSelects = [];
+        motorcycleOrExprs = [];
+        motorcycleRanges = [];
+        motorcycleEqCalls = [];
+
+        const versysCompact = await motorcycleService.getMotorcycles({
+            model: 'versysx 300',
+            limit: 5,
+            offset: 0,
+        });
         expect(versysCompact.total).toBe(1);
         expect(versysCompact.motorcycles.map((m) => m.id)).toEqual(['bike-kawa-1']);
 
-        const dtrackerCompact = await motorcycleService.getMotorcycles({ model: 'dtracker' });
+        const dtrackerCompact = await motorcycleService.getMotorcycles({
+            model: 'dtracker',
+            limit: 5,
+            offset: 0,
+        });
         expect(dtrackerCompact.total).toBe(1);
         expect(dtrackerCompact.motorcycles.map((m) => m.id)).toEqual(['bike-kawa-2']);
+        expect(motorcycleEqCalls).toContainEqual(['model', 'D-Tracker']);
+
+        // Direct DB .range(0, 4) pagination used instead of 1000-row batch loop, and no %c%h%a%r% model.ilike in .or()
+        expect(motorcycleRanges).toEqual([
+            [0, 4],
+            [0, 4],
+        ]);
+        for (const expr of motorcycleOrExprs) {
+            expect(expr).not.toContain('model.ilike.');
+        }
+
+        // Distinct models lookup is cached across calls (not re-queried on dtrackerCompact)
+        const distinctModelSelects = motorcycleSelects.filter(
+            (s) => s.replace(/\s+/g, ' ').trim() === 'model, availability_status'
+        );
+        expect(distinctModelSelects.length).toBeLessThanOrEqual(1);
+
+        // Unmatched model against non-empty distinct catalog short-circuits without running joined listing query
+        motorcycleSelects = [];
+        const unmatchedModel = await motorcycleService.getMotorcycles({
+            model: 'NonExistentModel999',
+        });
+        expect(unmatchedModel).toEqual({ motorcycles: [], total: 0 });
+        expect(motorcycleSelects).toEqual([]);
 
         const rninetCompact = await motorcycleService.getMotorcycles({ model: 'rninet' });
         expect(rninetCompact.total).toBe(1);

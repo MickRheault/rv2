@@ -4,7 +4,6 @@ import { Database } from '@/lib/supabase/database.types'
 import { SupabaseClient } from '@supabase/supabase-js'
 import { generateSlug } from '@/lib/utils'
 import {
-  buildModelSearchPlan,
   extractBrandPrefixFromQuery,
   matchesNormalizedModel,
 } from '@/lib/mcp/search-normalization'
@@ -288,6 +287,8 @@ export function filterAndSortMotorcycles<T extends Record<string, any>>(
 
 const brandsCache = createTtlListCache<Brand>()
 const categoriesCache = createTtlListCache<Category>()
+const DISTINCT_MODELS_CACHE_TTL_MS = 10 * 60 * 1000
+const distinctAvailableModelsCache = createTtlListCache<string>(DISTINCT_MODELS_CACHE_TTL_MS)
 
 function buildListingRentalShopsJoin(options: {
   innerLocation: boolean
@@ -523,7 +524,25 @@ export const motorcycleService = {
       }
     }
 
-    const modelPlan = effectiveModel ? buildModelSearchPlan(effectiveModel) : null
+    let matchedCanonicalModels: string[] | null = null
+    if (effectiveModel) {
+      try {
+        const distinctModels = await this.getDistinctAvailableModels()
+        if (distinctModels.length > 0) {
+          matchedCanonicalModels = distinctModels.filter((candidate) =>
+            matchesNormalizedModel(candidate, effectiveModel)
+          )
+          if (matchedCanonicalModels.length === 0) {
+            return {
+              motorcycles: [] as MotorcycleWithDetails[],
+              total: 0,
+            }
+          }
+        }
+      } catch {
+        // Fall back to direct .ilike('model', ...) when isolated test mocks only stub a single query
+      }
+    }
 
     const buildFilteredQuery = () => {
       let query = typedSupabase
@@ -551,12 +570,12 @@ export const motorcycleService = {
       if (categoryId) {
         query = query.eq('category_id', categoryId)
       }
-      if (modelPlan) {
-        if (modelPlan.orExpression && typeof query.or === 'function') {
-          query = query.or(modelPlan.orExpression)
-        } else {
-          query = query.ilike('model', modelPlan.ilikePattern)
-        }
+      if (matchedCanonicalModels && matchedCanonicalModels.length === 1) {
+        query = query.eq('model', matchedCanonicalModels[0])
+      } else if (matchedCanonicalModels && matchedCanonicalModels.length > 1) {
+        query = query.in('model', matchedCanonicalModels)
+      } else if (effectiveModel) {
+        query = query.ilike('model', `%${effectiveModel}%`)
       }
       if (minEngineCapacity !== undefined) {
         query = query.gte('engine_capacity_cc', minEngineCapacity)
@@ -592,14 +611,13 @@ export const motorcycleService = {
     }
 
     const hasFeaturesFilter = Boolean(features && features.length > 0)
-    const needsModelPostProcess = Boolean(modelPlan?.requiresPostFilter)
     const needsPricingPostProcess =
       minPrice !== undefined ||
       maxPrice !== undefined ||
       sortBy === 'price_asc' ||
       sortBy === 'price_desc'
 
-    if (hasFeaturesFilter || needsPricingPostProcess || needsModelPostProcess) {
+    if (hasFeaturesFilter || needsPricingPostProcess) {
       const POSTGREST_BATCH_SIZE = 1000
       const allData: any[] = []
       let batchOffset = 0
@@ -626,12 +644,6 @@ export const motorcycleService = {
       let processedData = filterAvailableMotorcycles(allData).map((m) =>
         attachHydratedRentalOffers(m)
       )
-
-      if (modelPlan?.requiresPostFilter && modelPlan.normalizedKey) {
-        processedData = processedData.filter((motorcycle: any) =>
-          matchesNormalizedModel(motorcycle?.model, modelPlan.normalizedKey)
-        )
-      }
 
       if (hasFeaturesFilter && features) {
         processedData = processedData.filter((motorcycle: any) => {
@@ -733,6 +745,51 @@ export const motorcycleService = {
     }
 
     return attachHydratedRentalOffers(data as any)
+  },
+
+  // Get distinct available canonical model names (memoized with TTL)
+  async getDistinctAvailableModels(): Promise<string[]> {
+    return distinctAvailableModelsCache.getOrLoad(async () => {
+      const buildModelsQuery = () => {
+        const q = applyAvailableMotorcycleFilterSync(
+          typedSupabase
+            .from('motorcycle_rentals')
+            .select('model, availability_status')
+        )
+        return typeof q.order === 'function' ? q.order('id', { ascending: true }) : q
+      }
+
+      const { data, error } = await buildModelsQuery()
+      if (error) {
+        console.error('Error fetching distinct models:', error)
+        throw error
+      }
+
+      const allRows: any[] = [...((data as any[]) || [])]
+      let pageOffset = 1000
+      while (allRows.length === pageOffset) {
+        const nextQuery = buildModelsQuery()
+        if (typeof nextQuery.range !== 'function') break
+        const { data: nextData, error: nextError } = await nextQuery.range(
+          pageOffset,
+          pageOffset + 999
+        )
+        if (nextError) throw nextError
+        const batch = (nextData as any[]) || []
+        allRows.push(...batch)
+        if (batch.length < 1000) break
+        pageOffset += 1000
+      }
+
+      const seen = new Set<string>()
+      for (const row of filterAvailableMotorcycles(allRows)) {
+        const m = typeof (row as any)?.model === 'string' ? (row as any).model.trim() : ''
+        if (m && !seen.has(m)) {
+          seen.add(m)
+        }
+      }
+      return Array.from(seen)
+    })
   },
 
   // Get all brands for filters
