@@ -1,5 +1,13 @@
 import { supabase } from '@/lib/supabase/client'
 import { Database } from '@/lib/supabase/database.types'
+import {
+  doesCityMatchCountry,
+  expandCityCandidates,
+  normalizeCountryTargetKey,
+  normalizeLocationKey,
+  parseCityCountryInput,
+  stripDiacritics,
+} from '@/lib/mcp/search-normalization'
 import { createTtlListCache } from './shops'
 
 type Country = Database['public']['Tables']['countries']['Row']
@@ -235,43 +243,119 @@ export const locationService = {
 
   // Search locations by text query
   async searchLocations(query: string, limit: number = 10) {
+    if (!query || !query.trim()) {
+      return {
+        cities: [] as CityWithLocation[],
+        provinces: [] as ProvinceWithCities[],
+        countries: [] as Country[],
+      }
+    }
+
+    const { cityPart, countryPart } = parseCityCountryInput(query)
+    const cityCandidates = expandCityCandidates(cityPart)
+      .map((c) => c.replace(/[(),]/g, ' ').trim())
+      .filter(Boolean)
+
+    if (cityCandidates.length === 0) {
+      return {
+        cities: [] as CityWithLocation[],
+        provinces: [] as ProvinceWithCities[],
+        countries: [] as Country[],
+      }
+    }
+
+    const applyNameSearch = (builder: any, terms: string[]) => {
+      if (terms.length === 1 || typeof builder.or !== 'function') {
+        return builder.ilike('name', `%${terms[0]}%`)
+      }
+      return builder.or(terms.map((t) => `name.ilike.%${t}%`).join(','))
+    }
+
+    const rawCountryTerm = (countryPart ?? query).trim()
+    const strippedCountryTerm = stripDiacritics(rawCountryTerm).replace(/[(),]/g, ' ').trim()
+    const canonicalCountryTerm = normalizeCountryTargetKey(rawCountryTerm).replace(/[(),]/g, ' ').trim()
+    const countryTerms = Array.from(
+      new Set([strippedCountryTerm, canonicalCountryTerm].filter(Boolean))
+    )
+    const countryOrExpr = countryTerms
+      .flatMap((t) => [`name.ilike.%${t}%`, `code.ilike.%${t}%`])
+      .join(',')
+
     // Search in cities, provinces, and countries
     const [cities, provinces, countries] = await Promise.all([
       // Search cities
-      supabase
-        .from('cities')
-        .select(`
+      applyNameSearch(
+        supabase
+          .from('cities')
+          .select(`
           *,
           provinces (
             *,
             countries (*)
           )
-        `)
-        .ilike('name', `%${query}%`)
-        .limit(limit),
+        `),
+        cityCandidates
+      ).limit(limit),
 
       // Search provinces
-      supabase
-        .from('provinces')
-        .select(`
+      applyNameSearch(
+        supabase
+          .from('provinces')
+          .select(`
           *,
           countries (*)
-        `)
-        .ilike('name', `%${query}%`)
-        .limit(limit),
+        `),
+        cityCandidates
+      ).limit(limit),
 
       // Search countries
       supabase
         .from('countries')
         .select('*')
-        .or(`name.ilike.%${query}%,code.ilike.%${query}%`)
+        .or(countryOrExpr)
         .limit(limit)
     ])
 
+    let cityRows = (cities.data as CityWithLocation[]) || []
+    let provinceRows = (provinces.data as ProvinceWithCities[]) || []
+    const countryRows = (countries.data as Country[]) || []
+
+    if (countryPart) {
+      const normCountryPart = normalizeLocationKey(countryPart)
+      const exactCountry = countryRows.find((c) => {
+        const codeKey = c.code?.trim().toLowerCase()
+        const nameKey = c.name ? normalizeLocationKey(c.name) : ''
+        return (
+          codeKey === normCountryPart ||
+          nameKey === normCountryPart ||
+          nameKey === canonicalCountryTerm
+        )
+      })
+      const expectedCountryCode = exactCountry?.code
+
+      cityRows = cityRows.filter((city) =>
+        doesCityMatchCountry(city, {
+          expectedCountryCode,
+          rawCountryQualifier: countryPart,
+          requireMetadataWhenConstrained: true,
+        })
+      )
+      provinceRows = provinceRows.filter((prov) =>
+        doesCityMatchCountry(
+          { provinces: prov },
+          {
+            expectedCountryCode,
+            rawCountryQualifier: countryPart,
+            requireMetadataWhenConstrained: true,
+          }
+        )
+      )
+    }
+
     return {
-      cities: cities.data as CityWithLocation[] || [],
-      provinces: provinces.data as ProvinceWithCities[] || [],
-      countries: countries.data as Country[] || []
+      cities: cityRows,
+      provinces: provinceRows,
+      countries: countryRows
     }
   },
 

@@ -1,11 +1,15 @@
 /** @jest-environment node */
 
-import { executeTool, formatToolResultForLLM } from './tools';
+import { executeTool, formatToolResultForLLM, openAITools } from './tools';
 
 const mockGetMotorcycles = jest.fn();
 const mockGetMotorcycleById = jest.fn();
 const mockGetShops = jest.fn();
 const mockGetShopById = jest.fn();
+const mockGetBrands = jest.fn();
+const mockGetCategories = jest.fn();
+const mockGetCountries = jest.fn();
+const mockSearchLocations = jest.fn();
 jest.mock('@/services/motorcycles', () => ({
     motorcycleService: {
         getMotorcycles: (...args: unknown[]) => mockGetMotorcycles(...args),
@@ -18,9 +22,30 @@ jest.mock('@/services/shops', () => ({
         getShopById: (...args: unknown[]) => mockGetShopById(...args),
     },
 }));
-jest.mock('@/services/brands', () => ({ brandService: {} }));
-jest.mock('@/services/categories', () => ({ categoryService: {} }));
-jest.mock('@/services/locations', () => ({ locationService: {} }));
+jest.mock('@/services/brands', () => ({
+    brandService: {
+        getBrands: (...args: unknown[]) => mockGetBrands(...args),
+    },
+}));
+jest.mock('@/services/categories', () => ({
+    categoryService: {
+        getCategories: (...args: unknown[]) => mockGetCategories(...args),
+    },
+}));
+jest.mock('@/services/locations', () => ({
+    locationService: {
+        getCountries: (...args: unknown[]) => mockGetCountries(...args),
+        searchLocations: (...args: unknown[]) => mockSearchLocations(...args),
+    },
+}));
+
+beforeEach(() => {
+    jest.clearAllMocks();
+    mockGetBrands.mockResolvedValue([]);
+    mockGetCategories.mockResolvedValue([]);
+    mockGetCountries.mockResolvedValue([]);
+    mockSearchLocations.mockResolvedValue({ cities: [], provinces: [], countries: [] });
+});
 
 // Match the joined relation names returned by motorcycleService.getMotorcycles.
 const motorcycle = {
@@ -298,6 +323,433 @@ it('exposes verbatim non-daily rentalOffers and real billing phrases with dailyR
         rentalOffers: [],
     });
 });
+
+it('returns zero motorcycles with unresolvedFilters and skips getMotorcycles when explicit entity filters cannot be resolved (#224)', async () => {
+    mockSearchLocations.mockResolvedValueOnce({ cities: [], provinces: [], countries: [] });
+
+    const cityMiss = await executeTool('list_motorcycles', { city: 'Atlantis' });
+    expect(cityMiss.success).toBe(true);
+    expect(JSON.parse(formatToolResultForLLM(cityMiss))).toEqual({
+        total: 0,
+        motorcycles: [],
+        unresolvedFilters: [{ filter: 'city', value: 'Atlantis' }],
+    });
+    expect(mockGetMotorcycles).not.toHaveBeenCalled();
+
+    mockGetCountries.mockResolvedValueOnce([{ code: 'TH', name: 'Thailand' }]);
+    mockGetShops.mockResolvedValueOnce({ total: 0, shops: [] });
+    mockGetBrands.mockResolvedValueOnce([{ id: 'b-honda', name: 'Honda' }]);
+    mockGetCategories.mockResolvedValueOnce([{ id: 'c-scooter', name: 'Scooter' }]);
+
+    const multiMiss = await executeTool('list_motorcycles', {
+        country: 'Narnia',
+        shop: 'Ghost Garage',
+        brand: 'NonExistentMoto',
+        category: 'Jet Ski',
+    });
+    expect(multiMiss.success).toBe(true);
+    expect(JSON.parse(formatToolResultForLLM(multiMiss))).toEqual({
+        total: 0,
+        motorcycles: [],
+        unresolvedFilters: [
+            { filter: 'country', value: 'Narnia' },
+            { filter: 'shop', value: 'Ghost Garage' },
+            { filter: 'brand', value: 'NonExistentMoto' },
+            { filter: 'category', value: 'Jet Ski' },
+        ],
+    });
+    expect(mockGetMotorcycles).not.toHaveBeenCalled();
+});
+
+it('resolves countryCode by ISO code, country name, or alias in list_shops and reports unresolved location filters (#224)', async () => {
+    const countries = [
+        { code: 'IT', name: 'Italy' },
+        { code: 'ES', name: 'Spain' },
+    ];
+    const sampleShop = {
+        id: 'shop-rome-1',
+        slug: 'roma-moto',
+        provider_name: 'Roma Moto',
+        rating: 4.9,
+        review_count: 42,
+        cities: {
+            name: 'Rome',
+            provinces: { countries: { name: 'Italy', code: 'IT' } },
+        },
+    };
+
+    for (const countryInput of ['IT', 'Italy', 'Italia']) {
+        mockGetCountries.mockResolvedValueOnce(countries);
+        mockGetShops.mockResolvedValueOnce({ total: 1, shops: [sampleShop] });
+
+        const okRes = await executeTool('list_shops', { countryCode: countryInput });
+        expect(okRes.success).toBe(true);
+        expect(mockGetShops).toHaveBeenLastCalledWith(
+            expect.objectContaining({ countryCode: 'IT' })
+        );
+    }
+
+    mockGetShops.mockClear();
+    mockGetCountries.mockResolvedValueOnce(countries);
+    mockSearchLocations.mockResolvedValueOnce({ cities: [], provinces: [], countries: [] });
+
+    const missRes = await executeTool('list_shops', {
+        countryCode: 'ZZ',
+        city: 'Atlantis',
+    });
+    expect(missRes.success).toBe(true);
+    expect(JSON.parse(formatToolResultForLLM(missRes))).toEqual({
+        total: 0,
+        shops: [],
+        unresolvedFilters: [
+            { filter: 'countryCode', value: 'ZZ' },
+            { filter: 'city', value: 'Atlantis' },
+        ],
+    });
+    expect(mockGetShops).not.toHaveBeenCalled();
+});
+
+it('normalizes diacritics, curated city/country aliases, and "City, Country" inputs while rejecting mismatched country qualifiers (#224)', async () => {
+    const catalogCountries = [
+        { code: 'IT', name: 'Italy' },
+        { code: 'ES', name: 'Spain' },
+        { code: 'TH', name: 'Thailand' },
+        { code: 'VN', name: 'Vietnam' },
+    ];
+    const catalogCities = [
+        {
+            id: 'city-rome',
+            name: 'Rome',
+            provinces: { country_code: 'IT', countries: { code: 'IT', name: 'Italy' } },
+        },
+        {
+            id: 'city-barcelona',
+            name: 'Barcelona',
+            provinces: { country_code: 'ES', countries: { code: 'ES', name: 'Spain' } },
+        },
+        {
+            id: 'city-milan',
+            name: 'Milan',
+            provinces: { country_code: 'IT', countries: { code: 'IT', name: 'Italy' } },
+        },
+        {
+            id: 'city-florence',
+            name: 'Florence',
+            provinces: { country_code: 'IT', countries: { code: 'IT', name: 'Italy' } },
+        },
+        {
+            id: 'city-naples',
+            name: 'Naples',
+            provinces: { country_code: 'IT', countries: { code: 'IT', name: 'Italy' } },
+        },
+        {
+            id: 'city-chiang-mai',
+            name: 'Chiang Mai',
+            provinces: { country_code: 'TH', countries: { code: 'TH', name: 'Thailand' } },
+        },
+        {
+            id: 'city-phuket',
+            name: 'Phuket',
+            provinces: { country_code: 'TH', countries: { code: 'TH', name: 'Thailand' } },
+        },
+        {
+            id: 'city-hanoi',
+            name: 'Hanoi',
+            provinces: { country_code: 'VN', countries: { code: 'VN', name: 'Vietnam' } },
+        },
+        {
+            id: 'city-da-nang',
+            name: 'Da Nang',
+            provinces: { country_code: 'VN', countries: { code: 'VN', name: 'Vietnam' } },
+        },
+        {
+            id: 'city-hcmc',
+            name: 'Ho Chi Minh City',
+            provinces: { country_code: 'VN', countries: { code: 'VN', name: 'Vietnam' } },
+        },
+    ];
+
+    mockGetCountries.mockResolvedValue(catalogCountries);
+    mockSearchLocations.mockImplementation(async (query: string) => ({
+        cities: catalogCities.filter((c) =>
+            c.name.toLowerCase().includes(query.toLowerCase())
+        ),
+        provinces: [],
+        countries: [],
+    }));
+    mockGetMotorcycles.mockResolvedValue({ total: 1, motorcycles: [motorcycle] });
+
+    const cityCases: Array<[string, string]> = [
+        ['Roma', 'city-rome'],
+        ['Rome, Italy', 'city-rome'],
+        ['Roma, Italia', 'city-rome'],
+        ['Rome, IT', 'city-rome'],
+        ['  Hà Nội  ', 'city-hanoi'],
+        ['Hanoi, Viet Nam', 'city-hanoi'],
+        ['Đà Nẵng', 'city-da-nang'],
+        ['danang', 'city-da-nang'],
+        ['Sài Gòn', 'city-hcmc'],
+        ['Saigon', 'city-hcmc'],
+        ['HCMC', 'city-hcmc'],
+        ['Ho Chi Minh', 'city-hcmc'],
+        ['chiangmai', 'city-chiang-mai'],
+        ['Chiang Mai, Thailand', 'city-chiang-mai'],
+        ['Phuket Town', 'city-phuket'],
+        ['Barcellona, España', 'city-barcelona'],
+        ['Milano', 'city-milan'],
+        ['Firenze', 'city-florence'],
+        ['Napoli', 'city-naples'],
+    ];
+
+    for (const [inputCity, expectedCityId] of cityCases) {
+        const res = await executeTool('list_motorcycles', { city: inputCity });
+        expect(res.success).toBe(true);
+        expect(mockGetMotorcycles).toHaveBeenLastCalledWith(
+            expect.objectContaining({ cityId: expectedCityId })
+        );
+    }
+
+    // Fallback when catalog stores "Ho Chi Minh" without "City"
+    mockSearchLocations.mockImplementation(async (query: string) => ({
+        cities:
+            'ho chi minh'.includes(query.toLowerCase())
+                ? [
+                      {
+                          id: 'city-hcm-short',
+                          name: 'Ho Chi Minh',
+                          provinces: {
+                              country_code: 'VN',
+                              countries: { code: 'VN', name: 'Vietnam' },
+                          },
+                      },
+                  ]
+                : [],
+        provinces: [],
+        countries: [],
+    }));
+    await executeTool('list_motorcycles', { city: 'Saigon' });
+    expect(mockGetMotorcycles).toHaveBeenLastCalledWith(
+        expect.objectContaining({ cityId: 'city-hcm-short' })
+    );
+
+    mockSearchLocations.mockImplementation(async (query: string) => ({
+        cities: catalogCities.filter((c) =>
+            c.name.toLowerCase().includes(query.toLowerCase())
+        ),
+        provinces: [],
+        countries: [],
+    }));
+
+    // Mismatched "City, Country" qualifier must fail resolution instead of returning Rome, Italy
+    mockGetMotorcycles.mockClear();
+    const mismatchQualifier = await executeTool('list_motorcycles', {
+        city: 'Rome, Thailand',
+    });
+    expect(JSON.parse(formatToolResultForLLM(mismatchQualifier))).toEqual({
+        total: 0,
+        motorcycles: [],
+        unresolvedFilters: [{ filter: 'city', value: 'Rome, Thailand' }],
+    });
+    expect(mockGetMotorcycles).not.toHaveBeenCalled();
+
+    // Mismatched separate city + country arguments must also fail resolution
+    const mismatchSeparate = await executeTool('list_motorcycles', {
+        city: 'Rome',
+        country: 'Thailand',
+    });
+    expect(JSON.parse(formatToolResultForLLM(mismatchSeparate))).toEqual({
+        total: 0,
+        motorcycles: [],
+        unresolvedFilters: [{ filter: 'city', value: 'Rome' }],
+    });
+    expect(mockGetMotorcycles).not.toHaveBeenCalled();
+});
+
+it('supports shop filter (UUID, name, slug, and multi-branch chain) and pagination offset in list_motorcycles (#224)', async () => {
+    const listMotorcyclesSchema = openAITools.find(
+        (t) => t.type === 'function' && t.function.name === 'list_motorcycles'
+    );
+    expect((listMotorcyclesSchema as any)?.function?.parameters?.properties?.shop).toMatchObject({
+        type: 'string',
+    });
+    expect((listMotorcyclesSchema as any)?.function?.parameters?.properties?.offset).toMatchObject({
+        type: 'number',
+        default: 0,
+    });
+
+    const validShopUuid = '53529565-40d9-41f5-98e4-d2ed1f1d7ffd';
+    const unknownShopUuid = '00000000-0000-4000-8000-000000000000';
+
+    // 1. Valid shop UUID verified via getShopById + non-zero offset
+    mockGetShopById.mockResolvedValueOnce({
+        id: validShopUuid,
+        provider_name: 'Riders Corner',
+        slug: 'riders-corner-chiang-mai',
+    });
+    mockGetMotorcycles.mockResolvedValueOnce({ total: 15, motorcycles: [motorcycle] });
+
+    const byUuid = await executeTool('list_motorcycles', {
+        shop: validShopUuid,
+        offset: 10,
+        limit: 5,
+    });
+    expect(byUuid.success).toBe(true);
+    expect(mockGetShopById).toHaveBeenCalledWith(validShopUuid);
+    expect(mockGetMotorcycles).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+            shopId: validShopUuid,
+            offset: 10,
+            limit: 5,
+        })
+    );
+
+    // 2. Unknown shop UUID reports unresolvedFilters without calling getMotorcycles
+    mockGetMotorcycles.mockClear();
+    mockGetShopById.mockRejectedValueOnce(new Error('Shop not found or not available'));
+
+    const badUuid = await executeTool('list_motorcycles', { shop: unknownShopUuid });
+    expect(JSON.parse(formatToolResultForLLM(badUuid))).toEqual({
+        total: 0,
+        motorcycles: [],
+        unresolvedFilters: [{ filter: 'shop', value: unknownShopUuid }],
+    });
+    expect(mockGetMotorcycles).not.toHaveBeenCalled();
+
+    // 3. Shop name scoped by resolved city
+    mockSearchLocations.mockResolvedValueOnce({
+        cities: [
+            {
+                id: 'city-chiang-mai',
+                name: 'Chiang Mai',
+                provinces: { country_code: 'TH', countries: { code: 'TH', name: 'Thailand' } },
+            },
+        ],
+        provinces: [],
+        countries: [],
+    });
+    mockGetShops.mockResolvedValueOnce({
+        total: 1,
+        shops: [
+            {
+                id: 'shop-rc-1',
+                provider_name: 'Riders Corner',
+                slug: 'riders-corner-chiang-mai',
+            },
+        ],
+    });
+    mockGetMotorcycles.mockResolvedValueOnce({ total: 3, motorcycles: [motorcycle] });
+
+    await executeTool('list_motorcycles', {
+        city: 'Chiang Mai',
+        shop: 'Riders Corner',
+    });
+    expect(mockGetShops).toHaveBeenCalledWith(
+        expect.objectContaining({
+            cityId: 'city-chiang-mai',
+            query: 'Riders Corner',
+        })
+    );
+    expect(mockGetMotorcycles).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+            cityId: 'city-chiang-mai',
+            shopId: 'shop-rc-1',
+        })
+    );
+
+    // 4. Shop slug resolution (e.g. "riders-corner-chiang-mai" when provider_name is "Riders Corner")
+    mockGetShops.mockResolvedValueOnce({
+        total: 1,
+        shops: [
+            {
+                id: 'shop-rc-1',
+                provider_name: 'Riders Corner',
+                slug: 'riders-corner-chiang-mai',
+            },
+        ],
+    });
+    mockGetMotorcycles.mockResolvedValueOnce({ total: 3, motorcycles: [motorcycle] });
+
+    await executeTool('list_motorcycles', {
+        shop: 'riders-corner-chiang-mai',
+    });
+    expect(mockGetMotorcycles).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+            shopId: 'shop-rc-1',
+        })
+    );
+
+    // 5. Multiple matching shops (chain) pass shopIds so no branch's inventory is missed
+    mockGetShops.mockResolvedValueOnce({
+        total: 2,
+        shops: [
+            { id: 'shop-tigit-hn', provider_name: 'Tigit Motorbikes Hanoi', slug: 'tigit-hanoi' },
+            { id: 'shop-tigit-hcm', provider_name: 'Tigit Motorbikes HCMC', slug: 'tigit-hcmc' },
+        ],
+    });
+    mockGetMotorcycles.mockResolvedValueOnce({ total: 8, motorcycles: [motorcycle] });
+
+    await executeTool('list_motorcycles', { shop: 'Tigit Motorbikes' });
+    expect(mockGetMotorcycles).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+            shopIds: ['shop-tigit-hn', 'shop-tigit-hcm'],
+        })
+    );
+});
+
+it('splits leading catalog brand names from query in list_motorcycles without mid-word false splits (#224)', async () => {
+    const catalogBrands = [
+        { id: 'b-bmw', name: 'BMW' },
+        { id: 'b-detech', name: 'Detech' },
+        { id: 'b-honda', name: 'Honda' },
+        { id: 'b-re', name: 'Royal Enfield' },
+        { id: 'b-win', name: 'Win' },
+    ];
+    mockGetBrands.mockResolvedValue(catalogBrands);
+    mockGetMotorcycles.mockResolvedValue({ total: 1, motorcycles: [motorcycle] });
+
+    await executeTool('list_motorcycles', { query: 'BMW F 800 GS' });
+    expect(mockGetMotorcycles).toHaveBeenLastCalledWith(
+        expect.objectContaining({ brandId: 'b-bmw', model: 'F 800 GS' })
+    );
+
+    await executeTool('list_motorcycles', { query: 'Detech Win' });
+    expect(mockGetMotorcycles).toHaveBeenLastCalledWith(
+        expect.objectContaining({ brandId: 'b-detech', model: 'Win' })
+    );
+
+    await executeTool('list_motorcycles', { query: 'Honda Air Blade' });
+    expect(mockGetMotorcycles).toHaveBeenLastCalledWith(
+        expect.objectContaining({ brandId: 'b-honda', model: 'Air Blade' })
+    );
+
+    await executeTool('list_motorcycles', { query: 'Royal Enfield Himalayan 450' });
+    expect(mockGetMotorcycles).toHaveBeenLastCalledWith(
+        expect.objectContaining({ brandId: 'b-re', model: 'Himalayan 450' })
+    );
+
+    // Duplicate brand prefix when brand filter is also explicitly provided
+    await executeTool('list_motorcycles', { brand: 'Honda', query: 'Honda ADV 160' });
+    expect(mockGetMotorcycles).toHaveBeenLastCalledWith(
+        expect.objectContaining({ brandId: 'b-honda', model: 'ADV 160' })
+    );
+
+    // Brand-only query sets brandId and clears model
+    await executeTool('list_motorcycles', { query: 'BMW' });
+    expect(mockGetMotorcycles).toHaveBeenLastCalledWith(
+        expect.objectContaining({ brandId: 'b-bmw', model: undefined })
+    );
+
+    // Must NOT split inside a word ("Win" must not split "Winner X")
+    await executeTool('list_motorcycles', { query: 'Winner X' });
+    expect(mockGetMotorcycles).toHaveBeenLastCalledWith(
+        expect.objectContaining({ brandId: undefined, model: 'Winner X' })
+    );
+});
+
+
+
+
+
 
 
 

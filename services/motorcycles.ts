@@ -4,6 +4,10 @@ import { Database } from '@/lib/supabase/database.types'
 import { SupabaseClient } from '@supabase/supabase-js'
 import { generateSlug } from '@/lib/utils'
 import {
+  buildModelSearchPlan,
+  matchesNormalizedModel,
+} from '@/lib/mcp/search-normalization'
+import {
   compareMotorcyclesByPrice,
   matchesDailyPriceRange,
   resolveMotorcycleRentalOffers,
@@ -81,6 +85,8 @@ export interface SearchFilters {
   cityId?: string
   provinceId?: string
   countryCode?: string
+  shopId?: string
+  shopIds?: string[]
   brandId?: string
   categoryId?: string
   model?: string
@@ -450,6 +456,8 @@ export const motorcycleService = {
       cityId,
       provinceId,
       countryCode,
+      shopId,
+      shopIds,
       brandId,
       categoryId,
       model,
@@ -473,7 +481,8 @@ export const motorcycleService = {
         : ''
 
     const activeStatusIds = await getActiveBusinessStatusIds()
-    const effectiveModel = model || searchQuery
+    const effectiveModel = (model || searchQuery)?.trim() || undefined
+    const modelPlan = effectiveModel ? buildModelSearchPlan(effectiveModel) : null
 
     const buildFilteredQuery = () => {
       let query = typedSupabase
@@ -492,14 +501,21 @@ export const motorcycleService = {
         activeStatusIds
       )
 
+      if (shopId) {
+        query = query.eq('shop_id', shopId)
+      } else if (shopIds && shopIds.length === 1) {
+        query = query.eq('shop_id', shopIds[0])
+      } else if (shopIds && shopIds.length > 1) {
+        query = query.in('shop_id', shopIds)
+      }
       if (brandId) {
         query = query.eq('brand_id', brandId)
       }
       if (categoryId) {
         query = query.eq('category_id', categoryId)
       }
-      if (effectiveModel) {
-        query = query.ilike('model', `%${effectiveModel}%`)
+      if (modelPlan) {
+        query = query.ilike('model', modelPlan.ilikePattern)
       }
       if (minEngineCapacity !== undefined) {
         query = query.gte('engine_capacity_cc', minEngineCapacity)
@@ -535,13 +551,14 @@ export const motorcycleService = {
     }
 
     const hasFeaturesFilter = Boolean(features && features.length > 0)
+    const needsModelPostProcess = Boolean(modelPlan?.requiresPostFilter)
     const needsPricingPostProcess =
       minPrice !== undefined ||
       maxPrice !== undefined ||
       sortBy === 'price_asc' ||
       sortBy === 'price_desc'
 
-    if (hasFeaturesFilter || needsPricingPostProcess) {
+    if (hasFeaturesFilter || needsPricingPostProcess || needsModelPostProcess) {
       const POSTGREST_BATCH_SIZE = 1000
       const allData: any[] = []
       let batchOffset = 0
@@ -568,6 +585,12 @@ export const motorcycleService = {
       let processedData = filterAvailableMotorcycles(allData).map((m) =>
         attachHydratedRentalOffers(m)
       )
+
+      if (modelPlan?.requiresPostFilter && modelPlan.normalizedKey) {
+        processedData = processedData.filter((motorcycle: any) =>
+          matchesNormalizedModel(motorcycle?.model, modelPlan.normalizedKey)
+        )
+      }
 
       if (hasFeaturesFilter && features) {
         processedData = processedData.filter((motorcycle: any) => {
