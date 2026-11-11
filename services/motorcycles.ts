@@ -14,6 +14,8 @@ import {
   MOTORCYCLE_LISTING_CONDITIONS_SELECT,
   MOTORCYCLE_LISTING_OFFERS_COLUMNS,
   MOTORCYCLE_LISTING_PRICING_JOINS,
+  RENTAL_SHOP_CONDITIONS_SELECT,
+  RENTAL_SHOP_INCLUSIONS_SELECT,
   SHOP_MOTORCYCLE_RENTALS_SELECT,
   applyAvailableMotorcycleFilterSync,
   attachHydratedRentalOffers,
@@ -43,11 +45,18 @@ export interface MotorcycleWithDetails extends MotorcycleRental {
         countries: Country | null
       } | null
     } | null
-    rental_shop_inclusions?: Database['public']['Tables']['rental_shop_inclusions']['Row'][]
+    rental_shop_inclusions?: Array<
+      Pick<Database['public']['Tables']['rental_shop_inclusions']['Row'], 'id' | 'shop_id' | 'inclusion_text'> &
+        Partial<Database['public']['Tables']['rental_shop_inclusions']['Row']>
+    >
     rental_shop_conditions?: Array<
-      Database['public']['Tables']['rental_shop_conditions']['Row'] & {
-        condition_types: ConditionType | null
-      }
+      Pick<
+        Database['public']['Tables']['rental_shop_conditions']['Row'],
+        'id' | 'shop_id' | 'condition_type_id' | 'condition_value' | 'notes'
+      > &
+        Partial<Database['public']['Tables']['rental_shop_conditions']['Row']> & {
+          condition_types: Pick<ConditionType, 'id' | 'name' | 'description'> | ConditionType | null
+        }
     >
   }) | null
   brands: Brand | null
@@ -96,6 +105,7 @@ export interface SearchFilters {
   minEngineCapacity?: number
   maxEngineCapacity?: number
   features?: string[]
+  includeConditions?: boolean
   availability?: string
   query?: string // Search in model name or brand
   sortBy?: 'price_asc' | 'price_desc' | 'engine_capacity_asc' | 'engine_capacity_desc' | 'newest' | 'rating_desc'
@@ -291,9 +301,14 @@ const categoriesCache = createTtlListCache<Category>()
 function buildListingRentalShopsJoin(options: {
   innerLocation: boolean
   innerCountry?: boolean
+  includeShopInclusions?: boolean
 }): string {
   const locJoin = options.innerLocation ? '!inner' : ''
   const countryJoin = options.innerCountry ? '!inner' : ''
+  const shopInclusionsFragment = options.includeShopInclusions
+    ? `,
+          ${RENTAL_SHOP_INCLUSIONS_SELECT}`
+    : ''
   return `rental_shops!inner (
           id,
           slug,
@@ -302,7 +317,7 @@ function buildListingRentalShopsJoin(options: {
           city_id,
           rating,
           review_count,
-          business_status_id,
+          business_status_id${shopInclusionsFragment},
           cities${locJoin} (
             id,
             name,
@@ -466,6 +481,7 @@ export const motorcycleService = {
       minEngineCapacity,
       maxEngineCapacity,
       features,
+      includeConditions = false,
       sortBy = 'newest',
       limit = 20,
       offset = 0
@@ -479,6 +495,11 @@ export const motorcycleService = {
         )`
         : ''
 
+    const conditionsSelectFragment = includeConditions
+      ? `,
+          ${MOTORCYCLE_LISTING_CONDITIONS_SELECT}`
+      : ''
+
     const activeStatusIds = await getActiveBusinessStatusIds()
     const effectiveModel = model || searchQuery
 
@@ -486,9 +507,8 @@ export const motorcycleService = {
       let query = typedSupabase
         .from('motorcycle_rentals')
         .select(`
-          ${MOTORCYCLE_LISTING_BASE_COLUMNS},
-          ${MOTORCYCLE_LISTING_CONDITIONS_SELECT},
-          ${buildListingRentalShopsJoin({ innerLocation: true })},
+          ${MOTORCYCLE_LISTING_BASE_COLUMNS}${conditionsSelectFragment},
+          ${buildListingRentalShopsJoin({ innerLocation: true, includeShopInclusions: Boolean(includeConditions) })},
           brands (id, name),
           categories (id, name, description)${featureSelectFragment},
           ${MOTORCYCLE_LISTING_PRICING_JOINS}
@@ -639,11 +659,8 @@ export const motorcycleService = {
             )
           ),
           business_statuses (*),
-          rental_shop_inclusions (*),
-          rental_shop_conditions (
-            *,
-            condition_types (*)
-          )
+          ${RENTAL_SHOP_INCLUSIONS_SELECT},
+          ${RENTAL_SHOP_CONDITIONS_SELECT}
         ),
         brands (*),
         categories (*),

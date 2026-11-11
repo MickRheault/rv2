@@ -14,28 +14,15 @@ interface RawConditionType {
     description?: string | null;
 }
 
-interface RawShopCondition {
+interface RawConditionRow {
     condition_type_id?: string | null;
     condition_value?: string | number | null;
-    value?: string | number | null;
     notes?: string | null;
-    name?: string | null;
-    condition_type_name?: string | null;
     condition_types?: RawConditionType | RawConditionType[] | null;
 }
 
 interface RawShopInclusion {
     inclusion_text?: string | null;
-}
-
-interface RawMotorcycleCondition {
-    condition_type_id?: string | null;
-    condition_value?: string | number | null;
-    value?: string | number | null;
-    notes?: string | null;
-    name?: string | null;
-    condition_type_name?: string | null;
-    condition_types?: RawConditionType | RawConditionType[] | null;
 }
 
 function toNonEmptyTrimmedString(value: unknown): string | null {
@@ -61,15 +48,10 @@ export function unwrapConditionType(
 
 export function resolveConditionTypeName(row: {
     condition_type_id?: string | null;
-    name?: string | null;
-    condition_type_name?: string | null;
     condition_types?: RawConditionType | RawConditionType[] | null;
 }): string | null {
     const ct = unwrapConditionType(row.condition_types);
-    const explicit =
-        toNonEmptyTrimmedString(ct?.name) ??
-        toNonEmptyTrimmedString(row.name) ??
-        toNonEmptyTrimmedString(row.condition_type_name);
+    const explicit = toNonEmptyTrimmedString(ct?.name);
     if (explicit) return explicit;
 
     const typeId = toNonEmptyTrimmedString(row.condition_type_id);
@@ -117,21 +99,19 @@ export function buildConditionSummary(params: {
     };
 }
 
-export function formatShopConditions(rawConditions: unknown): FormattedCondition[] {
+export function formatConditions(rawConditions: unknown): FormattedCondition[] {
     if (!Array.isArray(rawConditions)) return [];
 
     const formatted: FormattedCondition[] = [];
     for (const item of rawConditions) {
         if (!item || typeof item !== 'object') continue;
-        const row = item as RawShopCondition;
+        const row = item as RawConditionRow;
         const ct = unwrapConditionType(row.condition_types);
         const name = resolveConditionTypeName(row);
-        const primaryValue =
-            toNonEmptyTrimmedString(row.condition_value) ??
-            toNonEmptyTrimmedString(row.value);
+        const conditionValue = toNonEmptyTrimmedString(row.condition_value);
         const rawNotes = toNonEmptyTrimmedString(row.notes);
-        const value = primaryValue ?? rawNotes;
-        const notes = primaryValue ? rawNotes : null;
+        const value = conditionValue ?? rawNotes;
+        const notes = conditionValue ? rawNotes : null;
         const description = toNonEmptyTrimmedString(ct?.description);
 
         const built = buildConditionSummary({ name, value, notes, description });
@@ -141,6 +121,9 @@ export function formatShopConditions(rawConditions: unknown): FormattedCondition
     }
     return formatted;
 }
+
+export const formatShopConditions = formatConditions;
+export const formatMotorcycleConditions = formatConditions;
 
 export function formatShopInclusions(rawInclusions: unknown): string[] {
     if (!Array.isArray(rawInclusions)) return [];
@@ -161,31 +144,6 @@ export function formatShopInclusions(rawInclusions: unknown): string[] {
         inclusions.push(text);
     }
     return inclusions;
-}
-
-export function formatMotorcycleConditions(rawConditions: unknown): FormattedCondition[] {
-    if (!Array.isArray(rawConditions)) return [];
-
-    const formatted: FormattedCondition[] = [];
-    for (const item of rawConditions) {
-        if (!item || typeof item !== 'object') continue;
-        const row = item as RawMotorcycleCondition;
-        const ct = unwrapConditionType(row.condition_types);
-        const name = resolveConditionTypeName(row);
-        const explicitValue =
-            toNonEmptyTrimmedString(row.condition_value) ??
-            toNonEmptyTrimmedString(row.value);
-        const rawNotes = toNonEmptyTrimmedString(row.notes);
-        const value = explicitValue ?? rawNotes;
-        const notes = explicitValue ? rawNotes : null;
-        const description = toNonEmptyTrimmedString(ct?.description);
-
-        const built = buildConditionSummary({ name, value, notes, description });
-        if (built) {
-            formatted.push(built);
-        }
-    }
-    return formatted;
 }
 
 export function normalizeConditionsDetails(rawDetails: unknown): unknown {
@@ -217,79 +175,4 @@ export function normalizeConditionsDetails(rawDetails: unknown): unknown {
         return Object.keys(cloned).length > 0 ? cloned : null;
     }
     return null;
-}
-
-function omitEditorialFields<T extends Record<string, unknown>>(obj: T): Omit<T, 'content_sections'> {
-    const { content_sections: _omitted, ...rest } = obj;
-    return rest;
-}
-
-function sanitizeCountryNode(rawCountry: unknown): unknown {
-    if (!rawCountry || typeof rawCountry !== 'object') return rawCountry;
-    if (Array.isArray(rawCountry)) {
-        return rawCountry.map((item) => sanitizeCountryNode(item));
-    }
-    return omitEditorialFields(rawCountry as Record<string, unknown>);
-}
-
-function sanitizeProvinceNode(rawProvince: unknown): unknown {
-    if (!rawProvince || typeof rawProvince !== 'object') return rawProvince;
-    if (Array.isArray(rawProvince)) {
-        return rawProvince.map((item) => sanitizeProvinceNode(item));
-    }
-    const cleaned = omitEditorialFields(rawProvince as Record<string, unknown>);
-    if ('countries' in cleaned) {
-        return {
-            ...cleaned,
-            countries: sanitizeCountryNode(cleaned.countries),
-        };
-    }
-    return cleaned;
-}
-
-function sanitizeCityNode(rawCity: unknown): unknown {
-    if (!rawCity || typeof rawCity !== 'object') return rawCity;
-    if (Array.isArray(rawCity)) {
-        return rawCity.map((item) => sanitizeCityNode(item));
-    }
-    const cleaned = omitEditorialFields(rawCity as Record<string, unknown>);
-    if ('provinces' in cleaned) {
-        return {
-            ...cleaned,
-            provinces: sanitizeProvinceNode(cleaned.provinces),
-        };
-    }
-    return cleaned;
-}
-
-export function sanitizeShopForTool<T>(rawShop: T): T {
-    if (!rawShop || typeof rawShop !== 'object') return rawShop;
-    if (Array.isArray(rawShop)) {
-        return rawShop.map((item) => sanitizeShopForTool(item)) as unknown as T;
-    }
-    const cleaned = omitEditorialFields(rawShop as Record<string, unknown>);
-    return {
-        ...cleaned,
-        ...('cities' in cleaned ? { cities: sanitizeCityNode(cleaned.cities) } : {}),
-        ...('provinces' in cleaned ? { provinces: sanitizeProvinceNode(cleaned.provinces) } : {}),
-        ...('countries' in cleaned ? { countries: sanitizeCountryNode(cleaned.countries) } : {}),
-        ...('motorcycle_rentals' in cleaned && Array.isArray(cleaned.motorcycle_rentals)
-            ? { motorcycle_rentals: cleaned.motorcycle_rentals.map((m) => sanitizeMotorcycleForTool(m)) }
-            : {}),
-    } as unknown as T;
-}
-
-export function sanitizeMotorcycleForTool<T>(rawMotorcycle: T): T {
-    if (!rawMotorcycle || typeof rawMotorcycle !== 'object') return rawMotorcycle;
-    if (Array.isArray(rawMotorcycle)) {
-        return rawMotorcycle.map((item) => sanitizeMotorcycleForTool(item)) as unknown as T;
-    }
-    const cleaned = omitEditorialFields(rawMotorcycle as Record<string, unknown>);
-    return {
-        ...cleaned,
-        ...('rental_shops' in cleaned
-            ? { rental_shops: sanitizeShopForTool(cleaned.rental_shops) }
-            : {}),
-        ...('cities' in cleaned ? { cities: sanitizeCityNode(cleaned.cities) } : {}),
-    } as unknown as T;
 }

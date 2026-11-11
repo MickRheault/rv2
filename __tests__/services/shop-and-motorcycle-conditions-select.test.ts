@@ -12,15 +12,33 @@ jest.mock('@/lib/supabase/client', () => ({
   },
 }))
 
+function extractRelationBlock(selectStr: string, relationName: string): string {
+  const startIdx = selectStr.indexOf(relationName)
+  if (startIdx === -1) return ''
+  const openParenIdx = selectStr.indexOf('(', startIdx)
+  if (openParenIdx === -1) return ''
+  let depth = 0
+  for (let i = openParenIdx; i < selectStr.length; i++) {
+    if (selectStr[i] === '(') depth += 1
+    else if (selectStr[i] === ')') {
+      depth -= 1
+      if (depth === 0) {
+        return selectStr.slice(openParenIdx + 1, i)
+      }
+    }
+  }
+  return ''
+}
+
 describe('Shop & Motorcycle Conditions Select Parity (#223)', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     clearAllTtlCaches()
   })
 
-  it('selects rental_shop_conditions with condition_types in shopService.getShopById and shopService.getShops alongside rental_shop_inclusions', async () => {
+  it('always selects narrow rental_shop_conditions in getShopById and gates rental_shop_conditions in getShops behind includeConditions (#223)', async () => {
     let getByIdSelect = ''
-    let getShopsSelect = ''
+    const getShopsSelects: string[] = []
 
     const openingHoursCondition = {
       id: 'cond-hours-1',
@@ -68,7 +86,7 @@ describe('Shop & Motorcycle Conditions Select Parity (#223)', () => {
         const builder: any = {
           select: jest.fn((cols: string, opts?: any) => {
             if (opts?.count === 'exact') {
-              getShopsSelect = cols
+              getShopsSelects.push(cols)
             } else {
               getByIdSelect = cols
             }
@@ -111,19 +129,35 @@ describe('Shop & Motorcycle Conditions Select Parity (#223)', () => {
     })
 
     const shopById = await shopService.getShopById('shop-riders-corner')
-    expect(getByIdSelect).toMatch(/rental_shop_conditions\s*\([\s\S]*?condition_types\s*\(\*\)/)
-    expect(getByIdSelect).toContain('rental_shop_inclusions')
+    const byIdConditionsBlock = extractRelationBlock(getByIdSelect, 'rental_shop_conditions')
+    expect(byIdConditionsBlock).toContain('condition_value')
+    expect(byIdConditionsBlock).toContain('notes')
+    expect(byIdConditionsBlock).toMatch(/condition_types\s*\([\s\S]*?name/)
+    expect(byIdConditionsBlock).not.toContain('*')
     expect(shopById.rental_shop_conditions).toEqual([openingHoursCondition])
 
-    const shopsList = await shopService.getShops({ query: 'Riders Corner' })
-    expect(getShopsSelect).toMatch(/rental_shop_conditions\s*\([\s\S]*?condition_types\s*\(\*\)/)
-    expect(getShopsSelect).toContain('rental_shop_inclusions')
-    expect(shopsList.shops[0].rental_shop_conditions).toEqual([openingHoursCondition])
+    // Default public getShops omits rental_shop_conditions (#180 egress invariant)
+    await shopService.getShops({ query: 'Riders Corner' })
+    expect(getShopsSelects[0]).not.toContain('rental_shop_conditions')
+
+    // Opt-in includeConditions selects narrow rental_shop_inclusions and rental_shop_conditions without *
+    const shopsListWithConditions = await shopService.getShops({
+      query: 'Riders Corner',
+      includeConditions: true,
+    })
+    const inclusionsBlock = extractRelationBlock(getShopsSelects[1], 'rental_shop_inclusions')
+    const conditionsBlock = extractRelationBlock(getShopsSelects[1], 'rental_shop_conditions')
+    expect(inclusionsBlock).toContain('inclusion_text')
+    expect(inclusionsBlock).not.toContain('*')
+    expect(conditionsBlock).toContain('condition_value')
+    expect(conditionsBlock).toMatch(/condition_types\s*\([\s\S]*?name/)
+    expect(conditionsBlock).not.toContain('*')
+    expect(shopsListWithConditions.shops[0].rental_shop_conditions).toEqual([openingHoursCondition])
   })
 
-  it('selects per-motorcycle conditions_details and motorcycle_conditions with condition_types in SHOP_MOTORCYCLE_RENTALS_SELECT, getMotorcycles, and getMotorcycleById', async () => {
-    let shopByIdSelect = ''
-    let listMotorcyclesSelect = ''
+  it('gates per-motorcycle conditions & shop inclusions behind opt-in options while narrowing getMotorcycleById shop joins (#223)', async () => {
+    const shopByIdSelects: string[] = []
+    const listMotorcyclesSelects: string[] = []
     let detailMotorcycleSelect = ''
 
     const bikeCondition = {
@@ -152,7 +186,7 @@ describe('Shop & Motorcycle Conditions Select Parity (#223)', () => {
       if (table === 'rental_shops') {
         return {
           select: jest.fn((cols: string) => {
-            shopByIdSelect = cols
+            shopByIdSelects.push(cols)
             return {
               eq: jest.fn().mockReturnValue({
                 single: jest.fn().mockResolvedValue({
@@ -192,7 +226,11 @@ describe('Shop & Motorcycle Conditions Select Parity (#223)', () => {
               motorcycle_conditions: [bikeCondition],
               rental_rate_tiers: [],
               rental_offers: [],
-              rental_shops: { id: 'shop-phuket', business_status_id: 1 },
+              rental_shops: {
+                id: 'shop-phuket',
+                business_status_id: 1,
+                rental_shop_inclusions: [{ id: 'inc-1', shop_id: 'shop-phuket', inclusion_text: '2 Helmets' }],
+              },
             },
           ],
           count: 1,
@@ -202,7 +240,7 @@ describe('Shop & Motorcycle Conditions Select Parity (#223)', () => {
         const builder: any = {
           select: jest.fn((cols: string, opts?: any) => {
             if (opts?.count === 'exact') {
-              listMotorcyclesSelect = cols
+              listMotorcyclesSelects.push(cols)
             } else {
               detailMotorcycleSelect = cols
             }
@@ -238,26 +276,47 @@ describe('Shop & Motorcycle Conditions Select Parity (#223)', () => {
       throw new Error(`Unexpected table: ${table}`)
     })
 
-    const shop = await shopService.getShopById('shop-phuket')
-    const shopFleetMatch = shopByIdSelect.match(/motorcycle_rentals\s*\(([\s\S]*?)\)\s*$/)
-    expect(shopFleetMatch).not.toBeNull()
-    expect(shopFleetMatch![1]).toContain('conditions_details')
-    expect(shopFleetMatch![1]).toMatch(/motorcycle_conditions\s*\([\s\S]*?condition_types\s*\(/)
-    expect(shopFleetMatch![1]).not.toContain('*')
-    expect(shop.motorcycle_rentals[0].conditions_details).toEqual({ min_age: 21 })
-    expect(shop.motorcycle_rentals[0].motorcycle_conditions).toEqual([bikeCondition])
+    // Default getShopById omits motorcycle conditions in fleet block
+    await shopService.getShopById('shop-phuket')
+    const defaultFleetBlock = extractRelationBlock(shopByIdSelects[0], 'motorcycle_rentals')
+    expect(defaultFleetBlock).not.toContain('conditions_details')
+    expect(defaultFleetBlock).not.toContain('motorcycle_conditions')
 
-    const listRes = await motorcycleService.getMotorcycles({ limit: 10 })
-    expect(listMotorcyclesSelect).toContain('conditions_details')
-    expect(listMotorcyclesSelect).toMatch(/motorcycle_conditions\s*\([\s\S]*?condition_types\s*\(/)
-    expect(listMotorcyclesSelect).not.toContain('*')
+    // Opt-in includeMotorcycleConditions includes motorcycle conditions without *
+    const shopWithFleetConditions = await shopService.getShopById('shop-phuket', {
+      includeMotorcycleConditions: true,
+    })
+    const optInFleetBlock = extractRelationBlock(shopByIdSelects[1], 'motorcycle_rentals')
+    expect(optInFleetBlock).toContain('conditions_details')
+    expect(optInFleetBlock).toMatch(/motorcycle_conditions\s*\([\s\S]*?condition_types\s*\(/)
+    expect(optInFleetBlock).not.toContain('*')
+    expect(shopWithFleetConditions.motorcycle_rentals[0].conditions_details).toEqual({ min_age: 21 })
+    expect(shopWithFleetConditions.motorcycle_rentals[0].motorcycle_conditions).toEqual([bikeCondition])
+
+    // Default getMotorcycles omits conditions and shop inclusions
+    await motorcycleService.getMotorcycles({ limit: 10 })
+    expect(listMotorcyclesSelects[0]).not.toContain('conditions_details')
+    expect(listMotorcyclesSelects[0]).not.toContain('motorcycle_conditions')
+    expect(listMotorcyclesSelects[0]).not.toContain('rental_shop_inclusions')
+
+    // Opt-in getMotorcycles({ includeConditions: true }) selects motorcycle conditions + narrow shop inclusions without *
+    const listRes = await motorcycleService.getMotorcycles({ limit: 10, includeConditions: true })
+    expect(listMotorcyclesSelects[1]).toContain('conditions_details')
+    expect(listMotorcyclesSelects[1]).toMatch(/motorcycle_conditions\s*\([\s\S]*?condition_types\s*\(/)
+    expect(listMotorcyclesSelects[1]).toMatch(/rental_shop_inclusions\s*\([\s\S]*?inclusion_text/)
+    expect(listMotorcyclesSelects[1]).not.toContain('*')
     expect(listRes.motorcycles[0].conditions_details).toEqual({ min_age: 21 })
     expect(listRes.motorcycles[0].motorcycle_conditions).toEqual([bikeCondition])
 
+    // getMotorcycleById uses narrow columns (no *) for rental_shop_inclusions and rental_shop_conditions
     const detail = await motorcycleService.getMotorcycleById('bike-adv-150')
-    expect(detailMotorcycleSelect).toMatch(/motorcycle_conditions\s*\([\s\S]*?condition_types\s*\(/)
-    expect(detailMotorcycleSelect).toContain('rental_shop_inclusions')
-    expect(detailMotorcycleSelect).toMatch(/rental_shop_conditions\s*\([\s\S]*?condition_types\s*\(/)
+    const detailInclusionsBlock = extractRelationBlock(detailMotorcycleSelect, 'rental_shop_inclusions')
+    const detailShopConditionsBlock = extractRelationBlock(detailMotorcycleSelect, 'rental_shop_conditions')
+    expect(detailInclusionsBlock).toContain('inclusion_text')
+    expect(detailInclusionsBlock).not.toContain('*')
+    expect(detailShopConditionsBlock).toContain('condition_value')
+    expect(detailShopConditionsBlock).toMatch(/condition_types\s*\([\s\S]*?name/)
+    expect(detailShopConditionsBlock).not.toContain('*')
     expect(detail.motorcycle_conditions).toEqual([bikeCondition])
   })
 })

@@ -346,6 +346,9 @@ it('exposes concise structured shop conditions (including opening hours) and inc
 
     mockGetShops.mockResolvedValueOnce({ total: 1, shops: [shopFixture] });
     const listRes = await executeTool('list_shops', { query: 'Riders Corner' });
+    expect(mockGetShops).toHaveBeenCalledWith(
+        expect.objectContaining({ query: 'Riders Corner', includeConditions: true })
+    );
     expect(listRes.success).toBe(true);
     const listData = JSON.parse(formatToolResultForLLM(listRes));
     expect(listData.shops[0]).toMatchObject({
@@ -371,6 +374,9 @@ it('exposes concise structured shop conditions (including opening hours) and inc
 
     mockGetShopById.mockResolvedValueOnce(shopFixture);
     const detailRes = await executeTool('get_shop', { id: 'shop-riders-corner' });
+    expect(mockGetShopById).toHaveBeenCalledWith('shop-riders-corner', {
+        includeMotorcycleConditions: true,
+    });
     expect(detailRes.success).toBe(true);
     const detailData = JSON.parse(formatToolResultForLLM(detailRes));
     expect(detailData).toMatchObject({
@@ -493,22 +499,28 @@ it('exposes per-motorcycle conditions, conditionsDetails, and shopConditions/sho
         ],
     });
     const listRes = await executeTool('list_motorcycles', {});
+    expect(mockGetMotorcycles).toHaveBeenCalledWith(
+        expect.objectContaining({ includeConditions: true })
+    );
     const listData = JSON.parse(formatToolResultForLLM(listRes));
     expect(listData.motorcycles[0]).toMatchObject({
         id: 'bike-adv-150',
         conditions: expectedConditions,
         conditionsDetails: { min_age: 21, fuel_policy: 'Same-to-same' },
+        inclusions: ['Phone Holder'],
     });
     expect(listData.motorcycles[1]).toMatchObject({
         id: 'test-motorcycle',
         conditions: [],
         conditionsDetails: null,
+        inclusions: [],
     });
 
     // 2. get_motorcycle
     mockGetMotorcycleById.mockResolvedValueOnce(bikeWithConditions);
     const detailRes = await executeTool('get_motorcycle', { id: 'bike-adv-150' });
     const detailData = JSON.parse(formatToolResultForLLM(detailRes));
+    expect(detailData).not.toHaveProperty('currency');
     expect(detailData).toMatchObject({
         id: 'bike-adv-150',
         url: '/motorcycle/bike-adv-150',
@@ -540,11 +552,11 @@ it('exposes per-motorcycle conditions, conditionsDetails, and shopConditions/sho
     });
     const shopRes = await executeTool('get_shop', { id: 'shop-phuket' });
     const shopData = JSON.parse(formatToolResultForLLM(shopRes));
+    expect(shopData.motorcycle_rentals[0]).not.toHaveProperty('currency');
     expect(shopData.motorcycle_rentals[0]).toMatchObject({
         id: 'bike-adv-150',
         url: '/motorcycle/bike-adv-150',
         dailyRate: 450,
-        currency: 'THB',
         priceDisplay: '450 THB per day',
         conditions: expectedConditions,
         conditionsDetails: { min_age: 21, fuel_policy: 'Same-to-same' },
