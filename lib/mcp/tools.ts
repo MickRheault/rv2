@@ -19,6 +19,9 @@ import {
     formatExtensionBillingPhrase,
     formatOfferBillingUnitPhrase,
     getStandaloneDailyRate,
+    parseDurationDaysParam,
+    parseIsoCurrencyParam,
+    parseKnownPriceOnlyParam,
     resolveListingHeadline,
     resolveMotorcycleRentalOffers,
     sortRentalOffersForDisplay,
@@ -45,8 +48,20 @@ export const openAITools: ChatCompletionTool[] = [
                     country: { type: 'string', description: 'Country name (e.g., Thailand, Vietnam, Indonesia)' },
                     city: { type: 'string', description: 'City name (e.g., Bangkok, Chiang Mai, Phuket)' },
                     query: { type: 'string', description: 'Search query for model name' },
-                    minPrice: { type: 'number', description: 'Minimum daily rental price in local currency' },
-                    maxPrice: { type: 'number', description: 'Maximum daily rental price in local currency' },
+                    minPrice: { type: 'number', description: 'Minimum daily rental price (or daily equivalent when durationDays is set)' },
+                    maxPrice: { type: 'number', description: 'Maximum daily rental price (or daily equivalent when durationDays is set)' },
+                    currency: {
+                        type: 'string',
+                        description: '3-letter ISO currency code such as THB, USD, VND, or EUR — use when the user specifies a currency',
+                    },
+                    durationDays: {
+                        type: 'number',
+                        description: 'Positive integer rental duration in days (e.g., 7 for a week or 30 for 30 days) — evaluates covering daily brackets and exact-day packages',
+                    },
+                    knownPriceOnly: {
+                        type: 'boolean',
+                        description: 'Set true to exclude unpriced "Price on request" listings',
+                    },
                     limit: { type: 'number', description: 'Number of results (max 20)', default: 10 },
                 },
             },
@@ -217,6 +232,46 @@ function formatPlainAmount(amount: number): string {
     }).format(amount);
 }
 
+function withNormalizedPriceBounds(args: Record<string, unknown>): Record<string, unknown> {
+    if (args.minPrice === undefined && args.maxPrice === undefined) {
+        return args;
+    }
+    return {
+        ...args,
+        minPrice:
+            typeof args.minPrice === 'number' && Number.isFinite(args.minPrice)
+                ? args.minPrice
+                : undefined,
+        maxPrice:
+            typeof args.maxPrice === 'number' && Number.isFinite(args.maxPrice)
+                ? args.maxPrice
+                : undefined,
+    };
+}
+
+function parseListMotorcyclesPriceFilters(args: Record<string, unknown>) {
+    const parsedCurrency = parseIsoCurrencyParam(args.currency);
+    if (!parsedCurrency.valid) {
+        throw new Error(parsedCurrency.error);
+    }
+
+    const parsedDurationDays = parseDurationDaysParam(args.durationDays);
+    if (!parsedDurationDays.valid) {
+        throw new Error(parsedDurationDays.error);
+    }
+
+    const parsedKnownPriceOnly = parseKnownPriceOnlyParam(args.knownPriceOnly);
+    if (!parsedKnownPriceOnly.valid) {
+        throw new Error(parsedKnownPriceOnly.error);
+    }
+
+    return {
+        currency: parsedCurrency.value,
+        durationDays: parsedDurationDays.value,
+        knownPriceOnly: parsedKnownPriceOnly.value,
+    };
+}
+
 function buildMotorcycleToolPricing(m: MotorcyclePricingRecord | null | undefined) {
     const offers = resolveMotorcycleRentalOffers(m);
     const dailyRate = getStandaloneDailyRate(m);
@@ -294,8 +349,9 @@ function buildMotorcyclePricingAndConditions(
 
 export async function executeTool(
     name: string,
-    args: Record<string, unknown>
+    rawArgs: Record<string, unknown>
 ): Promise<ToolResult> {
+    const args = withNormalizedPriceBounds(rawArgs);
     try {
         switch (name) {
             // Motorcycles
@@ -332,6 +388,7 @@ export async function executeTool(
                     model: args.query as string | undefined,
                     minPrice: args.minPrice as number | undefined,
                     maxPrice: args.maxPrice as number | undefined,
+                    ...parseListMotorcyclesPriceFilters(args),
                     includeConditions: true,
                     limit: Math.min((args.limit as number) || 10, 20),
                     offset: 0,

@@ -15,6 +15,11 @@ import { rateLimit, getRateLimitHeaders } from '@/lib/api/rate-limit';
 import { motorcycleService } from '@/services/motorcycles';
 import { prepareMotorcyclePricingMutation } from '@/services/rental-offers';
 import {
+  parseDurationDaysParam,
+  parseIsoCurrencyParam,
+  parseKnownPriceOnlyParam,
+} from '@/lib/rental-offers';
+import {
   parseAndValidateMotorcycleYearPayload,
   parseOptionalFiniteNumber,
 } from '@/lib/utils';
@@ -45,6 +50,21 @@ export async function GET(request: NextRequest) {
       'desc'
     );
 
+    const parsedCurrency = parseIsoCurrencyParam(searchParams.get('currency'));
+    if (!parsedCurrency.valid) {
+      return errors.badRequest(parsedCurrency.error);
+    }
+
+    const parsedDurationDays = parseDurationDaysParam(searchParams.get('durationDays'));
+    if (!parsedDurationDays.valid) {
+      return errors.badRequest(parsedDurationDays.error);
+    }
+
+    const parsedKnownPriceOnly = parseKnownPriceOnlyParam(searchParams.get('knownPriceOnly'));
+    if (!parsedKnownPriceOnly.valid) {
+      return errors.badRequest(parsedKnownPriceOnly.error);
+    }
+
     const filters = {
       brandId: searchParams.get('brandId') || undefined,
       categoryId: searchParams.get('categoryId') || undefined,
@@ -55,6 +75,9 @@ export async function GET(request: NextRequest) {
       query: searchParams.get('search') || searchParams.get('query') || undefined,
       minPrice: parseOptionalFiniteNumber(searchParams.get('minPrice')),
       maxPrice: parseOptionalFiniteNumber(searchParams.get('maxPrice')),
+      currency: parsedCurrency.value,
+      durationDays: parsedDurationDays.value,
+      knownPriceOnly: parsedKnownPriceOnly.value,
       minEngineCapacity: searchParams.get('minEngineCapacity')
         ? parseInt(searchParams.get('minEngineCapacity')!, 10)
         : undefined,

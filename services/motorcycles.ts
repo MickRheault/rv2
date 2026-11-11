@@ -5,9 +5,10 @@ import { SupabaseClient } from '@supabase/supabase-js'
 import { generateSlug } from '@/lib/utils'
 import {
   compareMotorcyclesByPrice,
-  matchesDailyPriceRange,
+  matchesRentalOfferFilter,
   resolveMotorcycleRentalOffers,
   type NormalizedRentalOffer,
+  type RentalOfferPriceFilterOptions,
 } from '@/lib/rental-offers'
 import {
   MOTORCYCLE_LISTING_BASE_COLUMNS,
@@ -92,7 +93,7 @@ export interface MotorcycleWithDetails extends MotorcycleRental {
   rental_offers?: NormalizedRentalOffer[]
 }
 
-export interface SearchFilters {
+export interface SearchFilters extends RentalOfferPriceFilterOptions {
   location?: string
   cityId?: string
   provinceId?: string
@@ -100,8 +101,6 @@ export interface SearchFilters {
   brandId?: string
   categoryId?: string
   model?: string
-  minPrice?: number
-  maxPrice?: number
   minEngineCapacity?: number
   maxEngineCapacity?: number
   features?: string[]
@@ -217,6 +216,9 @@ export function filterAndSortMotorcycles<T extends Record<string, any>>(
     | 'model'
     | 'minPrice'
     | 'maxPrice'
+    | 'currency'
+    | 'durationDays'
+    | 'knownPriceOnly'
     | 'minEngineCapacity'
     | 'maxEngineCapacity'
     | 'sortBy'
@@ -228,6 +230,9 @@ export function filterAndSortMotorcycles<T extends Record<string, any>>(
     model,
     minPrice,
     maxPrice,
+    currency,
+    durationDays,
+    knownPriceOnly,
     minEngineCapacity,
     maxEngineCapacity,
     sortBy = 'newest'
@@ -257,7 +262,15 @@ export function filterAndSortMotorcycles<T extends Record<string, any>>(
       if (bikeModel !== normalizedModel) return false
     }
 
-    if (!matchesDailyPriceRange(motorcycle, minPrice, maxPrice)) {
+    if (
+      !matchesRentalOfferFilter(motorcycle, {
+        minPrice,
+        maxPrice,
+        currency,
+        durationDays,
+        knownPriceOnly,
+      })
+    ) {
       return false
     }
 
@@ -478,6 +491,9 @@ export const motorcycleService = {
       query: searchQuery,
       minPrice,
       maxPrice,
+      currency,
+      durationDays,
+      knownPriceOnly,
       minEngineCapacity,
       maxEngineCapacity,
       features,
@@ -563,9 +579,14 @@ export const motorcycleService = {
     }
 
     const hasFeaturesFilter = Boolean(features && features.length > 0)
+    const hasOfferPriceFilter =
+      (minPrice !== undefined && minPrice !== null) ||
+      (maxPrice !== undefined && maxPrice !== null) ||
+      Boolean(currency && currency.trim()) ||
+      (durationDays !== undefined && durationDays !== null) ||
+      knownPriceOnly === true
     const needsPricingPostProcess =
-      minPrice !== undefined ||
-      maxPrice !== undefined ||
+      hasOfferPriceFilter ||
       sortBy === 'price_asc' ||
       sortBy === 'price_desc'
 
@@ -605,9 +626,15 @@ export const motorcycleService = {
         })
       }
 
-      if (minPrice !== undefined || maxPrice !== undefined) {
+      if (hasOfferPriceFilter) {
         processedData = processedData.filter((motorcycle: any) =>
-          matchesDailyPriceRange(motorcycle, minPrice, maxPrice)
+          matchesRentalOfferFilter(motorcycle, {
+            minPrice,
+            maxPrice,
+            currency,
+            durationDays,
+            knownPriceOnly,
+          })
         )
       }
 
