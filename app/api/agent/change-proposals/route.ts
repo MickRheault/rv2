@@ -1,6 +1,10 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  parseAgentProposalListQuery,
+  readBoundedJsonObjectBody,
+} from '@/lib/agent-proposal-validation';
 import { validateAgentApiKey } from '@/lib/auth/agent-auth';
 import { RentalOfferConflictError } from '@/lib/rental-offers';
 import {
@@ -23,6 +27,55 @@ import {
 } from '@/services/shop-agent-configs';
 
 /**
+ * GET /api/agent/change-proposals
+ *
+ * Agent-authenticated paginated listing of Change Proposals (defaults to `status=pending`).
+ * Supports `?status=pending|reviewing|applied|partially_applied|rejected|acknowledged|superseded|all`,
+ * optional `?shopId=<uuid>`, `?limit=1..100` (default 50), and `?offset=0..100000` (default 0).
+ */
+export async function GET(request: NextRequest) {
+  const isAuthorized = validateAgentApiKey(request.headers.get('authorization'));
+  if (!isAuthorized) {
+    return NextResponse.json(
+      { error: 'Unauthorized. Valid Bearer AGENT_API_KEY required.' },
+      { status: 401 }
+    );
+  }
+
+  try {
+    const { searchParams } = new URL(request.url);
+    const { status, shopId, limit, offset } = parseAgentProposalListQuery(searchParams);
+
+    const data = await ChangeProposalService.listAgentProposals({
+      status,
+      shopId,
+      limit,
+      offset,
+    });
+
+    return NextResponse.json(
+      {
+        success: true,
+        ...data,
+      },
+      { status: 200 }
+    );
+  } catch (error: any) {
+    if (
+      error instanceof ProposalItemValidationError ||
+      error?.name === 'ProposalItemValidationError'
+    ) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    console.error('Error listing agent change proposals:', error);
+    return NextResponse.json(
+      { error: 'Internal server error listing change proposals' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
  * POST /api/agent/change-proposals
  *
  * Accepts either:
@@ -43,30 +96,10 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const rawText = await request.text();
-    const byteLength = Buffer.byteLength(rawText, 'utf8');
-    if (byteLength > MAX_PROPOSAL_PAYLOAD_BYTES) {
-      throw new PayloadTooLargeError(
-        `Request payload (${byteLength} bytes) exceeds maximum limit of ${MAX_PROPOSAL_PAYLOAD_BYTES} bytes.`
-      );
-    }
-
-    let body: any;
-    try {
-      body = JSON.parse(rawText);
-    } catch {
-      return NextResponse.json(
-        { error: 'Malformed JSON body.' },
-        { status: 400 }
-      );
-    }
-
-    if (!body || typeof body !== 'object' || Array.isArray(body)) {
-      return NextResponse.json(
-        { error: 'Request body must be a JSON object.' },
-        { status: 400 }
-      );
-    }
+    const body = (await readBoundedJsonObjectBody(
+      request,
+      MAX_PROPOSAL_PAYLOAD_BYTES
+    )) as Record<string, any>;
 
     const { shopId, sourceUrl, agentRunId, items } = body;
     const hasReconciliationReportKey = Object.prototype.hasOwnProperty.call(

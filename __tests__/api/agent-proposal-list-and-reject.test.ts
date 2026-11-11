@@ -1,0 +1,1503 @@
+/**
+ * @jest-environment node
+ */
+
+import { NextRequest } from 'next/server';
+import {
+  createInMemorySupabaseClient,
+  createRideOnSeedState,
+  InMemoryReconciliationState,
+} from '@/__tests__/helpers/in-memory-reconciliation-db';
+import * as agentProposalsRoute from '@/app/api/agent/change-proposals/route';
+import { GET as GETAgentProposalReadback } from '@/app/api/agent/change-proposals/[id]/route';
+import { POST as POSTAgentProposalReject } from '@/app/api/agent/change-proposals/[id]/reject/route';
+import { GET as GETAdminProposals } from '@/app/api/admin/change-proposals/route';
+import { POST as POSTAdminProposalApply } from '@/app/api/admin/change-proposals/[id]/apply/route';
+import { isAuthorizedAdmin } from '@/lib/auth/admin-auth';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { ChangeProposalService } from '@/services/change-proposals';
+
+jest.mock('@/lib/supabase/admin', () => ({
+  getSupabaseAdmin: jest.fn(),
+}));
+
+jest.mock('@/lib/auth/admin-auth', () => ({
+  isAuthorizedAdmin: jest.fn().mockResolvedValue(false),
+  getAuthenticatedAdminUserId: jest.fn().mockResolvedValue(null),
+}));
+
+const TEST_AGENT_KEY = 'super-secret-agent-key-217';
+const RIDE_ON_SHOP_ID = '53529565-40d9-41f5-98e4-d2ed1f1d7ffd';
+const OTHER_SHOP_ID = '99999999-9999-41f5-98e4-d2ed1f1d7ffd';
+const SCOOTER_CATEGORY_ID = '77dd1ffd-a4e4-49ac-91fc-59d7d0a35737';
+const LIVE_PCX_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+
+function agentAuthHeaders(): Record<string, string> {
+  return {
+    Authorization: `Bearer ${TEST_AGENT_KEY}`,
+    'Content-Type': 'application/json',
+  };
+}
+
+function buildReconciliationProposalBody(params: {
+  shopId?: string;
+  agentRunId: string;
+  items?: any[];
+  entries?: any[];
+}) {
+  const shopId = params.shopId ?? RIDE_ON_SHOP_ID;
+  const items =
+    params.items ??
+    [
+      {
+        clientItemId: 'update-pcx-125',
+        entityType: 'motorcycle',
+        action: 'update',
+        entityId: LIVE_PCX_ID,
+        brandName: 'Honda',
+        modelName: 'PCX 125',
+        proposedData: {
+          offers: [
+            {
+              offerType: 'daily',
+              amount: 39,
+              currency: 'EUR',
+              billingBasis: 'per_day',
+              durationUnit: 'day',
+              minDuration: 1,
+              maxDuration: null,
+            },
+          ],
+        },
+      },
+    ];
+  const entries =
+    params.entries ??
+    [
+      {
+        entryKey: 'honda-pcx-125',
+        brand: 'Honda',
+        model: 'PCX 125',
+        year: 2024,
+        existingMotorcycleId: LIVE_PCX_ID,
+        disposition: 'ready_change',
+        proposalItemRefs: ['update-pcx-125'],
+        comparedAttributes: ['offers'],
+        evidence: [
+          {
+            sourceUrl: 'https://rideon.es/flota/honda-pcx-125/',
+            kind: 'detail_page',
+            snippet: 'PCX 125 39 EUR/day',
+          },
+        ],
+      },
+    ];
+
+  return {
+    shopId,
+    sourceUrl: 'https://rideon.es/flota/',
+    agentRunId: params.agentRunId,
+    items,
+    reconciliationReport: {
+      schemaVersion: 1,
+      scope: {
+        branch: 'Barcelona',
+        catalogType: 'branch',
+        services: ['daily_rental'],
+        availabilityBasis: 'supplier_catalog_not_live_stock',
+      },
+      coverage: {
+        status: 'complete',
+        discoveryComplete: true,
+        limitations: [],
+        pages: [
+          {
+            url: 'https://rideon.es/flota/',
+            role: 'catalog',
+            required: true,
+            status: 'processed',
+          },
+        ],
+      },
+      entries,
+    },
+  };
+}
+
+describe('Agent API: Listing and Rejecting Pending Change Proposals (#217)', () => {
+  let state: InMemoryReconciliationState;
+  const originalEnv = process.env.AGENT_API_KEY;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    process.env.AGENT_API_KEY = TEST_AGENT_KEY;
+    state = createRideOnSeedState();
+    (getSupabaseAdmin as jest.Mock).mockImplementation(() =>
+      createInMemorySupabaseClient(state)
+    );
+  });
+
+  afterAll(() => {
+    process.env.AGENT_API_KEY = originalEnv;
+  });
+
+  describe('1. Authentication & Admin Boundary Preservation', () => {
+    it('denies missing or invalid AGENT_API_KEY on GET /api/agent/change-proposals and POST .../reject', async () => {
+      const listNoAuth = await (agentProposalsRoute as any).GET(
+        new NextRequest('http://localhost:3000/api/agent/change-proposals')
+      );
+      expect(listNoAuth.status).toBe(401);
+
+      const listBadAuth = await (agentProposalsRoute as any).GET(
+        new NextRequest('http://localhost:3000/api/agent/change-proposals', {
+          headers: { Authorization: 'Bearer wrong-key' },
+        })
+      );
+      expect(listBadAuth.status).toBe(401);
+
+      const propId = 'eb7f9890-98bf-4d3e-9837-59b7749de130';
+      const rejectNoAuth = await POSTAgentProposalReject(
+        new NextRequest(`http://localhost:3000/api/agent/change-proposals/${propId}/reject`, {
+          method: 'POST',
+          body: JSON.stringify({ expectedVersion: 1, reason: 'Cancel' }),
+        }),
+        { params: Promise.resolve({ id: propId }) }
+      );
+      expect(rejectNoAuth.status).toBe(401);
+
+      const rejectBadAuth = await POSTAgentProposalReject(
+        new NextRequest(`http://localhost:3000/api/agent/change-proposals/${propId}/reject`, {
+          method: 'POST',
+          headers: { Authorization: 'Bearer wrong-key', 'Content-Type': 'application/json' },
+          body: JSON.stringify({ expectedVersion: 1, reason: 'Cancel' }),
+        }),
+        { params: Promise.resolve({ id: propId }) }
+      );
+      expect(rejectBadAuth.status).toBe(401);
+    });
+
+    it('keeps /api/admin/change-proposals and /api/admin/change-proposals/[id]/apply locked against AGENT_API_KEY', async () => {
+      const propId = 'eb7f9890-98bf-4d3e-9837-59b7749de130';
+      const adminListRes = await GETAdminProposals(
+        new NextRequest('http://localhost:3000/api/admin/change-proposals?status=pending', {
+          headers: agentAuthHeaders(),
+        })
+      );
+      expect(adminListRes.status).toBe(401);
+
+      const adminApplyRes = await POSTAdminProposalApply(
+        new NextRequest(`http://localhost:3000/api/admin/change-proposals/${propId}/apply`, {
+          method: 'POST',
+          headers: agentAuthHeaders(),
+          body: JSON.stringify({ approvedItemIds: [], expectedVersion: 1, notes: 'Attempt' }),
+        }),
+        { params: Promise.resolve({ id: propId }) }
+      );
+      expect(adminApplyRes.status).toBe(401);
+    });
+  });
+
+  describe('2. Paginated Pending Enumeration & Query Validation (GET /api/agent/change-proposals)', () => {
+    it('enumerates the complete pending set across pages with deterministic tie-breaking and exact pagination metadata', async () => {
+      // Seed 5 pending proposals (two sharing identical created_at timestamps to test id ASC tie-breaking) + 1 applied + 1 rejected
+      const sameTimestamp = '2026-11-10T12:00:00.000Z';
+      state.change_proposals.push(
+        {
+          id: '00000000-0000-4000-8000-000000000005',
+          shop_id: RIDE_ON_SHOP_ID,
+          agent_run_id: 'run-5',
+          source_url: 'https://rideon.es/flota/',
+          status: 'pending',
+          coverage_status: 'complete',
+          reconciliation_status: 'complete',
+          application_status: 'pending',
+          version: 1,
+          summary_counts: { add: 1, update: 0, delist: 0 },
+          created_at: '2026-11-10T10:00:00.000Z',
+          reviewed_at: null,
+        },
+        {
+          id: '00000000-0000-4000-8000-000000000003',
+          shop_id: RIDE_ON_SHOP_ID,
+          agent_run_id: 'run-3-b',
+          source_url: 'https://rideon.es/flota/',
+          status: 'pending',
+          coverage_status: 'complete',
+          reconciliation_status: 'complete',
+          application_status: 'pending',
+          version: 1,
+          summary_counts: { add: 0, update: 1, delist: 0 },
+          created_at: sameTimestamp,
+          reviewed_at: null,
+        },
+        {
+          id: '00000000-0000-4000-8000-000000000002',
+          shop_id: OTHER_SHOP_ID,
+          agent_run_id: 'run-2-a',
+          source_url: 'https://othermadrid.es',
+          status: 'pending',
+          coverage_status: 'partial',
+          reconciliation_status: 'unresolved',
+          application_status: 'pending',
+          version: 1,
+          summary_counts: { add: 2, update: 0, delist: 0 },
+          created_at: sameTimestamp,
+          reviewed_at: null,
+        },
+        {
+          id: '00000000-0000-4000-8000-000000000001',
+          shop_id: RIDE_ON_SHOP_ID,
+          agent_run_id: 'run-1',
+          source_url: 'https://rideon.es/flota/',
+          status: 'pending',
+          coverage_status: 'complete',
+          reconciliation_status: 'complete',
+          application_status: 'pending',
+          version: 1,
+          summary_counts: { add: 0, update: 2, delist: 0 },
+          created_at: '2026-11-10T14:00:00.000Z',
+          reviewed_at: null,
+        },
+        {
+          id: '00000000-0000-4000-8000-000000000004',
+          shop_id: RIDE_ON_SHOP_ID,
+          agent_run_id: 'run-4',
+          source_url: 'https://rideon.es/flota/',
+          status: 'pending',
+          coverage_status: 'complete',
+          reconciliation_status: 'complete',
+          application_status: 'not_applicable',
+          version: 1,
+          summary_counts: { add: 0, update: 0, delist: 0 },
+          created_at: '2026-11-10T11:00:00.000Z',
+          reviewed_at: null,
+        },
+        {
+          id: '00000000-0000-4000-8000-000000000090',
+          shop_id: RIDE_ON_SHOP_ID,
+          agent_run_id: 'run-applied',
+          source_url: 'https://rideon.es/flota/',
+          status: 'applied',
+          coverage_status: 'complete',
+          reconciliation_status: 'complete',
+          application_status: 'applied',
+          version: 2,
+          summary_counts: { add: 1, update: 0, delist: 0 },
+          created_at: '2026-11-09T10:00:00.000Z',
+          reviewed_at: '2026-11-09T11:00:00.000Z',
+        },
+        {
+          id: '00000000-0000-4000-8000-000000000091',
+          shop_id: RIDE_ON_SHOP_ID,
+          agent_run_id: 'run-rejected',
+          source_url: 'https://rideon.es/flota/',
+          status: 'rejected',
+          coverage_status: 'complete',
+          reconciliation_status: 'unresolved',
+          application_status: 'rejected',
+          version: 2,
+          summary_counts: { add: 1, update: 0, delist: 0 },
+          created_at: '2026-11-08T10:00:00.000Z',
+          reviewed_at: '2026-11-08T11:00:00.000Z',
+        }
+      );
+
+      // Page 1 (limit=2, offset=0, default status=pending)
+      const p1Res = await (agentProposalsRoute as any).GET(
+        new NextRequest('http://localhost:3000/api/agent/change-proposals?limit=2&offset=0', {
+          headers: agentAuthHeaders(),
+        })
+      );
+      expect(p1Res.status).toBe(200);
+      const p1 = await p1Res.json();
+      expect(p1).toMatchObject({
+        success: true,
+        totalCount: 5,
+        limit: 2,
+        offset: 0,
+        hasMore: true,
+        nextOffset: 2,
+      });
+      // Created at 14:00 first, then tie at 12:00 broken by id ASC (...0002 before ...0003)
+      expect(p1.proposals.map((x: any) => x.id)).toEqual([
+        '00000000-0000-4000-8000-000000000001',
+        '00000000-0000-4000-8000-000000000002',
+      ]);
+
+      // Page 2 (limit=2, offset=2)
+      const p2Res = await (agentProposalsRoute as any).GET(
+        new NextRequest('http://localhost:3000/api/agent/change-proposals?limit=2&offset=2', {
+          headers: agentAuthHeaders(),
+        })
+      );
+      const p2 = await p2Res.json();
+      expect(p2).toMatchObject({
+        success: true,
+        totalCount: 5,
+        limit: 2,
+        offset: 2,
+        hasMore: true,
+        nextOffset: 4,
+      });
+      expect(p2.proposals.map((x: any) => x.id)).toEqual([
+        '00000000-0000-4000-8000-000000000003',
+        '00000000-0000-4000-8000-000000000004',
+      ]);
+
+      // Page 3 (limit=2, offset=4)
+      const p3Res = await (agentProposalsRoute as any).GET(
+        new NextRequest('http://localhost:3000/api/agent/change-proposals?limit=2&offset=4', {
+          headers: agentAuthHeaders(),
+        })
+      );
+      const p3 = await p3Res.json();
+      expect(p3).toMatchObject({
+        success: true,
+        totalCount: 5,
+        limit: 2,
+        offset: 4,
+        hasMore: false,
+        nextOffset: null,
+      });
+      expect(p3.proposals.map((x: any) => x.id)).toEqual([
+        '00000000-0000-4000-8000-000000000005',
+      ]);
+
+      // Filter by shopId + status=all
+      const shopAllRes = await (agentProposalsRoute as any).GET(
+        new NextRequest(
+          `http://localhost:3000/api/agent/change-proposals?status=all&shopId=${OTHER_SHOP_ID}`,
+          { headers: agentAuthHeaders() }
+        )
+      );
+      const shopAll = await shopAllRes.json();
+      expect(shopAll.totalCount).toBe(1);
+      expect(shopAll.proposals[0].id).toBe('00000000-0000-4000-8000-000000000002');
+    });
+
+    it('rejects invalid status, shopId, limit, and offset query parameters with 400', async () => {
+      const badUrls = [
+        'http://localhost:3000/api/agent/change-proposals?status=invalid_status',
+        'http://localhost:3000/api/agent/change-proposals?shopId=not-a-uuid',
+        'http://localhost:3000/api/agent/change-proposals?limit=0',
+        'http://localhost:3000/api/agent/change-proposals?limit=101',
+        'http://localhost:3000/api/agent/change-proposals?limit=abc',
+        'http://localhost:3000/api/agent/change-proposals?offset=-1',
+        'http://localhost:3000/api/agent/change-proposals?offset=100001',
+      ];
+
+      for (const url of badUrls) {
+        const res = await (agentProposalsRoute as any).GET(
+          new NextRequest(url, { headers: agentAuthHeaders() })
+        );
+        expect(res.status).toBe(400);
+      }
+    });
+  });
+
+  describe('3. Validation & Narrow Capability Enforcement on POST /api/agent/change-proposals/[id]/reject', () => {
+    it('rejects malformed UUIDs (400), unknown UUIDs (404), bad bodies (400/413), missing expectedVersion/reason (400), and any approvedItemIds field (400)', async () => {
+      const validId = 'eb7f9890-98bf-4d3e-9837-59b7749de130';
+
+      // Malformed UUID -> 400
+      const badUuidRes = await POSTAgentProposalReject(
+        new NextRequest('http://localhost:3000/api/agent/change-proposals/not-a-uuid/reject', {
+          method: 'POST',
+          headers: agentAuthHeaders(),
+          body: JSON.stringify({ expectedVersion: 1, reason: 'Cancel' }),
+        }),
+        { params: Promise.resolve({ id: 'not-a-uuid' }) }
+      );
+      expect(badUuidRes.status).toBe(400);
+
+      // Unknown UUID -> 404
+      const notFoundRes = await POSTAgentProposalReject(
+        new NextRequest(`http://localhost:3000/api/agent/change-proposals/${validId}/reject`, {
+          method: 'POST',
+          headers: agentAuthHeaders(),
+          body: JSON.stringify({ expectedVersion: 1, reason: 'Cancel' }),
+        }),
+        { params: Promise.resolve({ id: validId }) }
+      );
+      expect(notFoundRes.status).toBe(404);
+
+      // Oversized payload (> 64 KB) -> 413
+      const hugeRes = await POSTAgentProposalReject(
+        new NextRequest(`http://localhost:3000/api/agent/change-proposals/${validId}/reject`, {
+          method: 'POST',
+          headers: agentAuthHeaders(),
+          body: JSON.stringify({ expectedVersion: 1, reason: 'x'.repeat(70_000) }),
+        }),
+        { params: Promise.resolve({ id: validId }) }
+      );
+      expect(hugeRes.status).toBe(413);
+
+      // Missing expectedVersion -> 400
+      const noVerRes = await POSTAgentProposalReject(
+        new NextRequest(`http://localhost:3000/api/agent/change-proposals/${validId}/reject`, {
+          method: 'POST',
+          headers: agentAuthHeaders(),
+          body: JSON.stringify({ reason: 'Cancel' }),
+        }),
+        { params: Promise.resolve({ id: validId }) }
+      );
+      expect(noVerRes.status).toBe(400);
+
+      // Missing / whitespace reason -> 400
+      const noReasonRes = await POSTAgentProposalReject(
+        new NextRequest(`http://localhost:3000/api/agent/change-proposals/${validId}/reject`, {
+          method: 'POST',
+          headers: agentAuthHeaders(),
+          body: JSON.stringify({ expectedVersion: 1, reason: '   ' }),
+        }),
+        { params: Promise.resolve({ id: validId }) }
+      );
+      expect(noReasonRes.status).toBe(400);
+
+      // Conflicting reason and notes -> 400
+      const conflictReasonRes = await POSTAgentProposalReject(
+        new NextRequest(`http://localhost:3000/api/agent/change-proposals/${validId}/reject`, {
+          method: 'POST',
+          headers: agentAuthHeaders(),
+          body: JSON.stringify({ expectedVersion: 1, reason: 'Reason A', notes: 'Reason B' }),
+        }),
+        { params: Promise.resolve({ id: validId }) }
+      );
+      expect(conflictReasonRes.status).toBe(400);
+
+      // Passing approvedItemIds or any approval/selection/unknown fields -> 400
+      for (const extraPayload of [
+        { approvedItemIds: [] },
+        { approvedItemIds: ['some-item-id'] },
+        { action: 'apply' },
+        { action: 'acknowledge' },
+        { items: [] },
+        { itemIds: ['some-item-id'] },
+        { unexpectedField: true },
+      ]) {
+        const approveAttemptRes = await POSTAgentProposalReject(
+          new NextRequest(`http://localhost:3000/api/agent/change-proposals/${validId}/reject`, {
+            method: 'POST',
+            headers: agentAuthHeaders(),
+            body: JSON.stringify({
+              expectedVersion: 1,
+              reason: 'Attempt with forbidden or unknown fields',
+              ...extraPayload,
+            }),
+          }),
+          { params: Promise.resolve({ id: validId }) }
+        );
+        expect(approveAttemptRes.status).toBe(400);
+      }
+    });
+  });
+
+  describe('4. End-to-End Rejection, Audit Trail, Readback & Surrounding State Preservation', () => {
+    it('rejects a pending proposal, removes it from Pending Review, records non-secret agent audit context, preserves live inventory/candidates/Shop Agent Config, and confirms rejected readback', async () => {
+      // Seed historical applied proposal, crawl_run, dismissed & excluded candidates, and an open candidate that gets linked to this pending proposal
+      const dismissedCandidateId = '22222222-2222-4222-8222-222222222221';
+      const excludedCandidateId = '22222222-2222-4222-8222-222222222222';
+      const readyCandidateId = '22222222-2222-4222-8222-222222222223';
+      const historicalAppliedProposalId = '33333333-3333-4333-8333-333333333333';
+
+      state.change_proposals.push({
+        id: historicalAppliedProposalId,
+        shop_id: RIDE_ON_SHOP_ID,
+        agent_run_id: 'historical-applied-run',
+        source_url: 'https://rideon.es/flota/',
+        status: 'applied',
+        coverage_status: 'complete',
+        reconciliation_status: 'complete',
+        application_status: 'applied',
+        version: 2,
+        summary_counts: { add: 1, update: 0, delist: 0 },
+        created_at: '2026-10-20T00:00:00.000Z',
+        reviewed_at: '2026-10-20T01:00:00.000Z',
+      });
+
+      state.crawl_runs.push({
+        id: '44444444-4444-4444-8444-444444444444',
+        shop_id: RIDE_ON_SHOP_ID,
+        proposal_id: historicalAppliedProposalId,
+        agent_run_id: 'historical-applied-run',
+        status: 'success',
+        coverage_status: 'complete',
+        reconciliation_status: 'complete',
+        metadata: { pagesVisited: 3 },
+        created_at: '2026-10-20T00:05:00.000Z',
+      });
+
+      state.unresolved_candidates.push(
+        {
+          id: dismissedCandidateId,
+          shop_id: RIDE_ON_SHOP_ID,
+          identity_key: 'bmw::c-400-x::any-single::base',
+          brand_name: 'BMW',
+          model_name: 'C 400 X',
+          year: null,
+          year_to: null,
+          variant_label: null,
+          state: 'dismissed',
+          flagged_for_review: false,
+          resolution_reason: 'Admin previously dismissed',
+          current_issues: [{ code: 'PRICE_UNVERIFIED', detail: 'No price' }],
+          latest_evidence: [],
+          version: 3,
+        },
+        {
+          id: excludedCandidateId,
+          shop_id: RIDE_ON_SHOP_ID,
+          identity_key: 'piaggio::zip-50::any-single::base',
+          brand_name: 'Piaggio',
+          model_name: 'Zip 50',
+          year: null,
+          year_to: null,
+          variant_label: null,
+          state: 'excluded',
+          flagged_for_review: false,
+          resolution_reason: '50cc moped excluded',
+          current_issues: [],
+          latest_evidence: [],
+          version: 2,
+        },
+        {
+          id: readyCandidateId,
+          shop_id: RIDE_ON_SHOP_ID,
+          identity_key: 'honda::forza-350::2024-single::base',
+          brand_name: 'Honda',
+          model_name: 'Forza 350',
+          year: 2024,
+          year_to: null,
+          variant_label: null,
+          state: 'open',
+          flagged_for_review: false,
+          resolution_reason: null,
+          current_issues: [{ code: 'PRICE_UNVERIFIED', detail: 'Previously unpriced' }],
+          latest_evidence: [],
+          version: 1,
+        }
+      );
+
+      // Snapshot live catalog & Shop Agent Config before staging/rejecting
+      const liveRentalsSnapshot = structuredClone(state.motorcycle_rentals);
+      const liveOffersSnapshot = structuredClone(state.rental_offers);
+      const liveTiersSnapshot = structuredClone(state.rental_rate_tiers);
+      const liveShopsSnapshot = structuredClone(state.rental_shops);
+      const shopAgentConfigSnapshot = structuredClone(state.shop_agent_configs);
+      const crawlRunsSnapshot = structuredClone(state.crawl_runs);
+
+      // Stage a pending proposal resolving readyCandidateId + updating PCX 125
+      const stageBody = buildReconciliationProposalBody({
+        agentRunId: 'run-to-reject-217',
+        items: [
+          {
+            clientItemId: 'add-forza-350',
+            entityType: 'motorcycle',
+            action: 'add',
+            brandName: 'Honda',
+            modelName: 'Forza 350',
+            proposedData: {
+              categoryId: SCOOTER_CATEGORY_ID,
+              year: 2024,
+              engineCapacityCc: 330,
+              offers: [
+                {
+                  offerType: 'daily',
+                  amount: 49,
+                  currency: 'EUR',
+                  billingBasis: 'per_day',
+                  durationUnit: 'day',
+                  minDuration: 1,
+                  maxDuration: null,
+                },
+              ],
+            },
+          },
+          {
+            clientItemId: 'update-pcx-125',
+            entityType: 'motorcycle',
+            action: 'update',
+            entityId: LIVE_PCX_ID,
+            brandName: 'Honda',
+            modelName: 'PCX 125',
+            proposedData: {
+              offers: [
+                {
+                  offerType: 'daily',
+                  amount: 39,
+                  currency: 'EUR',
+                  billingBasis: 'per_day',
+                  durationUnit: 'day',
+                  minDuration: 1,
+                  maxDuration: null,
+                },
+              ],
+            },
+          },
+        ],
+        entries: [
+          {
+            entryKey: 'honda-forza-350',
+            brand: 'Honda',
+            model: 'Forza 350',
+            year: 2024,
+            candidateId: readyCandidateId,
+            disposition: 'ready_change',
+            proposalItemRefs: ['add-forza-350'],
+            evidence: [
+              {
+                sourceUrl: 'https://rideon.es/flota/honda-forza-350/',
+                kind: 'detail_page',
+                snippet: 'Forza 350 49 EUR/day',
+              },
+            ],
+          },
+          {
+            entryKey: 'honda-pcx-125',
+            brand: 'Honda',
+            model: 'PCX 125',
+            year: 2024,
+            existingMotorcycleId: LIVE_PCX_ID,
+            disposition: 'ready_change',
+            proposalItemRefs: ['update-pcx-125'],
+            comparedAttributes: ['offers'],
+            evidence: [
+              {
+                sourceUrl: 'https://rideon.es/flota/honda-pcx-125/',
+                kind: 'detail_page',
+                snippet: 'PCX 125 39 EUR/day',
+              },
+            ],
+          },
+        ],
+      });
+
+      const stageRes = await agentProposalsRoute.POST(
+        new NextRequest('http://localhost:3000/api/agent/change-proposals', {
+          method: 'POST',
+          headers: agentAuthHeaders(),
+          body: JSON.stringify(stageBody),
+        })
+      );
+      expect(stageRes.status).toBe(201);
+      const staged = await stageRes.json();
+      const proposalId = staged.proposalId;
+
+      // Confirm it appears in Pending Review before rejection
+      const beforeListRes = await (agentProposalsRoute as any).GET(
+        new NextRequest('http://localhost:3000/api/agent/change-proposals?status=pending', {
+          headers: agentAuthHeaders(),
+        })
+      );
+      const beforeList = await beforeListRes.json();
+      expect(beforeList.totalCount).toBe(1);
+      expect(beforeList.proposals[0].id).toBe(proposalId);
+
+      // Reject via agent endpoint (using `notes` alias to also verify compatibility)
+      const rejectionReason =
+        'Owner requested cancellation of outstanding proposals; rebuild with native rental pricing.';
+      const rejectRes = await POSTAgentProposalReject(
+        new NextRequest(`http://localhost:3000/api/agent/change-proposals/${proposalId}/reject`, {
+          method: 'POST',
+          headers: agentAuthHeaders(),
+          body: JSON.stringify({
+            expectedVersion: 1,
+            notes: rejectionReason,
+          }),
+        }),
+        { params: Promise.resolve({ id: proposalId }) }
+      );
+      expect(rejectRes.status).toBe(200);
+      const rejectJson = await rejectRes.json();
+      expect(rejectJson).toMatchObject({
+        success: true,
+        proposalId,
+        status: 'rejected',
+        version: 2,
+        coverageStatus: 'complete',
+        reconciliationStatus: 'unresolved',
+        applicationStatus: 'rejected',
+        rejectedItemCount: 2,
+        notes: rejectionReason,
+      });
+      expect(typeof rejectJson.reviewedAt).toBe('string');
+
+      // Disappears from Pending Review
+      const afterPendingRes = await (agentProposalsRoute as any).GET(
+        new NextRequest('http://localhost:3000/api/agent/change-proposals?status=pending', {
+          headers: agentAuthHeaders(),
+        })
+      );
+      const afterPending = await afterPendingRes.json();
+      expect(afterPending.totalCount).toBe(0);
+      expect(afterPending.proposals).toHaveLength(0);
+
+      // Remains in rejected history
+      const rejectedListRes = await (agentProposalsRoute as any).GET(
+        new NextRequest('http://localhost:3000/api/agent/change-proposals?status=rejected', {
+          headers: agentAuthHeaders(),
+        })
+      );
+      const rejectedList = await rejectedListRes.json();
+      expect(rejectedList.totalCount).toBe(1);
+      expect(rejectedList.proposals[0]).toMatchObject({
+        id: proposalId,
+        status: 'rejected',
+        version: 2,
+        applicationStatus: 'rejected',
+      });
+
+      // Agent readback confirms rejected status, version 2, notes, reviewedAt, rejected items, and auditable decisionEvents
+      const readbackRes = await GETAgentProposalReadback(
+        new NextRequest(`http://localhost:3000/api/agent/change-proposals/${proposalId}`, {
+          headers: agentAuthHeaders(),
+        }),
+        { params: Promise.resolve({ id: proposalId }) }
+      );
+      expect(readbackRes.status).toBe(200);
+      const readback = await readbackRes.json();
+      expect(readback).toMatchObject({
+        success: true,
+        proposalId,
+        status: 'rejected',
+        version: 2,
+        applicationStatus: 'rejected',
+        reconciliationStatus: 'unresolved',
+        notes: rejectionReason,
+      });
+      expect(typeof readback.reviewedAt).toBe('string');
+      expect(readback.items).toHaveLength(2);
+      expect(readback.items.every((it: any) => it.status === 'rejected')).toBe(true);
+      expect(readback.decisionEvents).toHaveLength(1);
+      expect(readback.decisionEvents[0]).toMatchObject({
+        proposal_id: proposalId,
+        shop_id: RIDE_ON_SHOP_ID,
+        decision: 'reject',
+        actor_id: null,
+        proposal_version: 2,
+        notes: rejectionReason,
+        metadata: {
+          actorType: 'agent',
+          authMethod: 'agent_api_key',
+          rejectedItemCount: 2,
+        },
+      });
+
+      // Ensure no secret API key value was persisted anywhere in state
+      expect(JSON.stringify(state)).not.toContain(TEST_AGENT_KEY);
+
+      // Live inventory, offers, shops, historical applied proposals, Shop Agent Config & crawl_runs untouched
+      expect(state.motorcycle_rentals).toEqual(liveRentalsSnapshot);
+      expect(state.rental_offers).toEqual(liveOffersSnapshot);
+      expect(state.rental_rate_tiers).toEqual(liveTiersSnapshot);
+      expect(state.rental_shops).toEqual(liveShopsSnapshot);
+      expect(state.shop_agent_configs).toEqual(shopAgentConfigSnapshot);
+      expect(state.crawl_runs).toEqual(crawlRunsSnapshot);
+
+      // Even if a referenced categoryId is later retired/unknown, agent readback still confirms rejected status (no 400)
+      const savedCategories = structuredClone(state.categories);
+      state.categories = [];
+      const staleCategoryReadbackRes = await GETAgentProposalReadback(
+        new NextRequest(`http://localhost:3000/api/agent/change-proposals/${proposalId}`, {
+          headers: agentAuthHeaders(),
+        }),
+        { params: Promise.resolve({ id: proposalId }) }
+      );
+      state.categories = savedCategories;
+      expect(staleCategoryReadbackRes.status).toBe(200);
+      const staleCategoryReadback = await staleCategoryReadbackRes.json();
+      expect(staleCategoryReadback.status).toBe('rejected');
+
+      const historicalAfter = state.change_proposals.find(
+        (p) => p.id === historicalAppliedProposalId
+      );
+      expect(historicalAfter?.status).toBe('applied');
+      expect(historicalAfter?.version).toBe(2);
+
+      // Admin candidate decisions ('dismissed' / 'excluded') untouched; linked 'ready_for_proposal' candidate returned cleanly to 'open' with actor_type='agent'
+      const dismissedAfter = state.unresolved_candidates.find((c) => c.id === dismissedCandidateId);
+      const excludedAfter = state.unresolved_candidates.find((c) => c.id === excludedCandidateId);
+      const readyAfter = state.unresolved_candidates.find((c) => c.id === readyCandidateId);
+      expect(dismissedAfter).toMatchObject({
+        state: 'dismissed',
+        resolution_reason: 'Admin previously dismissed',
+        version: 3,
+      });
+      expect(excludedAfter).toMatchObject({
+        state: 'excluded',
+        resolution_reason: '50cc moped excluded',
+        version: 2,
+      });
+      expect(readyAfter).toMatchObject({
+        state: 'open',
+        linked_proposal_item_id: null,
+      });
+      const candRejectEvent = state.unresolved_candidate_events.find(
+        (ev) => ev.candidate_id === readyCandidateId && ev.event_type === 'proposal_rejected'
+      );
+      expect(candRejectEvent).toMatchObject({
+        actor_type: 'agent',
+        actor_id: null,
+        previous_state: 'ready_for_proposal',
+        new_state: 'open',
+        reason: rejectionReason,
+      });
+    });
+
+    it('rejects a report-only pending proposal while keeping applicationStatus = not_applicable and preserving open candidates', async () => {
+      const stageBody = buildReconciliationProposalBody({
+        agentRunId: 'report-only-217',
+        items: [],
+        entries: [
+          {
+            entryKey: 'honda-pcx-125',
+            brand: 'Honda',
+            model: 'PCX 125',
+            year: 2024,
+            existingMotorcycleId: LIVE_PCX_ID,
+            disposition: 'unchanged',
+            proposalItemRefs: [],
+            comparedAttributes: ['model', 'offers'],
+            evidence: [
+              {
+                sourceUrl: 'https://rideon.es/flota/honda-pcx-125/',
+                kind: 'detail_page',
+                snippet: 'PCX 125 unchanged',
+              },
+            ],
+          },
+          {
+            entryKey: 'bmw-r1250gs',
+            brand: 'BMW',
+            model: 'R 1250 GS',
+            year: 2024,
+            disposition: 'unresolved',
+            proposalItemRefs: [],
+            issues: [{ code: 'PRICE_UNVERIFIED', detail: 'Quote on request only' }],
+            nextAction: 'Recheck pricing page on next crawl',
+            evidence: [
+              {
+                sourceUrl: 'https://rideon.es/flota/bmw-r1250gs/',
+                kind: 'detail_page',
+                snippet: 'BMW R 1250 GS - consultar tarifa',
+              },
+            ],
+          },
+        ],
+      });
+
+      const stageRes = await agentProposalsRoute.POST(
+        new NextRequest('http://localhost:3000/api/agent/change-proposals', {
+          method: 'POST',
+          headers: agentAuthHeaders(),
+          body: JSON.stringify(stageBody),
+        })
+      );
+      expect(stageRes.status).toBe(201);
+      const staged = await stageRes.json();
+      expect(staged.proposalStatus).toBe('pending');
+      const { proposalId } = staged;
+
+      const rejectRes = await POSTAgentProposalReject(
+        new NextRequest(`http://localhost:3000/api/agent/change-proposals/${proposalId}/reject`, {
+          method: 'POST',
+          headers: agentAuthHeaders(),
+          body: JSON.stringify({
+            expectedVersion: 1,
+            reason: 'Clearing report-only pending proposal before full rebuild.',
+          }),
+        }),
+        { params: Promise.resolve({ id: proposalId }) }
+      );
+      expect(rejectRes.status).toBe(200);
+      const rejectJson = await rejectRes.json();
+      expect(rejectJson).toMatchObject({
+        success: true,
+        proposalId,
+        status: 'rejected',
+        version: 2,
+        applicationStatus: 'not_applicable',
+        rejectedItemCount: 0,
+      });
+      // Open candidate created by the report-only proposal remains open & untouched
+      expect(state.unresolved_candidates).toHaveLength(1);
+      expect(state.unresolved_candidates[0].state).toBe('open');
+    });
+  });
+
+  describe('5. Concurrency, Stale Version, Non-Pending Status & Idempotent Retry Semantics', () => {
+    it('fails with 409 Conflict on stale expectedVersion without mutating the pending proposal', async () => {
+      const propId = 'eb7f9890-98bf-4d3e-9837-59b7749de130';
+      state.change_proposals.push({
+        id: propId,
+        shop_id: RIDE_ON_SHOP_ID,
+        agent_run_id: 'run-v3',
+        source_url: 'https://rideon.es/flota/',
+        status: 'pending',
+        coverage_status: 'complete',
+        reconciliation_status: 'complete',
+        application_status: 'pending',
+        version: 3,
+        summary_counts: { add: 1, update: 0, delist: 0 },
+        created_at: '2026-11-10T10:00:00.000Z',
+      });
+
+      const res = await POSTAgentProposalReject(
+        new NextRequest(`http://localhost:3000/api/agent/change-proposals/${propId}/reject`, {
+          method: 'POST',
+          headers: agentAuthHeaders(),
+          body: JSON.stringify({ expectedVersion: 1, reason: 'Stale attempt' }),
+        }),
+        { params: Promise.resolve({ id: propId }) }
+      );
+      expect(res.status).toBe(409);
+      const body = await res.json();
+      expect(body).toMatchObject({
+        currentStatus: 'pending',
+        currentVersion: 3,
+      });
+      expect(state.change_proposals[0].status).toBe('pending');
+      expect(state.proposal_decision_events).toHaveLength(0);
+    });
+
+    it('fails with 409 Conflict for applied, partially_applied, acknowledged, superseded, reviewing, and repeated rejected proposals without duplicating decision events', async () => {
+      const nonPendingStatuses = [
+        'applied',
+        'partially_applied',
+        'acknowledged',
+        'superseded',
+        'reviewing',
+      ] as const;
+
+      for (let i = 0; i < nonPendingStatuses.length; i++) {
+        const status = nonPendingStatuses[i];
+        const id = `55555555-5555-4555-8555-55555555555${i}`;
+        state.change_proposals.push({
+          id,
+          shop_id: RIDE_ON_SHOP_ID,
+          agent_run_id: `run-${status}`,
+          source_url: 'https://rideon.es/flota/',
+          status,
+          coverage_status: 'complete',
+          reconciliation_status: 'complete',
+          application_status: status === 'acknowledged' ? 'not_applicable' : 'applied',
+          version: 2,
+          summary_counts: { add: 1, update: 0, delist: 0 },
+          created_at: '2026-11-10T10:00:00.000Z',
+        });
+
+        const res = await POSTAgentProposalReject(
+          new NextRequest(`http://localhost:3000/api/agent/change-proposals/${id}/reject`, {
+            method: 'POST',
+            headers: agentAuthHeaders(),
+            body: JSON.stringify({ expectedVersion: 2, reason: 'Should not overwrite' }),
+          }),
+          { params: Promise.resolve({ id }) }
+        );
+        expect(res.status).toBe(409);
+        const body = await res.json();
+        expect(body).toMatchObject({
+          currentStatus: status,
+          currentVersion: 2,
+        });
+      }
+
+      // Now stage + reject a pending proposal once, then retry rejection (both with v1 and v2)
+      const stageRes = await agentProposalsRoute.POST(
+        new NextRequest('http://localhost:3000/api/agent/change-proposals', {
+          method: 'POST',
+          headers: agentAuthHeaders(),
+          body: JSON.stringify(buildReconciliationProposalBody({ agentRunId: 'retry-test-run' })),
+        })
+      );
+      const { proposalId } = await stageRes.json();
+
+      const firstReject = await POSTAgentProposalReject(
+        new NextRequest(`http://localhost:3000/api/agent/change-proposals/${proposalId}/reject`, {
+          method: 'POST',
+          headers: agentAuthHeaders(),
+          body: JSON.stringify({ expectedVersion: 1, reason: 'Initial rejection' }),
+        }),
+        { params: Promise.resolve({ id: proposalId }) }
+      );
+      expect(firstReject.status).toBe(200);
+      expect(state.proposal_decision_events).toHaveLength(1);
+
+      for (const retryVersion of [1, 2]) {
+        const retryRes = await POSTAgentProposalReject(
+          new NextRequest(`http://localhost:3000/api/agent/change-proposals/${proposalId}/reject`, {
+            method: 'POST',
+            headers: agentAuthHeaders(),
+            body: JSON.stringify({ expectedVersion: retryVersion, reason: 'Duplicate retry' }),
+          }),
+          { params: Promise.resolve({ id: proposalId }) }
+        );
+        expect(retryRes.status).toBe(409);
+        const retryBody = await retryRes.json();
+        expect(retryBody).toMatchObject({
+          currentStatus: 'rejected',
+          currentVersion: 2,
+        });
+      }
+      // Still only 1 decision event and original reason preserved
+      expect(state.proposal_decision_events).toHaveLength(1);
+      expect(state.proposal_decision_events[0].notes).toBe('Initial rejection');
+    });
+
+    it('restores proposal and linked candidates via append-only events on mid-rejection DB failure, sanitizes 500 errors, and never overwrites concurrent candidate or admin list contracts', async () => {
+      const readyCandId = '66666666-6666-4666-8666-666666666661';
+      state.unresolved_candidates.push({
+        id: readyCandId,
+        shop_id: RIDE_ON_SHOP_ID,
+        identity_key: 'honda::forza-350::2024-single::base',
+        brand_name: 'Honda',
+        model_name: 'Forza 350',
+        year: 2024,
+        year_to: null,
+        variant_label: null,
+        state: 'open',
+        flagged_for_review: false,
+        resolution_reason: null,
+        current_issues: [{ code: 'PRICE_UNVERIFIED', detail: 'Unpriced' }],
+        latest_evidence: [],
+        version: 1,
+      });
+
+      const stageRes = await agentProposalsRoute.POST(
+        new NextRequest('http://localhost:3000/api/agent/change-proposals', {
+          method: 'POST',
+          headers: agentAuthHeaders(),
+          body: JSON.stringify(
+            buildReconciliationProposalBody({
+              agentRunId: 'rollback-test-run',
+              items: [
+                {
+                  clientItemId: 'add-forza-rb',
+                  entityType: 'motorcycle',
+                  action: 'add',
+                  brandName: 'Honda',
+                  modelName: 'Forza 350',
+                  proposedData: {
+                    categoryId: SCOOTER_CATEGORY_ID,
+                    year: 2024,
+                    engineCapacityCc: 330,
+                    offers: [
+                      {
+                        offerType: 'daily',
+                        amount: 49,
+                        currency: 'EUR',
+                        billingBasis: 'per_day',
+                        durationUnit: 'day',
+                        minDuration: 1,
+                        maxDuration: null,
+                      },
+                    ],
+                  },
+                },
+              ],
+              entries: [
+                {
+                  entryKey: 'honda-forza-350',
+                  brand: 'Honda',
+                  model: 'Forza 350',
+                  year: 2024,
+                  candidateId: readyCandId,
+                  disposition: 'ready_change',
+                  proposalItemRefs: ['add-forza-rb'],
+                  evidence: [
+                    {
+                      sourceUrl: 'https://rideon.es/flota/honda-forza-350/',
+                      kind: 'detail_page',
+                      snippet: 'Forza 350 49 EUR/day',
+                    },
+                  ],
+                },
+                {
+                  entryKey: 'honda-pcx-125',
+                  brand: 'Honda',
+                  model: 'PCX 125',
+                  year: 2024,
+                  existingMotorcycleId: LIVE_PCX_ID,
+                  disposition: 'unchanged',
+                  proposalItemRefs: [],
+                  comparedAttributes: ['model', 'offers'],
+                  evidence: [
+                    {
+                      sourceUrl: 'https://rideon.es/flota/honda-pcx-125/',
+                      kind: 'detail_page',
+                      snippet: 'PCX 125 unchanged',
+                    },
+                  ],
+                },
+              ],
+            })
+          ),
+        })
+      );
+      expect(stageRes.status).toBe(201);
+      const { proposalId } = await stageRes.json();
+      expect(state.unresolved_candidates.find((c) => c.id === readyCandId)?.state).toBe(
+        'ready_for_proposal'
+      );
+
+      // Simulate DB failure when inserting proposal_decision_events
+      const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      (getSupabaseAdmin as jest.Mock).mockImplementation(() =>
+        createInMemorySupabaseClient(state, { failDecisionEventInsert: true })
+      );
+
+      const failRes = await POSTAgentProposalReject(
+        new NextRequest(`http://localhost:3000/api/agent/change-proposals/${proposalId}/reject`, {
+          method: 'POST',
+          headers: agentAuthHeaders(),
+          body: JSON.stringify({ expectedVersion: 1, reason: 'Will fail mid-way' }),
+        }),
+        { params: Promise.resolve({ id: proposalId }) }
+      );
+      expect(failRes.status).toBe(500);
+      const failBody = await failRes.json();
+      // 500 body must NOT leak internal DB error details
+      expect(failBody.details).toBeUndefined();
+      expect(JSON.stringify(failBody)).not.toContain('Simulated DB failure');
+
+      // Proposal, items, AND linked candidate restored cleanly using strictly append-only events (zero deletes)
+      const propAfter = state.change_proposals.find((p) => p.id === proposalId);
+      expect(propAfter?.status).toBe('pending');
+      expect(propAfter?.version).toBe(1);
+      const itemsAfter = state.change_proposal_items.filter((i) => i.proposal_id === proposalId);
+      expect(itemsAfter.every((i) => i.status === 'pending')).toBe(true);
+      const candAfter = state.unresolved_candidates.find((c) => c.id === readyCandId);
+      expect(candAfter?.state).toBe('ready_for_proposal');
+      expect(candAfter?.linked_proposal_item_id).toBeTruthy();
+      expect(
+        state.unresolved_candidate_events.some(
+          (ev) =>
+            ev.candidate_id === readyCandId &&
+            ev.event_type === 'rejection_rollback' &&
+            ev.actor_type === 'system' &&
+            ev.previous_state === 'open' &&
+            ev.new_state === 'ready_for_proposal'
+        )
+      ).toBe(true);
+
+      // Also verify GET /api/agent/change-proposals 500 sanitizes internal DB errors
+      (getSupabaseAdmin as jest.Mock).mockImplementationOnce(() => ({
+        from: () => {
+          throw new Error('Sensitive internal connection string error');
+        },
+      }));
+      const list500Res = await (agentProposalsRoute as any).GET(
+        new NextRequest('http://localhost:3000/api/agent/change-proposals', {
+          headers: agentAuthHeaders(),
+        })
+      );
+      errSpy.mockRestore();
+      expect(list500Res.status).toBe(500);
+      const list500Body = await list500Res.json();
+      expect(list500Body.details).toBeUndefined();
+      expect(JSON.stringify(list500Body)).not.toContain('Sensitive internal');
+
+      // Restore normal in-memory DB and verify admin list contract & 0/NaN resilience remain intact
+      (getSupabaseAdmin as jest.Mock).mockImplementation(() => createInMemorySupabaseClient(state));
+      const adminListData = await ChangeProposalService.getProposals({
+        limit: 0,
+        offset: Number.NaN,
+      });
+      expect(Object.keys(adminListData).sort()).toEqual(['proposals', 'totalCount']);
+      expect(adminListData.totalCount).toBe(1);
+      expect(adminListData.proposals).toHaveLength(1);
+
+      (isAuthorizedAdmin as jest.Mock).mockResolvedValueOnce(true);
+      const adminRouteRes = await GETAdminProposals(
+        new NextRequest('http://localhost:3000/api/admin/change-proposals?limit=0&offset=invalid')
+      );
+      (isAuthorizedAdmin as jest.Mock).mockResolvedValue(false);
+      expect(adminRouteRes.status).toBe(200);
+      const adminRouteJson = await adminRouteRes.json();
+      expect(Object.keys(adminRouteJson).sort()).toEqual(['proposals', 'success', 'totalCount']);
+    });
+
+    it('uses CAS on unresolved_candidates so concurrent candidate state/version updates are never overwritten during rejection or rollback', async () => {
+      const candId = '77777777-7777-4777-8777-777777777771';
+      state.unresolved_candidates.push({
+        id: candId,
+        shop_id: RIDE_ON_SHOP_ID,
+        identity_key: 'yamaha::xmax-300::2024-single::base',
+        brand_name: 'Yamaha',
+        model_name: 'XMAX 300',
+        year: 2024,
+        year_to: null,
+        variant_label: null,
+        state: 'open',
+        flagged_for_review: false,
+        resolution_reason: null,
+        current_issues: [{ code: 'PRICE_UNVERIFIED', detail: 'Unpriced' }],
+        latest_evidence: [],
+        version: 1,
+      });
+
+      const stageRes = await agentProposalsRoute.POST(
+        new NextRequest('http://localhost:3000/api/agent/change-proposals', {
+          method: 'POST',
+          headers: agentAuthHeaders(),
+          body: JSON.stringify(
+            buildReconciliationProposalBody({
+              agentRunId: 'cand-cas-test-run',
+              items: [
+                {
+                  clientItemId: 'add-xmax',
+                  entityType: 'motorcycle',
+                  action: 'add',
+                  brandName: 'Yamaha',
+                  modelName: 'XMAX 300',
+                  proposedData: {
+                    categoryId: SCOOTER_CATEGORY_ID,
+                    year: 2024,
+                    engineCapacityCc: 292,
+                    offers: [
+                      {
+                        offerType: 'daily',
+                        amount: 45,
+                        currency: 'EUR',
+                        billingBasis: 'per_day',
+                        durationUnit: 'day',
+                        minDuration: 1,
+                        maxDuration: null,
+                      },
+                    ],
+                  },
+                },
+              ],
+              entries: [
+                {
+                  entryKey: 'yamaha-xmax-300',
+                  brand: 'Yamaha',
+                  model: 'XMAX 300',
+                  year: 2024,
+                  candidateId: candId,
+                  disposition: 'ready_change',
+                  proposalItemRefs: ['add-xmax'],
+                  evidence: [
+                    {
+                      sourceUrl: 'https://rideon.es/flota/yamaha-xmax-300/',
+                      kind: 'detail_page',
+                      snippet: 'XMAX 300 45 EUR/day',
+                    },
+                  ],
+                },
+                {
+                  entryKey: 'honda-pcx-125',
+                  brand: 'Honda',
+                  model: 'PCX 125',
+                  year: 2024,
+                  existingMotorcycleId: LIVE_PCX_ID,
+                  disposition: 'unchanged',
+                  proposalItemRefs: [],
+                  comparedAttributes: ['model', 'offers'],
+                  evidence: [
+                    {
+                      sourceUrl: 'https://rideon.es/flota/honda-pcx-125/',
+                      kind: 'detail_page',
+                      snippet: 'PCX 125 unchanged',
+                    },
+                  ],
+                },
+              ],
+            })
+          ),
+        })
+      );
+      expect(stageRes.status).toBe(201);
+      const { proposalId } = await stageRes.json();
+
+      // Simulate concurrent candidate dismissal happening right after `unresolved_candidates` SELECT during rejectProposal
+      const baseClient = createInMemorySupabaseClient(state);
+      (getSupabaseAdmin as jest.Mock).mockImplementationOnce(() => ({
+        ...baseClient,
+        from: (table: any) => {
+          const qb = baseClient.from(table);
+          if (table === 'unresolved_candidates') {
+            const origSelect = qb.select.bind(qb);
+            qb.select = (...args: any[]) => {
+              const resQb = origSelect(...args);
+              const origEq = resQb.eq.bind(resQb);
+              resQb.eq = (col: string, val: any) => {
+                const chain = origEq(col, val);
+                if (col === 'shop_id') {
+                  const origThen = chain.then.bind(chain);
+                  chain.then = (onFulfilled: any, onRejected: any) =>
+                    origThen((result: any) => {
+                      // Concurrent admin transition mutates live state after SELECT snapshot was taken!
+                      const liveCand = state.unresolved_candidates.find((c) => c.id === candId);
+                      if (liveCand && liveCand.state === 'ready_for_proposal') {
+                        liveCand.state = 'dismissed';
+                        liveCand.resolution_reason = 'Concurrent admin dismissal';
+                        liveCand.version = 99;
+                      }
+                      return onFulfilled ? onFulfilled(result) : result;
+                    }, onRejected);
+                }
+                return chain;
+              };
+              return resQb;
+            };
+          }
+          return qb;
+        },
+      }));
+
+      const rejectRes = await POSTAgentProposalReject(
+        new NextRequest(`http://localhost:3000/api/agent/change-proposals/${proposalId}/reject`, {
+          method: 'POST',
+          headers: agentAuthHeaders(),
+          body: JSON.stringify({ expectedVersion: 1, reason: 'Reject proposal safely' }),
+        }),
+        { params: Promise.resolve({ id: proposalId }) }
+      );
+      expect(rejectRes.status).toBe(200);
+
+      // Concurrent 'dismissed' state + version 99 MUST NOT be overwritten to 'open'!
+      const candAfter = state.unresolved_candidates.find((c) => c.id === candId);
+      expect(candAfter).toMatchObject({
+        state: 'dismissed',
+        resolution_reason: 'Concurrent admin dismissal',
+        version: 99,
+      });
+      expect(
+        state.unresolved_candidate_events.some(
+          (ev) => ev.candidate_id === candId && ev.event_type === 'proposal_rejected'
+        )
+      ).toBe(false);
+
+      // Part 2: Concurrent admin dismissal AFTER candidate reopened to 'open' must NOT be clobbered by catch rollback!
+      const candId2 = '88888888-8888-4888-8888-888888888881';
+      state.unresolved_candidates.push({
+        id: candId2,
+        shop_id: RIDE_ON_SHOP_ID,
+        identity_key: 'yamaha::mt-07::2024-single::base',
+        brand_name: 'Yamaha',
+        model_name: 'MT-07',
+        year: 2024,
+        year_to: null,
+        variant_label: null,
+        state: 'open',
+        flagged_for_review: false,
+        resolution_reason: null,
+        current_issues: [{ code: 'PRICE_UNVERIFIED', detail: 'Unpriced' }],
+        latest_evidence: [],
+        version: 1,
+      });
+
+      const stageRes2 = await agentProposalsRoute.POST(
+        new NextRequest('http://localhost:3000/api/agent/change-proposals', {
+          method: 'POST',
+          headers: agentAuthHeaders(),
+          body: JSON.stringify(
+            buildReconciliationProposalBody({
+              agentRunId: 'cand-rollback-cas-run',
+              items: [
+                {
+                  clientItemId: 'add-mt07',
+                  entityType: 'motorcycle',
+                  action: 'add',
+                  brandName: 'Yamaha',
+                  modelName: 'MT-07',
+                  proposedData: {
+                    categoryId: SCOOTER_CATEGORY_ID,
+                    year: 2024,
+                    engineCapacityCc: 689,
+                    offers: [
+                      {
+                        offerType: 'daily',
+                        amount: 65,
+                        currency: 'EUR',
+                        billingBasis: 'per_day',
+                        durationUnit: 'day',
+                        minDuration: 1,
+                        maxDuration: null,
+                      },
+                    ],
+                  },
+                },
+              ],
+              entries: [
+                {
+                  entryKey: 'yamaha-mt-07',
+                  brand: 'Yamaha',
+                  model: 'MT-07',
+                  year: 2024,
+                  candidateId: candId2,
+                  disposition: 'ready_change',
+                  proposalItemRefs: ['add-mt07'],
+                  evidence: [
+                    {
+                      sourceUrl: 'https://rideon.es/flota/yamaha-mt-07/',
+                      kind: 'detail_page',
+                      snippet: 'MT-07 65 EUR/day',
+                    },
+                  ],
+                },
+                {
+                  entryKey: 'honda-pcx-125',
+                  brand: 'Honda',
+                  model: 'PCX 125',
+                  year: 2024,
+                  existingMotorcycleId: LIVE_PCX_ID,
+                  disposition: 'unchanged',
+                  proposalItemRefs: [],
+                  comparedAttributes: ['model', 'offers'],
+                  evidence: [
+                    {
+                      sourceUrl: 'https://rideon.es/flota/honda-pcx-125/',
+                      kind: 'detail_page',
+                      snippet: 'PCX 125 unchanged',
+                    },
+                  ],
+                },
+              ],
+            })
+          ),
+        })
+      );
+      const { proposalId: proposalId2 } = await stageRes2.json();
+
+      // Right when proposal_decision_events fails (triggering rollback), simulate an admin having dismissed candId2
+      const errSpy2 = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const failBaseClient = createInMemorySupabaseClient(state, { failDecisionEventInsert: true });
+      (getSupabaseAdmin as jest.Mock).mockImplementationOnce(() => ({
+        ...failBaseClient,
+        from: (table: any) => {
+          if (table === 'proposal_decision_events') {
+            const liveCand2 = state.unresolved_candidates.find((c) => c.id === candId2);
+            if (liveCand2 && liveCand2.state === 'open') {
+              liveCand2.state = 'dismissed';
+              liveCand2.resolution_reason = 'Dismissed after reopen before rollback';
+              liveCand2.version += 1;
+            }
+          }
+          return failBaseClient.from(table);
+        },
+      }));
+
+      const failRes2 = await POSTAgentProposalReject(
+        new NextRequest(
+          `http://localhost:3000/api/agent/change-proposals/${proposalId2}/reject`,
+          {
+            method: 'POST',
+            headers: agentAuthHeaders(),
+            body: JSON.stringify({ expectedVersion: 1, reason: 'Rollback race check' }),
+          }
+        ),
+        { params: Promise.resolve({ id: proposalId2 }) }
+      );
+      errSpy2.mockRestore();
+      expect(failRes2.status).toBe(500);
+
+      const cand2After = state.unresolved_candidates.find((c) => c.id === candId2);
+      expect(cand2After).toMatchObject({
+        state: 'dismissed',
+        resolution_reason: 'Dismissed after reopen before rollback',
+      });
+    });
+  });
+});

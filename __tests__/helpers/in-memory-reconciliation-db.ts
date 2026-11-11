@@ -259,6 +259,7 @@ export function createInMemorySupabaseClient(
     failReplaceOffersForMotorcycleId?: string;
     failConditionInsertForMotorcycleId?: string;
     failBikeInsertForModel?: string;
+    failDecisionEventInsert?: boolean;
   } = {}
 ) {
   const makeUuid = () => crypto.randomUUID();
@@ -297,7 +298,7 @@ export function createInMemorySupabaseClient(
     let countMode: string | undefined;
     let payloadData: any = null;
     const filters: Array<(row: any) => boolean> = [];
-    let orderSpec: { col: string; ascending: boolean } | null = null;
+    const orderSpecs: Array<{ col: string; ascending: boolean }> = [];
     let rangeSpec: { from: number; to: number } | null = null;
     let limitCount: number | null = null;
     let expectSingle = false;
@@ -348,12 +349,30 @@ export function createInMemorySupabaseClient(
           if (uuidErr) {
             return { data: null, error: uuidErr };
           }
+          if (table === 'proposal_decision_events' && options.failDecisionEventInsert) {
+            return {
+              data: null,
+              error: { message: 'Simulated DB failure inserting proposal_decision_events' },
+            };
+          }
           if (table === 'proposal_decision_events' && !validProposalDecisions.has(raw.decision)) {
             return {
               data: null,
               error: {
                 code: '23514',
                 message: `new row for relation "proposal_decision_events" violates check constraint "proposal_decision_events_decision_check": '${String(raw.decision)}'`,
+              },
+            };
+          }
+          if (
+            table === 'unresolved_candidate_events' &&
+            !new Set(['agent', 'admin', 'system']).has(raw.actor_type)
+          ) {
+            return {
+              data: null,
+              error: {
+                code: '23514',
+                message: `new row for relation "unresolved_candidate_events" violates check constraint "unresolved_candidate_events_actor_type_check": '${String(raw.actor_type)}'`,
               },
             };
           }
@@ -454,13 +473,38 @@ export function createInMemorySupabaseClient(
 
       const matched = tableRows.filter((row) => filters.every((fn) => fn(row)));
 
+      const APPEND_ONLY_AUDIT_TABLES = new Set<keyof InMemoryReconciliationState>([
+        'unresolved_candidate_events',
+        'proposal_decision_events',
+      ]);
+
       if (op === 'delete') {
+        if (APPEND_ONLY_AUDIT_TABLES.has(table)) {
+          return {
+            data: null,
+            error: {
+              code: '42501',
+              message: `Table public.${String(table)} is append-only and cannot be deleted from`,
+            },
+            count: 0,
+          };
+        }
         const toRemove = new Set(matched.map((r) => r.id ?? r));
         state[table] = tableRows.filter((r) => !toRemove.has(r.id ?? r)) as any;
         return { data: matched, error: null, count: matched.length };
       }
 
       if (op === 'update') {
+        if (APPEND_ONLY_AUDIT_TABLES.has(table)) {
+          return {
+            data: null,
+            error: {
+              code: '42501',
+              message: `Table public.${String(table)} is immutable and cannot be updated`,
+            },
+            count: 0,
+          };
+        }
         const uuidErr = validateUuidColumns(table, payloadData || {});
         if (uuidErr) {
           return { data: null, error: uuidErr, count: 0 };
@@ -496,13 +540,14 @@ export function createInMemorySupabaseClient(
       // select
       let rows = matched.map((r) => enrichRow(table, r, state));
       const totalCount = rows.length;
-      if (orderSpec) {
-        const { col, ascending } = orderSpec;
+      if (orderSpecs.length > 0) {
         rows.sort((a, b) => {
-          const av = a[col] ?? '';
-          const bv = b[col] ?? '';
-          if (av < bv) return ascending ? -1 : 1;
-          if (av > bv) return ascending ? 1 : -1;
+          for (const { col, ascending } of orderSpecs) {
+            const av = a[col] ?? '';
+            const bv = b[col] ?? '';
+            if (av < bv) return ascending ? -1 : 1;
+            if (av > bv) return ascending ? 1 : -1;
+          }
           return 0;
         });
       }
@@ -604,7 +649,7 @@ export function createInMemorySupabaseClient(
       },
       order(this: any, col: string, opts?: { ascending?: boolean }) {
         assertBound(this, 'order');
-        orderSpec = { col, ascending: opts?.ascending !== false };
+        orderSpecs.push({ col, ascending: opts?.ascending !== false });
         return builder;
       },
       range(this: any, from: number, to: number) {
