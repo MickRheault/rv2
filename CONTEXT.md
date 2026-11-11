@@ -32,6 +32,10 @@ _Avoid_: Crawler config, scraper settings
 A scheduling ratio (`days_since_last_run / tier_cadence_days`) used to rank pending ingestion tasks fairly across priority tiers, preventing lower-tier starvation under fixed daily crawl budgets.
 _Avoid_: Crawl rank, overdue priority
 
+**Catalog Listing**:
+A published rental shop profile or active motorcycle inventory record (`available` status) curated in RideVault with supplier-stated Rental Offers, inclusions, and conditions, distinct from live date-specific stock or real-time booking availability.
+_Avoid_: Live booking inventory, real-time stock slot, instant reservation
+
 **Canonical Model Name**:
 The official manufacturer designation for a motorcycle model as curated in RideVault.
 _Avoid_: Scraped model title, listing alias, informal nickname
