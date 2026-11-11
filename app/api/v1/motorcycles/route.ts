@@ -45,6 +45,59 @@ export async function GET(request: NextRequest) {
       'desc'
     );
 
+    const rawMinPrice = searchParams.get('minPrice');
+    const minPrice = parseOptionalFiniteNumber(rawMinPrice);
+    if (rawMinPrice !== null && rawMinPrice.trim() !== '' && (minPrice === undefined || minPrice < 0)) {
+      return errors.badRequest('minPrice must be a non-negative number');
+    }
+
+    const rawMaxPrice = searchParams.get('maxPrice');
+    const maxPrice = parseOptionalFiniteNumber(rawMaxPrice);
+    if (rawMaxPrice !== null && rawMaxPrice.trim() !== '' && (maxPrice === undefined || maxPrice < 0)) {
+      return errors.badRequest('maxPrice must be a non-negative number');
+    }
+
+    if (minPrice !== undefined && maxPrice !== undefined && minPrice > maxPrice) {
+      return errors.badRequest('minPrice cannot be greater than maxPrice');
+    }
+
+    const rawCurrency = searchParams.get('currency');
+    let currency: string | undefined;
+    if (rawCurrency !== null && rawCurrency.trim() !== '') {
+      const normalized = rawCurrency.trim().toUpperCase();
+      if (!/^[A-Z]{3}$/.test(normalized)) {
+        return errors.badRequest('Invalid currency code; expected 3-letter ISO code');
+      }
+      currency = normalized;
+    }
+
+    const rawDurationDays = searchParams.get('durationDays');
+    let durationDays: number | undefined;
+    if (rawDurationDays !== null && rawDurationDays.trim() !== '') {
+      const trimmed = rawDurationDays.trim();
+      if (!/^\d+$/.test(trimmed)) {
+        return errors.badRequest('durationDays must be a positive integer');
+      }
+      const parsedDuration = Number(trimmed);
+      if (!Number.isSafeInteger(parsedDuration) || parsedDuration < 1 || parsedDuration > 3650) {
+        return errors.badRequest('durationDays must be a positive integer');
+      }
+      durationDays = parsedDuration;
+    }
+
+    const rawKnownPriceOnly = searchParams.get('knownPriceOnly');
+    let knownPriceOnly: boolean | undefined;
+    if (rawKnownPriceOnly !== null && rawKnownPriceOnly.trim() !== '') {
+      const normalizedBool = rawKnownPriceOnly.trim().toLowerCase();
+      if (normalizedBool === 'true' || normalizedBool === '1') {
+        knownPriceOnly = true;
+      } else if (normalizedBool === 'false' || normalizedBool === '0') {
+        knownPriceOnly = false;
+      } else {
+        return errors.badRequest('knownPriceOnly must be true or false');
+      }
+    }
+
     const filters = {
       brandId: searchParams.get('brandId') || undefined,
       categoryId: searchParams.get('categoryId') || undefined,
@@ -53,8 +106,11 @@ export async function GET(request: NextRequest) {
       cityId: searchParams.get('cityId') || undefined,
       model: searchParams.get('model') || undefined,
       query: searchParams.get('search') || searchParams.get('query') || undefined,
-      minPrice: parseOptionalFiniteNumber(searchParams.get('minPrice')),
-      maxPrice: parseOptionalFiniteNumber(searchParams.get('maxPrice')),
+      minPrice,
+      maxPrice,
+      currency,
+      durationDays,
+      knownPriceOnly,
       minEngineCapacity: searchParams.get('minEngineCapacity')
         ? parseInt(searchParams.get('minEngineCapacity')!, 10)
         : undefined,

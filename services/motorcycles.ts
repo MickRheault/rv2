@@ -6,6 +6,7 @@ import { generateSlug } from '@/lib/utils'
 import {
   compareMotorcyclesByPrice,
   matchesDailyPriceRange,
+  matchesRentalOfferFilter,
   resolveMotorcycleRentalOffers,
   type NormalizedRentalOffer,
 } from '@/lib/rental-offers'
@@ -86,6 +87,9 @@ export interface SearchFilters {
   model?: string
   minPrice?: number
   maxPrice?: number
+  currency?: string
+  durationDays?: number
+  knownPriceOnly?: boolean
   minEngineCapacity?: number
   maxEngineCapacity?: number
   features?: string[]
@@ -200,6 +204,9 @@ export function filterAndSortMotorcycles<T extends Record<string, any>>(
     | 'model'
     | 'minPrice'
     | 'maxPrice'
+    | 'currency'
+    | 'durationDays'
+    | 'knownPriceOnly'
     | 'minEngineCapacity'
     | 'maxEngineCapacity'
     | 'sortBy'
@@ -211,6 +218,9 @@ export function filterAndSortMotorcycles<T extends Record<string, any>>(
     model,
     minPrice,
     maxPrice,
+    currency,
+    durationDays,
+    knownPriceOnly,
     minEngineCapacity,
     maxEngineCapacity,
     sortBy = 'newest'
@@ -240,7 +250,13 @@ export function filterAndSortMotorcycles<T extends Record<string, any>>(
       if (bikeModel !== normalizedModel) return false
     }
 
-    if (!matchesDailyPriceRange(motorcycle, minPrice, maxPrice)) {
+    if (
+      !matchesDailyPriceRange(motorcycle, minPrice, maxPrice, {
+        currency,
+        durationDays,
+        knownPriceOnly,
+      })
+    ) {
       return false
     }
 
@@ -456,6 +472,9 @@ export const motorcycleService = {
       query: searchQuery,
       minPrice,
       maxPrice,
+      currency,
+      durationDays,
+      knownPriceOnly,
       minEngineCapacity,
       maxEngineCapacity,
       features,
@@ -535,9 +554,14 @@ export const motorcycleService = {
     }
 
     const hasFeaturesFilter = Boolean(features && features.length > 0)
-    const needsPricingPostProcess =
+    const hasOfferPriceFilter =
       minPrice !== undefined ||
       maxPrice !== undefined ||
+      Boolean(currency && currency.trim()) ||
+      durationDays !== undefined ||
+      Boolean(knownPriceOnly)
+    const needsPricingPostProcess =
+      hasOfferPriceFilter ||
       sortBy === 'price_asc' ||
       sortBy === 'price_desc'
 
@@ -577,9 +601,15 @@ export const motorcycleService = {
         })
       }
 
-      if (minPrice !== undefined || maxPrice !== undefined) {
+      if (hasOfferPriceFilter) {
         processedData = processedData.filter((motorcycle: any) =>
-          matchesDailyPriceRange(motorcycle, minPrice, maxPrice)
+          matchesRentalOfferFilter(motorcycle, {
+            minPrice,
+            maxPrice,
+            currency,
+            durationDays,
+            knownPriceOnly,
+          })
         )
       }
 

@@ -39,8 +39,20 @@ export const openAITools: ChatCompletionTool[] = [
                     country: { type: 'string', description: 'Country name (e.g., Thailand, Vietnam, Indonesia)' },
                     city: { type: 'string', description: 'City name (e.g., Bangkok, Chiang Mai, Phuket)' },
                     query: { type: 'string', description: 'Search query for model name' },
-                    minPrice: { type: 'number', description: 'Minimum daily rental price in local currency' },
-                    maxPrice: { type: 'number', description: 'Maximum daily rental price in local currency' },
+                    minPrice: { type: 'number', description: 'Minimum daily rental price (or daily equivalent when durationDays is set)' },
+                    maxPrice: { type: 'number', description: 'Maximum daily rental price (or daily equivalent when durationDays is set)' },
+                    currency: {
+                        type: 'string',
+                        description: '3-letter ISO currency code such as THB, USD, VND, or EUR — use when the user specifies a currency',
+                    },
+                    durationDays: {
+                        type: 'number',
+                        description: 'Positive integer rental duration in days (e.g., 7 for a week or 30 for 30 days) — evaluates covering daily brackets and exact-day packages',
+                    },
+                    knownPriceOnly: {
+                        type: 'boolean',
+                        description: 'Set true to exclude unpriced "Price on request" listings',
+                    },
                     limit: { type: 'number', description: 'Number of results (max 20)', default: 10 },
                 },
             },
@@ -274,6 +286,52 @@ export async function executeTool(
             // Motorcycles
             case 'search_motorcycles':
             case 'list_motorcycles': {
+                let currency: string | undefined;
+                if (args.currency !== undefined && args.currency !== null && String(args.currency).trim() !== '') {
+                    const normalized = String(args.currency).trim().toUpperCase();
+                    if (!/^[A-Z]{3}$/.test(normalized)) {
+                        return {
+                            success: false,
+                            error: 'Invalid currency code; expected 3-letter ISO code',
+                        };
+                    }
+                    currency = normalized;
+                }
+
+                let durationDays: number | undefined;
+                if (args.durationDays !== undefined && args.durationDays !== null && String(args.durationDays).trim() !== '') {
+                    const parsedDuration =
+                        typeof args.durationDays === 'number'
+                            ? args.durationDays
+                            : Number(String(args.durationDays).trim());
+                    if (!Number.isSafeInteger(parsedDuration) || parsedDuration < 1 || parsedDuration > 3650) {
+                        return {
+                            success: false,
+                            error: 'durationDays must be a positive integer',
+                        };
+                    }
+                    durationDays = parsedDuration;
+                }
+
+                let knownPriceOnly: boolean | undefined;
+                if (args.knownPriceOnly !== undefined && args.knownPriceOnly !== null && String(args.knownPriceOnly).trim() !== '') {
+                    if (typeof args.knownPriceOnly === 'boolean') {
+                        knownPriceOnly = args.knownPriceOnly;
+                    } else {
+                        const normalizedBool = String(args.knownPriceOnly).trim().toLowerCase();
+                        if (normalizedBool === 'true' || normalizedBool === '1') {
+                            knownPriceOnly = true;
+                        } else if (normalizedBool === 'false' || normalizedBool === '0') {
+                            knownPriceOnly = false;
+                        } else {
+                            return {
+                                success: false,
+                                error: 'knownPriceOnly must be true or false',
+                            };
+                        }
+                    }
+                }
+
                 // Resolve names to IDs/codes
                 let cityId: string | undefined;
                 let categoryId: string | undefined;
@@ -305,6 +363,9 @@ export async function executeTool(
                     model: args.query as string | undefined,
                     minPrice: args.minPrice as number | undefined,
                     maxPrice: args.maxPrice as number | undefined,
+                    currency,
+                    durationDays,
+                    knownPriceOnly,
                     limit: Math.min((args.limit as number) || 10, 20),
                     offset: 0,
                 });

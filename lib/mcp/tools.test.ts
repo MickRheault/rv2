@@ -1,6 +1,6 @@
 /** @jest-environment node */
 
-import { executeTool, formatToolResultForLLM } from './tools';
+import { executeTool, formatToolResultForLLM, openAITools } from './tools';
 
 const mockGetMotorcycles = jest.fn();
 const mockGetMotorcycleById = jest.fn();
@@ -297,6 +297,48 @@ it('exposes verbatim non-daily rentalOffers and real billing phrases with dailyR
         priceDisplay: 'Price on request',
         rentalOffers: [],
     });
+});
+
+it('exposes currency, durationDays, and knownPriceOnly in list_motorcycles tool schema and forwards normalized filter args (#225)', async () => {
+    mockGetMotorcycles.mockClear();
+
+    const listTool = openAITools.find(
+        (t) => t.type === 'function' && t.function.name === 'list_motorcycles'
+    );
+    expect(listTool).toBeDefined();
+    const props = (listTool as any).function.parameters.properties;
+    expect(props.currency).toMatchObject({ type: 'string' });
+    expect(props.durationDays).toMatchObject({ type: 'number' });
+    expect(props.knownPriceOnly).toMatchObject({ type: 'boolean' });
+
+    mockGetMotorcycles.mockResolvedValueOnce({ total: 1, motorcycles: [motorcycle] });
+    const res = await executeTool('list_motorcycles', {
+        maxPrice: 10,
+        currency: ' usd ',
+        durationDays: 7,
+        knownPriceOnly: true,
+    });
+    expect(res.success).toBe(true);
+    expect(mockGetMotorcycles).toHaveBeenCalledWith(
+        expect.objectContaining({
+            maxPrice: 10,
+            currency: 'USD',
+            durationDays: 7,
+            knownPriceOnly: true,
+        })
+    );
+
+    mockGetMotorcycles.mockClear();
+    const badCurrencyRes = await executeTool('list_motorcycles', { currency: '$' });
+    expect(badCurrencyRes.success).toBe(false);
+    expect(mockGetMotorcycles).not.toHaveBeenCalled();
+
+    for (const badDuration of [0, -3, 1.5]) {
+        mockGetMotorcycles.mockClear();
+        const badDurationRes = await executeTool('list_motorcycles', { durationDays: badDuration });
+        expect(badDurationRes.success).toBe(false);
+        expect(mockGetMotorcycles).not.toHaveBeenCalled();
+    }
 });
 
 
