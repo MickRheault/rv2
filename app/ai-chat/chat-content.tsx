@@ -14,6 +14,7 @@ import {
 } from '@/lib/chat/suggestions';
 import { submitFormOnEnter } from '@/lib/chat/keyboard';
 import { normalizeChatHref } from '@/lib/chat/links';
+import { sanitizeConversationHistory, type SanitizedHistoryMessage } from '@/lib/chat/prompt';
 import './markdown.css';
 
 interface Message {
@@ -77,12 +78,24 @@ export default function ChatContent({ accessRequired }: { accessRequired: boolea
                 ? currentMessages.slice(0, -1)
                 : currentMessages;
 
-        const conversationHistory = priorMessages
-            .filter(msg => !msg.isError)
-            .map(({ role, content }) => ({
-                role,
-                content,
-            }));
+        const completedTurns: SanitizedHistoryMessage[] = [];
+        for (let i = 0; i < priorMessages.length - 1; i++) {
+            const current = priorMessages[i];
+            const next = priorMessages[i + 1];
+            if (
+                current.role === 'user' &&
+                !current.isError &&
+                next.role === 'assistant' &&
+                !next.isError
+            ) {
+                completedTurns.push(
+                    { role: 'user', content: current.content },
+                    { role: 'assistant', content: next.content }
+                );
+                i += 1;
+            }
+        }
+        const conversationHistory = sanitizeConversationHistory(completedTurns);
 
         if (appendUserMessage) {
             updateMessages(prev => [...prev, { role: 'user', content: userMessage }]);

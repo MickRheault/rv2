@@ -208,8 +208,9 @@ it('configures SYSTEM_PROMPT with global catalog coverage, strict domain boundar
     expect(SYSTEM_PROMPT).not.toContain('across Southeast Asia.');
     expect(SYSTEM_PROMPT).toMatch(/global|worldwide/i);
     expect(SYSTEM_PROMPT).toMatch(/Europe/i);
-    expect(SYSTEM_PROMPT).toMatch(/GoMotoRent/i);
+    expect(SYSTEM_PROMPT).toContain('Global Moto Rentals (GMR)');
     expect(SYSTEM_PROMPT).toMatch(/RideVault/i);
+    expect(SYSTEM_PROMPT).not.toMatch(/GoMotoRent/i);
 
     // Up to 6 complete listings per turn, total count, and offer to show more
     expect(SYSTEM_PROMPT).toMatch(/up to 6 complete/i);
@@ -547,6 +548,21 @@ it.each([
         'Riders Corner lists **[Honda ADV 160](/motorcycle/111)** (฿600/day; see [shop page](/shop/thailand/chiang-mai/riders-',
         "Riders Corner lists **[Honda ADV 160](/motorcycle/111)**\n\n_Showing the top results — ask if you'd like to see more listings or details._",
     ],
+    [
+        'ignores periods inside unclosed markdown links/bold when finding the last complete sentence',
+        'Riders Corner lists the **[Honda ADV 160](/motorcycle/111)** for 600 THB/day. See **[Riders Corner Co. Ltd](/shop/thailand/chiang-m',
+        "Riders Corner lists the **[Honda ADV 160](/motorcycle/111)** for 600 THB/day.\n\n_Showing the top results — ask if you'd like to see more listings or details._",
+    ],
+    [
+        'strips dangling trailing numbered or bulleted list markers without mistaking them for sentences',
+        'Here are popular scooters:\n1. Honda Click\n2. Yamaha Aerox\n3. ',
+        "Here are popular scooters:\n1. Honda Click\n2. Yamaha Aerox\n\n_Showing the top results — ask if you'd like to see more listings or details._",
+    ],
+    [
+        'drops trailing mid-word cutoff token on a single unfinished sentence and appends ellipsis before continuation note',
+        'You can rent the Honda ADV 160 in Chiang Mai with two helmets and unlimi',
+        "You can rent the Honda ADV 160 in Chiang Mai with two helmets…\n\n_Showing the top results — ask if you'd like to see more listings or details._",
+    ],
 ])('handles finish_reason=length edge case: %s', async (_label, rawContent, expectedResponse) => {
     mockCreateCompletion.mockResolvedValueOnce({
         choices: [{
@@ -559,6 +575,19 @@ it.each([
     expect(response.status).toBe(200);
     const data = await response.json();
     expect(data.response).toBe(expectedResponse);
+});
+
+it.each([null, ''])('preserves non-length empty completion content (%s) as-is without injecting fallback text', async emptyContent => {
+    mockCreateCompletion.mockResolvedValueOnce({
+        choices: [{
+            finish_reason: 'stop',
+            message: { role: 'assistant', content: emptyContent },
+        }],
+    });
+
+    const response = await POST(request(`Bearer ${configuredSecret}`, 'Find scooters in Bangkok'));
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ response: emptyContent });
 });
 
 

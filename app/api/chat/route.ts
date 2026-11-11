@@ -12,10 +12,10 @@ import {
     MAX_TOOL_ITERATIONS,
     MAX_TOTAL_TOOL_CALLS,
     SYSTEM_PROMPT,
-    finalizeAssistantResponse,
     isRepetitionOrPaddingPrompt,
     sanitizeConversationHistory,
 } from '@/lib/chat/prompt';
+import { finalizeAssistantResponse } from '@/lib/chat/response';
 import { getRateLimitHeaders, rateLimit } from '@/lib/api/rate-limit';
 import { timingSafeEqual } from 'node:crypto';
 

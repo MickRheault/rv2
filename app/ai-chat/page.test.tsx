@@ -495,7 +495,7 @@ it('sends prior user and assistant turns in conversationHistory on follow-up mes
     });
 });
 
-it('excludes synthetic client-side error messages from conversationHistory on subsequent turns', async () => {
+it('excludes both failed user prompts and synthetic client-side error banners from conversationHistory on subsequent turns', async () => {
     delete process.env.AI_CHAT_ACCESS_SECRET;
     jest.mocked(fetch)
         .mockResolvedValueOnce({
@@ -505,8 +505,8 @@ it('excludes synthetic client-side error messages from conversationHistory on su
         } as Response)
         .mockResolvedValueOnce({
             ok: false,
-            status: 503,
-            text: async () => JSON.stringify({ error: 'AI service error. Please try again.' }),
+            status: 500,
+            text: async () => JSON.stringify({ error: 'Internal server error' }),
         } as Response)
         .mockRejectedValueOnce(new Error('Failed to fetch'))
         .mockResolvedValueOnce({
@@ -525,7 +525,7 @@ it('excludes synthetic client-side error messages from conversationHistory on su
 
     fireEvent.change(textarea, { target: { value: 'What are their opening hours?' } });
     fireEvent.submit(form);
-    expect(await screen.findByText('Error: AI service error. Please try again.')).toBeInTheDocument();
+    expect(await screen.findByText('Error: Internal server error')).toBeInTheDocument();
 
     fireEvent.change(textarea, { target: { value: 'How much is the deposit?' } });
     fireEvent.submit(form);
@@ -541,10 +541,50 @@ it('excludes synthetic client-side error messages from conversationHistory on su
         conversationHistory: [
             { role: 'user', content: 'What bikes does Riders Corner have?' },
             { role: 'assistant', content: 'They have a Honda ADV 160 and CRF300L.' },
-            { role: 'user', content: 'What are their opening hours?' },
-            { role: 'user', content: 'How much is the deposit?' },
         ],
     });
+});
+
+it('bounds client-side conversationHistory to the most recent 10 messages and 2500 characters per message', async () => {
+    delete process.env.AI_CHAT_ACCESS_SECRET;
+    let turn = 0;
+    jest.mocked(fetch).mockImplementation(async () => {
+        turn += 1;
+        const longReply = `Assistant reply ${turn} ` + 'r'.repeat(2800);
+        return {
+            ok: true,
+            status: 200,
+            text: async () => JSON.stringify({ response: longReply }),
+        } as Response;
+    });
+
+    const { container } = render(<ChatPage />);
+    const textarea = screen.getByPlaceholderText('Ask about bikes or shops...');
+    const form = container.querySelector('form')!;
+
+    // Complete 6 turns (12 messages total), then submit turn 7
+    for (let i = 1; i <= 6; i++) {
+        fireEvent.change(textarea, { target: { value: `User question ${i}` } });
+        fireEvent.submit(form);
+        expect(await screen.findByText(new RegExp(`^Assistant reply ${i} `))).toBeInTheDocument();
+    }
+
+    fireEvent.change(textarea, { target: { value: 'User question 7' } });
+    fireEvent.submit(form);
+    expect(await screen.findByText(/^Assistant reply 7 /)).toBeInTheDocument();
+
+    const seventhRequestBody = JSON.parse(String(jest.mocked(fetch).mock.calls[6][1]?.body));
+    expect(seventhRequestBody.message).toBe('User question 7');
+    expect(seventhRequestBody.conversationHistory).toHaveLength(10);
+    // Oldest turn (User question 1 + Assistant reply 1) dropped; starts at User question 2
+    expect(seventhRequestBody.conversationHistory[0]).toEqual({
+        role: 'user',
+        content: 'User question 2',
+    });
+    for (const item of seventhRequestBody.conversationHistory) {
+        expect(item.content.length).toBeLessThanOrEqual(2500);
+    }
+    expect(seventhRequestBody.conversationHistory[1].content.length).toBe(2500);
 });
 
 it('retains the initial ?q= prompt and assistant reply in conversationHistory on follow-up turns without duplicating the ?q= prompt under StrictMode', async () => {
