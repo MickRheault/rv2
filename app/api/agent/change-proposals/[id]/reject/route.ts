@@ -1,6 +1,10 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  parseAgentProposalRejectBody,
+  readBoundedJsonObjectBody,
+} from '@/lib/agent-proposal-validation';
 import { validateAgentApiKey } from '@/lib/auth/agent-auth';
 import { PayloadTooLargeError } from '@/lib/reconciliation-report';
 import {
@@ -8,7 +12,6 @@ import {
   ProposalItemValidationError,
   ProposalNotFoundError,
   ProposalRejectionConflictError,
-  ProposalVersionConflictError,
 } from '@/services/change-proposals';
 import { MAX_STATUS_PAYLOAD_BYTES } from '@/services/task-scheduler';
 
@@ -37,45 +40,12 @@ export async function POST(
   }
 
   try {
-    const rawText = await request.text();
-    const byteLength = Buffer.byteLength(rawText, 'utf8');
-    if (byteLength > MAX_STATUS_PAYLOAD_BYTES) {
-      throw new PayloadTooLargeError(
-        `Request payload (${byteLength} bytes) exceeds maximum limit of ${MAX_STATUS_PAYLOAD_BYTES} bytes.`
-      );
-    }
-
-    let body: any;
-    try {
-      body = JSON.parse(rawText);
-    } catch {
-      return NextResponse.json({ error: 'Malformed JSON body.' }, { status: 400 });
-    }
-
-    if (!body || typeof body !== 'object' || Array.isArray(body)) {
-      return NextResponse.json(
-        { error: 'Request body must be a JSON object.' },
-        { status: 400 }
-      );
-    }
-
-    if (Object.prototype.hasOwnProperty.call(body, 'approvedItemIds')) {
-      return NextResponse.json(
-        {
-          error:
-            'The agent rejection endpoint cannot approve or select items; omit approvedItemIds.',
-        },
-        { status: 400 }
-      );
-    }
+    const rawBody = await readBoundedJsonObjectBody(request, MAX_STATUS_PAYLOAD_BYTES);
+    const { expectedVersion, reason } = parseAgentProposalRejectBody(rawBody);
 
     const result = await ChangeProposalService.rejectProposal(id, {
-      expectedVersion: body.expectedVersion,
-      reason: body.reason,
-      notes: body.notes,
-      actorType: 'agent',
-      authMethod: 'agent_api_key',
-      actorId: null,
+      expectedVersion,
+      reason,
     });
 
     return NextResponse.json(result, { status: 200 });
@@ -105,16 +75,10 @@ export async function POST(
         { status: 409 }
       );
     }
-    if (
-      error instanceof ProposalVersionConflictError ||
-      error?.name === 'ProposalVersionConflictError'
-    ) {
-      return NextResponse.json({ error: error.message }, { status: 409 });
-    }
 
     console.error(`Error rejecting change proposal ${id}:`, error);
     return NextResponse.json(
-      { error: 'Internal server error rejecting proposal', details: error.message },
+      { error: 'Internal server error rejecting proposal' },
       { status: 500 }
     );
   }

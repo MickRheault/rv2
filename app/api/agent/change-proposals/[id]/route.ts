@@ -1,15 +1,16 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { parseBoundedIntegerQueryParam } from '@/lib/agent-proposal-validation';
 import { validateAgentApiKey } from '@/lib/auth/agent-auth';
-import { ChangeProposalService } from '@/services/change-proposals';
+import { ChangeProposalService, ProposalItemValidationError } from '@/services/change-proposals';
 
 /**
  * GET /api/agent/change-proposals/:id
  *
  * Agent-authenticated readback route returning the exact persisted proposal,
  * reconciliation report, server-derived counts, status dimensions, paginated entries,
- * item links, and shop unresolved candidates.
+ * item links, decision events, and shop unresolved candidates.
  *
  * Authenticated via Bearer AGENT_API_KEY.
  */
@@ -32,46 +33,18 @@ export async function GET(
 
   try {
     const { searchParams } = new URL(request.url);
-    const entriesLimitParam = searchParams.get('entriesLimit');
-    const entriesOffsetParam = searchParams.get('entriesOffset');
-
-    let entriesLimit: number | undefined;
-    if (entriesLimitParam !== null) {
-      const trimmed = entriesLimitParam.trim();
-      if (!/^\d+$/.test(trimmed)) {
-        return NextResponse.json(
-          { error: 'Invalid entriesLimit. Must be an integer between 1 and 500.' },
-          { status: 400 }
-        );
-      }
-      const parsed = Number(trimmed);
-      if (parsed < 1 || parsed > 500) {
-        return NextResponse.json(
-          { error: 'Invalid entriesLimit. Must be an integer between 1 and 500.' },
-          { status: 400 }
-        );
-      }
-      entriesLimit = parsed;
-    }
-
-    let entriesOffset: number | undefined;
-    if (entriesOffsetParam !== null) {
-      const trimmed = entriesOffsetParam.trim();
-      if (!/^\d+$/.test(trimmed)) {
-        return NextResponse.json(
-          { error: 'Invalid entriesOffset. Must be an integer between 0 and 100000.' },
-          { status: 400 }
-        );
-      }
-      const parsed = Number(trimmed);
-      if (parsed < 0 || parsed > 100000) {
-        return NextResponse.json(
-          { error: 'Invalid entriesOffset. Must be an integer between 0 and 100000.' },
-          { status: 400 }
-        );
-      }
-      entriesOffset = parsed;
-    }
+    const entriesLimit = parseBoundedIntegerQueryParam(
+      searchParams.get('entriesLimit'),
+      'entriesLimit',
+      1,
+      500
+    );
+    const entriesOffset = parseBoundedIntegerQueryParam(
+      searchParams.get('entriesOffset'),
+      'entriesOffset',
+      0,
+      100_000
+    );
 
     const data = await ChangeProposalService.getAgentProposalReadback(id, {
       entriesLimit,
@@ -83,7 +56,10 @@ export async function GET(
       ...data,
     });
   } catch (error: any) {
-    if (error?.name === 'ProposalItemValidationError') {
+    if (
+      error instanceof ProposalItemValidationError ||
+      error?.name === 'ProposalItemValidationError'
+    ) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
     const msg = String(error?.message || '');

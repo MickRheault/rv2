@@ -473,13 +473,38 @@ export function createInMemorySupabaseClient(
 
       const matched = tableRows.filter((row) => filters.every((fn) => fn(row)));
 
+      const APPEND_ONLY_AUDIT_TABLES = new Set<keyof InMemoryReconciliationState>([
+        'unresolved_candidate_events',
+        'proposal_decision_events',
+      ]);
+
       if (op === 'delete') {
+        if (APPEND_ONLY_AUDIT_TABLES.has(table)) {
+          return {
+            data: null,
+            error: {
+              code: '42501',
+              message: `Table public.${String(table)} is append-only and cannot be deleted from`,
+            },
+            count: 0,
+          };
+        }
         const toRemove = new Set(matched.map((r) => r.id ?? r));
         state[table] = tableRows.filter((r) => !toRemove.has(r.id ?? r)) as any;
         return { data: matched, error: null, count: matched.length };
       }
 
       if (op === 'update') {
+        if (APPEND_ONLY_AUDIT_TABLES.has(table)) {
+          return {
+            data: null,
+            error: {
+              code: '42501',
+              message: `Table public.${String(table)} is immutable and cannot be updated`,
+            },
+            count: 0,
+          };
+        }
         const uuidErr = validateUuidColumns(table, payloadData || {});
         if (uuidErr) {
           return { data: null, error: uuidErr, count: 0 };

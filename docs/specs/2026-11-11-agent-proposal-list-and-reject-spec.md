@@ -84,17 +84,15 @@ Enable an ingestion agent authenticated via `Authorization: Bearer <AGENT_API_KE
   ```
   - `expectedVersion` (**required**): positive integer (`>= 1`). Missing, non-integer, or `< 1` returns `400 Bad Request`.
   - `reason` (**required**, or `notes` as an alias): non-empty string after trimming, `<= 4000` characters (`MAX_TEXT_FIELD_LENGTH`). If both `reason` and `notes` are supplied and differ after trimming, returns `400 Bad Request`.
-  - `approvedItemIds` / approval fields: if `approvedItemIds` is present in the body, reject with `400 Bad Request` (`"The agent rejection endpoint cannot approve or select items; omit approvedItemIds."`).
+  - `approvedItemIds` / approval / selection / unknown fields: validated strictly via Zod; if `approvedItemIds`, `action`, `items`, `itemIds`, or any unrecognized key is present in the body, reject with `400 Bad Request`.
 - **State & Version Semantics (`409 Conflict` on Stale / Non-Pending / Repeated Retry)**:
   - Only proposals currently in `status === 'pending'` may be rejected.
   - If `proposal.status !== 'pending'` (e.g., `'applied'`, `'partially_applied'`, `'acknowledged'`, `'superseded'`, `'reviewing'`, or already `'rejected'` on a repeated call), return **`409 Conflict`** with `{ error, currentStatus, currentVersion }` without mutating any row or appending duplicate decision events.
   - If `(proposal.version ?? 1) !== expectedVersion`, return **`409 Conflict`** with `{ error, currentStatus, currentVersion }`.
-  - Acquire optimistic CAS claim (`UPDATE change_proposals SET status = 'reviewing' WHERE id = :id AND status = 'pending' AND version = :expectedVersion`) before mutating child items so concurrent admin `apply` / `acknowledge` calls and agent `reject` calls are mutually exclusive. If the CAS claim matches 0 rows, return **`409 Conflict`**.
+  - Acquire optimistic CAS claim (`UPDATE change_proposals SET status = 'reviewing' WHERE id = :id AND status = 'pending' AND version = :expectedVersion`) so concurrent admin `apply` / `acknowledge` calls and agent `reject` calls are mutually exclusive. If the CAS claim matches 0 rows, return **`409 Conflict`**.
 - **Rejection Mutation & Audit Semantics**:
-  1. Mark pending actionable `change_proposal_items` (`add`, `update`, `delist` with `!status || status === 'pending'`) as `status = 'rejected'`. Informational `unchanged` items are left untouched.
-  2. For any `unresolved_candidates` in `state === 'ready_for_proposal'` linked to a rejected item of this proposal (or `latest_proposal_id === proposalId`), transition back to `state = 'open'` (`linked_proposal_item_id = null`, `version = version + 1`) and append an `unresolved_candidate_events` record with `event_type = 'proposal_rejected'`, `actor_type = 'agent'`, `actor_id = null`, `previous_state = 'ready_for_proposal'`, `new_state = 'open'`, and `reason`. Candidates in `'dismissed'`, `'excluded'`, `'resolved_applied'`, or `'open'` are untouched.
-  3. Recompute `reconciliation_status` for reconciliation-backed proposals (`'unresolved'` if rejected actionable items or open candidates remain; `'complete'` otherwise when coverage was complete).
-  4. Finalize `change_proposals` via CAS (`status = 'reviewing' AND version = currentVersion`):
+  1. Recompute `reconciliation_status` for reconciliation-backed proposals (`'unresolved'` if rejected actionable items or open candidates remain; `'complete'` otherwise when coverage was complete).
+  2. Finalize `change_proposals` via CAS (`status = 'reviewing' AND version = currentVersion`) **before** mutating child items or candidates so a CAS loss never mutates child rows:
      - `status = 'rejected'`
      - `application_status = isReportOnly ? 'not_applicable' : 'rejected'`
      - `reviewed_at = nowIso`
@@ -102,6 +100,8 @@ Enable an ingestion agent authenticated via `Authorization: Bearer <AGENT_API_KE
      - `notes = normalizedReason`
      - `version = currentVersion + 1`
      *(Does not set `applied_at`.)*
+  3. Mark pending actionable `change_proposal_items` (`add`, `update`, `delist` with `!status || status === 'pending'`) as `status = 'rejected'`. Informational `unchanged` items are left untouched.
+  4. For any `unresolved_candidates` in `state === 'ready_for_proposal'` linked to a rejected item of this proposal (or `latest_proposal_id === proposalId`), transition back to `state = 'open'` via versioned CAS (`WHERE id = :candId AND state = 'ready_for_proposal' AND version = :candVersion`, setting `linked_proposal_item_id = null`, `version = version + 1`) and append an `unresolved_candidate_events` record with `event_type = 'proposal_rejected'`, `actor_type = 'agent'`, `actor_id = null`, `previous_state = 'ready_for_proposal'`, `new_state = 'open'`, and `reason`. Candidates in `'dismissed'`, `'excluded'`, `'resolved_applied'`, `'open'`, or concurrently modified versions are untouched.
   5. Append an auditable row to `proposal_decision_events`:
      - `proposal_id = proposalId`
      - `shop_id = proposal.shop_id`
@@ -110,7 +110,7 @@ Enable an ingestion agent authenticated via `Authorization: Bearer <AGENT_API_KE
      - `proposal_version = nextVersion`
      - `notes = normalizedReason`
      - `metadata = { actorType: 'agent', authMethod: 'agent_api_key', rejectedItemCount }`
-  6. If an unexpected database error occurs mid-rejection after claiming `'reviewing'`, roll back item/candidate status changes best-effort and restore `change_proposals.status = 'pending'` so the proposal is not stranded in `'reviewing'`.
+  6. If an unexpected database error occurs mid-rejection (excluding `409` CAS conflicts), roll back item, candidate, and proposal statuses best-effort using versioned CAS checks and strictly append-only audit events (`event_type = 'rejection_rollback'`, `actor_type = 'system'`) so `unresolved_candidate_events` is never deleted from or updated. Internal error messages are logged server-side and never leaked in `500` responses.
 - **Response (`200 OK`)**:
   ```json
   {

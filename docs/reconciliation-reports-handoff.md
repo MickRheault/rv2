@@ -2,13 +2,17 @@
 
 Related design artifacts:
 - Spec: [2026-10-31-reconciliation-reports-change-proposals-spec.md](./specs/2026-10-31-reconciliation-reports-change-proposals-spec.md) (Issue [#201](https://github.com/MickRheault/rv2/issues/201))
+- Spec: [2026-11-11-agent-proposal-list-and-reject-spec.md](./specs/2026-11-11-agent-proposal-list-and-reject-spec.md) (Issue [#217](https://github.com/MickRheault/rv2/issues/217))
 - Architecture Decision Record: [ADR 0017: Reconciliation Reports, Unresolved Candidates, and Staged-vs-Completed Crawl Separation](./adr/0017-reconciliation-reports-and-unresolved-candidates.md)
+- Architecture Decision Record: [ADR 0019: Narrow Agent-Authenticated Proposal Listing and Rejection](./adr/0019-narrow-agent-proposal-listing-and-rejection.md)
 
 ---
 
 ## 1. Overview & Privacy Boundary
 
 Complete Reconciliation Reports (`reconciliationReport.schemaVersion = 1`) let automated ingestion agents submit a shop's full inventory accounting inside a Change Proposal—even when `items` is empty (`[]`)—without fabricating placeholder rates or hiding unresolved motorcycles inside `shop_agent_configs.extraction_hints`.
+
+**Production Base URL**: `https://ridevault.org` (all `/api/agent/*` routes require `Authorization: Bearer <AGENT_API_KEY>`).
 
 **Strict Privacy Rule**: Reconciliation Reports, Reconciliation Entries, Unresolved Candidates, and audit events are private administrative records. Database tables enforce RLS (`public.is_admin()` only, zero `anon` policies), external source text is rendered strictly as escaped plain text, external URLs are restricted to `http:` / `https:` schemes without server-side fetching, and public shop/motorcycle pages, `/api/v1/*`, AI chat, and MCP tools expose zero report or candidate fields.
 
@@ -20,8 +24,10 @@ Complete Reconciliation Reports (`reconciliationReport.schemaVersion = 1`) let a
 
 | Method & Path | Purpose |
 | --- | --- |
+| `GET /api/agent/change-proposals` | Deterministically list Change Proposals (`ORDER BY created_at DESC, id ASC`) with pagination metadata (`proposals`, `totalCount`, `limit`, `offset`, `hasMore`, `nextOffset`). Defaults to `?status=pending`; supports `?status=pending \| reviewing \| applied \| partially_applied \| rejected \| acknowledged \| superseded \| all`, optional `?shopId=<uuid>`, `?limit=1..100` (default `50`), and `?offset=0..100000` (default `0`). Returns `400` on invalid query parameters and `401` on missing/invalid bearer key. |
 | `POST /api/agent/change-proposals` | Stage a Change Proposal with actionable `items[]` (`add`, `update`, `delist`) and an optional `reconciliationReport` (`schemaVersion: 1`), or legacy reportless `items[]`. Returns `201` on creation (`proposalStatus`, `reportId`, `reportDigest`, `serverCounts`, `summaryCounts`, `coverageStatus`, `reconciliationStatus`, `applicationStatus`), `200` on identical `(shopId, agentRunId)` replay (`replayed: true`), `409` on divergent replay, `413` if raw body exceeds `2 MB`, and `400` on validation errors. |
-| `GET /api/agent/change-proposals/:id` | Read back a persisted Change Proposal (`proposalId`, `status`, `version`, `coverageStatus`, `reconciliationStatus`, `applicationStatus`, `summaryCounts`), `report` (including `report.reportDigest` and `report.serverCounts`), `itemLinks`, `decisionEvents`, shop `candidates`, and paginated `entries` + `entriesPagination` (`?entriesLimit=1..500&entriesOffset=0..100000`, default `limit = 200`; `400` on invalid bounds). |
+| `GET /api/agent/change-proposals/:id` | Read back a persisted Change Proposal (`proposalId`, `shopId`, `agentRunId`, `sourceUrl`, `status`, `version`, `coverageStatus`, `reconciliationStatus`, `applicationStatus`, `summaryCounts`, `notes`, `createdAt`, `updatedAt`, `reviewedAt`), `items` (with `status`), `report` (including `report.reportDigest` and `report.serverCounts`), `itemLinks`, `decisionEvents`, shop `candidates`, and paginated `entries` + `entriesPagination` (`?entriesLimit=1..500&entriesOffset=0..100000`, default `limit = 200`; `400` on invalid bounds, `404` if not found). |
+| `POST /api/agent/change-proposals/:id/reject` | Narrow, rejection-only endpoint that moves a `pending` Change Proposal to `status: 'rejected'` (`{ expectedVersion, reason }` or `{ expectedVersion, notes }`, raw body `<= 64 KB`). Marks pending mutable items `'rejected'`, reverts linked `ready_for_proposal` candidates to `'open'`, and appends a `proposal_decision_events` row (`decision = 'reject'`, `actor_id = null`, `metadata: { actorType: 'agent', authMethod: 'agent_api_key', rejectedItemCount }`). Structurally incapable of approving items or mutating live catalog/shop tables; rejects `approvedItemIds`, `action`, `items`, `itemIds`, or unknown keys with `400`. Returns `404` if unknown UUID, `409` (`{ error, currentStatus, currentVersion }`) on stale `expectedVersion`, non-`pending` status, or repeated rejection retry without duplicating decision events, and `413` if body exceeds `64 KB`. |
 | `GET /api/agent/tasks` | Fetch due shop crawl tasks enriched with baseline inventory, shop profile, and paginated prior `unresolvedCandidates` (`?candidatesLimit=1..200&candidatesOffset=0..100000`, default `limit = 50`; optional `?shopId=<uuid>&limit=1..50&minUrgency=<num>`). Excludes `resolved_applied` candidates and never writes candidate backlogs into `extractionHints`. |
 | `POST /api/agent/tasks/:id/status` | Record crawl completion (`status: 'success' \| 'partial' \| 'failed'`), advance `shop_agent_configs.last_run_at` across all outcomes so partial/failed crawls consume their scheduled slot without infinite retries, and upsert a single `crawl_runs` row per `(shop_id, agent_run_id)` linked to any staged proposal's `proposal_id`, `coverage_status`, and `reconciliation_status`. Returns `409` if explicit `coverageStatus: 'complete'` or `reconciliationStatus: 'complete'` contradicts the linked report, `404` if task UUID is not found, and `413` if body exceeds `64 KB`. |
 
@@ -82,7 +88,9 @@ Complete Reconciliation Reports (`reconciliationReport.schemaVersion = 1`) let a
 | Bound | Limit | Failure Response |
 | --- | --- | --- |
 | Raw request body (`POST /api/agent/change-proposals`) | `<= 2,097,152` bytes (`2 MB`) | `413 Payload Too Large` (never silently truncated) |
+| Raw request body (`POST /api/agent/change-proposals/:id/reject`) | `<= 65,536` bytes (`64 KB`); `reason` / `notes` `1..4,000` chars | `413 Payload Too Large` / `400 Bad Request` |
 | Raw request body (`POST /api/agent/tasks/:id/status`) | `<= 65,536` bytes (`64 KB`); `metadata <= 16,384` bytes | `413 Payload Too Large` / `400 Bad Request` |
+| `limit` (`GET /api/agent/change-proposals`) | `1..100` (default `50`), `offset` `0..100000` (default `0`) | `400 Bad Request` |
 | `items[]` length | `<= 500` | `400 Bad Request` |
 | `reconciliationReport.entries[]` length | `<= 1,000` | `400 Bad Request` |
 | `reconciliationReport.coverage.pages[]` length | `<= 500` | `400 Bad Request` |
@@ -349,3 +357,106 @@ Response (`200 OK`, `tasks[0]` baseline arrays/shop fields omitted for brevity; 
   ]
 }
 ```
+
+### 7.4 Enumerate & Reject Pending Change Proposals (`#217`)
+
+#### Step 1 — List Pending Proposals (`GET /api/agent/change-proposals?status=pending&limit=50&offset=0`)
+
+Response (`200 OK`):
+
+```json
+{
+  "success": true,
+  "proposals": [
+    {
+      "id": "d92f8b14-6c10-4b4f-9f0c-54a83d2e1101",
+      "shopId": "53529565-40d9-41f5-98e4-d2ed1f1d7ffd",
+      "shopName": "Ride On - Alquiler moto Barcelona",
+      "shopSlug": "ride-on-alquiler-moto-barcelona",
+      "shopUrl": "https://ridevault.org/shops/spain/barcelona/ride-on-alquiler-moto-barcelona",
+      "agentRunId": "rideon-bcn-2026-11-01-r1",
+      "sourceUrl": "https://rideon.es/flota/",
+      "status": "pending",
+      "coverageStatus": "partial",
+      "reconciliationStatus": "unresolved",
+      "applicationStatus": "not_applicable",
+      "version": 1,
+      "summaryCounts": {
+        "add": 0,
+        "update": 0,
+        "delist": 0,
+        "unchanged": 1,
+        "unresolved": 1,
+        "excluded": 0,
+        "duplicate": 0
+      },
+      "serverCounts": {
+        "readyActionableItems": 0,
+        "accountedDiscoveredModels": 2,
+        "unresolvedModels": 1,
+        "unchangedModels": 1,
+        "excludedModels": 0,
+        "duplicateModels": 0,
+        "pagesProcessed": 1,
+        "pagesFailed": 0,
+        "pagesNotProcessed": 1,
+        "add": 0,
+        "update": 0,
+        "delist": 0,
+        "unchanged": 0
+      },
+      "hasReconciliationReport": true,
+      "createdAt": "2026-11-01T10:00:00.000Z",
+      "reviewedAt": null
+    }
+  ],
+  "totalCount": 1,
+  "limit": 50,
+  "offset": 0,
+  "hasMore": false,
+  "nextOffset": null
+}
+```
+
+> **Note on draining a pending queue while rejecting**: When rejecting proposals in a batch, either page through the full `status=pending` snapshot first to collect `(id, version)` pairs before rejecting, or repeatedly fetch `?status=pending&limit=50&offset=0` until `proposals` is empty (`[]`), since each rejected proposal immediately leaves the `status=pending` result set.
+
+#### Step 2 — Reject a Pending Proposal (`POST /api/agent/change-proposals/d92f8b14-6c10-4b4f-9f0c-54a83d2e1101/reject`)
+
+Request:
+
+```json
+{
+  "expectedVersion": 1,
+  "reason": "Owner requested cancellation of outstanding proposals; rebuild with native rental pricing."
+}
+```
+
+Response (`200 OK`):
+
+```json
+{
+  "success": true,
+  "proposalId": "d92f8b14-6c10-4b4f-9f0c-54a83d2e1101",
+  "status": "rejected",
+  "version": 2,
+  "coverageStatus": "partial",
+  "reconciliationStatus": "unresolved",
+  "applicationStatus": "not_applicable",
+  "rejectedItemCount": 0,
+  "reviewedAt": "2026-11-11T10:30:00.000Z",
+  "notes": "Owner requested cancellation of outstanding proposals; rebuild with native rental pricing."
+}
+```
+
+#### Error & Retry Semantics (`POST /api/agent/change-proposals/:id/reject`)
+
+| HTTP Status | Condition | Response Body |
+| --- | --- | --- |
+| `400 Bad Request` | Invalid UUID in path, malformed/non-object JSON, missing/non-positive-integer `expectedVersion`, missing/blank/>4000-char `reason`/`notes`, conflicting `reason` vs `notes`, or forbidden/unknown keys (`approvedItemIds`, `action`, `items`, `itemIds`, etc.) | `{ "error": "..." }` |
+| `401 Unauthorized` | Missing or invalid `Authorization: Bearer <AGENT_API_KEY>` | `{ "error": "Unauthorized. Valid Bearer AGENT_API_KEY required." }` |
+| `404 Not Found` | Proposal UUID does not exist | `{ "error": "Proposal not found: <id>" }` |
+| `409 Conflict` | Stale `expectedVersion`, non-`pending` status (`applied`, `partially_applied`, `acknowledged`, `superseded`, `reviewing`), or **repeated rejection retry** (`status === 'rejected'`) | `{ "error": "...", "currentStatus": "rejected", "currentVersion": 2 }` |
+| `413 Payload Too Large` | Raw UTF-8 request body exceeds `65,536` bytes (`64 KB`) | `{ "error": "..." }` |
+| `500 Internal Server Error` | Unexpected server/database failure (rolled back best-effort; internal error strings are never exposed) | `{ "error": "Internal server error rejecting proposal" }` |
+
+If an agent retries `POST /api/agent/change-proposals/:id/reject` on a proposal that was already rejected, the server returns `409 Conflict` with `"currentStatus": "rejected"` and `"currentVersion": <n>` without inserting a duplicate `proposal_decision_events` row or overwriting the original rejection reason. Callers treating `"currentStatus": "rejected"` as terminal can safely confirm audit details via `GET /api/agent/change-proposals/:id`.
