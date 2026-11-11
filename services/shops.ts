@@ -60,12 +60,17 @@ export interface ShopWithDetails extends RentalShop {
     } | null
   }) | null
   business_statuses: BusinessStatus | null
-  rental_shop_inclusions: RentalShopInclusion[]
+  rental_shop_inclusions: Array<
+    Pick<RentalShopInclusion, 'id' | 'shop_id' | 'inclusion_text'> & Partial<RentalShopInclusion>
+  >
   rental_shop_tours: RentalShopTour[]
   rental_shop_service_locations: RentalShopServiceLocation[]
-  rental_shop_conditions?: (RentalShopCondition & {
-    condition_types: ConditionType | null
-  })[]
+  rental_shop_conditions?: Array<
+    Pick<RentalShopCondition, 'id' | 'shop_id' | 'condition_type_id' | 'condition_value' | 'notes'> &
+      Partial<RentalShopCondition> & {
+        condition_types: Pick<ConditionType, 'id' | 'name' | 'description'> | ConditionType | null
+      }
+  >
   motorcycle_count?: number
   premium?: PremiumFeatureConfig
   category_names?: string[]
@@ -79,6 +84,12 @@ export type ShopMotorcycleListingItem = Omit<
     brands: Pick<Brand, 'id' | 'name'> | Brand | null
     categories: Pick<Category, 'id' | 'name' | 'description'> | Category | null
     rental_rate_tiers: RentalRateTier[]
+    motorcycle_conditions?: Array<{
+      motorcycle_id: string
+      condition_type_id: string
+      notes: string | null
+      condition_types: Pick<ConditionType, 'id' | 'name' | 'description'> | ConditionType | null
+    }>
   }
 
 export interface ShopWithMotorcycles extends ShopWithDetails {
@@ -93,6 +104,7 @@ export interface ShopSearchFilters {
   businessStatus?: number
   hasTours?: boolean
   hasServiceLocations?: boolean
+  includeConditions?: boolean
   query?: string // Search in provider_name or business_description
   sortBy?: 'rating_desc' | 'rating_asc' | 'review_count_desc' | 'name_asc' | 'newest'
   limit?: number
@@ -283,6 +295,37 @@ export const MOTORCYCLE_LISTING_PRICING_JOINS = `
   )
 `
 
+export const MOTORCYCLE_LISTING_CONDITIONS_SELECT = `conditions_details,
+  motorcycle_conditions (
+    motorcycle_id,
+    condition_type_id,
+    notes,
+    condition_types (
+      id,
+      name,
+      description
+    )
+  )`
+
+export const RENTAL_SHOP_INCLUSIONS_SELECT = `rental_shop_inclusions (
+    id,
+    shop_id,
+    inclusion_text
+  )`
+
+export const RENTAL_SHOP_CONDITIONS_SELECT = `rental_shop_conditions (
+    id,
+    shop_id,
+    condition_type_id,
+    condition_value,
+    notes,
+    condition_types (
+      id,
+      name,
+      description
+    )
+  )`
+
 export const SHOP_MOTORCYCLE_RENTALS_SELECT = `
   ${MOTORCYCLE_LISTING_BASE_COLUMNS},
   brands (id, name),
@@ -371,15 +414,21 @@ export const shopService = {
       businessStatus,
       hasTours,
       hasServiceLocations,
+      includeConditions = false,
       query,
       sortBy = 'rating_desc',
       limit = 20,
       offset = 0
     } = filters
 
-    let shopQuery = typedSupabase
-      .from('rental_shops')
-      .select(`
+    const shopInclusionsSelect = includeConditions
+      ? RENTAL_SHOP_INCLUSIONS_SELECT
+      : 'rental_shop_inclusions (*)'
+    const shopConditionsSelectFragment = includeConditions
+      ? `,
+        ${RENTAL_SHOP_CONDITIONS_SELECT}`
+      : ''
+    const shopSelect: string = `
         *,
         cities (
           *,
@@ -389,10 +438,14 @@ export const shopService = {
           )
         ),
         business_statuses (*),
-        rental_shop_inclusions (*),
+        ${shopInclusionsSelect},
         rental_shop_tours (*),
-        rental_shop_service_locations (*)
-      `, { count: 'exact' })
+        rental_shop_service_locations (*)${shopConditionsSelectFragment}
+      `
+
+    let shopQuery = typedSupabase
+      .from('rental_shops')
+      .select(shopSelect, { count: 'exact' })
 
     // Apply location filters
     if (cityId) {
@@ -474,7 +527,7 @@ export const shopService = {
     }
 
     // Filter by tours/service locations if specified (post-query filtering)
-    let filteredData = (data || []) as ShopWithDetails[]
+    let filteredData = (data || []) as unknown as ShopWithDetails[]
     if (hasTours) {
       filteredData = filteredData.filter(shop => (shop.rental_shop_tours || []).length > 0)
     }
@@ -519,7 +572,12 @@ export const shopService = {
   },
 
   // Get single shop by ID with full details
-  async getShopById(id: string) {
+  async getShopById(id: string, options?: { includeMotorcycleConditions?: boolean }) {
+    const motorcycleRentalsSelect = options?.includeMotorcycleConditions
+      ? `${SHOP_MOTORCYCLE_RENTALS_SELECT},
+          ${MOTORCYCLE_LISTING_CONDITIONS_SELECT}`
+      : SHOP_MOTORCYCLE_RENTALS_SELECT
+
     const { data, error } = await typedSupabase
       .from('rental_shops')
       .select(`
@@ -535,8 +593,9 @@ export const shopService = {
         rental_shop_inclusions (*),
         rental_shop_tours (*),
         rental_shop_service_locations (*),
+        ${RENTAL_SHOP_CONDITIONS_SELECT},
         motorcycle_rentals (
-          ${SHOP_MOTORCYCLE_RENTALS_SELECT}
+          ${motorcycleRentalsSelect}
         )
       `)
       .eq('id', id)

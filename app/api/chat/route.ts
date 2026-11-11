@@ -15,6 +15,7 @@ import {
     isRepetitionOrPaddingPrompt,
     sanitizeConversationHistory,
 } from '@/lib/chat/prompt';
+import { finalizeAssistantResponse } from '@/lib/chat/response';
 import { getRateLimitHeaders, rateLimit } from '@/lib/api/rate-limit';
 import { timingSafeEqual } from 'node:crypto';
 
@@ -188,8 +189,12 @@ export async function POST(request: NextRequest) {
         }
 
         // Return final response
+        const finalResponse = finalizeAssistantResponse(
+            assistantMessage.content,
+            response.choices[0]?.finish_reason
+        );
         return NextResponse.json({
-            response: assistantMessage.content,
+            response: finalResponse,
             toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
         });
     } catch (error) {
