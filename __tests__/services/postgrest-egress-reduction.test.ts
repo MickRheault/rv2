@@ -221,12 +221,17 @@ describe('Supabase PostgREST Egress Reduction — Service Layer (#180)', () => {
       for (const selectStr of recordedSelects) {
         expect(selectStr).not.toContain('*')
         expect(selectStr).not.toContain('specifications_details')
-        expect(selectStr).not.toContain('conditions_details')
         expect(selectStr).not.toContain('business_description')
         expect(selectStr).not.toContain('motorcycle_images')
         expect(selectStr).not.toContain('motorcycle_features')
         expect(selectStr).not.toContain('country_of_origin')
       }
+      // Card/carousel queries omit conditions_details; shop-fleet and main search include structured conditions (#223)
+      expect(recordedSelects[0]).not.toContain('conditions_details')
+      expect(recordedSelects[2]).not.toContain('conditions_details')
+      expect(recordedSelects[3]).not.toContain('conditions_details')
+      expect(recordedSelects[1]).toContain('conditions_details')
+      expect(recordedSelects[4]).toContain('conditions_details')
 
       // When features filter is provided, getMotorcycles joins only motorcycle_features(feature_id)
       recordedSelects.length = 0
@@ -326,7 +331,8 @@ describe('Supabase PostgREST Egress Reduction — Service Layer (#180)', () => {
         const motorcycleBlock = motorcycleBlockMatch![1]
         expect(motorcycleBlock).not.toContain('*')
         expect(motorcycleBlock).not.toContain('specifications_details')
-        expect(motorcycleBlock).not.toContain('conditions_details')
+        expect(motorcycleBlock).toContain('conditions_details')
+        expect(motorcycleBlock).toContain('motorcycle_conditions')
         expect(motorcycleBlock).not.toContain('motorcycle_images')
       }
     })

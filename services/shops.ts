@@ -72,6 +72,12 @@ export type ShopMotorcycleListingItem = Omit<
     brands: Pick<Brand, 'id' | 'name'> | Brand | null
     categories: Pick<Category, 'id' | 'name' | 'description'> | Category | null
     rental_rate_tiers: RentalRateTier[]
+    motorcycle_conditions?: Array<{
+      motorcycle_id: string
+      condition_type_id: string
+      notes: string | null
+      condition_types: Pick<ConditionType, 'id' | 'name' | 'description'> | ConditionType | null
+    }>
   }
 
 export interface ShopWithMotorcycles extends ShopWithDetails {
@@ -276,8 +282,23 @@ export const MOTORCYCLE_LISTING_PRICING_JOINS = `
   )
 `
 
+export const MOTORCYCLE_LISTING_CONDITIONS_SELECT = `
+  conditions_details,
+  motorcycle_conditions (
+    motorcycle_id,
+    condition_type_id,
+    notes,
+    condition_types (
+      id,
+      name,
+      description
+    )
+  )
+`
+
 export const SHOP_MOTORCYCLE_RENTALS_SELECT = `
   ${MOTORCYCLE_LISTING_BASE_COLUMNS},
+  ${MOTORCYCLE_LISTING_CONDITIONS_SELECT},
   brands (id, name),
   categories (id, name, description),
   ${MOTORCYCLE_LISTING_PRICING_JOINS}
@@ -384,7 +405,11 @@ export const shopService = {
         business_statuses (*),
         rental_shop_inclusions (*),
         rental_shop_tours (*),
-        rental_shop_service_locations (*)
+        rental_shop_service_locations (*),
+        rental_shop_conditions (
+          *,
+          condition_types (*)
+        )
       `, { count: 'exact' })
 
     // Apply location filters
@@ -528,6 +553,10 @@ export const shopService = {
         rental_shop_inclusions (*),
         rental_shop_tours (*),
         rental_shop_service_locations (*),
+        rental_shop_conditions (
+          *,
+          condition_types (*)
+        ),
         motorcycle_rentals (
           ${SHOP_MOTORCYCLE_RENTALS_SELECT}
         )

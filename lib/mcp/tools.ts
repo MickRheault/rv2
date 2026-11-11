@@ -10,6 +10,14 @@ import { categoryService } from '@/services/categories';
 import { locationService } from '@/services/locations';
 import { getMotorcycleUrl, getOptionalShopUrl, getShopUrl } from '@/lib/utils/urls';
 import {
+    formatMotorcycleConditions,
+    formatShopConditions,
+    formatShopInclusions,
+    normalizeConditionsDetails,
+    sanitizeMotorcycleForTool,
+    sanitizeShopForTool,
+} from './tool-conditions';
+import {
     formatExtensionBillingPhrase,
     formatOfferBillingUnitPhrase,
     getStandaloneDailyRate,
@@ -329,6 +337,8 @@ export async function executeTool(
                             currency: pricing.currency,
                             priceDisplay: pricing.priceDisplay,
                             rentalOffers: pricing.rentalOffers,
+                            conditions: formatMotorcycleConditions((m as any).motorcycle_conditions),
+                            conditionsDetails: normalizeConditionsDetails((m as any).conditions_details),
                             shop: shop?.provider_name,
                             shopUrl,
                             shopRating: shop?.rating,
@@ -344,18 +354,29 @@ export async function executeTool(
                 if (!motorcycle) {
                     return { success: false, error: 'Motorcycle not found' };
                 }
-                const shopUrl = getOptionalShopUrl(motorcycle.rental_shops);
+                const sanitizedMotorcycle = sanitizeMotorcycleForTool(motorcycle);
+                const shop = motorcycle.rental_shops as Record<string, unknown> | null | undefined;
+                const shopUrl = getOptionalShopUrl(shop);
                 const pricing = buildMotorcycleToolPricing(motorcycle);
                 return {
                     success: true,
                     data: {
-                        ...motorcycle,
+                        ...sanitizedMotorcycle,
                         url: getMotorcycleUrl(motorcycle.id),
                         ...(shopUrl ? { shopUrl } : {}),
                         year_to: getYearTo(motorcycle),
                         dailyRate: pricing.dailyRate,
+                        currency: pricing.currency,
                         priceDisplay: pricing.priceDisplay,
                         rentalOffers: pricing.rentalOffers,
+                        conditions: formatMotorcycleConditions((motorcycle as any).motorcycle_conditions),
+                        conditionsDetails: normalizeConditionsDetails((motorcycle as any).conditions_details),
+                        ...(Array.isArray(shop?.rental_shop_conditions)
+                            ? { shopConditions: formatShopConditions(shop.rental_shop_conditions) }
+                            : {}),
+                        ...(Array.isArray(shop?.rental_shop_inclusions)
+                            ? { shopInclusions: formatShopInclusions(shop.rental_shop_inclusions) }
+                            : {}),
                     },
                 };
             }
@@ -393,6 +414,8 @@ export async function executeTool(
                                 countries?: { name: string } | null
                             } | null;
                         } | null;
+                        rental_shop_conditions?: unknown;
+                        rental_shop_inclusions?: unknown;
                     }) => {
                         return {
                             id: s.id,
@@ -401,6 +424,8 @@ export async function executeTool(
                             rating: s.rating,
                             reviewCount: s.review_count,
                             city: s.cities?.name,
+                            conditions: formatShopConditions(s.rental_shop_conditions),
+                            inclusions: formatShopInclusions(s.rental_shop_inclusions),
                         };
                     }),
                 };
@@ -412,24 +437,30 @@ export async function executeTool(
                 if (!shop) {
                     return { success: false, error: 'Shop not found' };
                 }
+                const sanitizedShop = sanitizeShopForTool(shop);
                 const enrichedMotorcycles = Array.isArray((shop as any).motorcycle_rentals)
                     ? (shop as any).motorcycle_rentals.map((m: any) => {
                           const pricing = buildMotorcycleToolPricing(m);
                           return {
-                              ...m,
+                              ...sanitizeMotorcycleForTool(m),
                               url: getMotorcycleUrl(m.id),
                               dailyRate: pricing.dailyRate,
+                              currency: pricing.currency,
                               priceDisplay: pricing.priceDisplay,
                               rentalOffers: pricing.rentalOffers,
+                              conditions: formatMotorcycleConditions(m.motorcycle_conditions),
+                              conditionsDetails: normalizeConditionsDetails(m.conditions_details),
                           };
                       })
                     : undefined;
                 return {
                     success: true,
                     data: {
-                        ...shop,
+                        ...sanitizedShop,
                         ...(enrichedMotorcycles ? { motorcycle_rentals: enrichedMotorcycles } : {}),
                         url: getShopUrl(shop),
+                        conditions: formatShopConditions((shop as any).rental_shop_conditions),
+                        inclusions: formatShopInclusions((shop as any).rental_shop_inclusions),
                     },
                 };
             }

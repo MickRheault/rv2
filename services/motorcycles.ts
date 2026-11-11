@@ -11,6 +11,7 @@ import {
 } from '@/lib/rental-offers'
 import {
   MOTORCYCLE_LISTING_BASE_COLUMNS,
+  MOTORCYCLE_LISTING_CONDITIONS_SELECT,
   MOTORCYCLE_LISTING_OFFERS_COLUMNS,
   MOTORCYCLE_LISTING_PRICING_JOINS,
   SHOP_MOTORCYCLE_RENTALS_SELECT,
@@ -42,6 +43,12 @@ export interface MotorcycleWithDetails extends MotorcycleRental {
         countries: Country | null
       } | null
     } | null
+    rental_shop_inclusions?: Database['public']['Tables']['rental_shop_inclusions']['Row'][]
+    rental_shop_conditions?: Array<
+      Database['public']['Tables']['rental_shop_conditions']['Row'] & {
+        condition_types: ConditionType | null
+      }
+    >
   }) | null
   brands: Brand | null
   categories: Category | null
@@ -480,6 +487,7 @@ export const motorcycleService = {
         .from('motorcycle_rentals')
         .select(`
           ${MOTORCYCLE_LISTING_BASE_COLUMNS},
+          ${MOTORCYCLE_LISTING_CONDITIONS_SELECT},
           ${buildListingRentalShopsJoin({ innerLocation: true })},
           brands (id, name),
           categories (id, name, description)${featureSelectFragment},
@@ -630,7 +638,12 @@ export const motorcycleService = {
               countries (*)
             )
           ),
-          business_statuses (*)
+          business_statuses (*),
+          rental_shop_inclusions (*),
+          rental_shop_conditions (
+            *,
+            condition_types (*)
+          )
         ),
         brands (*),
         categories (*),

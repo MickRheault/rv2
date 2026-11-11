@@ -299,5 +299,431 @@ it('exposes verbatim non-daily rentalOffers and real billing phrases with dailyR
     });
 });
 
+it('exposes concise structured shop conditions (including opening hours) and inclusions in list_shops and get_shop (#223)', async () => {
+    const shopFixture = {
+        id: 'shop-riders-corner',
+        slug: 'riders-corner',
+        provider_name: 'Riders Corner',
+        rating: 4.9,
+        review_count: 120,
+        cities: {
+            name: 'Chiang Mai',
+            provinces: { countries: { name: 'Thailand' } },
+        },
+        rental_shop_inclusions: [
+            { id: 'inc-1', shop_id: 'shop-riders-corner', inclusion_text: ' 2 Helmets ' },
+            { id: 'inc-2', shop_id: 'shop-riders-corner', inclusion_text: 'Phone Holder' },
+            { id: 'inc-dup', shop_id: 'shop-riders-corner', inclusion_text: '2 Helmets' },
+            { id: 'inc-empty', shop_id: 'shop-riders-corner', inclusion_text: '   ' },
+        ],
+        rental_shop_conditions: [
+            {
+                id: 'cond-hours',
+                shop_id: 'shop-riders-corner',
+                condition_type_id: 'ct-opening-hours',
+                condition_value: 'Bike rental 08:00-20:00 daily',
+                notes: null,
+                condition_types: {
+                    id: 'ct-opening-hours',
+                    name: 'Opening Hours',
+                    description: 'Shop operating hours',
+                },
+            },
+            {
+                id: 'cond-license',
+                shop_id: 'shop-riders-corner',
+                condition_type_id: 'ct-license',
+                condition_value: 'Valid motorcycle license required',
+                notes: 'IDP with A endorsement accepted',
+                condition_types: {
+                    id: 'ct-license',
+                    name: 'License Required',
+                    description: null,
+                },
+            },
+        ],
+    };
+
+    mockGetShops.mockResolvedValueOnce({ total: 1, shops: [shopFixture] });
+    const listRes = await executeTool('list_shops', { query: 'Riders Corner' });
+    expect(listRes.success).toBe(true);
+    const listData = JSON.parse(formatToolResultForLLM(listRes));
+    expect(listData.shops[0]).toMatchObject({
+        id: 'shop-riders-corner',
+        url: '/shop/thailand/chiang-mai/riders-corner',
+        name: 'Riders Corner',
+        city: 'Chiang Mai',
+        inclusions: ['2 Helmets', 'Phone Holder'],
+        conditions: [
+            {
+                name: 'Opening Hours',
+                value: 'Bike rental 08:00-20:00 daily',
+                summary: 'Opening Hours: Bike rental 08:00-20:00 daily',
+            },
+            {
+                name: 'License Required',
+                value: 'Valid motorcycle license required',
+                notes: 'IDP with A endorsement accepted',
+                summary: 'License Required: Valid motorcycle license required (IDP with A endorsement accepted)',
+            },
+        ],
+    });
+
+    mockGetShopById.mockResolvedValueOnce(shopFixture);
+    const detailRes = await executeTool('get_shop', { id: 'shop-riders-corner' });
+    expect(detailRes.success).toBe(true);
+    const detailData = JSON.parse(formatToolResultForLLM(detailRes));
+    expect(detailData).toMatchObject({
+        id: 'shop-riders-corner',
+        url: '/shop/thailand/chiang-mai/riders-corner',
+        inclusions: ['2 Helmets', 'Phone Holder'],
+        conditions: [
+            {
+                name: 'Opening Hours',
+                value: 'Bike rental 08:00-20:00 daily',
+                summary: 'Opening Hours: Bike rental 08:00-20:00 daily',
+            },
+            {
+                name: 'License Required',
+                value: 'Valid motorcycle license required',
+                notes: 'IDP with A endorsement accepted',
+                summary: 'License Required: Valid motorcycle license required (IDP with A endorsement accepted)',
+            },
+        ],
+    });
+});
+
+it('exposes per-motorcycle conditions, conditionsDetails, and shopConditions/shopInclusions across list_motorcycles, get_motorcycle, and get_shop fleet (#223)', async () => {
+    const bikeWithConditions = {
+        id: 'bike-adv-150',
+        model: 'ADV 150 ABS',
+        year: 2024,
+        brands: { name: 'Honda' },
+        categories: { name: 'Scooter' },
+        rental_rate_per_day: 450,
+        rental_rate_currency: 'THB',
+        rental_rate_tiers: [],
+        conditions_details: { min_age: 21, fuel_policy: 'Same-to-same' },
+        motorcycle_conditions: [
+            {
+                motorcycle_id: 'bike-adv-150',
+                condition_type_id: 'ct-deposit',
+                notes: '3000 THB',
+                condition_types: {
+                    id: 'ct-deposit',
+                    name: 'Deposit Amount Thb',
+                    description: 'Refundable security deposit',
+                },
+            },
+            {
+                motorcycle_id: 'bike-adv-150',
+                condition_type_id: 'ct-helmet',
+                notes: 'Includes 2 helmets',
+                condition_types: {
+                    id: 'ct-helmet',
+                    name: 'Helmet Policy',
+                    description: null,
+                },
+            },
+            {
+                motorcycle_id: 'bike-adv-150',
+                condition_type_id: 'ct-idp',
+                notes: null,
+                condition_types: {
+                    id: 'ct-idp',
+                    name: 'International Driving Permit',
+                    description: 'Valid IDP with motorcycle endorsement',
+                },
+            },
+        ],
+        rental_shops: {
+            id: 'shop-phuket',
+            provider_name: 'Bike Phuket Garage',
+            slug: 'bike-phuket-garage',
+            rating: 4.8,
+            cities: {
+                name: 'Phuket',
+                provinces: { countries: { name: 'Thailand' } },
+            },
+            rental_shop_inclusions: [
+                { id: 'inc-1', shop_id: 'shop-phuket', inclusion_text: 'Phone Holder' },
+            ],
+            rental_shop_conditions: [
+                {
+                    id: 'sc-1',
+                    shop_id: 'shop-phuket',
+                    condition_type_id: 'ct-hours',
+                    condition_value: '09:00-19:00 daily',
+                    notes: null,
+                    condition_types: { id: 'ct-hours', name: 'Opening Hours', description: null },
+                },
+            ],
+        },
+    };
+
+    const expectedConditions = [
+        {
+            name: 'Deposit Amount Thb',
+            value: '3000 THB',
+            summary: 'Deposit Amount Thb: 3000 THB',
+        },
+        {
+            name: 'Helmet Policy',
+            value: 'Includes 2 helmets',
+            summary: 'Helmet Policy: Includes 2 helmets',
+        },
+        {
+            name: 'International Driving Permit',
+            value: null,
+            description: 'Valid IDP with motorcycle endorsement',
+            summary: 'International Driving Permit: Valid IDP with motorcycle endorsement',
+        },
+    ];
+
+    // 1. list_motorcycles
+    mockGetMotorcycles.mockResolvedValueOnce({
+        total: 2,
+        motorcycles: [
+            bikeWithConditions,
+            {
+                ...motorcycle,
+                conditions_details: {},
+                motorcycle_conditions: [],
+            },
+        ],
+    });
+    const listRes = await executeTool('list_motorcycles', {});
+    const listData = JSON.parse(formatToolResultForLLM(listRes));
+    expect(listData.motorcycles[0]).toMatchObject({
+        id: 'bike-adv-150',
+        conditions: expectedConditions,
+        conditionsDetails: { min_age: 21, fuel_policy: 'Same-to-same' },
+    });
+    expect(listData.motorcycles[1]).toMatchObject({
+        id: 'test-motorcycle',
+        conditions: [],
+        conditionsDetails: null,
+    });
+
+    // 2. get_motorcycle
+    mockGetMotorcycleById.mockResolvedValueOnce(bikeWithConditions);
+    const detailRes = await executeTool('get_motorcycle', { id: 'bike-adv-150' });
+    const detailData = JSON.parse(formatToolResultForLLM(detailRes));
+    expect(detailData).toMatchObject({
+        id: 'bike-adv-150',
+        url: '/motorcycle/bike-adv-150',
+        shopUrl: '/shop/thailand/phuket/bike-phuket-garage',
+        conditions: expectedConditions,
+        conditionsDetails: { min_age: 21, fuel_policy: 'Same-to-same' },
+        shopInclusions: ['Phone Holder'],
+        shopConditions: [
+            {
+                name: 'Opening Hours',
+                value: '09:00-19:00 daily',
+                summary: 'Opening Hours: 09:00-19:00 daily',
+            },
+        ],
+    });
+
+    // 3. get_shop fleet motorcycles
+    mockGetShopById.mockResolvedValueOnce({
+        id: 'shop-phuket',
+        slug: 'bike-phuket-garage',
+        provider_name: 'Bike Phuket Garage',
+        cities: {
+            name: 'Phuket',
+            provinces: { countries: { name: 'Thailand' } },
+        },
+        rental_shop_inclusions: bikeWithConditions.rental_shops.rental_shop_inclusions,
+        rental_shop_conditions: bikeWithConditions.rental_shops.rental_shop_conditions,
+        motorcycle_rentals: [bikeWithConditions],
+    });
+    const shopRes = await executeTool('get_shop', { id: 'shop-phuket' });
+    const shopData = JSON.parse(formatToolResultForLLM(shopRes));
+    expect(shopData.motorcycle_rentals[0]).toMatchObject({
+        id: 'bike-adv-150',
+        url: '/motorcycle/bike-adv-150',
+        dailyRate: 450,
+        currency: 'THB',
+        priceDisplay: '450 THB per day',
+        conditions: expectedConditions,
+        conditionsDetails: { min_age: 21, fuel_policy: 'Same-to-same' },
+    });
+});
+
+it('strips destination editorial content_sections from get_shop and get_motorcycle payloads without mutating source objects (#223)', async () => {
+    const editorialSections = [
+        {
+            id: 'sec-th-guide',
+            title: 'Complete Riding Guide to Thailand',
+            body: '# Riding in Thailand\n\n'.repeat(200),
+        },
+    ];
+
+    const cachedCountry = {
+        code: 'TH',
+        name: 'Thailand',
+        content_sections: editorialSections,
+    };
+
+    const cachedShop = {
+        id: 'shop-cnx-1',
+        slug: 'riders-corner',
+        provider_name: 'Riders Corner',
+        latitude: 18.7953,
+        longitude: 98.9931,
+        cities: {
+            id: 'city-cnx',
+            name: 'Chiang Mai',
+            slug: 'chiang-mai',
+            content_sections: [{ id: 'city-seo', body: 'City editorial blob' }],
+            provinces: {
+                id: 'prov-cnx',
+                name: 'Chiang Mai',
+                country_code: 'TH',
+                content_sections: [{ id: 'prov-seo', body: 'Province editorial blob' }],
+                countries: cachedCountry,
+            },
+        },
+        motorcycle_rentals: [
+            {
+                id: 'bike-crf-300',
+                model: 'CRF300L',
+                year: 2025,
+                rental_rate_per_day: 900,
+                rental_rate_currency: 'THB',
+                rental_rate_tiers: [],
+                rental_shops: {
+                    id: 'shop-cnx-1',
+                    slug: 'riders-corner',
+                    provider_name: 'Riders Corner',
+                    cities: {
+                        id: 'city-cnx',
+                        name: 'Chiang Mai',
+                        provinces: {
+                            id: 'prov-cnx',
+                            name: 'Chiang Mai',
+                            countries: cachedCountry,
+                        },
+                    },
+                },
+            },
+        ],
+    };
+
+    mockGetShopById.mockResolvedValueOnce(cachedShop);
+    const shopRes = await executeTool('get_shop', { id: 'shop-cnx-1' });
+    expect(shopRes.success).toBe(true);
+    const shopPayloadText = formatToolResultForLLM(shopRes);
+    expect(shopPayloadText).not.toContain('content_sections');
+    expect(shopPayloadText).not.toContain('Complete Riding Guide to Thailand');
+
+    const shopData = JSON.parse(shopPayloadText);
+    expect(shopData).toMatchObject({
+        id: 'shop-cnx-1',
+        url: '/shop/thailand/chiang-mai/riders-corner',
+        latitude: 18.7953,
+        longitude: 98.9931,
+        cities: {
+            id: 'city-cnx',
+            name: 'Chiang Mai',
+            slug: 'chiang-mai',
+            provinces: {
+                id: 'prov-cnx',
+                name: 'Chiang Mai',
+                country_code: 'TH',
+                countries: {
+                    code: 'TH',
+                    name: 'Thailand',
+                },
+            },
+        },
+    });
+
+    const cachedMotorcycle = {
+        id: 'bike-crf-300',
+        model: 'CRF300L',
+        year: 2025,
+        brands: { name: 'Honda' },
+        categories: { name: 'Dual Sport' },
+        rental_rate_per_day: 900,
+        rental_rate_currency: 'THB',
+        rental_rate_tiers: [],
+        rental_shops: cachedShop,
+    };
+
+    mockGetMotorcycleById.mockResolvedValueOnce(cachedMotorcycle);
+    const bikeRes = await executeTool('get_motorcycle', { id: 'bike-crf-300' });
+    expect(bikeRes.success).toBe(true);
+    const bikePayloadText = formatToolResultForLLM(bikeRes);
+    expect(bikePayloadText).not.toContain('content_sections');
+    expect(bikePayloadText).not.toContain('Complete Riding Guide to Thailand');
+
+    const bikeData = JSON.parse(bikePayloadText);
+    expect(bikeData).toMatchObject({
+        id: 'bike-crf-300',
+        url: '/motorcycle/bike-crf-300',
+        shopUrl: '/shop/thailand/chiang-mai/riders-corner',
+        rental_shops: {
+            id: 'shop-cnx-1',
+            latitude: 18.7953,
+            longitude: 98.9931,
+            cities: {
+                id: 'city-cnx',
+                name: 'Chiang Mai',
+                slug: 'chiang-mai',
+                provinces: {
+                    id: 'prov-cnx',
+                    name: 'Chiang Mai',
+                    country_code: 'TH',
+                    countries: {
+                        code: 'TH',
+                        name: 'Thailand',
+                    },
+                },
+            },
+        },
+    });
+
+    // Cached/source objects must remain completely unmutated
+    expect(cachedCountry.content_sections).toBe(editorialSections);
+    expect(cachedShop.cities.content_sections).toHaveLength(1);
+    expect(cachedShop.cities.provinces.content_sections).toHaveLength(1);
+});
+
+it('omits blank/null keys in conditionsDetails and resolves canonical condition type names when relation is null (#223)', async () => {
+    mockGetMotorcycles.mockResolvedValueOnce({
+        total: 1,
+        motorcycles: [
+            {
+                ...motorcycle,
+                conditions_details: {
+                    deposit: null,
+                    license_required: '   ',
+                },
+                motorcycle_conditions: [
+                    {
+                        motorcycle_id: 'test-motorcycle',
+                        condition_type_id: '9526b7ae-8c84-45a2-a8ac-c4ecbeea600b',
+                        notes: '5000 THB',
+                        condition_types: null,
+                    },
+                ],
+            },
+        ],
+    });
+
+    const res = await executeTool('list_motorcycles', {});
+    const data = JSON.parse(formatToolResultForLLM(res));
+    expect(data.motorcycles[0].conditionsDetails).toBeNull();
+    expect(data.motorcycles[0].conditions).toEqual([
+        {
+            name: 'Security Deposit',
+            value: '5000 THB',
+            summary: 'Security Deposit: 5000 THB',
+        },
+    ]);
+});
+
 
 
