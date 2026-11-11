@@ -399,7 +399,7 @@ it('exposes concise structured shop conditions (including opening hours) and inc
     });
 });
 
-it('exposes per-motorcycle conditions, conditionsDetails, and shopConditions/shopInclusions across list_motorcycles, get_motorcycle, and get_shop fleet (#223)', async () => {
+it('exposes per-motorcycle conditions, conditionsDetails, shopConditions, and inclusions across list_motorcycles, get_motorcycle, and get_shop fleet (#223)', async () => {
     const bikeWithConditions = {
         id: 'bike-adv-150',
         model: 'ADV 150 ABS',
@@ -521,13 +521,14 @@ it('exposes per-motorcycle conditions, conditionsDetails, and shopConditions/sho
     const detailRes = await executeTool('get_motorcycle', { id: 'bike-adv-150' });
     const detailData = JSON.parse(formatToolResultForLLM(detailRes));
     expect(detailData).not.toHaveProperty('currency');
+    expect(detailData).not.toHaveProperty('shopInclusions');
     expect(detailData).toMatchObject({
         id: 'bike-adv-150',
         url: '/motorcycle/bike-adv-150',
         shopUrl: '/shop/thailand/phuket/bike-phuket-garage',
         conditions: expectedConditions,
         conditionsDetails: { min_age: 21, fuel_policy: 'Same-to-same' },
-        shopInclusions: ['Phone Holder'],
+        inclusions: ['Phone Holder'],
         shopConditions: [
             {
                 name: 'Opening Hours',
@@ -535,6 +536,15 @@ it('exposes per-motorcycle conditions, conditionsDetails, and shopConditions/sho
                 summary: 'Opening Hours: 09:00-19:00 daily',
             },
         ],
+    });
+
+    mockGetMotorcycleById.mockResolvedValueOnce(motorcycle);
+    const detailWithoutShopRelationsRes = await executeTool('get_motorcycle', { id: 'test-motorcycle' });
+    const detailWithoutShopRelations = JSON.parse(formatToolResultForLLM(detailWithoutShopRelationsRes));
+    expect(detailWithoutShopRelations).toMatchObject({
+        id: 'test-motorcycle',
+        inclusions: [],
+        shopConditions: [],
     });
 
     // 3. get_shop fleet motorcycles

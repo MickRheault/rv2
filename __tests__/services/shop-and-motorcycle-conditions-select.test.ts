@@ -129,6 +129,7 @@ describe('Shop & Motorcycle Conditions Select Parity (#223)', () => {
     })
 
     const shopById = await shopService.getShopById('shop-riders-corner')
+    expect(extractRelationBlock(getByIdSelect, 'rental_shop_inclusions').trim()).toBe('*')
     const byIdConditionsBlock = extractRelationBlock(getByIdSelect, 'rental_shop_conditions')
     expect(byIdConditionsBlock).toContain('condition_value')
     expect(byIdConditionsBlock).toContain('notes')

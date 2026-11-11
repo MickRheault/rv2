@@ -380,12 +380,8 @@ export async function executeTool(
                         ...(shopUrl ? { shopUrl } : {}),
                         year_to: getYearTo(motorcycle),
                         ...buildMotorcyclePricingAndConditions(motorcycle as any),
-                        ...(Array.isArray(shop?.rental_shop_conditions)
-                            ? { shopConditions: formatConditions(shop.rental_shop_conditions) }
-                            : {}),
-                        ...(Array.isArray(shop?.rental_shop_inclusions)
-                            ? { shopInclusions: formatShopInclusions(shop.rental_shop_inclusions) }
-                            : {}),
+                        shopConditions: formatConditions(shop?.rental_shop_conditions),
+                        inclusions: formatShopInclusions(shop?.rental_shop_inclusions),
                     },
                 };
             }
@@ -450,9 +446,9 @@ export async function executeTool(
                     return { success: false, error: 'Shop not found' };
                 }
                 const sanitizedShop = sanitizeShopForTool(shop);
-                const enrichedMotorcycles = Array.isArray((shop as any).motorcycle_rentals)
-                    ? (shop as any).motorcycle_rentals.map((m: any) => ({
-                          ...sanitizeMotorcycleForTool(m),
+                const enrichedMotorcycles = Array.isArray((sanitizedShop as any).motorcycle_rentals)
+                    ? (sanitizedShop as any).motorcycle_rentals.map((m: any) => ({
+                          ...m,
                           url: getMotorcycleUrl(m.id),
                           ...buildMotorcyclePricingAndConditions(m),
                       }))

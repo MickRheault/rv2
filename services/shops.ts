@@ -583,7 +583,7 @@ export const shopService = {
           )
         ),
         business_statuses (*),
-        ${RENTAL_SHOP_INCLUSIONS_SELECT},
+        rental_shop_inclusions (*),
         rental_shop_tours (*),
         rental_shop_service_locations (*),
         ${RENTAL_SHOP_CONDITIONS_SELECT},

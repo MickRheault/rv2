@@ -122,9 +122,6 @@ export function formatConditions(rawConditions: unknown): FormattedCondition[] {
     return formatted;
 }
 
-export const formatShopConditions = formatConditions;
-export const formatMotorcycleConditions = formatConditions;
-
 export function formatShopInclusions(rawInclusions: unknown): string[] {
     if (!Array.isArray(rawInclusions)) return [];
 
