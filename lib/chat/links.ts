@@ -1,4 +1,4 @@
-const INTERNAL_CHAT_PATH_PREFIXES = ['/motorcycle/', '/shop/'] as const
+export const INTERNAL_CHAT_PATH_PREFIXES = ['/motorcycle/', '/shop/'] as const
 
 /**
  * Normalize internal GMR listing links (/motorcycle/... and /shop/...) to relative paths
