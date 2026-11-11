@@ -1,58 +1,20 @@
 export const COUNTRY_ALIASES: Record<string, string> = {
-    italia: 'italy',
-    espana: 'spain',
     'viet nam': 'vietnam',
 };
 
-export const COMMON_CODE_TO_COUNTRY_KEY: Record<string, string> = {
-    IT: 'italy',
-    ES: 'spain',
-    TH: 'thailand',
-    VN: 'vietnam',
-    ID: 'indonesia',
-    PH: 'philippines',
-    MY: 'malaysia',
-    KH: 'cambodia',
-    LA: 'laos',
-    SG: 'singapore',
-    MM: 'myanmar',
-    PT: 'portugal',
-    FR: 'france',
-    DE: 'germany',
-    GR: 'greece',
-    US: 'united states',
-    GB: 'united kingdom',
-    AU: 'australia',
-    NZ: 'new zealand',
-    JP: 'japan',
-    TW: 'taiwan',
-    IN: 'india',
-    NP: 'nepal',
-    LK: 'sri lanka',
-};
-
-export const COMMON_COUNTRY_KEY_TO_CODE: Record<string, string> = Object.fromEntries(
-    Object.entries(COMMON_CODE_TO_COUNTRY_KEY).map(([code, name]) => [name, code])
-);
-
 export const CITY_ALIASES: Record<string, string[]> = {
     roma: ['Rome'],
-    'ha noi': ['Hanoi', 'Ha Noi'],
-    hanoi: ['Hanoi', 'Ha Noi'],
-    saigon: ['Ho Chi Minh City', 'Ho Chi Minh', 'Saigon'],
-    'sai gon': ['Ho Chi Minh City', 'Ho Chi Minh', 'Saigon'],
+    'ha noi': ['Hanoi'],
+    saigon: ['Ho Chi Minh City', 'Ho Chi Minh'],
+    'sai gon': ['Ho Chi Minh City', 'Ho Chi Minh'],
     hcmc: ['Ho Chi Minh City', 'Ho Chi Minh'],
     'ho chi minh': ['Ho Chi Minh City', 'Ho Chi Minh'],
-    'ho chi minh city': ['Ho Chi Minh City', 'Ho Chi Minh'],
+    'phuket town': ['Phuket'],
     chiangmai: ['Chiang Mai'],
     danang: ['Da Nang'],
-    'da nang': ['Da Nang'],
-    'phuket town': ['Phuket', 'Phuket Town'],
-    barcellona: ['Barcelona'],
-    milano: ['Milan'],
-    firenze: ['Florence'],
-    napoli: ['Naples'],
 };
+
+export const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function stripDiacritics(input: string): string {
     return input
@@ -75,6 +37,21 @@ export function normalizeCountryTargetKey(input: string): string {
     return COUNTRY_ALIASES[normalized] ?? normalized;
 }
 
+export function matchCountryFromCatalog(
+    countryInput: string,
+    countries: Array<{ code?: string | null; name?: string | null }>
+): string | null {
+    const normalized = normalizeLocationKey(countryInput);
+    if (!normalized) return null;
+    const canonicalTarget = normalizeCountryTargetKey(countryInput);
+    const match = countries.find((c) => {
+        const codeKey = c.code?.trim().toLowerCase();
+        const nameKey = c.name ? normalizeCountryTargetKey(c.name) : '';
+        return codeKey === normalized || nameKey === normalized || nameKey === canonicalTarget;
+    });
+    return match?.code ? match.code.trim().toUpperCase() : null;
+}
+
 export function parseCityCountryInput(raw: string): {
     cityPart: string;
     countryPart?: string;
@@ -93,17 +70,19 @@ export function parseCityCountryInput(raw: string): {
 }
 
 export function expandCityCandidates(cityPart: string): string[] {
-    const stripped = stripDiacritics(cityPart).replace(/\s+/g, ' ').trim();
-    if (!stripped) return [];
-    const key = normalizeLocationKey(stripped);
+    const rawCleaned = cityPart.replace(/\s+/g, ' ').trim();
+    if (!rawCleaned) return [];
+    const stripped = stripDiacritics(rawCleaned);
+    const key = normalizeLocationKey(rawCleaned);
     const aliases = CITY_ALIASES[key] ?? [];
     const seen = new Set<string>();
     const result: string[] = [];
 
-    for (const candidate of [...aliases, stripped]) {
-        const norm = candidate.toLowerCase();
-        if (!seen.has(norm)) {
-            seen.add(norm);
+    for (const candidate of [rawCleaned, stripped, ...aliases]) {
+        if (!candidate) continue;
+        const caseKey = candidate.toLowerCase();
+        if (!seen.has(caseKey)) {
+            seen.add(caseKey);
             result.push(candidate);
         }
     }
@@ -133,7 +112,8 @@ export function doesCityMatchCountry(
         expectedCountryCode?: string;
         rawCountryQualifier?: string;
         requireMetadataWhenConstrained?: boolean;
-    }
+    },
+    catalogCountries: Array<{ code?: string | null; name?: string | null }> = []
 ): boolean {
     const { expectedCountryCode, rawCountryQualifier, requireMetadataWhenConstrained = false } =
         options;
@@ -143,14 +123,22 @@ export function doesCityMatchCountry(
 
     const { code: cityCode, nameKey: cityNameKey } = extractCityCountryInfo(city);
 
-    if (expectedCountryCode) {
-        const upperExpected = expectedCountryCode.trim().toUpperCase();
+    const effectiveCode =
+        expectedCountryCode?.trim().toUpperCase() ||
+        (rawCountryQualifier ? matchCountryFromCatalog(rawCountryQualifier, catalogCountries) ?? undefined : undefined);
+
+    if (effectiveCode) {
         if (cityCode) {
-            return cityCode === upperExpected;
+            return cityCode === effectiveCode;
         }
         if (cityNameKey) {
-            const expectedName = COMMON_CODE_TO_COUNTRY_KEY[upperExpected];
-            return Boolean(expectedName && cityNameKey === expectedName);
+            const matchedCountry = catalogCountries.find(
+                (c) => c.code?.trim().toUpperCase() === effectiveCode
+            );
+            const expectedNameKey = matchedCountry?.name
+                ? normalizeCountryTargetKey(matchedCountry.name)
+                : undefined;
+            return Boolean(expectedNameKey && cityNameKey === expectedNameKey);
         }
         return !requireMetadataWhenConstrained && !rawCountryQualifier;
     }
@@ -158,13 +146,8 @@ export function doesCityMatchCountry(
     if (rawCountryQualifier) {
         const normQualifier = normalizeLocationKey(rawCountryQualifier);
         const targetName = normalizeCountryTargetKey(rawCountryQualifier);
-        const inferredCode =
-            normQualifier.length === 2
-                ? normQualifier.toUpperCase()
-                : COMMON_COUNTRY_KEY_TO_CODE[targetName];
-
-        if (cityCode && inferredCode) {
-            return cityCode === inferredCode;
+        if (normQualifier.length === 2 && cityCode) {
+            return cityCode === normQualifier.toUpperCase();
         }
         if (cityNameKey) {
             return cityNameKey === targetName;
@@ -175,21 +158,125 @@ export function doesCityMatchCountry(
     return true;
 }
 
-const COMPOUND_MODEL_SPLITS: Record<string, string[]> = {
-    airblade: ['air', 'blade'],
-    xadv: ['x', 'adv'],
-    xmax: ['x', 'max'],
-    nmax: ['n', 'max'],
-    tmax: ['t', 'max'],
-    vstrom: ['v', 'strom'],
-    africatwin: ['africa', 'twin'],
-    supercub: ['super', 'cub'],
-    streettriple: ['street', 'triple'],
-    speedtwin: ['speed', 'twin'],
-    gsxr: ['gsx', 'r'],
-    gsxs: ['gsx', 's'],
-    yzfr: ['yzf', 'r'],
-};
+export function doesShopMatchScope(
+    shop: any,
+    scope: {
+        cityId?: string;
+        countryCode?: string;
+        requireCityMetadata?: boolean;
+    },
+    catalogCountries: Array<{ code?: string | null; name?: string | null }> = []
+): boolean {
+    if (scope.cityId) {
+        const shopCityId = shop?.city_id ?? shop?.cities?.id;
+        if (shopCityId && shopCityId !== scope.cityId) return false;
+        if (scope.requireCityMetadata && !shopCityId) return false;
+    }
+    if (scope.countryCode) {
+        if (
+            !doesCityMatchCountry(
+                shop?.cities,
+                {
+                    expectedCountryCode: scope.countryCode,
+                    requireMetadataWhenConstrained: true,
+                },
+                catalogCountries
+            )
+        ) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function toSlugKey(value: string): string {
+    return stripDiacritics(value)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
+export function pickBestMatchingShopId(
+    shops: Array<{ id?: string; provider_name?: string | null; slug?: string | null }>,
+    rawShopInput: string
+): string | null {
+    const trimmed = rawShopInput.trim();
+    if (!trimmed || !Array.isArray(shops) || shops.length === 0) return null;
+
+    const trimmedLower = trimmed.toLowerCase();
+    const targetSlug = toSlugKey(trimmed);
+    const targetNameKey = normalizeLocationKey(trimmed);
+
+    const byId = shops.find((s) => s?.id?.toLowerCase() === trimmedLower);
+    if (byId?.id) return byId.id;
+
+    const byExactSlug = shops.find((s) => {
+        const slugVal = s?.slug?.trim().toLowerCase() ?? '';
+        return slugVal.length > 0 && (slugVal === trimmedLower || slugVal === targetSlug);
+    });
+    if (byExactSlug?.id) return byExactSlug.id;
+
+    const byExactName = shops.find((s) => {
+        const nameKey = s?.provider_name ? normalizeLocationKey(s.provider_name) : '';
+        return nameKey.length > 0 && nameKey === targetNameKey;
+    });
+    if (byExactName?.id) return byExactName.id;
+
+    const byPartial = shops.find((s) => {
+        const nameKey = s?.provider_name ? normalizeLocationKey(s.provider_name) : '';
+        const slugVal = s?.slug?.trim().toLowerCase() ?? '';
+        const providerSlug = s?.provider_name ? toSlugKey(s.provider_name) : '';
+        return (
+            (targetNameKey.length >= 2 && nameKey.includes(targetNameKey)) ||
+            (targetSlug.length >= 2 && slugVal.includes(targetSlug)) ||
+            (providerSlug.length >= 3 && targetSlug.startsWith(`${providerSlug}-`))
+        );
+    });
+    return byPartial?.id ?? null;
+}
+
+function escapeRegExp(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+export function extractBrandPrefixFromQuery(
+    rawQuery: string,
+    brands: Array<{ id: string; name?: string | null }>,
+    explicitBrandId?: string
+): { brandId?: string; model?: string } {
+    const cleanedQuery = stripDiacritics(rawQuery).replace(/\s+/g, ' ').trim();
+    if (!cleanedQuery) {
+        return { brandId: explicitBrandId, model: undefined };
+    }
+
+    const sortedBrands = [...brands]
+        .filter((b): b is { id: string; name: string } => Boolean(b?.id && b?.name?.trim()))
+        .sort((a, b) => b.name.trim().length - a.name.trim().length);
+
+    for (const brand of sortedBrands) {
+        const tokens = stripDiacritics(brand.name)
+            .trim()
+            .split(/[\s\-_]+/)
+            .filter(Boolean);
+        if (tokens.length === 0) continue;
+
+        const brandPattern = tokens.map(escapeRegExp).join('[\\s\\-_]+');
+        const prefixRegex = new RegExp(`^${brandPattern}(?:$|[\\s\\-–—:/]+(.*)$)`, 'i');
+        const match = cleanedQuery.match(prefixRegex);
+        if (!match) continue;
+
+        const remainder = match[1]?.trim() || undefined;
+        if (!explicitBrandId) {
+            return { brandId: brand.id, model: remainder };
+        }
+        if (explicitBrandId === brand.id) {
+            return { brandId: explicitBrandId, model: remainder };
+        }
+        return { brandId: explicitBrandId, model: rawQuery.trim() };
+    }
+
+    return { brandId: explicitBrandId, model: rawQuery.trim() };
+}
 
 export function normalizeModelKey(value: string): string {
     return stripDiacritics(value)
@@ -197,63 +284,38 @@ export function normalizeModelKey(value: string): string {
         .replace(/[^a-z0-9]+/g, '');
 }
 
-export function tokenizeModelQuery(raw: string): string[] {
-    const cleaned = stripDiacritics(raw).trim();
-    if (!cleaned) return [];
-
-    const coarseTokens = cleaned.split(/[^a-zA-Z0-9]+/).filter(Boolean);
-    const tokens: string[] = [];
-
-    for (const coarse of coarseTokens) {
-        const subTokens = coarse
-            .replace(/([a-zA-Z])(?=[0-9])/g, '$1 ')
-            .replace(/([0-9])(?=[a-zA-Z])/g, '$1 ')
-            .replace(/([a-z])(?=[A-Z])/g, '$1 ')
-            .split(' ')
-            .filter(Boolean);
-
-        for (const sub of subTokens) {
-            const compound = COMPOUND_MODEL_SPLITS[sub.toLowerCase()];
-            if (compound) {
-                tokens.push(...compound);
-            } else {
-                tokens.push(sub);
-            }
-        }
-    }
-
-    return tokens;
-}
-
 export interface ModelSearchPlan {
     ilikePattern: string;
+    orExpression?: string;
     normalizedKey: string;
     requiresPostFilter: boolean;
 }
 
 export function buildModelSearchPlan(rawModel: string): ModelSearchPlan {
     const trimmed = rawModel.trim();
-    const tokens = tokenizeModelQuery(trimmed);
     const normalizedKey = normalizeModelKey(trimmed);
 
-    if (tokens.length === 0 || !normalizedKey) {
+    if (normalizedKey.length < 2) {
         return {
             ilikePattern: `%${trimmed}%`,
-            normalizedKey: '',
-            requiresPostFilter: false,
-        };
-    }
-
-    if (tokens.length === 1) {
-        return {
-            ilikePattern: `%${tokens[0]}%`,
             normalizedKey,
             requiresPostFilter: false,
         };
     }
 
+    const charPattern = `%${normalizedKey.split('').join('%')}%`;
+    const safeLiteral = trimmed
+        .replace(/[(),%]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    const orExpression =
+        safeLiteral.length > 0
+            ? `model.ilike.%${safeLiteral}%,model.ilike.${charPattern}`
+            : `model.ilike.${charPattern}`;
+
     return {
-        ilikePattern: `%${tokens.join('%')}%`,
+        ilikePattern: charPattern,
+        orExpression,
         normalizedKey,
         requiresPostFilter: true,
     };
@@ -266,4 +328,3 @@ export function matchesNormalizedModel(
     if (!candidateModel || !normalizedTargetKey) return false;
     return normalizeModelKey(candidateModel).includes(normalizedTargetKey);
 }
-

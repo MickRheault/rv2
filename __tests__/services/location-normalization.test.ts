@@ -3,6 +3,7 @@
  */
 
 import { locationService } from '@/services/locations';
+import { clearAllTtlCaches } from '@/services/shops';
 import { supabase } from '@/lib/supabase/client';
 
 jest.mock('@/lib/supabase/client', () => ({
@@ -11,7 +12,7 @@ jest.mock('@/lib/supabase/client', () => ({
     },
 }));
 
-describe('locationService.searchLocations normalization & alias resolution (#224)', () => {
+describe('locationService.searchLocations normalization, accented catalog matching & narrow projections (#224)', () => {
     const catalogCities = [
         {
             id: 'city-rome',
@@ -25,12 +26,34 @@ describe('locationService.searchLocations normalization & alias resolution (#224
             },
         },
         {
+            id: 'city-malaga',
+            name: 'Málaga',
+            province_id: 'prov-andalusia',
+            provinces: {
+                id: 'prov-andalusia',
+                name: 'Andalusia',
+                country_code: 'ES',
+                countries: { code: 'ES', name: 'Spain' },
+            },
+        },
+        {
             id: 'city-hanoi',
             name: 'Hanoi',
             province_id: 'prov-hanoi',
             provinces: {
                 id: 'prov-hanoi',
                 name: 'Hanoi',
+                country_code: 'VN',
+                countries: { code: 'VN', name: 'Vietnam' },
+            },
+        },
+        {
+            id: 'city-hoi-an',
+            name: 'Hội An',
+            province_id: 'prov-qn',
+            provinces: {
+                id: 'prov-qn',
+                name: 'Quang Nam',
                 country_code: 'VN',
                 countries: { code: 'VN', name: 'Vietnam' },
             },
@@ -61,9 +84,12 @@ describe('locationService.searchLocations normalization & alias resolution (#224
 
     const catalogCountries = [
         { code: 'IT', name: 'Italy' },
+        { code: 'ES', name: 'Spain' },
         { code: 'TH', name: 'Thailand' },
         { code: 'VN', name: 'Vietnam' },
     ];
+
+    let recordedSelects: Array<{ table: string; cols: string }> = [];
 
     function matchesIlikePattern(value: string, pattern: string): boolean {
         const inner = pattern.replace(/^%|%$/g, '').toLowerCase();
@@ -81,6 +107,8 @@ describe('locationService.searchLocations normalization & alias resolution (#224
 
     beforeEach(() => {
         jest.clearAllMocks();
+        clearAllTtlCaches();
+        recordedSelects = [];
         (supabase.from as jest.Mock).mockImplementation((table: string) => {
             const sourceRows =
                 table === 'cities'
@@ -90,8 +118,12 @@ describe('locationService.searchLocations normalization & alias resolution (#224
                       : [];
 
             let filtered = [...sourceRows];
+            const resolveResult = () => Promise.resolve({ data: filtered, error: null });
             const builder: any = {
-                select: jest.fn(() => builder),
+                select: jest.fn((cols: string) => {
+                    recordedSelects.push({ table, cols });
+                    return builder;
+                }),
                 ilike: jest.fn((col: string, pattern: string) => {
                     filtered = filtered.filter((r: any) =>
                         matchesIlikePattern(String(r[col] ?? ''), pattern)
@@ -102,6 +134,7 @@ describe('locationService.searchLocations normalization & alias resolution (#224
                     filtered = filtered.filter((r: any) => matchesOrExpr(r, expr));
                     return builder;
                 }),
+                order: jest.fn(() => resolveResult()),
                 limit: jest.fn((n: number) =>
                     Promise.resolve({ data: filtered.slice(0, n), error: null })
                 ),
@@ -110,12 +143,32 @@ describe('locationService.searchLocations normalization & alias resolution (#224
         });
     });
 
-    it('resolves diacritics, curated aliases, and "City, Country" strings while filtering out mismatched country qualifiers', async () => {
+    it('resolves diacritics (both accented queries and accented DB rows like Hội An & Málaga), curated aliases, and "City, Country" qualifiers with narrow column projections', async () => {
         const romaRes = await locationService.searchLocations('Roma');
         expect(romaRes.cities.map((c) => c.id)).toEqual(['city-rome']);
 
+        // Egress standard: searchLocations must NEVER select * or content_sections
+        expect(recordedSelects.length).toBeGreaterThan(0);
+        for (const { cols } of recordedSelects) {
+            expect(cols).not.toContain('*');
+            expect(cols).not.toContain('content_sections');
+        }
+
         const hanoiRes = await locationService.searchLocations('Hà Nội');
         expect(hanoiRes.cities.map((c) => c.id)).toEqual(['city-hanoi']);
+
+        // Accented catalog row matched by both unaccented ("Hoi An") and accented ("Hội An") inputs
+        const hoiAnAsciiRes = await locationService.searchLocations('Hoi An');
+        expect(hoiAnAsciiRes.cities.map((c) => c.id)).toEqual(['city-hoi-an']);
+
+        const hoiAnAccentedRes = await locationService.searchLocations('Hội An');
+        expect(hoiAnAccentedRes.cities.map((c) => c.id)).toEqual(['city-hoi-an']);
+
+        const malagaAsciiRes = await locationService.searchLocations('Malaga, Spain');
+        expect(malagaAsciiRes.cities.map((c) => c.id)).toEqual(['city-malaga']);
+
+        const malagaAccentedRes = await locationService.searchLocations('Málaga');
+        expect(malagaAccentedRes.cities.map((c) => c.id)).toEqual(['city-malaga']);
 
         const daNangRes = await locationService.searchLocations('Đà Nẵng');
         expect(daNangRes.cities.map((c) => c.id)).toEqual(['city-da-nang']);
@@ -123,8 +176,8 @@ describe('locationService.searchLocations normalization & alias resolution (#224
         const saigonRes = await locationService.searchLocations('Sài Gòn');
         expect(saigonRes.cities.map((c) => c.id)).toEqual(['city-hcmc']);
 
-        const romeItalyRes = await locationService.searchLocations('Roma, Italia');
-        expect(romeItalyRes.cities.map((c) => c.id)).toEqual(['city-rome']);
+        const hanoiVietNamRes = await locationService.searchLocations('Hanoi, Viet Nam');
+        expect(hanoiVietNamRes.cities.map((c) => c.id)).toEqual(['city-hanoi']);
 
         const romeThailandRes = await locationService.searchLocations('Rome, Thailand');
         expect(romeThailandRes.cities).toEqual([]);

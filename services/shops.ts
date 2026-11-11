@@ -3,6 +3,12 @@ import { Database } from '@/lib/supabase/database.types'
 import { SupabaseClient } from '@supabase/supabase-js'
 import { PremiumFeatureConfig } from '@/types/premium-listings'
 import { hydrateRentalOffersFromRows } from '@/lib/rental-offers'
+import {
+  UUID_REGEX,
+  doesShopMatchScope,
+  pickBestMatchingShopId,
+  stripDiacritics,
+} from '@/lib/mcp/search-normalization'
 
 const typedSupabase = supabase as unknown as SupabaseClient<Database>
 
@@ -657,6 +663,105 @@ export const shopService = {
     }
 
     return filterAvailableShopMotorcycles(data as ShopWithMotorcycles)
+  },
+
+  // Narrow shop reference lookup by UUID, slug, or provider_name without loading fleets or content_sections
+  async resolveShopReference(
+    shopInput: string,
+    scope: { cityId?: string; countryCode?: string } = {},
+    catalogCountries: Array<{ code?: string | null; name?: string | null }> = []
+  ): Promise<string | null> {
+    const trimmed = shopInput?.trim()
+    if (!trimmed) return null
+
+    const activeStatusIds = await getActiveBusinessStatusIds()
+    const innerJoin = Boolean(scope.countryCode && !scope.cityId) ? '!inner' : ''
+    const narrowSelect = `
+      id,
+      provider_name,
+      slug,
+      city_id,
+      business_status_id,
+      cities${innerJoin} (
+        id,
+        name,
+        province_id,
+        provinces${innerJoin} (
+          id,
+          name,
+          country_code,
+          countries (
+            code,
+            name
+          )
+        )
+      )
+    `
+
+    if (UUID_REGEX.test(trimmed)) {
+      const { data, error } = await applyActiveStatusFilterSync(
+        typedSupabase.from('rental_shops').select(narrowSelect).eq('id', trimmed),
+        activeStatusIds
+      ).limit(1)
+
+      if (error || !Array.isArray(data) || data.length === 0) {
+        return null
+      }
+      const shop = data[0] as any
+      return doesShopMatchScope(
+        shop,
+        { ...scope, requireCityMetadata: Boolean(scope.cityId) },
+        catalogCountries
+      )
+        ? shop.id
+        : null
+    }
+
+    const safeSlug = stripDiacritics(trimmed)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+    const safeName = stripDiacritics(trimmed)
+      .replace(/[-_]+/g, ' ')
+      .replace(/[(),%]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+
+    const slugTokens = safeSlug.split('-').filter(Boolean)
+    const slugPrefix = slugTokens.length >= 2 ? slugTokens.slice(0, 2).join('-') : ''
+    const orClauses = Array.from(
+      new Set(
+        [
+          safeSlug ? `slug.ilike.%${safeSlug}%` : '',
+          slugPrefix && slugPrefix !== safeSlug ? `slug.ilike.${slugPrefix}%` : '',
+          safeName ? `provider_name.ilike.%${safeName}%` : '',
+        ].filter(Boolean)
+      )
+    )
+    if (orClauses.length === 0) return null
+
+    let query: any = typedSupabase.from('rental_shops').select(narrowSelect)
+    if (scope.cityId) {
+      query = query.eq('city_id', scope.cityId)
+    } else if (scope.countryCode) {
+      query = query.eq('cities.provinces.country_code', scope.countryCode)
+    }
+    query = applyActiveStatusFilterSync(query, activeStatusIds)
+    query = query.or(orClauses.join(',')).limit(20)
+
+    const { data, error } = await query
+    if (error || !Array.isArray(data) || data.length === 0) {
+      return null
+    }
+
+    const scopedRows = data.filter((row: any) =>
+      doesShopMatchScope(
+        row,
+        { ...scope, requireCityMetadata: Boolean(scope.cityId) },
+        catalogCountries
+      )
+    )
+    return pickBestMatchingShopId(scopedRows as any[], trimmed)
   },
 
   // Get shops with motorcycle count for overview/stats

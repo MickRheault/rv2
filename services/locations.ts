@@ -3,6 +3,7 @@ import { Database } from '@/lib/supabase/database.types'
 import {
   doesCityMatchCountry,
   expandCityCandidates,
+  matchCountryFromCatalog,
   normalizeCountryTargetKey,
   normalizeLocationKey,
   parseCityCountryInput,
@@ -77,7 +78,34 @@ export function toCityWithCounts(city: any): CityWithCounts {
   }
 }
 
+const NARROW_CITY_LOCATION_SELECT = `
+  id,
+  name,
+  province_id,
+  provinces (
+    id,
+    name,
+    country_code,
+    countries (
+      code,
+      name
+    )
+  )
+`
+
+const NARROW_PROVINCE_LOCATION_SELECT = `
+  id,
+  name,
+  country_code,
+  countries (
+    code,
+    name
+  )
+`
+
 const countriesCache = createTtlListCache<Country>()
+const narrowCountriesCache = createTtlListCache<Pick<Country, 'code' | 'name'>>()
+const narrowCitiesCache = createTtlListCache<CityWithLocation>()
 
 export const locationService = {
   // Get all countries (memoized with TTL once non-empty)
@@ -281,19 +309,13 @@ export const locationService = {
       .flatMap((t) => [`name.ilike.%${t}%`, `code.ilike.%${t}%`])
       .join(',')
 
-    // Search in cities, provinces, and countries
+    // Search in cities, provinces, and countries using narrow column projections
     const [cities, provinces, countries] = await Promise.all([
       // Search cities
       applyNameSearch(
         supabase
           .from('cities')
-          .select(`
-          *,
-          provinces (
-            *,
-            countries (*)
-          )
-        `),
+          .select(NARROW_CITY_LOCATION_SELECT),
         cityCandidates
       ).limit(limit),
 
@@ -301,17 +323,14 @@ export const locationService = {
       applyNameSearch(
         supabase
           .from('provinces')
-          .select(`
-          *,
-          countries (*)
-        `),
+          .select(NARROW_PROVINCE_LOCATION_SELECT),
         cityCandidates
       ).limit(limit),
 
-      // Search countries
+      // Search countries (never select content_sections)
       supabase
         .from('countries')
-        .select('*')
+        .select('code, name')
         .or(countryOrExpr)
         .limit(limit)
     ])
@@ -320,25 +339,57 @@ export const locationService = {
     let provinceRows = (provinces.data as ProvinceWithCities[]) || []
     const countryRows = (countries.data as Country[]) || []
 
-    if (countryPart) {
-      const normCountryPart = normalizeLocationKey(countryPart)
-      const exactCountry = countryRows.find((c) => {
-        const codeKey = c.code?.trim().toLowerCase()
-        const nameKey = c.name ? normalizeLocationKey(c.name) : ''
-        return (
-          codeKey === normCountryPart ||
-          nameKey === normCountryPart ||
-          nameKey === canonicalCountryTerm
-        )
+    // Diacritic-insensitive fallback for accented DB names (e.g. "Hoi An" -> "Hội An", "Malaga" -> "Málaga")
+    if (cityRows.length === 0) {
+      const candidateKeys = new Set(cityCandidates.map((c) => normalizeLocationKey(c)))
+      const allCities = await narrowCitiesCache.getOrLoad(async () => {
+        const { data } = await supabase
+          .from('cities')
+          .select(NARROW_CITY_LOCATION_SELECT)
+          .order('name')
+        return ((data as CityWithLocation[]) || [])
       })
-      const expectedCountryCode = exactCountry?.code
+      cityRows = allCities
+        .filter((city) => {
+          const nameKey = city.name ? normalizeLocationKey(city.name) : ''
+          if (!nameKey) return false
+          if (candidateKeys.has(nameKey)) return true
+          for (const candKey of candidateKeys) {
+            if (candKey.length >= 3 && nameKey.includes(candKey)) return true
+          }
+          return false
+        })
+        .slice(0, limit)
+    }
+
+    if (countryPart) {
+      let catalogCountriesForMatch: Array<{ code?: string | null; name?: string | null }> =
+        countryRows
+      let expectedCountryCode = matchCountryFromCatalog(countryPart, catalogCountriesForMatch) ?? undefined
+
+      if (!expectedCountryCode) {
+        const allNarrowCountries = await narrowCountriesCache.getOrLoad(async () => {
+          const { data } = await supabase
+            .from('countries')
+            .select('code, name')
+            .order('name')
+          return ((data as Array<Pick<Country, 'code' | 'name'>>) || [])
+        })
+        catalogCountriesForMatch = allNarrowCountries
+        expectedCountryCode =
+          matchCountryFromCatalog(countryPart, catalogCountriesForMatch) ?? undefined
+      }
 
       cityRows = cityRows.filter((city) =>
-        doesCityMatchCountry(city, {
-          expectedCountryCode,
-          rawCountryQualifier: countryPart,
-          requireMetadataWhenConstrained: true,
-        })
+        doesCityMatchCountry(
+          city,
+          {
+            expectedCountryCode,
+            rawCountryQualifier: countryPart,
+            requireMetadataWhenConstrained: true,
+          },
+          catalogCountriesForMatch
+        )
       )
       provinceRows = provinceRows.filter((prov) =>
         doesCityMatchCountry(
@@ -347,7 +398,8 @@ export const locationService = {
             expectedCountryCode,
             rawCountryQualifier: countryPart,
             requireMetadataWhenConstrained: true,
-          }
+          },
+          catalogCountriesForMatch
         )
       )
     }

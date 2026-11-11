@@ -264,7 +264,6 @@ export async function executeTool(
                     countryCode: resolvedFilters.countryCode,
                     cityId: resolvedFilters.cityId,
                     ...(resolvedFilters.shopId ? { shopId: resolvedFilters.shopId } : {}),
-                    ...(resolvedFilters.shopIds ? { shopIds: resolvedFilters.shopIds } : {}),
                     model: resolvedFilters.model,
                     minPrice: args.minPrice as number | undefined,
                     maxPrice: args.maxPrice as number | undefined,

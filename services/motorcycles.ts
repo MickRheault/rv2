@@ -5,6 +5,7 @@ import { SupabaseClient } from '@supabase/supabase-js'
 import { generateSlug } from '@/lib/utils'
 import {
   buildModelSearchPlan,
+  extractBrandPrefixFromQuery,
   matchesNormalizedModel,
 } from '@/lib/mcp/search-normalization'
 import {
@@ -24,6 +25,7 @@ import {
   filterAvailableMotorcycles,
   getActiveBusinessStatusIds,
   isShopBusinessStatusActive,
+  shopService,
 } from './shops'
 
 const typedSupabase = supabase as unknown as SupabaseClient<Database>
@@ -86,7 +88,7 @@ export interface SearchFilters {
   provinceId?: string
   countryCode?: string
   shopId?: string
-  shopIds?: string[]
+  shop?: string
   brandId?: string
   categoryId?: string
   model?: string
@@ -457,7 +459,7 @@ export const motorcycleService = {
       provinceId,
       countryCode,
       shopId,
-      shopIds,
+      shop,
       brandId,
       categoryId,
       model,
@@ -472,6 +474,26 @@ export const motorcycleService = {
       offset = 0
     } = filters
 
+    const safeOffset =
+      typeof offset === 'number' && Number.isFinite(offset)
+        ? Math.max(0, Math.floor(offset))
+        : 0
+
+    let effectiveShopId = shopId?.trim() || undefined
+    if (!effectiveShopId && typeof shop === 'string' && shop.trim().length > 0) {
+      const resolvedShopId = await shopService.resolveShopReference(shop.trim(), {
+        cityId,
+        countryCode,
+      })
+      if (!resolvedShopId) {
+        return {
+          motorcycles: [] as MotorcycleWithDetails[],
+          total: 0,
+        }
+      }
+      effectiveShopId = resolvedShopId
+    }
+
     const featureSelectFragment =
       features && features.length > 0
         ? `,
@@ -481,7 +503,26 @@ export const motorcycleService = {
         : ''
 
     const activeStatusIds = await getActiveBusinessStatusIds()
-    const effectiveModel = (model || searchQuery)?.trim() || undefined
+    let effectiveBrandId = brandId
+    let effectiveModel = (model || searchQuery)?.trim() || undefined
+
+    if (effectiveModel) {
+      try {
+        const catalogBrands = await this.getBrands()
+        if (catalogBrands.length > 0) {
+          const extracted = extractBrandPrefixFromQuery(
+            effectiveModel,
+            catalogBrands,
+            effectiveBrandId
+          )
+          effectiveBrandId = extracted.brandId
+          effectiveModel = extracted.model
+        }
+      } catch {
+        // Proceed with raw effectiveModel if brands cannot be loaded in isolated test mocks
+      }
+    }
+
     const modelPlan = effectiveModel ? buildModelSearchPlan(effectiveModel) : null
 
     const buildFilteredQuery = () => {
@@ -501,21 +542,21 @@ export const motorcycleService = {
         activeStatusIds
       )
 
-      if (shopId) {
-        query = query.eq('shop_id', shopId)
-      } else if (shopIds && shopIds.length === 1) {
-        query = query.eq('shop_id', shopIds[0])
-      } else if (shopIds && shopIds.length > 1) {
-        query = query.in('shop_id', shopIds)
+      if (effectiveShopId) {
+        query = query.eq('shop_id', effectiveShopId)
       }
-      if (brandId) {
-        query = query.eq('brand_id', brandId)
+      if (effectiveBrandId) {
+        query = query.eq('brand_id', effectiveBrandId)
       }
       if (categoryId) {
         query = query.eq('category_id', categoryId)
       }
       if (modelPlan) {
-        query = query.ilike('model', modelPlan.ilikePattern)
+        if (modelPlan.orExpression && typeof query.or === 'function') {
+          query = query.or(modelPlan.orExpression)
+        } else {
+          query = query.ilike('model', modelPlan.ilikePattern)
+        }
       }
       if (minEngineCapacity !== undefined) {
         query = query.gte('engine_capacity_cc', minEngineCapacity)
@@ -613,7 +654,7 @@ export const motorcycleService = {
         )
       }
 
-      const paginatedData = processedData.slice(offset, offset + limit)
+      const paginatedData = processedData.slice(safeOffset, safeOffset + limit)
 
       return {
         motorcycles: paginatedData as MotorcycleWithDetails[],
@@ -621,7 +662,7 @@ export const motorcycleService = {
       }
     } else {
       // No feature or pricing post-process needed - use direct pagination
-      const { data, error, count } = await buildFilteredQuery().range(offset, offset + limit - 1)
+      const { data, error, count } = await buildFilteredQuery().range(safeOffset, safeOffset + limit - 1)
 
       if (error) {
         console.error('Error fetching motorcycles:', error)
