@@ -563,6 +563,31 @@ it.each([
         'You can rent the Honda ADV 160 in Chiang Mai with two helmets and unlimi',
         "You can rent the Honda ADV 160 in Chiang Mai with two helmets…\n\n_Showing the top results — ask if you'd like to see more listings or details._",
     ],
+    [
+        'preserves a complete trailing multi-word markdown link on a single line without splitting inside the link label',
+        'You can rent **[Honda ADV 160](/motorcycle/111)** at [Riders Corner](/shop/thailand/chiang-mai/riders-corner)',
+        "You can rent **[Honda ADV 160](/motorcycle/111)** at [Riders Corner](/shop/thailand/chiang-mai/riders-corner)\n\n_Showing the top results — ask if you'd like to see more listings or details._",
+    ],
+    [
+        'removes only a trailing connector word without corrupting a preceding complete link or multi-word name',
+        'You can rent **[Honda ADV 160](/motorcycle/111)** at [Riders Corner](/shop/thailand/chiang-mai/riders-corner) for',
+        "You can rent **[Honda ADV 160](/motorcycle/111)** at [Riders Corner](/shop/thailand/chiang-mai/riders-corner)\n\n_Showing the top results — ask if you'd like to see more listings or details._",
+    ],
+    [
+        'removes only a trailing connector word after a multi-word place name without dropping the preceding word',
+        'You can rent the Honda ADV 160 in Chiang Mai with',
+        "You can rent the Honda ADV 160 in Chiang Mai\n\n_Showing the top results — ask if you'd like to see more listings or details._",
+    ],
+    [
+        'does not treat a truncated decimal rating like ⭐ 4. at the end of a length-stopped response as a complete sentence',
+        'Riders Corner lists the **[Honda ADV 160](/motorcycle/111)** for 600 THB/day. Shop rating is ⭐ 4.',
+        "Riders Corner lists the **[Honda ADV 160](/motorcycle/111)** for 600 THB/day.\n\n_Showing the top results — ask if you'd like to see more listings or details._",
+    ],
+    [
+        'does not treat a truncated price like $12. at the end of a length-stopped response as a complete sentence',
+        'Hanoi Motorbikes lists the **[Honda Wave Alpha](/motorcycle/222)** with helmet included. Daily rates start at $12.',
+        "Hanoi Motorbikes lists the **[Honda Wave Alpha](/motorcycle/222)** with helmet included.\n\n_Showing the top results — ask if you'd like to see more listings or details._",
+    ],
 ])('handles finish_reason=length edge case: %s', async (_label, rawContent, expectedResponse) => {
     mockCreateCompletion.mockResolvedValueOnce({
         choices: [{

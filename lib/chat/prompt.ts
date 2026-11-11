@@ -1,5 +1,3 @@
-export { finalizeAssistantResponse, TRUNCATION_CONTINUATION_NOTE } from './response';
-
 export const CHAT_REDIRECT_MESSAGE =
     'I can only help with motorcycle rentals, riding tips, and Global Moto Rentals services. How can I help you find a bike today?';
 

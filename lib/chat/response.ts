@@ -6,6 +6,10 @@ export const TRUNCATION_CONTINUATION_NOTE =
 const TOP_LEVEL_LIST_ITEM_RE = /^(?:\d+[.)]|[-*+•])(?:\s+|$)/;
 const INDENTED_LINE_RE = /^\s+(?:(?:[-*+•]|\d+[.)])(?:\s+|$)|\S)/;
 const DANGLING_LIST_MARKER_RE = /^\s*(?:[-*+•]|\d+[.)])\s*$/;
+const TRAILING_CONNECTOR_RE =
+    /\s+(?:such\s+as|including|at|in|on|from|with|for|and|or|by|to|of|via|the|a|an|check|visit|see)$/i;
+const BARE_TRAILING_WORD_RE = /\s+[\p{L}\p{N}_-]+$/u;
+const SINGLE_BARE_WORD_RE = /^[\p{L}\p{N}_-]+$/u;
 
 function escapeRegex(value: string): string {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -21,6 +25,13 @@ function withContinuationNote(body: string): string {
     return trimmed
         ? `${trimmed}\n\n${TRUNCATION_CONTINUATION_NOTE}`
         : TRUNCATION_CONTINUATION_NOTE;
+}
+
+function stripUnclosedBold(text: string): string {
+    if ((text.match(/\*\*/g)?.length ?? 0) % 2 !== 0) {
+        return text.replace(/\*\*[^*]*$/, '').trimEnd();
+    }
+    return text;
 }
 
 function stripTrailingBrokenMarkdown(line: string): {
@@ -42,10 +53,7 @@ function stripTrailingBrokenMarkdown(line: string): {
         if (next === cleaned) break;
         cleaned = next;
     }
-    // Strip unclosed trailing bold segment (**... without closing **)
-    if ((cleaned.match(/\*\*/g)?.length ?? 0) % 2 !== 0) {
-        cleaned = cleaned.replace(/\*\*[^*]*$/, '');
-    }
+    cleaned = stripUnclosedBold(cleaned);
 
     return {
         cleaned: cleaned.trimEnd(),
@@ -59,14 +67,9 @@ function stripTrailingConnectors(line: string): string {
     while (cleaned !== prev) {
         prev = cleaned;
         cleaned = cleaned.replace(/[\s,;:•\-–—(]+$/, '');
-        cleaned = cleaned.replace(
-            /\s+(?:such\s+as|including|at|in|on|from|with|for|and|or|by|to|of|via|the|a|an|check|visit|see)$/i,
-            ''
-        );
+        cleaned = cleaned.replace(TRAILING_CONNECTOR_RE, '');
     }
-    if ((cleaned.match(/\*\*/g)?.length ?? 0) % 2 !== 0) {
-        cleaned = cleaned.replace(/\*\*[^*]*$/, '').trimEnd();
-    }
+    cleaned = stripUnclosedBold(cleaned);
     return DANGLING_LIST_MARKER_RE.test(cleaned) ? '' : cleaned.trimEnd();
 }
 
@@ -80,8 +83,13 @@ function findLastSentenceEnd(line: string): number {
     let lastEnd = -1;
     let match: RegExpExecArray | null;
     while ((match = sentenceEndRe.exec(line)) !== null) {
-        if (match.index >= minIndex) {
-            lastEnd = match.index + match[0].length;
+        const endPos = match.index + match[0].length;
+        const isTrailingIncompleteNumber =
+            endPos === line.length &&
+            match[0].startsWith('.') &&
+            /(?:\b\d|[$฿€£¥]\s*\d+)\.$/.test(line.slice(0, match.index + 1));
+        if (match.index >= minIndex && !isTrailingIncompleteNumber) {
+            lastEnd = endPos;
         }
     }
     return lastEnd;
@@ -161,17 +169,21 @@ export function finalizeAssistantResponse(
         }
     }
 
-    let cleanedLastLine = stripTrailingConnectors(markdownSanitizedLastLine);
     const endedMidToken = !strippedMarkdown && !/\s$/.test(content ?? '');
-    if (endedMidToken && cleanedLastLine) {
-        if (/\s+\S+$/.test(cleanedLastLine)) {
+    let cleanedLastLine: string;
+    if (endedMidToken && !TRAILING_CONNECTOR_RE.test(markdownSanitizedLastLine)) {
+        if (BARE_TRAILING_WORD_RE.test(markdownSanitizedLastLine)) {
             const withoutPartialWord = stripTrailingConnectors(
-                cleanedLastLine.replace(/\s+\S+$/, '')
+                markdownSanitizedLastLine.replace(BARE_TRAILING_WORD_RE, '')
             );
             cleanedLastLine = withoutPartialWord ? `${withoutPartialWord}…` : '';
-        } else {
+        } else if (SINGLE_BARE_WORD_RE.test(markdownSanitizedLastLine)) {
             cleanedLastLine = '';
+        } else {
+            cleanedLastLine = stripTrailingConnectors(markdownSanitizedLastLine);
         }
+    } else {
+        cleanedLastLine = stripTrailingConnectors(markdownSanitizedLastLine);
     }
 
     const body = (
