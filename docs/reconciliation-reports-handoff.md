@@ -12,7 +12,7 @@ Related design artifacts:
 
 Complete Reconciliation Reports (`reconciliationReport.schemaVersion = 1`) let automated ingestion agents submit a shop's full inventory accounting inside a Change Proposal—even when `items` is empty (`[]`)—without fabricating placeholder rates or hiding unresolved motorcycles inside `shop_agent_configs.extraction_hints`.
 
-**Production Base URL**: `https://ridevault.org` (all `/api/agent/*` routes require `Authorization: Bearer <AGENT_API_KEY>`).
+**Production Base URL**: `https://www.globalmotorentals.com` (all `/api/agent/*` routes require `Authorization: Bearer <AGENT_API_KEY>`).
 
 **Strict Privacy Rule**: Reconciliation Reports, Reconciliation Entries, Unresolved Candidates, and audit events are private administrative records. Database tables enforce RLS (`public.is_admin()` only, zero `anon` policies), external source text is rendered strictly as escaped plain text, external URLs are restricted to `http:` / `https:` schemes without server-side fetching, and public shop/motorcycle pages, `/api/v1/*`, AI chat, and MCP tools expose zero report or candidate fields.
 
@@ -373,7 +373,7 @@ Response (`200 OK`):
       "shopId": "53529565-40d9-41f5-98e4-d2ed1f1d7ffd",
       "shopName": "Ride On - Alquiler moto Barcelona",
       "shopSlug": "ride-on-alquiler-moto-barcelona",
-      "shopUrl": "https://ridevault.org/shops/spain/barcelona/ride-on-alquiler-moto-barcelona",
+      "shopUrl": "/shop/spain/barcelona/ride-on-alquiler-moto-barcelona",
       "agentRunId": "rideon-bcn-2026-11-01-r1",
       "sourceUrl": "https://rideon.es/flota/",
       "status": "pending",
