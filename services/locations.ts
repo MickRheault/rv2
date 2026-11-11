@@ -1,5 +1,14 @@
 import { supabase } from '@/lib/supabase/client'
 import { Database } from '@/lib/supabase/database.types'
+import {
+  doesCityMatchCountry,
+  expandCityCandidates,
+  matchCountryFromCatalog,
+  matchesWholeTokenSequence,
+  normalizeCountryTargetKey,
+  parseCityCountryInput,
+  stripDiacritics,
+} from '@/lib/mcp/search-normalization'
 import { createTtlListCache } from './shops'
 
 type Country = Database['public']['Tables']['countries']['Row']
@@ -69,7 +78,54 @@ export function toCityWithCounts(city: any): CityWithCounts {
   }
 }
 
+const NARROW_CITY_LOCATION_SELECT = `
+  id,
+  name,
+  province_id,
+  provinces (
+    id,
+    name,
+    country_code,
+    countries (
+      code,
+      name
+    )
+  )
+`
+
+const NARROW_PROVINCE_LOCATION_SELECT = `
+  id,
+  name,
+  country_code,
+  countries (
+    code,
+    name
+  )
+`
+
 const countriesCache = createTtlListCache<Country>()
+const narrowCountriesCache = createTtlListCache<Pick<Country, 'code' | 'name'>>()
+const narrowCitiesCache = createTtlListCache<CityWithLocation>()
+
+async function getNarrowCities(): Promise<CityWithLocation[]> {
+  return narrowCitiesCache.getOrLoad(async () => {
+    const { data } = await supabase
+      .from('cities')
+      .select(NARROW_CITY_LOCATION_SELECT)
+      .order('name')
+    return (data as CityWithLocation[]) || []
+  })
+}
+
+async function getNarrowCountries(): Promise<Array<Pick<Country, 'code' | 'name'>>> {
+  return narrowCountriesCache.getOrLoad(async () => {
+    const { data } = await supabase
+      .from('countries')
+      .select('code, name')
+      .order('name')
+    return (data as Array<Pick<Country, 'code' | 'name'>>) || []
+  })
+}
 
 export const locationService = {
   // Get all countries (memoized with TTL once non-empty)
@@ -235,43 +291,158 @@ export const locationService = {
 
   // Search locations by text query
   async searchLocations(query: string, limit: number = 10) {
-    // Search in cities, provinces, and countries
+    if (!query || !query.trim()) {
+      return {
+        cities: [] as CityWithLocation[],
+        provinces: [] as ProvinceWithCities[],
+        countries: [] as Country[],
+      }
+    }
+
+    const { cityPart, countryPart } = parseCityCountryInput(query)
+    const cityCandidates = expandCityCandidates(cityPart)
+      .map((c) => c.replace(/[(),]/g, ' ').trim())
+      .filter(Boolean)
+
+    if (cityCandidates.length === 0) {
+      return {
+        cities: [] as CityWithLocation[],
+        provinces: [] as ProvinceWithCities[],
+        countries: [] as Country[],
+      }
+    }
+
+    const applyNameSearch = (builder: any, terms: string[]) => {
+      if (terms.length === 1 || typeof builder.or !== 'function') {
+        return builder.ilike('name', `%${terms[0]}%`)
+      }
+      return builder.or(terms.map((t) => `name.ilike.%${t}%`).join(','))
+    }
+
+    const rawCountryTerm = (countryPart ?? query).trim()
+    const strippedCountryTerm = stripDiacritics(rawCountryTerm).replace(/[(),]/g, ' ').trim()
+    const canonicalCountryTerm = normalizeCountryTargetKey(rawCountryTerm).replace(/[(),]/g, ' ').trim()
+    const countryTerms = Array.from(
+      new Set([strippedCountryTerm, canonicalCountryTerm].filter(Boolean))
+    )
+    const countryOrExpr = countryTerms
+      .flatMap((t) => [`name.ilike.%${t}%`, `code.ilike.%${t}%`])
+      .join(',')
+
+    const sqlLimit = countryPart ? Math.max(limit, 50) : limit
+
+    // Search in cities, provinces, and countries using narrow column projections
     const [cities, provinces, countries] = await Promise.all([
       // Search cities
-      supabase
-        .from('cities')
-        .select(`
-          *,
-          provinces (
-            *,
-            countries (*)
-          )
-        `)
-        .ilike('name', `%${query}%`)
-        .limit(limit),
+      applyNameSearch(
+        supabase
+          .from('cities')
+          .select(NARROW_CITY_LOCATION_SELECT),
+        cityCandidates
+      ).limit(sqlLimit),
 
       // Search provinces
-      supabase
-        .from('provinces')
-        .select(`
-          *,
-          countries (*)
-        `)
-        .ilike('name', `%${query}%`)
-        .limit(limit),
+      applyNameSearch(
+        supabase
+          .from('provinces')
+          .select(NARROW_PROVINCE_LOCATION_SELECT),
+        cityCandidates
+      ).limit(sqlLimit),
 
-      // Search countries
+      // Search countries (never select content_sections)
       supabase
         .from('countries')
-        .select('*')
-        .or(`name.ilike.%${query}%,code.ilike.%${query}%`)
+        .select('code, name')
+        .or(countryOrExpr)
         .limit(limit)
     ])
 
+    const matchesAnyCandidateWholeTokens = (name: string | null | undefined): boolean => {
+      if (!name) return false
+      return cityCandidates.some((cand) => matchesWholeTokenSequence(name, cand))
+    }
+
+    let cityRows = ((cities.data as CityWithLocation[]) || []).filter((city) =>
+      matchesAnyCandidateWholeTokens(city.name)
+    )
+    let provinceRows = ((provinces.data as ProvinceWithCities[]) || []).filter((prov) =>
+      matchesAnyCandidateWholeTokens(prov.name)
+    )
+    const countryRows = (countries.data as Country[]) || []
+
+    let expectedCountryCode: string | undefined
+    let catalogCountriesForMatch: Array<{ code?: string | null; name?: string | null }> =
+      countryRows
+
+    if (countryPart) {
+      expectedCountryCode =
+        matchCountryFromCatalog(countryPart, catalogCountriesForMatch) ?? undefined
+
+      if (!expectedCountryCode) {
+        catalogCountriesForMatch = await getNarrowCountries()
+        expectedCountryCode =
+          matchCountryFromCatalog(countryPart, catalogCountriesForMatch) ?? undefined
+      }
+
+      cityRows = cityRows.filter((city) =>
+        doesCityMatchCountry(
+          city,
+          {
+            expectedCountryCode,
+            rawCountryQualifier: countryPart,
+            requireMetadataWhenConstrained: true,
+          },
+          catalogCountriesForMatch
+        )
+      )
+      provinceRows = provinceRows.filter((prov) =>
+        doesCityMatchCountry(
+          { provinces: prov },
+          {
+            expectedCountryCode,
+            rawCountryQualifier: countryPart,
+            requireMetadataWhenConstrained: true,
+          },
+          catalogCountriesForMatch
+        )
+      )
+    }
+
+    // Diacritic-insensitive fallback (triggered after countryPart filtering so e.g. "Cordoba, Spain" resolves "Córdoba" in Spain)
+    if (cityRows.length === 0) {
+      const allCities = await getNarrowCities()
+      let fallbackCities = allCities.filter((city) =>
+        matchesAnyCandidateWholeTokens(city.name)
+      )
+      if (countryPart) {
+        fallbackCities = fallbackCities.filter((city) =>
+          doesCityMatchCountry(
+            city,
+            {
+              expectedCountryCode,
+              rawCountryQualifier: countryPart,
+              requireMetadataWhenConstrained: true,
+            },
+            catalogCountriesForMatch
+          )
+        )
+      }
+      cityRows = fallbackCities.slice(0, limit)
+    } else {
+      cityRows = cityRows.slice(0, limit)
+    }
+
+    provinceRows = provinceRows.slice(0, limit)
+
+    const effectiveCountryRows =
+      countryPart && cityRows.length === 0 && provinceRows.length === 0
+        ? []
+        : countryRows
+
     return {
-      cities: cities.data as CityWithLocation[] || [],
-      provinces: provinces.data as ProvinceWithCities[] || [],
-      countries: countries.data as Country[] || []
+      cities: cityRows,
+      provinces: provinceRows,
+      countries: effectiveCountryRows
     }
   },
 

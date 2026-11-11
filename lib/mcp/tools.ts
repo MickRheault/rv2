@@ -10,6 +10,10 @@ import { categoryService } from '@/services/categories';
 import { locationService } from '@/services/locations';
 import { getMotorcycleUrl, getOptionalShopUrl, getShopUrl } from '@/lib/utils/urls';
 import {
+    resolveMotorcycleToolFilters,
+    resolveShopToolFilters,
+} from './filter-resolution';
+import {
     formatConditions,
     formatShopInclusions,
     normalizeConditionsDetails,
@@ -45,8 +49,10 @@ export const openAITools: ChatCompletionTool[] = [
                 properties: {
                     brand: { type: 'string', description: 'Brand name (e.g., Honda, Yamaha, Kawasaki)' },
                     category: { type: 'string', description: 'Category name (e.g., Scooter, Sport, Adventure, Cruiser)' },
-                    country: { type: 'string', description: 'Country name (e.g., Thailand, Vietnam, Indonesia)' },
-                    city: { type: 'string', description: 'City name (e.g., Bangkok, Chiang Mai, Phuket)' },
+                    country: { type: 'string', description: 'Country name or ISO code (e.g., Thailand, Vietnam, Italy, IT)' },
+                    city: { type: 'string', description: 'City name (e.g., Bangkok, Chiang Mai, Rome)' },
+                    shop: { type: 'string', description: 'Rental shop name, slug, or UUID (e.g., "Riders Corner", "riders-corner-chiang-mai")' },
+                    offset: { type: 'number', description: 'Pagination offset (non-negative integer, default 0)', default: 0 },
                     query: { type: 'string', description: 'Search query for model name' },
                     minPrice: { type: 'number', description: 'Minimum daily rental price (or daily equivalent when durationDays is set)' },
                     maxPrice: { type: 'number', description: 'Maximum daily rental price (or daily equivalent when durationDays is set)' },
@@ -170,46 +176,6 @@ export const openAITools: ChatCompletionTool[] = [
         },
     },
 ];
-
-// ============================================
-// Name Resolution Helpers
-// ============================================
-
-async function resolveCityId(cityName: string): Promise<string | null> {
-    const results = await locationService.searchLocations(cityName, 5);
-    if (results.cities && results.cities.length > 0) {
-        // Find best match (case-insensitive)
-        const match = results.cities.find(
-            (c: { name: string }) => c.name.toLowerCase() === cityName.toLowerCase()
-        ) || results.cities[0];
-        return (match as { id: string }).id;
-    }
-    return null;
-}
-
-async function resolveCategoryId(categoryName: string): Promise<string | null> {
-    const categories = await categoryService.getCategories();
-    const match = categories.find(
-        (c: { name: string }) => c.name.toLowerCase() === categoryName.toLowerCase()
-    );
-    return match ? (match as { id: string }).id : null;
-}
-
-async function resolveBrandId(brandName: string): Promise<string | null> {
-    const brands = await brandService.getBrands();
-    const match = brands.find(
-        (b: { name: string }) => b.name.toLowerCase() === brandName.toLowerCase()
-    );
-    return match ? (match as { id: string }).id : null;
-}
-
-async function resolveCountryCode(countryName: string): Promise<string | null> {
-    const countries = await locationService.getCountries();
-    const match = countries.find(
-        (c: { name: string }) => c.name.toLowerCase() === countryName.toLowerCase()
-    );
-    return match ? (match as { code: string }).code : null;
-}
 
 // ============================================
 // Tool Executor
@@ -357,41 +323,37 @@ export async function executeTool(
             // Motorcycles
             case 'search_motorcycles':
             case 'list_motorcycles': {
-                // Resolve names to IDs/codes
-                let cityId: string | undefined;
-                let categoryId: string | undefined;
-                let brandId: string | undefined;
-                let countryCode: string | undefined;
+                const resolvedFilters = await resolveMotorcycleToolFilters(args);
+                if (resolvedFilters.unresolvedFilters.length > 0) {
+                    return {
+                        success: true,
+                        data: {
+                            total: 0,
+                            motorcycles: [],
+                            unresolvedFilters: resolvedFilters.unresolvedFilters,
+                        },
+                    };
+                }
 
-                if (args.city) {
-                    const resolved = await resolveCityId(args.city as string);
-                    if (resolved) cityId = resolved;
-                }
-                if (args.category) {
-                    const resolved = await resolveCategoryId(args.category as string);
-                    if (resolved) categoryId = resolved;
-                }
-                if (args.brand) {
-                    const resolved = await resolveBrandId(args.brand as string);
-                    if (resolved) brandId = resolved;
-                }
-                if (args.country) {
-                    const resolved = await resolveCountryCode(args.country as string);
-                    if (resolved) countryCode = resolved;
-                }
+                const parsedOffset = Number(args.offset);
+                const offset =
+                    Number.isFinite(parsedOffset) && parsedOffset >= 0
+                        ? Math.trunc(parsedOffset)
+                        : 0;
 
                 const result = await motorcycleService.getMotorcycles({
-                    brandId,
-                    categoryId,
-                    countryCode,
-                    cityId,
-                    model: args.query as string | undefined,
+                    brandId: resolvedFilters.brandId,
+                    categoryId: resolvedFilters.categoryId,
+                    countryCode: resolvedFilters.countryCode,
+                    cityId: resolvedFilters.cityId,
+                    ...(resolvedFilters.shopId ? { shopId: resolvedFilters.shopId } : {}),
+                    model: resolvedFilters.model,
                     minPrice: args.minPrice as number | undefined,
                     maxPrice: args.maxPrice as number | undefined,
                     ...parseListMotorcyclesPriceFilters(args),
                     includeConditions: true,
                     limit: Math.min((args.limit as number) || 10, 20),
-                    offset: 0,
+                    offset,
                 });
 
                 // Format result for better LLM understanding with URLs
@@ -445,15 +407,21 @@ export async function executeTool(
 
             // Shops
             case 'list_shops': {
-                let cityId: string | undefined;
-                if (args.city) {
-                    const resolved = await resolveCityId(args.city as string);
-                    if (resolved) cityId = resolved;
+                const resolvedFilters = await resolveShopToolFilters(args);
+                if (resolvedFilters.unresolvedFilters.length > 0) {
+                    return {
+                        success: true,
+                        data: {
+                            total: 0,
+                            shops: [],
+                            unresolvedFilters: resolvedFilters.unresolvedFilters,
+                        },
+                    };
                 }
 
                 const result = await shopService.getShops({
-                    countryCode: args.countryCode as string | undefined,
-                    cityId,
+                    countryCode: resolvedFilters.countryCode,
+                    cityId: resolvedFilters.cityId,
                     query: args.query as string | undefined,
                     minRating: args.minRating as number | undefined,
                     includeConditions: true,

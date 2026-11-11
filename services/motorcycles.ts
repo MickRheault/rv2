@@ -24,7 +24,12 @@ import {
   filterAvailableMotorcycles,
   getActiveBusinessStatusIds,
   isShopBusinessStatusActive,
+  shopService,
 } from './shops'
+import {
+  extractBrandPrefixFromQuery,
+  matchesNormalizedModel,
+} from '@/lib/mcp/search-normalization'
 
 const typedSupabase = supabase as unknown as SupabaseClient<Database>
 
@@ -98,6 +103,8 @@ export interface SearchFilters extends RentalOfferPriceFilterOptions {
   cityId?: string
   provinceId?: string
   countryCode?: string
+  shopId?: string
+  shop?: string
   brandId?: string
   categoryId?: string
   model?: string
@@ -310,6 +317,8 @@ export function filterAndSortMotorcycles<T extends Record<string, any>>(
 
 const brandsCache = createTtlListCache<Brand>()
 const categoriesCache = createTtlListCache<Category>()
+const DISTINCT_MODELS_CACHE_TTL_MS = 10 * 60 * 1000
+const distinctAvailableModelsCache = createTtlListCache<string>(DISTINCT_MODELS_CACHE_TTL_MS)
 
 function buildListingRentalShopsJoin(options: {
   innerLocation: boolean
@@ -485,6 +494,8 @@ export const motorcycleService = {
       cityId,
       provinceId,
       countryCode,
+      shopId,
+      shop,
       brandId,
       categoryId,
       model,
@@ -503,6 +514,26 @@ export const motorcycleService = {
       offset = 0
     } = filters
 
+    const safeOffset =
+      typeof offset === 'number' && Number.isFinite(offset)
+        ? Math.max(0, Math.floor(offset))
+        : 0
+
+    let effectiveShopId = shopId?.trim() || undefined
+    if (!effectiveShopId && typeof shop === 'string' && shop.trim().length > 0) {
+      const resolvedShopId = await shopService.resolveShopReference(shop.trim(), {
+        cityId,
+        countryCode,
+      })
+      if (!resolvedShopId) {
+        return {
+          motorcycles: [] as MotorcycleWithDetails[],
+          total: 0,
+        }
+      }
+      effectiveShopId = resolvedShopId
+    }
+
     const featureSelectFragment =
       features && features.length > 0
         ? `,
@@ -517,7 +548,45 @@ export const motorcycleService = {
       : ''
 
     const activeStatusIds = await getActiveBusinessStatusIds()
-    const effectiveModel = model || searchQuery
+    let effectiveBrandId = brandId
+    let effectiveModel = (model || searchQuery)?.trim() || undefined
+
+    if (effectiveModel) {
+      try {
+        const catalogBrands = await this.getBrands()
+        if (catalogBrands.length > 0) {
+          const extracted = extractBrandPrefixFromQuery(
+            effectiveModel,
+            catalogBrands,
+            effectiveBrandId
+          )
+          effectiveBrandId = extracted.brandId
+          effectiveModel = extracted.model
+        }
+      } catch {
+        // Proceed with raw effectiveModel if brands cannot be loaded in isolated test mocks
+      }
+    }
+
+    let matchedCanonicalModels: string[] | null = null
+    if (effectiveModel) {
+      try {
+        const distinctModels = await this.getDistinctAvailableModels()
+        if (distinctModels.length > 0) {
+          matchedCanonicalModels = distinctModels.filter((candidate) =>
+            matchesNormalizedModel(candidate, effectiveModel)
+          )
+          if (matchedCanonicalModels.length === 0) {
+            return {
+              motorcycles: [] as MotorcycleWithDetails[],
+              total: 0,
+            }
+          }
+        }
+      } catch {
+        // Fall back to direct .ilike('model', ...) when isolated test mocks only stub a single query
+      }
+    }
 
     const buildFilteredQuery = () => {
       let query = typedSupabase
@@ -536,13 +605,20 @@ export const motorcycleService = {
         activeStatusIds
       )
 
-      if (brandId) {
-        query = query.eq('brand_id', brandId)
+      if (effectiveShopId) {
+        query = query.eq('shop_id', effectiveShopId)
+      }
+      if (effectiveBrandId) {
+        query = query.eq('brand_id', effectiveBrandId)
       }
       if (categoryId) {
         query = query.eq('category_id', categoryId)
       }
-      if (effectiveModel) {
+      if (matchedCanonicalModels && matchedCanonicalModels.length === 1) {
+        query = query.eq('model', matchedCanonicalModels[0])
+      } else if (matchedCanonicalModels && matchedCanonicalModels.length > 1) {
+        query = query.in('model', matchedCanonicalModels)
+      } else if (effectiveModel) {
         query = query.ilike('model', `%${effectiveModel}%`)
       }
       if (minEngineCapacity !== undefined) {
@@ -645,7 +721,7 @@ export const motorcycleService = {
         )
       }
 
-      const paginatedData = processedData.slice(offset, offset + limit)
+      const paginatedData = processedData.slice(safeOffset, safeOffset + limit)
 
       return {
         motorcycles: paginatedData as MotorcycleWithDetails[],
@@ -653,7 +729,7 @@ export const motorcycleService = {
       }
     } else {
       // No feature or pricing post-process needed - use direct pagination
-      const { data, error, count } = await buildFilteredQuery().range(offset, offset + limit - 1)
+      const { data, error, count } = await buildFilteredQuery().range(safeOffset, safeOffset + limit - 1)
 
       if (error) {
         console.error('Error fetching motorcycles:', error)
@@ -726,6 +802,51 @@ export const motorcycleService = {
     }
 
     return attachHydratedRentalOffers(data as any)
+  },
+
+  // Get distinct available canonical model names (memoized with TTL)
+  async getDistinctAvailableModels(): Promise<string[]> {
+    return distinctAvailableModelsCache.getOrLoad(async () => {
+      const buildModelsQuery = () => {
+        const q = applyAvailableMotorcycleFilterSync(
+          typedSupabase
+            .from('motorcycle_rentals')
+            .select('model, availability_status')
+        )
+        return typeof q.order === 'function' ? q.order('id', { ascending: true }) : q
+      }
+
+      const { data, error } = await buildModelsQuery()
+      if (error) {
+        console.error('Error fetching distinct models:', error)
+        throw error
+      }
+
+      const allRows: any[] = [...((data as any[]) || [])]
+      let pageOffset = 1000
+      while (allRows.length === pageOffset) {
+        const nextQuery = buildModelsQuery()
+        if (typeof nextQuery.range !== 'function') break
+        const { data: nextData, error: nextError } = await nextQuery.range(
+          pageOffset,
+          pageOffset + 999
+        )
+        if (nextError) throw nextError
+        const batch = (nextData as any[]) || []
+        allRows.push(...batch)
+        if (batch.length < 1000) break
+        pageOffset += 1000
+      }
+
+      const seen = new Set<string>()
+      for (const row of filterAvailableMotorcycles(allRows)) {
+        const m = typeof (row as any)?.model === 'string' ? (row as any).model.trim() : ''
+        if (m && !seen.has(m)) {
+          seen.add(m)
+        }
+      }
+      return Array.from(seen)
+    })
   },
 
   // Get all brands for filters

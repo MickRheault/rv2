@@ -71,6 +71,7 @@ export async function GET(request: NextRequest) {
       countryCode: searchParams.get('countryCode') || undefined,
       provinceId: searchParams.get('provinceId') || undefined,
       cityId: searchParams.get('cityId') || undefined,
+      shopId: searchParams.get('shopId')?.trim() || undefined,
       model: searchParams.get('model') || undefined,
       query: searchParams.get('search') || searchParams.get('query') || undefined,
       minPrice: parseOptionalFiniteNumber(searchParams.get('minPrice')),
