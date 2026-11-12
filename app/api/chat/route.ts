@@ -20,11 +20,10 @@ import {
     buildToolExecutionTrace,
     buildTurnCompletedTrace,
     emitChatTrace,
-    generateChatRequestId,
     sanitizeTraceArgs,
 } from '@/lib/chat/trace';
 import { getRateLimitHeaders, rateLimit } from '@/lib/api/rate-limit';
-import { timingSafeEqual } from 'node:crypto';
+import { randomUUID, timingSafeEqual } from 'node:crypto';
 
 interface ExecutedToolCallSummary {
     name: string;
@@ -112,7 +111,7 @@ export async function POST(request: NextRequest) {
         }
     }
 
-    const requestId = generateChatRequestId();
+    const requestId = randomUUID();
     const turnStartedAt = Date.now();
     let promptForTrace = '';
     let messageCount = 0;

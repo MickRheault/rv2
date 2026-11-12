@@ -1,5 +1,3 @@
-import { randomUUID } from 'node:crypto';
-
 export const MAX_TRACE_PROMPT_PREVIEW_LENGTH = 200;
 export const MAX_TRACE_RETURNED_IDS = 25;
 export const MAX_TRACE_ARG_STRING_LENGTH = 200;
@@ -10,32 +8,34 @@ const MAX_TRACE_DEPTH = 3;
 const SENSITIVE_KEY_PATTERN =
     /^(?:authorization|cookie|set-cookie|api[-_]?key|openai[-_]?api[-_]?key|access[-_]?secret|access[-_]?token|secret|password|token|x-forwarded-for|x-real-ip|cf-connecting-ip)$/i;
 
-const FILTER_ARG_KEYS = new Set([
-    'city',
-    'country',
-    'countryCode',
-    'province',
-    'location',
-    'shop',
+const MOTORCYCLE_FILTER_KEYS = [
     'brand',
     'category',
+    'country',
+    'city',
+    'shop',
     'query',
     'minPrice',
     'maxPrice',
     'currency',
     'durationDays',
-    'durationUnit',
     'knownPriceOnly',
-    'minRating',
-    'verified',
-]);
+] as const;
+
+const TOOL_FILTER_KEYS: Record<string, readonly string[]> = {
+    list_motorcycles: MOTORCYCLE_FILTER_KEYS,
+    search_motorcycles: MOTORCYCLE_FILTER_KEYS,
+    list_shops: ['countryCode', 'country', 'city', 'query', 'minRating', 'verified'],
+    list_locations: ['type', 'countryCode'],
+    search_locations: ['query'],
+};
 
 export interface ChatToolExecutionTrace {
     event: 'chat.tool_execution';
     requestId: string;
     tool: string;
     args: Record<string, unknown>;
-    resolvedFilters: Record<string, unknown>;
+    appliedFilters: Record<string, unknown>;
     unresolvedFilters: unknown[];
     total: number | null;
     returnedCount: number;
@@ -62,10 +62,6 @@ export type ChatTraceEvent = ChatToolExecutionTrace | ChatTurnCompletedTrace;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-export function generateChatRequestId(): string {
-    return randomUUID();
 }
 
 function sanitizeTraceValue(value: unknown, depth = 0): unknown {
@@ -167,47 +163,36 @@ function extractCountAndIdsFromListPayload(
     };
 }
 
-function collectUnresolvedFilterNames(unresolvedFilters: unknown[]): Set<string> {
-    const names = new Set<string>();
-    for (const entry of unresolvedFilters) {
-        if (typeof entry === 'string' && entry.trim().length > 0) {
-            names.add(entry.trim());
-        } else if (
-            isRecord(entry) &&
-            typeof entry.filter === 'string' &&
-            entry.filter.trim().length > 0
-        ) {
-            names.add(entry.filter.trim());
-        }
-    }
-    return names;
-}
-
-function deriveResolvedFilters(
-    payload: unknown,
+function deriveAppliedFilters(
+    tool: string,
     sanitizedArgs: Record<string, unknown>,
     unresolvedFilters: unknown[],
     hasError: boolean
 ): Record<string, unknown> {
-    if (hasError) {
+    if (hasError || unresolvedFilters.length > 0) {
         return {};
     }
-    if (isRecord(payload) && isRecord(payload.resolvedFilters)) {
-        return sanitizeTraceArgs(payload.resolvedFilters);
+    const allowedKeys = TOOL_FILTER_KEYS[tool];
+    if (!allowedKeys) {
+        return {};
     }
-    const failedKeys = collectUnresolvedFilterNames(unresolvedFilters);
-    const resolved: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(sanitizedArgs)) {
-        if (
-            value !== null &&
-            value !== undefined &&
-            FILTER_ARG_KEYS.has(key) &&
-            !failedKeys.has(key)
-        ) {
-            resolved[key] = value;
+    const applied: Record<string, unknown> = {};
+    for (const key of allowedKeys) {
+        const value = sanitizedArgs[key];
+        if (typeof value === 'string') {
+            const trimmed = value.trim();
+            if (trimmed.length > 0) {
+                applied[key] = trimmed;
+            }
+        } else if (typeof value === 'number') {
+            if (Number.isFinite(value)) {
+                applied[key] = value;
+            }
+        } else if (typeof value === 'boolean') {
+            applied[key] = value;
         }
     }
-    return resolved;
+    return applied;
 }
 
 export function buildToolExecutionTrace(params: {
@@ -241,8 +226,8 @@ export function buildToolExecutionTrace(params: {
             ? (sanitizeTraceValue(payload.unresolvedFilters, 0) as unknown[])
             : [];
 
-    const resolvedFilters = deriveResolvedFilters(
-        payload,
+    const appliedFilters = deriveAppliedFilters(
+        tool,
         sanitizedArgs,
         unresolvedFilters,
         hasError
@@ -301,7 +286,7 @@ export function buildToolExecutionTrace(params: {
         requestId,
         tool,
         args: sanitizedArgs,
-        resolvedFilters,
+        appliedFilters,
         unresolvedFilters,
         total,
         returnedCount,
