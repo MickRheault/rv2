@@ -7,6 +7,7 @@ import {
   UUID_REGEX,
   doesShopMatchScope,
   filterMatchingShopIds,
+  normalizeModelKey,
   pickBestMatchingShopId,
   stripDiacritics,
   toSlugKey,
@@ -406,7 +407,7 @@ function filterAvailableShopMotorcycles<T extends { motorcycle_rentals?: any[] }
 
 function buildShopTextOrClauses(
   rawInput: string,
-  options: { includeDescription?: boolean } = {}
+  options: { includeDescription?: boolean; includeSlugPrefixes?: boolean } = {}
 ): string[] {
   const trimmed = rawInput.trim()
   if (!trimmed) return []
@@ -424,11 +425,16 @@ function buildShopTextOrClauses(
   const hyphenFusedSlug = toSlugKey(
     trimmed.replace(/([a-zA-Z0-9])[-_]+([a-zA-Z0-9])/g, '$1$2')
   )
+  const compactSlug = normalizeModelKey(trimmed)
 
   const slugTokens = safeSlug.split('-').filter(Boolean)
-  const slugPrefix = slugTokens.length >= 2 ? slugTokens.slice(0, 2).join('-') : ''
+  const slugPrefix =
+    options.includeSlugPrefixes && slugTokens.length >= 2
+      ? slugTokens.slice(0, 2).join('-')
+      : ''
   const fusedFirstTwo = slugTokens.length >= 2 ? `${slugTokens[0]}${slugTokens[1]}` : ''
-  const fusedPrefix = fusedFirstTwo.length >= 4 ? fusedFirstTwo : ''
+  const fusedPrefix =
+    options.includeSlugPrefixes && fusedFirstTwo.length >= 4 ? fusedFirstTwo : ''
 
   return Array.from(
     new Set(
@@ -437,6 +443,11 @@ function buildShopTextOrClauses(
         slugPrefix && slugPrefix !== safeSlug ? `slug.ilike.${slugPrefix}%` : '',
         hyphenFusedSlug && hyphenFusedSlug !== safeSlug
           ? `slug.ilike.%${hyphenFusedSlug}%`
+          : '',
+        compactSlug.length >= 4 &&
+        compactSlug !== safeSlug &&
+        compactSlug !== hyphenFusedSlug
+          ? `slug.ilike.%${compactSlug}%`
           : '',
         fusedPrefix && fusedPrefix !== safeSlug ? `slug.ilike.${fusedPrefix}%` : '',
         rawSafeName ? `provider_name.ilike.%${rawSafeName}%` : '',
@@ -474,6 +485,81 @@ function buildNarrowShopReferenceSelect(innerJoin: string): string {
         )
       )
     `
+}
+
+async function fetchScopedActiveShopCandidates(options: {
+  cityId?: string
+  provinceId?: string
+  countryCode?: string
+  countryCityIds?: string[] | null
+  businessStatus?: number
+  activeStatusIds: number[]
+  catalogCountries?: Array<{ code?: string | null; name?: string | null }>
+  limit?: number
+}): Promise<any[]> {
+  const {
+    cityId,
+    provinceId,
+    countryCode,
+    countryCityIds,
+    businessStatus,
+    activeStatusIds,
+    catalogCountries = [],
+    limit = 500,
+  } = options
+
+  const innerJoin = Boolean(
+    (provinceId || (countryCode && !countryCityIds)) && !cityId
+  )
+    ? '!inner'
+    : ''
+
+  const fromTable = typedSupabase.from('rental_shops')
+  if (!fromTable || typeof fromTable.select !== 'function') return []
+
+  let query: any = fromTable.select(buildNarrowShopReferenceSelect(innerJoin))
+  if (!query) return []
+
+  if (cityId && typeof query.eq === 'function') {
+    query = query.eq('city_id', cityId)
+  } else if (provinceId && typeof query.eq === 'function') {
+    query = query.eq('cities.province_id', provinceId)
+  } else if (countryCityIds && typeof query.in === 'function') {
+    query = query.in('city_id', countryCityIds)
+  } else if (countryCode && typeof query.eq === 'function') {
+    query = query.eq('cities.provinces.country_code', countryCode)
+  }
+
+  query = applyActiveStatusFilterSync(query, activeStatusIds)
+
+  if (businessStatus !== undefined && typeof query?.eq === 'function') {
+    query = query.eq('business_status_id', businessStatus)
+  }
+
+  if (typeof query?.limit === 'function') {
+    query = query.limit(limit)
+  } else if (typeof query?.range === 'function') {
+    query = query.range(0, Math.max(0, limit - 1))
+  }
+
+  if (!query || typeof query.then !== 'function') return []
+
+  const result = await query
+  if (result?.error || !Array.isArray(result?.data) || result.data.length === 0) {
+    return []
+  }
+
+  return result.data.filter((row: any) =>
+    doesShopMatchScope(
+      row,
+      {
+        cityId,
+        countryCode,
+        requireCityMetadata: Boolean(cityId),
+      },
+      catalogCountries
+    )
+  )
 }
 
 export const shopService = {
@@ -603,7 +689,10 @@ export const shopService = {
 
     const trimmedQuery = query?.trim() || ''
     const orClauses = trimmedQuery
-      ? buildShopTextOrClauses(trimmedQuery, { includeDescription: true })
+      ? buildShopTextOrClauses(trimmedQuery, {
+          includeDescription: true,
+          includeSlugPrefixes: false,
+        })
       : []
 
     let { data, error, count } = await executeShopListQuery({
@@ -615,61 +704,70 @@ export const shopService = {
       throw error
     }
 
-    if (trimmedQuery && (!data || data.length === 0) && (count ?? 0) === 0) {
+    if (trimmedQuery) {
       try {
-        const innerJoin = Boolean(
-          (provinceId || (countryCode && !countryCityIds)) && !cityId
-        )
-          ? '!inner'
-          : ''
-        const fromTable = typedSupabase.from('rental_shops')
-        let fallbackCandidateQuery: any =
-          fromTable && typeof fromTable.select === 'function'
-            ? fromTable.select(buildNarrowShopReferenceSelect(innerJoin))
-            : null
+        const scopedCandidates = await fetchScopedActiveShopCandidates({
+          cityId,
+          provinceId,
+          countryCode,
+          countryCityIds,
+          businessStatus,
+          activeStatusIds,
+        })
+        const matchedIds = filterMatchingShopIds(scopedCandidates, trimmedQuery)
+        if (matchedIds.length > 0) {
+          const primaryIds = ((data || []) as any[])
+            .map((row) => row?.id)
+            .filter((id): id is string => typeof id === 'string' && id.length > 0)
+          const primaryIdSet = new Set(primaryIds)
+          const missingIds = matchedIds.filter((id) => !primaryIdSet.has(id))
 
-        if (fallbackCandidateQuery) {
-          if (cityId && typeof fallbackCandidateQuery.eq === 'function') {
-            fallbackCandidateQuery = fallbackCandidateQuery.eq('city_id', cityId)
-          } else if (provinceId && typeof fallbackCandidateQuery.eq === 'function') {
-            fallbackCandidateQuery = fallbackCandidateQuery.eq(
-              'cities.province_id',
-              provinceId
-            )
-          } else if (countryCityIds && typeof fallbackCandidateQuery.in === 'function') {
-            fallbackCandidateQuery = fallbackCandidateQuery.in('city_id', countryCityIds)
-          } else if (countryCode && typeof fallbackCandidateQuery.eq === 'function') {
-            fallbackCandidateQuery = fallbackCandidateQuery.eq(
-              'cities.provinces.country_code',
-              countryCode
-            )
-          }
-          fallbackCandidateQuery = applyActiveStatusFilterSync(
-            fallbackCandidateQuery,
-            activeStatusIds
-          )
-          if (businessStatus !== undefined && typeof fallbackCandidateQuery.eq === 'function') {
-            fallbackCandidateQuery = fallbackCandidateQuery.eq(
-              'business_status_id',
-              businessStatus
-            )
-          }
-          if (typeof fallbackCandidateQuery.limit === 'function') {
-            fallbackCandidateQuery = fallbackCandidateQuery.limit(500)
-          }
+          if (missingIds.length > 0) {
+            let allPrimaryIds = primaryIds
+            if ((count ?? 0) > primaryIds.length && orClauses.length > 0) {
+              const fromTable = typedSupabase.from('rental_shops')
+              let primaryIdQuery: any =
+                fromTable && typeof fromTable.select === 'function'
+                  ? fromTable.select('id')
+                  : null
+              if (primaryIdQuery) {
+                if (cityId && typeof primaryIdQuery.eq === 'function') {
+                  primaryIdQuery = primaryIdQuery.eq('city_id', cityId)
+                } else if (provinceId && typeof primaryIdQuery.eq === 'function') {
+                  primaryIdQuery = primaryIdQuery.eq('cities.province_id', provinceId)
+                } else if (countryCityIds && typeof primaryIdQuery.in === 'function') {
+                  primaryIdQuery = primaryIdQuery.in('city_id', countryCityIds)
+                }
+                primaryIdQuery = applyActiveStatusFilterSync(primaryIdQuery, activeStatusIds)
+                if (minRating !== undefined && typeof primaryIdQuery.gte === 'function') {
+                  primaryIdQuery = primaryIdQuery.gte('rating', minRating)
+                }
+                if (businessStatus !== undefined && typeof primaryIdQuery.eq === 'function') {
+                  primaryIdQuery = primaryIdQuery.eq('business_status_id', businessStatus)
+                }
+                if (typeof primaryIdQuery.or === 'function') {
+                  primaryIdQuery = primaryIdQuery.or(orClauses.join(','))
+                }
+                if (typeof primaryIdQuery.limit === 'function') {
+                  primaryIdQuery = primaryIdQuery.limit(500)
+                } else if (typeof primaryIdQuery.range === 'function') {
+                  primaryIdQuery = primaryIdQuery.range(0, 499)
+                }
+                if (primaryIdQuery && typeof primaryIdQuery.then === 'function') {
+                  const primaryIdRes = await primaryIdQuery
+                  if (Array.isArray(primaryIdRes?.data)) {
+                    allPrimaryIds = primaryIdRes.data
+                      .map((r: any) => r?.id)
+                      .filter(
+                        (id: unknown): id is string => typeof id === 'string' && id.length > 0
+                      )
+                  }
+                }
+              }
+            }
 
-          const fallbackRes = await fallbackCandidateQuery
-          const fallbackRows = Array.isArray(fallbackRes?.data) ? fallbackRes.data : []
-          const scopedCandidates = fallbackRows.filter((row: any) =>
-            doesShopMatchScope(row, {
-              cityId,
-              countryCode,
-              requireCityMetadata: Boolean(cityId),
-            })
-          )
-          const matchedIds = filterMatchingShopIds(scopedCandidates, trimmedQuery)
-          if (matchedIds.length > 0) {
-            const retryRes = await executeShopListQuery({ matchedIds })
+            const mergedIds = Array.from(new Set([...allPrimaryIds, ...matchedIds]))
+            const retryRes = await executeShopListQuery({ matchedIds: mergedIds })
             if (!retryRes?.error && Array.isArray(retryRes?.data)) {
               data = retryRes.data
               count = retryRes.count ?? retryRes.data.length
@@ -677,7 +775,7 @@ export const shopService = {
           }
         }
       } catch {
-        // Ignore fallback errors in isolated test mocks and return empty primary result
+        // Ignore fallback errors in isolated test mocks and return primary result
       }
     }
 
@@ -912,33 +1010,19 @@ export const shopService = {
         : null
     }
 
-    const orClauses = buildShopTextOrClauses(trimmed)
+    const orClauses = buildShopTextOrClauses(trimmed, { includeSlugPrefixes: true })
     if (orClauses.length === 0) return null
 
-    const buildScopedReferenceQuery = () => {
-      const fromTable = typedSupabase.from('rental_shops')
-      if (!fromTable || typeof fromTable.select !== 'function') return null
-      let q: any = fromTable.select(narrowSelect)
-      if (!q) return null
-      if (scope.cityId && typeof q.eq === 'function') {
-        q = q.eq('city_id', scope.cityId)
-      } else if (scope.countryCode && typeof q.eq === 'function') {
-        q = q.eq('cities.provinces.country_code', scope.countryCode)
-      }
-      return applyActiveStatusFilterSync(q, activeStatusIds)
-    }
-
-    const filterRowsByScope = (rows: any[]) =>
-      rows.filter((row: any) =>
-        doesShopMatchScope(
-          row,
-          { ...scope, requireCityMetadata: Boolean(scope.cityId) },
-          catalogCountries
-        )
-      )
-
-    const primaryBaseQuery = buildScopedReferenceQuery()
+    const fromTable = typedSupabase.from('rental_shops')
+    if (!fromTable || typeof fromTable.select !== 'function') return null
+    let primaryBaseQuery: any = fromTable.select(narrowSelect)
     if (!primaryBaseQuery || typeof primaryBaseQuery.or !== 'function') return null
+    if (scope.cityId && typeof primaryBaseQuery.eq === 'function') {
+      primaryBaseQuery = primaryBaseQuery.eq('city_id', scope.cityId)
+    } else if (scope.countryCode && typeof primaryBaseQuery.eq === 'function') {
+      primaryBaseQuery = primaryBaseQuery.eq('cities.provinces.country_code', scope.countryCode)
+    }
+    primaryBaseQuery = applyActiveStatusFilterSync(primaryBaseQuery, activeStatusIds)
     const primaryQuery = primaryBaseQuery.or(orClauses.join(',')).limit(20)
 
     const { data, error } = await primaryQuery
@@ -947,7 +1031,14 @@ export const shopService = {
     }
 
     if (Array.isArray(data) && data.length > 0) {
-      const primaryMatch = pickBestMatchingShopId(filterRowsByScope(data), trimmed)
+      const scopedPrimary = data.filter((row: any) =>
+        doesShopMatchScope(
+          row,
+          { ...scope, requireCityMetadata: Boolean(scope.cityId) },
+          catalogCountries
+        )
+      )
+      const primaryMatch = pickBestMatchingShopId(scopedPrimary, trimmed)
       if (primaryMatch) {
         return primaryMatch
       }
@@ -955,16 +1046,13 @@ export const shopService = {
 
     // Narrow active-shop fallback when PostgreSQL accent-sensitive ILIKE or lossy slugs miss primary .or(...)
     try {
-      let fallbackQuery = buildScopedReferenceQuery()
-      if (!fallbackQuery) return null
-      if (typeof fallbackQuery.limit === 'function') {
-        fallbackQuery = fallbackQuery.limit(500)
-      }
-      const fallbackResult = await fallbackQuery
-      if (fallbackResult?.error || !Array.isArray(fallbackResult?.data) || fallbackResult.data.length === 0) {
-        return null
-      }
-      return pickBestMatchingShopId(filterRowsByScope(fallbackResult.data), trimmed)
+      const scopedCandidates = await fetchScopedActiveShopCandidates({
+        cityId: scope.cityId,
+        countryCode: scope.countryCode,
+        activeStatusIds,
+        catalogCountries,
+      })
+      return pickBestMatchingShopId(scopedCandidates, trimmed)
     } catch {
       return null
     }

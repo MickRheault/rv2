@@ -39,16 +39,14 @@ export function toSlugKey(value: string): string {
         .replace(/^-+|-+$/g, '');
 }
 
-export function matchesWholeTokenSequence(haystack: string, needle: string): boolean {
-    const hTokens = normalizeLocationKey(haystack).split(' ').filter(Boolean);
-    const nTokens = normalizeLocationKey(needle).split(' ').filter(Boolean);
-    if (hTokens.length === 0 || nTokens.length === 0 || nTokens.length > hTokens.length) {
+export function containsTokenSequence(haystack: string[], needle: string[]): boolean {
+    if (haystack.length === 0 || needle.length === 0 || needle.length > haystack.length) {
         return false;
     }
-    for (let i = 0; i <= hTokens.length - nTokens.length; i++) {
+    for (let i = 0; i <= haystack.length - needle.length; i++) {
         let allMatch = true;
-        for (let j = 0; j < nTokens.length; j++) {
-            if (hTokens[i + j] !== nTokens[j]) {
+        for (let j = 0; j < needle.length; j++) {
+            if (haystack[i + j] !== needle[j]) {
                 allMatch = false;
                 break;
             }
@@ -56,6 +54,12 @@ export function matchesWholeTokenSequence(haystack: string, needle: string): boo
         if (allMatch) return true;
     }
     return false;
+}
+
+export function matchesWholeTokenSequence(haystack: string, needle: string): boolean {
+    const hTokens = normalizeLocationKey(haystack).split(' ').filter(Boolean);
+    const nTokens = normalizeLocationKey(needle).split(' ').filter(Boolean);
+    return containsTokenSequence(hTokens, nTokens);
 }
 
 export function normalizeCountryTargetKey(input: string): string {
@@ -217,6 +221,15 @@ export function doesShopMatchScope(
     return true;
 }
 
+function toLegacyAsciiDroppedSlug(value: string): string {
+    return value
+        .normalize('NFC')
+        .replace(/[^\x00-\x7f]+/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
 function toConsonantTokens(value: string): string[] {
     return toSlugKey(value)
         .split('-')
@@ -224,21 +237,37 @@ function toConsonantTokens(value: string): string[] {
         .filter(Boolean);
 }
 
-function containsTokenSequence(haystack: string[], needle: string[]): boolean {
-    if (haystack.length === 0 || needle.length === 0 || needle.length > haystack.length) {
+/**
+ * Matches a legacy vowel-dropped slug (e.g. "gia-hng-motorbike-rental") ONLY when
+ * `provider_name` is absent and at least one slug token genuinely lost its vowels
+ * compared with the corresponding target token. Never used against `provider_name`.
+ */
+function matchesLossyVowelDroppedSlug(slugVal: string, targetSlug: string): boolean {
+    if (!slugVal || !targetSlug) return false;
+    const slugTokens = slugVal.split('-').filter(Boolean);
+    const targetTokens = targetSlug.split('-').filter(Boolean);
+    if (slugTokens.length < 2 || slugTokens.length !== targetTokens.length) {
         return false;
     }
-    for (let i = 0; i <= haystack.length - needle.length; i++) {
-        let allMatch = true;
-        for (let j = 0; j < needle.length; j++) {
-            if (haystack[i + j] !== needle[j]) {
-                allMatch = false;
-                break;
-            }
-        }
-        if (allMatch) return true;
+    const slugConsonants = toConsonantTokens(slugVal).join('');
+    const targetConsonants = toConsonantTokens(targetSlug).join('');
+    if (slugConsonants.length < 6 || slugConsonants !== targetConsonants) {
+        return false;
     }
-    return false;
+    let hasVowelDroppedToken = false;
+    for (let i = 0; i < slugTokens.length; i++) {
+        const sTok = slugTokens[i];
+        const tTok = targetTokens[i];
+        if (sTok === tTok) continue;
+        if (/[aeiouy]/.test(sTok) || !/[aeiouy]/.test(tTok)) {
+            return false;
+        }
+        if (sTok.replace(/[aeiouy]+/g, '') !== tTok.replace(/[aeiouy]+/g, '')) {
+            return false;
+        }
+        hasVowelDroppedToken = true;
+    }
+    return hasVowelDroppedToken;
 }
 
 function scoreShopMatchTier(
@@ -247,11 +276,9 @@ function scoreShopMatchTier(
         trimmed: string;
         trimmedLower: string;
         targetSlug: string;
+        targetLegacyAsciiSlug: string;
         targetNameKey: string;
         targetCompact: string;
-        targetConsonantTokens: string[];
-        targetConsonantCompact: string;
-        hasSpecificConsonantPhrase: boolean;
     }
 ): number | null {
     if (!shop?.id) return null;
@@ -265,13 +292,26 @@ function scoreShopMatchTier(
         return 2;
     }
 
-    const nameKey = shop.provider_name ? normalizeLocationKey(shop.provider_name) : '';
+    const hasProviderName = Boolean(shop.provider_name && shop.provider_name.trim().length > 0);
+    const nameKey = hasProviderName ? normalizeLocationKey(shop.provider_name!) : '';
     if (nameKey.length > 0 && nameKey === target.targetNameKey) {
         return 3;
     }
 
-    const nameCompact = shop.provider_name ? normalizeModelKey(shop.provider_name) : '';
-    const slugCompact = shop.slug ? normalizeModelKey(shop.slug) : '';
+    const providerLegacySlug = hasProviderName
+        ? toLegacyAsciiDroppedSlug(shop.provider_name!)
+        : '';
+    if (
+        target.targetLegacyAsciiSlug.length >= 4 &&
+        slugVal.length > 0 &&
+        slugVal === target.targetLegacyAsciiSlug &&
+        (!hasProviderName || providerLegacySlug === slugVal)
+    ) {
+        return 3;
+    }
+
+    const nameCompact = hasProviderName ? normalizeModelKey(shop.provider_name!) : '';
+    const slugCompact = slugVal ? normalizeModelKey(slugVal) : '';
     if (
         target.targetCompact.length >= 4 &&
         ((nameCompact.length > 0 && nameCompact === target.targetCompact) ||
@@ -280,35 +320,26 @@ function scoreShopMatchTier(
         return 4;
     }
 
-    const slugConsonantTokens = shop.slug ? toConsonantTokens(shop.slug) : [];
-    const nameConsonantTokens = shop.provider_name ? toConsonantTokens(shop.provider_name) : [];
-    const slugConsonantCompact = slugConsonantTokens.join('');
-    const nameConsonantCompact = nameConsonantTokens.join('');
-    if (
-        target.targetConsonantCompact.length >= 6 &&
-        ((slugConsonantCompact.length > 0 &&
-            slugConsonantCompact === target.targetConsonantCompact) ||
-            (nameConsonantCompact.length > 0 &&
-                nameConsonantCompact === target.targetConsonantCompact))
-    ) {
+    if (!hasProviderName && matchesLossyVowelDroppedSlug(slugVal, target.targetSlug)) {
         return 5;
     }
 
-    const providerSlug = shop.provider_name ? toSlugKey(shop.provider_name) : '';
+    const providerSlug = hasProviderName ? toSlugKey(shop.provider_name!) : '';
+    const providerSlugTokenCount = providerSlug ? providerSlug.split('-').filter(Boolean).length : 0;
+    const slugTokenCount = slugVal ? slugVal.split('-').filter(Boolean).length : 0;
+
     if (
-        (shop.provider_name ? matchesWholeTokenSequence(shop.provider_name, target.trimmed) : false) ||
-        (shop.slug ? matchesWholeTokenSequence(shop.slug, target.trimmed) : false) ||
+        (hasProviderName ? matchesWholeTokenSequence(shop.provider_name!, target.trimmed) : false) ||
+        (slugVal ? matchesWholeTokenSequence(slugVal, target.trimmed) : false) ||
         (target.targetCompact.length >= 5 &&
-            ((shop.provider_name
-                ? matchesNormalizedModel(shop.provider_name, target.trimmed)
+            ((hasProviderName
+                ? matchesNormalizedModel(shop.provider_name!, target.trimmed)
                 : false) ||
-                (shop.slug ? matchesNormalizedModel(shop.slug, target.trimmed) : false))) ||
-        (providerSlug.length >= 3 && target.targetSlug.startsWith(`${providerSlug}-`)) ||
-        (slugVal.length >= 3 && target.targetSlug.startsWith(`${slugVal}-`)) ||
-        (nameCompact.length >= 4 && target.targetCompact.startsWith(nameCompact)) ||
-        (target.hasSpecificConsonantPhrase &&
-            (containsTokenSequence(slugConsonantTokens, target.targetConsonantTokens) ||
-                containsTokenSequence(nameConsonantTokens, target.targetConsonantTokens)))
+                (slugVal ? matchesNormalizedModel(slugVal, target.trimmed) : false))) ||
+        (providerSlugTokenCount >= 2 &&
+            providerSlug.length >= 5 &&
+            target.targetSlug.startsWith(`${providerSlug}-`)) ||
+        (slugTokenCount >= 2 && slugVal.length >= 5 && target.targetSlug.startsWith(`${slugVal}-`))
     ) {
         return 6;
     }
@@ -318,20 +349,13 @@ function scoreShopMatchTier(
 
 function buildShopMatchTarget(rawShopInput: string) {
     const trimmed = rawShopInput.trim();
-    const targetConsonantTokens = toConsonantTokens(trimmed);
-    const targetConsonantCompact = targetConsonantTokens.join('');
     return {
         trimmed,
         trimmedLower: trimmed.toLowerCase(),
         targetSlug: toSlugKey(trimmed),
+        targetLegacyAsciiSlug: toLegacyAsciiDroppedSlug(trimmed),
         targetNameKey: normalizeLocationKey(trimmed),
         targetCompact: normalizeModelKey(trimmed),
-        targetConsonantTokens,
-        targetConsonantCompact,
-        hasSpecificConsonantPhrase:
-            targetConsonantTokens.length >= 2 &&
-            targetConsonantCompact.length >= 4 &&
-            targetConsonantTokens.some((t) => t.length >= 2),
     };
 }
 
@@ -365,49 +389,7 @@ function escapeRegExp(value: string): string {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-export function extractBrandPrefixFromQuery(
-    rawQuery: string,
-    brands: Array<{ id: string; name?: string | null }>,
-    explicitBrandId?: string
-): { brandId?: string; model?: string } {
-    const cleanedQuery = stripDiacritics(rawQuery).replace(/\s+/g, ' ').trim();
-    if (!cleanedQuery) {
-        return { brandId: explicitBrandId, model: undefined };
-    }
-
-    const sortedBrands = [...brands]
-        .filter((b): b is { id: string; name: string } => Boolean(b?.id && b?.name?.trim()))
-        .sort((a, b) => b.name.trim().length - a.name.trim().length);
-
-    for (const brand of sortedBrands) {
-        const tokens = stripDiacritics(brand.name)
-            .trim()
-            .split(/[\s\-_]+/)
-            .filter(Boolean);
-        if (tokens.length === 0) continue;
-
-        const brandPattern = tokens.map(escapeRegExp).join('[\\s\\-_]+');
-        const prefixRegex = new RegExp(`^${brandPattern}(?:$|[\\s\\-–—:/]+(.*)$)`, 'i');
-        const match = cleanedQuery.match(prefixRegex);
-        if (!match) continue;
-
-        const remainder = match[1]?.trim() || undefined;
-        if (!explicitBrandId) {
-            return { brandId: brand.id, model: remainder };
-        }
-        if (explicitBrandId === brand.id) {
-            return { brandId: explicitBrandId, model: remainder };
-        }
-        if (remainder) {
-            return { brandId: brand.id, model: remainder };
-        }
-        return { brandId: explicitBrandId, model: rawQuery.trim() };
-    }
-
-    return { brandId: explicitBrandId, model: rawQuery.trim() };
-}
-
-const WIN_COLLOQUIAL_BRAND_KEYS = new Set(['honda', 'detech']);
+export const WIN_COLLOQUIAL_BRAND_KEYS: ReadonlySet<string> = new Set(['honda', 'detech']);
 
 export function tokenizeModelAlphanumeric(value: string): string[] {
     return stripDiacritics(value).toLowerCase().match(/[a-z]+|[0-9]+/g) ?? [];
@@ -435,23 +417,109 @@ export function isColloquialWinBrandReference(
     return WIN_COLLOQUIAL_BRAND_KEYS.has(brandKey);
 }
 
+export function resolveColloquialWinBrandIds(
+    brandInputOrId: string | undefined,
+    modelInput: string | undefined,
+    brands: Array<{ id: string; name?: string | null }>
+): string[] {
+    if (
+        !brandInputOrId ||
+        !isWinModelFamilyQuery(modelInput) ||
+        !isColloquialWinBrandReference(brandInputOrId, brands)
+    ) {
+        return [];
+    }
+    const matchedIds: string[] = [];
+    for (const b of brands) {
+        const key = b?.name ? normalizeLocationKey(b.name) : '';
+        if (b?.id && WIN_COLLOQUIAL_BRAND_KEYS.has(key) && !matchedIds.includes(b.id)) {
+            matchedIds.push(b.id);
+        }
+    }
+    return matchedIds;
+}
+
 export function expandColloquialBrandIds(
     brandId: string | undefined,
     modelInput: string | undefined,
     brands: Array<{ id: string; name?: string | null }>
 ): string[] {
     if (!brandId) return [];
-    if (!isWinModelFamilyQuery(modelInput) || !isColloquialWinBrandReference(brandId, brands)) {
+    const colloquialCatalogIds = resolveColloquialWinBrandIds(brandId, modelInput, brands);
+    if (colloquialCatalogIds.length === 0) {
         return [brandId];
     }
-    const expanded = new Set<string>([brandId]);
-    for (const b of brands) {
-        const key = b?.name ? normalizeLocationKey(b.name) : '';
-        if (b?.id && WIN_COLLOQUIAL_BRAND_KEYS.has(key)) {
-            expanded.add(b.id);
-        }
+    const isCatalogId = brands.some((b) => b?.id === brandId);
+    const expanded = new Set<string>(isCatalogId ? [brandId] : []);
+    for (const id of colloquialCatalogIds) {
+        expanded.add(id);
     }
     return Array.from(expanded);
+}
+
+export function extractBrandPrefixFromQuery(
+    rawQuery: string,
+    brands: Array<{ id: string; name?: string | null }>,
+    explicitBrandId?: string
+): { brandId?: string; model?: string; matchedBrandPrefix?: boolean } {
+    const cleanedQuery = stripDiacritics(rawQuery).replace(/\s+/g, ' ').trim();
+    if (!cleanedQuery) {
+        return { brandId: explicitBrandId, model: undefined, matchedBrandPrefix: false };
+    }
+
+    const sortedBrands = [...brands]
+        .filter((b): b is { id: string; name: string } => Boolean(b?.id && b?.name?.trim()))
+        .sort((a, b) => b.name.trim().length - a.name.trim().length);
+
+    for (const brand of sortedBrands) {
+        const tokens = stripDiacritics(brand.name)
+            .trim()
+            .split(/[\s\-_]+/)
+            .filter(Boolean);
+        if (tokens.length === 0) continue;
+
+        const brandPattern = tokens.map(escapeRegExp).join('[\\s\\-_]+');
+        const prefixRegex = new RegExp(`^${brandPattern}(?:$|[\\s\\-–—:/]+(.*)$)`, 'i');
+        const match = cleanedQuery.match(prefixRegex);
+        if (!match) continue;
+
+        const remainder = match[1]?.trim() || undefined;
+        if (!explicitBrandId) {
+            return { brandId: brand.id, model: remainder, matchedBrandPrefix: true };
+        }
+        if (explicitBrandId === brand.id) {
+            return { brandId: explicitBrandId, model: remainder, matchedBrandPrefix: true };
+        }
+        if (remainder) {
+            return { brandId: brand.id, model: remainder, matchedBrandPrefix: true };
+        }
+        return { brandId: explicitBrandId, model: rawQuery.trim(), matchedBrandPrefix: false };
+    }
+
+    // Colloquial "Honda Win" / "Detech Win" prefix fallback when only the sibling brand exists in `brands`
+    const colloquialPrefixPattern = Array.from(WIN_COLLOQUIAL_BRAND_KEYS)
+        .map(escapeRegExp)
+        .join('|');
+    const colloquialMatch = cleanedQuery.match(
+        new RegExp(`^(${colloquialPrefixPattern})[\\s\\-–—:/]+(.+)$`, 'i')
+    );
+    const colloquialRemainder = colloquialMatch?.[2]?.trim();
+    if (colloquialRemainder && isWinModelFamilyQuery(colloquialRemainder)) {
+        const colloquialIds = resolveColloquialWinBrandIds(
+            colloquialMatch![1],
+            colloquialRemainder,
+            brands
+        );
+        if (colloquialIds.length > 0) {
+            return {
+                brandId: colloquialIds[0],
+                model: colloquialRemainder,
+                matchedBrandPrefix: true,
+            };
+        }
+    }
+
+    return { brandId: explicitBrandId, model: rawQuery.trim(), matchedBrandPrefix: false };
 }
 
 export function normalizeModelKey(value: string): string {

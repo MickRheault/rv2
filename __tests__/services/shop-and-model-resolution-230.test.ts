@@ -2,6 +2,7 @@
  * @jest-environment node
  */
 
+import { resolveMotorcycleToolFilters } from '@/lib/mcp/filter-resolution';
 import { executeTool } from '@/lib/mcp/tools';
 import { filterAndSortMotorcycles, motorcycleService } from '@/services/motorcycles';
 import { clearAllTtlCaches, shopService } from '@/services/shops';
@@ -1164,6 +1165,272 @@ describe('Shop & Canonical Model Resolution Hardening (#230 / #232)', () => {
         expect(pg1HyphenQuery.motorcycles.map((m) => m.id).sort()).toEqual([
             'bike-pg1-fused',
             'bike-pg1-hyphen',
+        ]);
+
+        // 4. Dropdown filters.model (without filters.query) in filterAndSortMotorcycles keeps exact normalized model matching
+        const exactWinDropdown = filterAndSortMotorcycles(extendedMotorcycles, {
+            model: 'Win',
+        });
+        expect(exactWinDropdown.map((m) => m.id)).toEqual([
+            'hung-detech-win-140',
+            'hung-detech-win-127',
+            'hung-detech-win-110',
+        ]);
+
+        const exactAirBladeDropdown = filterAndSortMotorcycles(extendedMotorcycles, {
+            model: 'Air Blade',
+        });
+        expect(exactAirBladeDropdown.map((m) => m.id)).toEqual([
+            'bike-airblade-exact-spaced',
+        ]);
+    });
+
+    it('rejects unlisted near-homophone or prefix-colliding shops ("Gia Hoang", "Tuan" vs "Tan", "Bali Bikes" vs "Blue Bikes", "Motorbike Central" vs "Moto") and prevents slug-prefix pollution in list_shops', async () => {
+        const shopsWithDecoys = [
+            ...catalogShops,
+            {
+                id: '11111111-2222-4333-8444-555555555555',
+                provider_name: 'Tan Motorbike Rental',
+                slug: 'tan-motorbike-rental',
+                city_id: 'city-hanoi',
+                business_status_id: 1,
+                rating: 4.5,
+                review_count: 20,
+                business_description: 'Scooter rental in Hanoi.',
+                cities: cityHanoi,
+                business_statuses: { id: 1, status_code: 'OPERATIONAL' },
+                rental_shop_inclusions: [],
+                rental_shop_tours: [],
+                rental_shop_service_locations: [],
+                rental_shop_conditions: [],
+            },
+            {
+                id: '11111111-2222-4333-8444-555555555556',
+                provider_name: 'Blue Bikes',
+                slug: 'blue-bikes',
+                city_id: 'city-hanoi',
+                business_status_id: 1,
+                rating: 4.4,
+                review_count: 15,
+                business_description: 'City bikes in Hanoi.',
+                cities: cityHanoi,
+                business_statuses: { id: 1, status_code: 'OPERATIONAL' },
+                rental_shop_inclusions: [],
+                rental_shop_tours: [],
+                rental_shop_service_locations: [],
+                rental_shop_conditions: [],
+            },
+            {
+                id: '11111111-2222-4333-8444-555555555557',
+                provider_name: 'Moto',
+                slug: 'moto',
+                city_id: 'city-hanoi',
+                business_status_id: 1,
+                rating: 4.3,
+                review_count: 10,
+                business_description: 'Basic rentals.',
+                cities: cityHanoi,
+                business_statuses: { id: 1, status_code: 'OPERATIONAL' },
+                rental_shop_inclusions: [],
+                rental_shop_tours: [],
+                rental_shop_service_locations: [],
+                rental_shop_conditions: [],
+            },
+            {
+                id: '11111111-2222-4333-8444-555555555558',
+                provider_name: 'Gia Hung Hostel',
+                slug: 'gia-hung-hostel',
+                city_id: 'city-hanoi',
+                business_status_id: 1,
+                rating: 4.2,
+                review_count: 12,
+                business_description: 'Backpacker hostel in Hanoi.',
+                cities: cityHanoi,
+                business_statuses: { id: 1, status_code: 'OPERATIONAL' },
+                rental_shop_inclusions: [],
+                rental_shop_tours: [],
+                rental_shop_service_locations: [],
+                rental_shop_conditions: [],
+            },
+        ];
+
+        clearAllTtlCaches();
+        (supabase.from as jest.Mock).mockImplementation((table: string) => {
+            if (table === 'business_statuses') {
+                return createPostgrestBuilder([{ id: 1, status_code: 'OPERATIONAL' }]);
+            }
+            if (table === 'countries') return createPostgrestBuilder(catalogCountries);
+            if (table === 'provinces') return createPostgrestBuilder([cityHanoi.provinces]);
+            if (table === 'cities') return createPostgrestBuilder(catalogCities);
+            if (table === 'brands') return createPostgrestBuilder(catalogBrands);
+            if (table === 'rental_shops') return createPostgrestBuilder(shopsWithDecoys);
+            if (table === 'motorcycle_rentals') return createPostgrestBuilder(catalogMotorcycles);
+            throw new Error(`Unexpected table: ${table}`);
+        });
+
+        for (const unlistedShop of [
+            'Gia Hoang Motorbike Rental',
+            'Tuan Motorbike Rental',
+            'Bali Bikes',
+            'Motorbike Central',
+            'Moto Central',
+        ]) {
+            const ref = await shopService.resolveShopReference(unlistedShop, {
+                cityId: 'city-hanoi',
+            });
+            expect(ref).toBeNull();
+
+            const mcpRes = await executeTool('list_motorcycles', {
+                city: 'Hanoi',
+                shop: unlistedShop,
+            });
+            expect(mcpRes.success).toBe(true);
+            expect(mcpRes.data).toEqual({
+                total: 0,
+                motorcycles: [],
+                unresolvedFilters: [{ filter: 'shop', value: unlistedShop }],
+            });
+        }
+
+        // Exact stored legacy slug ("gia-hng-motorbike-rental") and ASCII name still resolve cleanly alongside decoys
+        await expect(
+            shopService.resolveShopReference('gia-hng-motorbike-rental', { cityId: 'city-hanoi' })
+        ).resolves.toBe(shopGiaHungUuid);
+        await expect(
+            shopService.resolveShopReference('Gia Hung Motorbike Rental', { cityId: 'city-hanoi' })
+        ).resolves.toBe(shopGiaHungUuid);
+
+        // list_shops with both "Gia Hung Hostel" (gia-hung-hostel) and "Gia Hưng Motorbike Rental" (gia-hng-motorbike-rental):
+        // Searching "Gia Hung Motorbike Rental" MUST return "Gia Hưng Motorbike Rental" and NOT "Gia Hung Hostel"!
+        const specificListShops = await executeTool('list_shops', {
+            city: 'Hanoi',
+            query: 'Gia Hung Motorbike Rental',
+        });
+        expect(specificListShops.success).toBe(true);
+        expect((specificListShops.data as any).shops.map((s: any) => s.name)).toEqual([
+            'Gia Hưng Motorbike Rental',
+        ]);
+
+        // Searching "Hung" in Hanoi must include "Gia Hưng Motorbike Rental" even though "Hung Motorbike" and "Gia Hung Hostel" already matched primary ILIKE (count > 0)
+        const hungListShops = await executeTool('list_shops', {
+            city: 'Hanoi',
+            query: 'Hung',
+        });
+        expect(hungListShops.success).toBe(true);
+        expect((hungListShops.data as any).shops.map((s: any) => s.name)).toEqual(
+            expect.arrayContaining([
+                'Gia Hưng Motorbike Rental',
+                'Hung Motorbike',
+                'Gia Hung Hostel',
+            ])
+        );
+    });
+
+    it('resolves conflicting { brand: "Honda", query: "Detech Win" } and colloquial "Honda Win" even when Honda is absent from catalog brands or derivedBrands', async () => {
+        const detechOnlyBrands = [{ id: 'b-detech', name: 'Detech' }];
+        const detechOnlyMotorcycles = catalogMotorcycles.filter(
+            (m) => m.brand_id === 'b-detech'
+        );
+
+        clearAllTtlCaches();
+        (supabase.from as jest.Mock).mockImplementation((table: string) => {
+            if (table === 'business_statuses') {
+                return createPostgrestBuilder([{ id: 1, status_code: 'OPERATIONAL' }]);
+            }
+            if (table === 'countries') return createPostgrestBuilder(catalogCountries);
+            if (table === 'provinces') return createPostgrestBuilder([cityHanoi.provinces]);
+            if (table === 'cities') return createPostgrestBuilder(catalogCities);
+            if (table === 'brands') return createPostgrestBuilder(detechOnlyBrands);
+            if (table === 'rental_shops') return createPostgrestBuilder(catalogShops);
+            if (table === 'motorcycle_rentals') return createPostgrestBuilder(detechOnlyMotorcycles);
+            throw new Error(`Unexpected table: ${table}`);
+        });
+
+        // 1. Conflicting { brand: "Honda", query: "Detech Win" } when Honda is absent from brands
+        const resolvedOverride = await resolveMotorcycleToolFilters({
+            brand: 'Honda',
+            query: 'Detech Win',
+        });
+        expect(resolvedOverride.unresolvedFilters).toEqual([]);
+        expect(resolvedOverride.brandId).toBe('b-detech');
+        expect(resolvedOverride.brandIds).toEqual(['b-detech']);
+        expect(resolvedOverride.model).toBe('Win');
+
+        const mcpOverrideRes = await executeTool('list_motorcycles', {
+            city: 'Hanoi',
+            brand: 'Honda',
+            query: 'Detech Win',
+        });
+        expect((mcpOverrideRes.data as any).unresolvedFilters).toBeUndefined();
+        expect((mcpOverrideRes.data as any).motorcycles.map((m: any) => m.id)).toEqual([
+            'hung-detech-win-110',
+            'hung-detech-win-127',
+            'hung-detech-win-140',
+        ]);
+
+        // 2. Colloquial "Honda Win" and { brand: "Honda", query: "Win" } when only Detech exists in brands
+        const mcpHondaWinRes = await executeTool('list_motorcycles', {
+            city: 'Hanoi',
+            query: 'Honda Win',
+        });
+        expect((mcpHondaWinRes.data as any).unresolvedFilters).toBeUndefined();
+        expect((mcpHondaWinRes.data as any).motorcycles.map((m: any) => m.id)).toEqual([
+            'hung-detech-win-110',
+            'hung-detech-win-127',
+            'hung-detech-win-140',
+        ]);
+
+        const mcpHondaBrandWinRes = await executeTool('list_motorcycles', {
+            city: 'Hanoi',
+            brand: 'Honda',
+            query: 'Win',
+        });
+        expect((mcpHondaBrandWinRes.data as any).unresolvedFilters).toBeUndefined();
+        expect((mcpHondaBrandWinRes.data as any).motorcycles.map((m: any) => m.id)).toEqual([
+            'hung-detech-win-110',
+            'hung-detech-win-127',
+            'hung-detech-win-140',
+        ]);
+
+        // 3. filterAndSortMotorcycles with ONLY Detech Win bikes in input array and query: "Honda Win"
+        expect(
+            filterAndSortMotorcycles(detechOnlyMotorcycles, {
+                query: 'Honda Win',
+            }).map((m) => m.id)
+        ).toEqual([
+            'hung-detech-win-140',
+            'hung-detech-win-127',
+            'hung-detech-win-110',
+        ]);
+
+        // 4. When both Honda and Detech exist in catalogBrands, resolveMotorcycleToolFilters expands brandIds across {Honda, Detech} and getMotorcycles accepts brandIds directly
+        clearAllTtlCaches();
+        (supabase.from as jest.Mock).mockImplementation((table: string) => {
+            if (table === 'business_statuses') {
+                return createPostgrestBuilder([{ id: 1, status_code: 'OPERATIONAL' }]);
+            }
+            if (table === 'brands') return createPostgrestBuilder(catalogBrands);
+            if (table === 'motorcycle_rentals') return createPostgrestBuilder(catalogMotorcycles);
+            throw new Error(`Unexpected table: ${table}`);
+        });
+
+        const resolvedBothBrands = await resolveMotorcycleToolFilters({
+            brand: 'Honda',
+            query: 'Win',
+        });
+        expect(resolvedBothBrands.unresolvedFilters).toEqual([]);
+        expect(resolvedBothBrands.brandId).toBe('b-honda');
+        expect(resolvedBothBrands.brandIds).toEqual(['b-honda', 'b-detech']);
+
+        const viaBrandIdsRes = await motorcycleService.getMotorcycles({
+            cityId: 'city-hanoi',
+            brandIds: resolvedBothBrands.brandIds,
+            model: resolvedBothBrands.model,
+        });
+        expect(viaBrandIdsRes.motorcycles.map((m) => m.id)).toEqual([
+            'hung-detech-win-110',
+            'hung-detech-win-127',
+            'hung-detech-win-140',
         ]);
     });
 });
