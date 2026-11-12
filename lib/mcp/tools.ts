@@ -43,17 +43,34 @@ export const openAITools: ChatCompletionTool[] = [
         type: 'function',
         function: {
             name: 'list_motorcycles',
-            description: 'Search and list available motorcycles for rent. Returns results with model, brand, price, and location. Use city and category NAMES (e.g., "Bangkok", "Scooter") - they will be resolved automatically.',
+            description:
+                'Search and list available motorcycles for rent. Returns results with model, brand, category, engineCapacityCc (null when unlisted in the catalog — treat null as unlisted rather than guessing), pricing/rentalOffers, conditions, inclusions, shop, and location. Use city and category NAMES (e.g., "Bangkok", "Scooter") — they will be resolved automatically. Set brand and category ONLY when explicitly requested by the user.',
             parameters: {
                 type: 'object',
                 properties: {
-                    brand: { type: 'string', description: 'Brand name (e.g., Honda, Yamaha, Kawasaki)' },
-                    category: { type: 'string', description: 'Category name (e.g., Scooter, Sport, Adventure, Cruiser)' },
+                    brand: {
+                        type: 'string',
+                        description:
+                            'Motorcycle brand/manufacturer name (e.g., Honda, Yamaha, Kawasaki, Detech). Set ONLY when the user explicitly names a motorcycle brand/manufacturer; leave unset if the user only names a model (e.g., put "Win" in query) or if unsure of the catalog manufacturer.',
+                    },
+                    category: {
+                        type: 'string',
+                        description:
+                            'Vehicle category name (e.g., Scooter, Manual, Semi-Automatic, Sport, Adventure, Cruiser). Set ONLY when the user explicitly requests a vehicle category; never infer category from model names or general phrases like "motorcycles".',
+                    },
                     country: { type: 'string', description: 'Country name or ISO code (e.g., Thailand, Vietnam, Italy, IT)' },
                     city: { type: 'string', description: 'City name (e.g., Bangkok, Chiang Mai, Rome)' },
-                    shop: { type: 'string', description: 'Rental shop name, slug, or UUID (e.g., "Riders Corner", "riders-corner-chiang-mai")' },
+                    shop: {
+                        type: 'string',
+                        description:
+                            'Rental shop name, slug, or UUID (e.g., "Riders Corner", "riders-corner-chiang-mai") ONLY when filtering to a specific shop; NEVER put motorcycle brand or model names into shop.',
+                    },
                     offset: { type: 'number', description: 'Pagination offset (non-negative integer, default 0)', default: 0 },
-                    query: { type: 'string', description: 'Search query for model name' },
+                    query: {
+                        type: 'string',
+                        description:
+                            'Motorcycle model or free-text search term (e.g., "Win", "Detech Win", "X-ADV 750", "NVX 155"). Each returned motorcycle includes engineCapacityCc (null when unlisted).',
+                    },
                     minPrice: { type: 'number', description: 'Minimum daily rental price (or daily equivalent when durationDays is set)' },
                     maxPrice: { type: 'number', description: 'Maximum daily rental price (or daily equivalent when durationDays is set)' },
                     currency: {
@@ -93,13 +110,14 @@ export const openAITools: ChatCompletionTool[] = [
         type: 'function',
         function: {
             name: 'list_shops',
-            description: 'List and search rental shops. Use city NAMES (e.g., "Bangkok") - they will be resolved automatically.',
+            description:
+                'List and search rental shops. Returns published address, phone, website, googleMapsUrl, inclusions, and conditions (opening_hours, deposit, etc.) for each shop; null contact fields indicate the shop has no published value in the catalog (treat as unlisted rather than guessing). Use city NAMES (e.g., "Bangkok") - they will be resolved automatically.',
             parameters: {
                 type: 'object',
                 properties: {
                     countryCode: { type: 'string', description: 'Country code (e.g., TH, VN)' },
                     city: { type: 'string', description: 'City name (e.g., Bangkok, Chiang Mai)' },
-                    query: { type: 'string', description: 'Search query for shop name' },
+                    query: { type: 'string', description: 'Search query for rental shop name (never motorcycle brand or model names)' },
                     minRating: { type: 'number', description: 'Minimum rating (0-5)' },
                     limit: { type: 'number', description: 'Number of results (max 20)', default: 10 },
                 },
@@ -183,6 +201,10 @@ export const openAITools: ChatCompletionTool[] = [
 
 function getYearTo(record: { year_to?: number | null }): number | null {
     return record.year_to ?? null;
+}
+
+function getEngineCapacityCc(record: { engine_capacity_cc?: number | null }): number | null {
+    return record.engine_capacity_cc ?? null;
 }
 
 export interface ToolResult {
@@ -369,6 +391,7 @@ export async function executeTool(
                             model: m.model,
                             year: m.year,
                             year_to: getYearTo(m),
+                            engineCapacityCc: getEngineCapacityCc(m),
                             brand: m.brands?.name,
                             category: m.categories?.name,
                             ...buildMotorcyclePricingAndConditions(m as any, { includeCurrency: true }),
@@ -436,6 +459,10 @@ export async function executeTool(
                         id: string;
                         slug?: string | null;
                         provider_name: string;
+                        full_address?: string | null;
+                        phone?: string | null;
+                        website?: string | null;
+                        google_maps_url?: string | null;
                         rating?: number | null;
                         review_count?: number | null;
                         cities?: {
@@ -452,6 +479,10 @@ export async function executeTool(
                             id: s.id,
                             url: getShopUrl(s),
                             name: s.provider_name,
+                            address: s.full_address ?? null,
+                            phone: s.phone ?? null,
+                            website: s.website ?? null,
+                            googleMapsUrl: s.google_maps_url ?? null,
                             rating: s.rating,
                             reviewCount: s.review_count,
                             city: s.cities?.name,
