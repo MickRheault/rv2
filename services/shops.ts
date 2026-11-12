@@ -9,6 +9,7 @@ import {
   filterMatchingShopIds,
   normalizeModelKey,
   pickBestMatchingShopId,
+  pickBestShopMatch,
   stripDiacritics,
   toSlugKey,
 } from '@/lib/mcp/search-normalization'
@@ -728,7 +729,9 @@ export const shopService = {
               const fromTable = typedSupabase.from('rental_shops')
               let primaryIdQuery: any =
                 fromTable && typeof fromTable.select === 'function'
-                  ? fromTable.select('id')
+                  ? fromTable.select(
+                      provinceId && !cityId ? 'id, cities!inner(province_id)' : 'id'
+                    )
                   : null
               if (primaryIdQuery) {
                 if (cityId && typeof primaryIdQuery.eq === 'function') {
@@ -1030,21 +1033,24 @@ export const shopService = {
       return null
     }
 
+    let primaryMatch: { id: string; tier: number } | null = null
+    let scopedPrimary: any[] = []
     if (Array.isArray(data) && data.length > 0) {
-      const scopedPrimary = data.filter((row: any) =>
+      scopedPrimary = data.filter((row: any) =>
         doesShopMatchScope(
           row,
           { ...scope, requireCityMetadata: Boolean(scope.cityId) },
           catalogCountries
         )
       )
-      const primaryMatch = pickBestMatchingShopId(scopedPrimary, trimmed)
-      if (primaryMatch) {
-        return primaryMatch
+      primaryMatch = pickBestShopMatch(scopedPrimary, trimmed)
+      if (primaryMatch && primaryMatch.tier <= 4) {
+        return primaryMatch.id
       }
     }
 
-    // Narrow active-shop fallback when PostgreSQL accent-sensitive ILIKE or lossy slugs miss primary .or(...)
+    // Narrow active-shop fallback when PostgreSQL accent-sensitive ILIKE or lossy slugs miss primary .or(...),
+    // or when primary .or(...) only matched a weak Tier 5/6 candidate.
     try {
       const scopedCandidates = await fetchScopedActiveShopCandidates({
         cityId: scope.cityId,
@@ -1052,9 +1058,16 @@ export const shopService = {
         activeStatusIds,
         catalogCountries,
       })
-      return pickBestMatchingShopId(scopedCandidates, trimmed)
+      if (scopedCandidates.length === 0) {
+        return primaryMatch?.id ?? null
+      }
+      return (
+        pickBestMatchingShopId([...scopedPrimary, ...scopedCandidates], trimmed) ??
+        primaryMatch?.id ??
+        null
+      )
     } catch {
-      return null
+      return primaryMatch?.id ?? null
     }
   },
 

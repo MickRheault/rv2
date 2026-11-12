@@ -1252,6 +1252,38 @@ describe('Shop & Canonical Model Resolution Hardening (#230 / #232)', () => {
                 rental_shop_service_locations: [],
                 rental_shop_conditions: [],
             },
+            {
+                id: '11111111-2222-4333-8444-555555555559',
+                provider_name: 'Gia Hung',
+                slug: 'gia-hung',
+                city_id: 'city-hanoi',
+                business_status_id: 1,
+                rating: 4.1,
+                review_count: 8,
+                business_description: 'Short prefix shop in Hanoi.',
+                cities: cityHanoi,
+                business_statuses: { id: 1, status_code: 'OPERATIONAL' },
+                rental_shop_inclusions: [],
+                rental_shop_tours: [],
+                rental_shop_service_locations: [],
+                rental_shop_conditions: [],
+            },
+            {
+                id: '11111111-2222-4333-8444-555555555560',
+                provider_name: 'Hưng',
+                slug: 'hng-motorbike-rental',
+                city_id: 'city-hanoi',
+                business_status_id: 1,
+                rating: 4.6,
+                review_count: 19,
+                business_description: 'Accented short provider_name with legacy vowel-dropped slug.',
+                cities: cityHanoi,
+                business_statuses: { id: 1, status_code: 'OPERATIONAL' },
+                rental_shop_inclusions: [],
+                rental_shop_tours: [],
+                rental_shop_service_locations: [],
+                rental_shop_conditions: [],
+            },
         ];
 
         clearAllTtlCaches();
@@ -1293,12 +1325,57 @@ describe('Shop & Canonical Model Resolution Hardening (#230 / #232)', () => {
         }
 
         // Exact stored legacy slug ("gia-hng-motorbike-rental") and ASCII name still resolve cleanly alongside decoys
+        // (even when weak Tier-6 prefix decoy "Gia Hung" / slug "gia-hung" matched primary .or(...)!)
         await expect(
             shopService.resolveShopReference('gia-hng-motorbike-rental', { cityId: 'city-hanoi' })
         ).resolves.toBe(shopGiaHungUuid);
         await expect(
             shopService.resolveShopReference('Gia Hung Motorbike Rental', { cityId: 'city-hanoi' })
         ).resolves.toBe(shopGiaHungUuid);
+
+        // Non-ASCII accented provider_name ("Hưng") with legacy vowel-dropped slug ("hng-motorbike-rental")
+        // resolves via Tier 5 when queried as "hung-motorbike-rental", while "hoang-motorbike-rental" still rejects
+        await expect(
+            shopService.resolveShopReference('hung-motorbike-rental', { cityId: 'city-hanoi' })
+        ).resolves.toBe('11111111-2222-4333-8444-555555555560');
+        await expect(
+            shopService.resolveShopReference('hoang-motorbike-rental', { cityId: 'city-hanoi' })
+        ).resolves.toBeNull();
+
+        // Province-scoped paginated getShops with missing accented/lossy-slug matches selects cities!inner(province_id) on primaryIdQuery
+        const provinceSelects: string[] = [];
+        (supabase.from as jest.Mock).mockImplementation((table: string) => {
+            if (table === 'business_statuses') {
+                return createPostgrestBuilder([{ id: 1, status_code: 'OPERATIONAL' }]);
+            }
+            if (table === 'rental_shops') {
+                return createPostgrestBuilder(shopsWithDecoys, (cols) => provinceSelects.push(cols));
+            }
+            if (table === 'motorcycle_rentals') return createPostgrestBuilder(catalogMotorcycles);
+            throw new Error(`Unexpected table: ${table}`);
+        });
+        const provincePaged = await shopService.getShops({
+            provinceId: 'prov-hanoi',
+            query: 'Hung',
+            limit: 1,
+            offset: 0,
+        });
+        expect(provincePaged.total).toBeGreaterThanOrEqual(4);
+        expect(provinceSelects).toContain('id, cities!inner(province_id)');
+
+        // Restore shopsWithDecoys mock without provinceSelects override for remaining assertions in this test
+        (supabase.from as jest.Mock).mockImplementation((table: string) => {
+            if (table === 'business_statuses') {
+                return createPostgrestBuilder([{ id: 1, status_code: 'OPERATIONAL' }]);
+            }
+            if (table === 'countries') return createPostgrestBuilder(catalogCountries);
+            if (table === 'provinces') return createPostgrestBuilder([cityHanoi.provinces]);
+            if (table === 'cities') return createPostgrestBuilder(catalogCities);
+            if (table === 'brands') return createPostgrestBuilder(catalogBrands);
+            if (table === 'rental_shops') return createPostgrestBuilder(shopsWithDecoys);
+            if (table === 'motorcycle_rentals') return createPostgrestBuilder(catalogMotorcycles);
+            throw new Error(`Unexpected table: ${table}`);
+        });
 
         // list_shops with both "Gia Hung Hostel" (gia-hung-hostel) and "Gia Hưng Motorbike Rental" (gia-hng-motorbike-rental):
         // Searching "Gia Hung Motorbike Rental" MUST return "Gia Hưng Motorbike Rental" and NOT "Gia Hung Hostel"!

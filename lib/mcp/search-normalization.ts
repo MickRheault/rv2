@@ -238,11 +238,17 @@ function toConsonantTokens(value: string): string[] {
 }
 
 /**
- * Matches a legacy vowel-dropped slug (e.g. "gia-hng-motorbike-rental") ONLY when
- * `provider_name` is absent and at least one slug token genuinely lost its vowels
- * compared with the corresponding target token. Never used against `provider_name`.
+ * Matches a legacy vowel-dropped slug (e.g. "gia-hng-motorbike-rental" or "hng-motorbike-rental")
+ * ONLY when `provider_name` is absent or contains non-ASCII accented characters, and at least one
+ * slug token genuinely lost its vowels compared with the corresponding target token. When
+ * `provider_name` contains accented words whose ASCII-dropped token matches `sTok` (e.g. "Hưng" ->
+ * "hng"), the restored token ("hung") must match `tTok` so homophones like "hoang" never match.
  */
-function matchesLossyVowelDroppedSlug(slugVal: string, targetSlug: string): boolean {
+function matchesLossyVowelDroppedSlug(
+    slugVal: string,
+    targetSlug: string,
+    providerName?: string | null
+): boolean {
     if (!slugVal || !targetSlug) return false;
     const slugTokens = slugVal.split('-').filter(Boolean);
     const targetTokens = targetSlug.split('-').filter(Boolean);
@@ -254,11 +260,33 @@ function matchesLossyVowelDroppedSlug(slugVal: string, targetSlug: string): bool
     if (slugConsonants.length < 6 || slugConsonants !== targetConsonants) {
         return false;
     }
+
+    const legacyToRestored = new Map<string, Set<string>>();
+    if (providerName && providerName.trim().length > 0) {
+        for (const word of providerName.trim().split(/[\s\-_]+/)) {
+            const legacyTok = toLegacyAsciiDroppedSlug(word);
+            const restoredTok = toSlugKey(word);
+            if (legacyTok && restoredTok && legacyTok !== restoredTok) {
+                if (!legacyToRestored.has(legacyTok)) {
+                    legacyToRestored.set(legacyTok, new Set());
+                }
+                legacyToRestored.get(legacyTok)!.add(restoredTok);
+            }
+        }
+    }
+
     let hasVowelDroppedToken = false;
     for (let i = 0; i < slugTokens.length; i++) {
         const sTok = slugTokens[i];
         const tTok = targetTokens[i];
         if (sTok === tTok) continue;
+        if (legacyToRestored.has(sTok)) {
+            if (!legacyToRestored.get(sTok)!.has(tTok)) {
+                return false;
+            }
+            hasVowelDroppedToken = true;
+            continue;
+        }
         if (/[aeiouy]/.test(sTok) || !/[aeiouy]/.test(tTok)) {
             return false;
         }
@@ -272,14 +300,7 @@ function matchesLossyVowelDroppedSlug(slugVal: string, targetSlug: string): bool
 
 function scoreShopMatchTier(
     shop: { id?: string; provider_name?: string | null; slug?: string | null },
-    target: {
-        trimmed: string;
-        trimmedLower: string;
-        targetSlug: string;
-        targetLegacyAsciiSlug: string;
-        targetNameKey: string;
-        targetCompact: string;
-    }
+    target: ReturnType<typeof buildShopMatchTarget>
 ): number | null {
     if (!shop?.id) return null;
 
@@ -320,7 +341,10 @@ function scoreShopMatchTier(
         return 4;
     }
 
-    if (!hasProviderName && matchesLossyVowelDroppedSlug(slugVal, target.targetSlug)) {
+    if (
+        (!hasProviderName || /[^\x00-\x7f]/.test(shop.provider_name!)) &&
+        matchesLossyVowelDroppedSlug(slugVal, target.targetSlug, shop.provider_name)
+    ) {
         return 5;
     }
 
@@ -335,19 +359,30 @@ function scoreShopMatchTier(
             ((hasProviderName
                 ? matchesNormalizedModel(shop.provider_name!, target.trimmed)
                 : false) ||
-                (slugVal ? matchesNormalizedModel(slugVal, target.trimmed) : false))) ||
-        (providerSlugTokenCount >= 2 &&
-            providerSlug.length >= 5 &&
-            target.targetSlug.startsWith(`${providerSlug}-`)) ||
-        (slugTokenCount >= 2 && slugVal.length >= 5 && target.targetSlug.startsWith(`${slugVal}-`))
+                (slugVal ? matchesNormalizedModel(slugVal, target.trimmed) : false)))
     ) {
         return 6;
+    }
+
+    if (
+        target.allowLocationSuffixPrefix &&
+        ((providerSlugTokenCount >= 2 &&
+            providerSlug.length >= 5 &&
+            target.targetSlug.startsWith(`${providerSlug}-`)) ||
+            (slugTokenCount >= 2 &&
+                slugVal.length >= 5 &&
+                target.targetSlug.startsWith(`${slugVal}-`)))
+    ) {
+        return 7;
     }
 
     return null;
 }
 
-function buildShopMatchTarget(rawShopInput: string) {
+function buildShopMatchTarget(
+    rawShopInput: string,
+    options: { allowLocationSuffixPrefix?: boolean } = {}
+) {
     const trimmed = rawShopInput.trim();
     return {
         trimmed,
@@ -356,6 +391,7 @@ function buildShopMatchTarget(rawShopInput: string) {
         targetLegacyAsciiSlug: toLegacyAsciiDroppedSlug(trimmed),
         targetNameKey: normalizeLocationKey(trimmed),
         targetCompact: normalizeModelKey(trimmed),
+        allowLocationSuffixPrefix: Boolean(options.allowLocationSuffixPrefix),
     };
 }
 
@@ -366,7 +402,7 @@ export function filterMatchingShopIds(
     const trimmed = rawShopInput.trim();
     if (!trimmed || !Array.isArray(shops) || shops.length === 0) return [];
 
-    const target = buildShopMatchTarget(trimmed);
+    const target = buildShopMatchTarget(trimmed, { allowLocationSuffixPrefix: false });
     const scored: Array<{ id: string; tier: number; index: number }> = [];
     shops.forEach((shop, index) => {
         const tier = scoreShopMatchTier(shop, target);
@@ -378,11 +414,32 @@ export function filterMatchingShopIds(
     return Array.from(new Set(scored.map((item) => item.id)));
 }
 
+export function pickBestShopMatch(
+    shops: Array<{ id?: string; provider_name?: string | null; slug?: string | null }>,
+    rawShopInput: string
+): { id: string; tier: number } | null {
+    const trimmed = rawShopInput.trim();
+    if (!trimmed || !Array.isArray(shops) || shops.length === 0) return null;
+
+    const target = buildShopMatchTarget(trimmed, { allowLocationSuffixPrefix: true });
+    let best: { id: string; tier: number; index: number } | null = null;
+    for (let index = 0; index < shops.length; index++) {
+        const shop = shops[index];
+        const tier = scoreShopMatchTier(shop, target);
+        if (tier !== null && shop?.id) {
+            if (!best || tier < best.tier || (tier === best.tier && index < best.index)) {
+                best = { id: shop.id, tier, index };
+            }
+        }
+    }
+    return best ? { id: best.id, tier: best.tier } : null;
+}
+
 export function pickBestMatchingShopId(
     shops: Array<{ id?: string; provider_name?: string | null; slug?: string | null }>,
     rawShopInput: string
 ): string | null {
-    return filterMatchingShopIds(shops, rawShopInput)[0] ?? null;
+    return pickBestShopMatch(shops, rawShopInput)?.id ?? null;
 }
 
 function escapeRegExp(value: string): string {
