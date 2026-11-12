@@ -71,6 +71,35 @@ const motorcycle = {
     },
 };
 
+interface ToolParameterProperty {
+    type?: string;
+    description?: string;
+    default?: unknown;
+    enum?: string[];
+}
+
+function getToolFunctionSchema(name: string): {
+    name: string;
+    description?: string;
+    parameters: { properties: Record<string, ToolParameterProperty>; required?: string[] };
+} {
+    const tool = openAITools.find(
+        (t): t is Extract<(typeof openAITools)[number], { type: 'function' }> =>
+            t.type === 'function' && t.function.name === name
+    );
+    if (!tool) {
+        throw new Error(`Expected tool schema for ${name}`);
+    }
+    return {
+        name: tool.function.name,
+        description: tool.function.description,
+        parameters: (tool.function.parameters ?? { properties: {} }) as {
+            properties: Record<string, ToolParameterProperty>;
+            required?: string[];
+        },
+    };
+}
+
 it('includes the actual rental shop and its canonical link in motorcycle tool results', async () => {
     mockGetMotorcycles.mockResolvedValueOnce({ total: 1, motorcycles: [motorcycle] });
     const result = await executeTool('list_motorcycles', {});
@@ -330,11 +359,7 @@ it('exposes verbatim non-daily rentalOffers and real billing phrases with dailyR
 it('exposes currency, durationDays, and knownPriceOnly in list_motorcycles tool schema and forwards normalized filter args (#225)', async () => {
     mockGetMotorcycles.mockClear();
 
-    const listTool = openAITools.find(
-        (t) => t.type === 'function' && t.function.name === 'list_motorcycles'
-    );
-    expect(listTool).toBeDefined();
-    const props = (listTool as any).function.parameters.properties;
+    const props = getToolFunctionSchema('list_motorcycles').parameters.properties;
     expect(props.currency).toMatchObject({ type: 'string' });
     expect(props.durationDays).toMatchObject({ type: 'number' });
     expect(props.knownPriceOnly).toMatchObject({ type: 'boolean' });
@@ -1180,13 +1205,11 @@ it('normalizes diacritics (including accented catalog cities), curated aliases, 
 });
 
 it('supports single-shopId resolution (UUID, name, slug) without heavy getShopById calls, validates shop country scope, and supports pagination offset (#224)', async () => {
-    const listMotorcyclesSchema = openAITools.find(
-        (t) => t.type === 'function' && t.function.name === 'list_motorcycles'
-    );
-    expect((listMotorcyclesSchema as any)?.function?.parameters?.properties?.shop).toMatchObject({
+    const listMotorcyclesProps = getToolFunctionSchema('list_motorcycles').parameters.properties;
+    expect(listMotorcyclesProps.shop).toMatchObject({
         type: 'string',
     });
-    expect((listMotorcyclesSchema as any)?.function?.parameters?.properties?.offset).toMatchObject({
+    expect(listMotorcyclesProps.offset).toMatchObject({
         type: 'number',
         default: 0,
     });
@@ -1435,9 +1458,9 @@ it('exposes engineCapacityCc on list_motorcycles and search_motorcycles items, r
     });
 });
 
-it('exposes address, phone, website, and googleMapsUrl on list_shops items alongside conditions and inclusions, returning null when absent (#233)', async () => {
+it('exposes address, phone, website, and googleMapsUrl on list_shops items alongside conditions and inclusions, normalizing absent or blank/whitespace values to null (#233)', async () => {
     mockGetShops.mockResolvedValueOnce({
-        total: 3,
+        total: 4,
         shops: [
             {
                 id: 'shop-full-contact',
@@ -1475,7 +1498,7 @@ it('exposes address, phone, website, and googleMapsUrl on list_shops items along
                 id: 'shop-partial-contact',
                 slug: 'mr-good-bikes',
                 provider_name: 'Mr-Good Bikes',
-                full_address: '10 Ngo Huyen, Hoan Kiem, Hanoi',
+                full_address: '  10 Ngo Huyen, Hoan Kiem, Hanoi  ',
                 phone: null,
                 website: null,
                 google_maps_url: 'https://maps.google.com/?cid=987654321',
@@ -1509,13 +1532,25 @@ it('exposes address, phone, website, and googleMapsUrl on list_shops items along
                 review_count: null,
                 cities: null,
             },
+            {
+                id: 'shop-blank-whitespace-contact',
+                slug: 'blank-contact-shop',
+                provider_name: 'Blank Contact Shop',
+                full_address: '',
+                phone: '   ',
+                website: '',
+                google_maps_url: ' \t ',
+                rating: 4.2,
+                review_count: 8,
+                cities: null,
+            },
         ],
     });
 
     const res = await executeTool('list_shops', { city: undefined });
     expect(res.success).toBe(true);
     const data = JSON.parse(formatToolResultForLLM(res));
-    expect(data.total).toBe(3);
+    expect(data.total).toBe(4);
     expect(data.shops).toEqual([
         {
             id: 'shop-full-contact',
@@ -1570,15 +1605,24 @@ it('exposes address, phone, website, and googleMapsUrl on list_shops items along
             conditions: [],
             inclusions: [],
         },
+        {
+            id: 'shop-blank-whitespace-contact',
+            url: '/shop/blank-contact-shop',
+            name: 'Blank Contact Shop',
+            address: null,
+            phone: null,
+            website: null,
+            googleMapsUrl: null,
+            rating: 4.2,
+            reviewCount: 8,
+            conditions: [],
+            inclusions: [],
+        },
     ]);
 });
 
 it('includes strict filter guardrails and payload field guidance in openAITools schemas for list_motorcycles and list_shops (#233)', () => {
-    const listMotorcyclesTool = openAITools.find(
-        (t) => t.type === 'function' && t.function.name === 'list_motorcycles'
-    );
-    expect(listMotorcyclesTool).toBeDefined();
-    const motoFn = (listMotorcyclesTool as any).function;
+    const motoFn = getToolFunctionSchema('list_motorcycles');
     const motoProps = motoFn.parameters.properties;
 
     expect(motoFn.description).toContain('engineCapacityCc');
@@ -1590,18 +1634,14 @@ it('includes strict filter guardrails and payload field guidance in openAITools 
     expect(motoProps.query.description).toContain('Detech Win');
     expect(motoProps.query.description).toContain('engineCapacityCc');
 
-    const listShopsTool = openAITools.find(
-        (t) => t.type === 'function' && t.function.name === 'list_shops'
-    );
-    expect(listShopsTool).toBeDefined();
-    const shopsFn = (listShopsTool as any).function;
+    const shopsFn = getToolFunctionSchema('list_shops');
 
     expect(shopsFn.description).toContain('address');
     expect(shopsFn.description).toContain('phone');
     expect(shopsFn.description).toContain('website');
     expect(shopsFn.description).toContain('googleMapsUrl');
     expect(shopsFn.description).toContain('inclusions');
-    expect(shopsFn.description).toContain('conditions');
+    expect(shopsFn.description).toContain('conditions (Opening Hours, Security Deposit, etc.)');
     expect(shopsFn.description).toMatch(/null.*no published value/i);
 });
 

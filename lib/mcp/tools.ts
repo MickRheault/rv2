@@ -111,7 +111,7 @@ export const openAITools: ChatCompletionTool[] = [
         function: {
             name: 'list_shops',
             description:
-                'List and search rental shops. Returns published address, phone, website, googleMapsUrl, inclusions, and conditions (opening_hours, deposit, etc.) for each shop; null contact fields indicate the shop has no published value in the catalog (treat as unlisted rather than guessing). Use city NAMES (e.g., "Bangkok") - they will be resolved automatically.',
+                'List and search rental shops. Returns published address, phone, website, googleMapsUrl, inclusions, and conditions (Opening Hours, Security Deposit, etc.) for each shop; null contact fields indicate the shop has no published value in the catalog (treat as unlisted rather than guessing). Use city NAMES (e.g., "Bangkok") - they will be resolved automatically.',
             parameters: {
                 type: 'object',
                 properties: {
@@ -203,8 +203,10 @@ function getYearTo(record: { year_to?: number | null }): number | null {
     return record.year_to ?? null;
 }
 
-function getEngineCapacityCc(record: { engine_capacity_cc?: number | null }): number | null {
-    return record.engine_capacity_cc ?? null;
+function toNullableText(value: string | null | undefined): string | null {
+    if (typeof value !== 'string') return null;
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
 }
 
 export interface ToolResult {
@@ -391,7 +393,7 @@ export async function executeTool(
                             model: m.model,
                             year: m.year,
                             year_to: getYearTo(m),
-                            engineCapacityCc: getEngineCapacityCc(m),
+                            engineCapacityCc: m.engine_capacity_cc ?? null,
                             brand: m.brands?.name,
                             category: m.categories?.name,
                             ...buildMotorcyclePricingAndConditions(m as any, { includeCurrency: true }),
@@ -479,10 +481,10 @@ export async function executeTool(
                             id: s.id,
                             url: getShopUrl(s),
                             name: s.provider_name,
-                            address: s.full_address ?? null,
-                            phone: s.phone ?? null,
-                            website: s.website ?? null,
-                            googleMapsUrl: s.google_maps_url ?? null,
+                            address: toNullableText(s.full_address),
+                            phone: toNullableText(s.phone),
+                            website: toNullableText(s.website),
+                            googleMapsUrl: toNullableText(s.google_maps_url),
                             rating: s.rating,
                             reviewCount: s.review_count,
                             city: s.cities?.name,
