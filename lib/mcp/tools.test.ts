@@ -1630,9 +1630,12 @@ it('includes strict filter guardrails and payload field guidance in openAITools 
     expect(motoProps.brand.description).toMatch(/leave unset/i);
     expect(motoProps.category.description).toMatch(/only when.*explicitly/i);
     expect(motoProps.category.description).toMatch(/never infer/i);
+    expect(motoProps.category.description).toContain('Semi-automatic');
+    expect(motoProps.category.description).toContain('list_categories');
+    expect(motoProps.category.description).not.toMatch(/\bManual\b/i);
     expect(motoProps.shop.description).toMatch(/never put motorcycle brand or model names into shop/i);
     expect(motoProps.query.description).toContain('Detech Win');
-    expect(motoProps.query.description).toContain('engineCapacityCc');
+    expect(motoProps.query.description).not.toContain('engineCapacityCc');
 
     const shopsFn = getToolFunctionSchema('list_shops');
 

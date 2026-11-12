@@ -56,7 +56,7 @@ export const openAITools: ChatCompletionTool[] = [
                     category: {
                         type: 'string',
                         description:
-                            'Vehicle category name (e.g., Scooter, Manual, Semi-Automatic, Sport, Adventure, Cruiser). Set ONLY when the user explicitly requests a vehicle category; never infer category from model names or general phrases like "motorcycles".',
+                            'Vehicle category name (e.g., Scooter, Semi-automatic, Sport, Adventure, Cruiser — call list_categories if unsure of the exact category name). Set ONLY when the user explicitly requests a vehicle category; never infer category from model names or general phrases like "motorcycles".',
                     },
                     country: { type: 'string', description: 'Country name or ISO code (e.g., Thailand, Vietnam, Italy, IT)' },
                     city: { type: 'string', description: 'City name (e.g., Bangkok, Chiang Mai, Rome)' },
@@ -69,7 +69,7 @@ export const openAITools: ChatCompletionTool[] = [
                     query: {
                         type: 'string',
                         description:
-                            'Motorcycle model or free-text search term (e.g., "Win", "Detech Win", "X-ADV 750", "NVX 155"). Each returned motorcycle includes engineCapacityCc (null when unlisted).',
+                            'Motorcycle model or free-text search term (e.g., "Win", "Detech Win", "X-ADV 750", "NVX 155").',
                     },
                     minPrice: { type: 'number', description: 'Minimum daily rental price (or daily equivalent when durationDays is set)' },
                     maxPrice: { type: 'number', description: 'Maximum daily rental price (or daily equivalent when durationDays is set)' },
