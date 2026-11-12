@@ -10,11 +10,32 @@ const MAX_TRACE_DEPTH = 3;
 const SENSITIVE_KEY_PATTERN =
     /^(?:authorization|cookie|set-cookie|api[-_]?key|openai[-_]?api[-_]?key|access[-_]?secret|access[-_]?token|secret|password|token|x-forwarded-for|x-real-ip|cf-connecting-ip)$/i;
 
+const FILTER_ARG_KEYS = new Set([
+    'city',
+    'country',
+    'countryCode',
+    'province',
+    'location',
+    'shop',
+    'brand',
+    'category',
+    'query',
+    'minPrice',
+    'maxPrice',
+    'currency',
+    'durationDays',
+    'durationUnit',
+    'knownPriceOnly',
+    'minRating',
+    'verified',
+]);
+
 export interface ChatToolExecutionTrace {
     event: 'chat.tool_execution';
     requestId: string;
     tool: string;
     args: Record<string, unknown>;
+    resolvedFilters: Record<string, unknown>;
     unresolvedFilters: unknown[];
     total: number | null;
     returnedCount: number;
@@ -33,6 +54,7 @@ export interface ChatTurnCompletedTrace {
     finishReason: string | null;
     responseLength: number;
     wasTruncated: boolean;
+    hasError: boolean;
     durationMs: number;
 }
 
@@ -43,13 +65,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export function generateChatRequestId(): string {
-    if (typeof globalThis.crypto?.randomUUID === 'function') {
-        return globalThis.crypto.randomUUID();
-    }
-    if (typeof randomUUID === 'function') {
-        return randomUUID();
-    }
-    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+    return randomUUID();
 }
 
 function sanitizeTraceValue(value: unknown, depth = 0): unknown {
@@ -107,32 +123,103 @@ export function buildPromptPreview(prompt: string): string {
         : trimmed;
 }
 
+function extractItemIdentifier(item: unknown): string | null {
+    if (!isRecord(item)) {
+        return null;
+    }
+    if (typeof item.id === 'string' && item.id.trim().length > 0) {
+        return item.id;
+    }
+    if (typeof item.id === 'number' && Number.isFinite(item.id)) {
+        return String(item.id);
+    }
+    if (typeof item.code === 'string' && item.code.trim().length > 0) {
+        return item.code;
+    }
+    return null;
+}
+
 function extractIdsFromItems(items: unknown[]): string[] {
     const ids: string[] = [];
     for (const item of items) {
         if (ids.length >= MAX_TRACE_RETURNED_IDS) {
             break;
         }
-        if (!isRecord(item)) {
-            continue;
-        }
-        if (typeof item.id === 'string' && item.id.trim().length > 0) {
-            ids.push(item.id);
-        } else if (typeof item.id === 'number' && Number.isFinite(item.id)) {
-            ids.push(String(item.id));
+        const identifier = extractItemIdentifier(item);
+        if (identifier !== null) {
+            ids.push(identifier);
         }
     }
     return ids;
+}
+
+function extractCountAndIdsFromListPayload(
+    payload: Record<string, unknown>,
+    items: unknown[]
+): { returnedCount: number; returnedIds: string[] } {
+    const returnedCount =
+        typeof payload.count === 'number' && Number.isFinite(payload.count)
+            ? payload.count
+            : items.length;
+    return {
+        returnedCount,
+        returnedIds: extractIdsFromItems(items),
+    };
+}
+
+function collectUnresolvedFilterNames(unresolvedFilters: unknown[]): Set<string> {
+    const names = new Set<string>();
+    for (const entry of unresolvedFilters) {
+        if (typeof entry === 'string' && entry.trim().length > 0) {
+            names.add(entry.trim());
+        } else if (
+            isRecord(entry) &&
+            typeof entry.filter === 'string' &&
+            entry.filter.trim().length > 0
+        ) {
+            names.add(entry.filter.trim());
+        }
+    }
+    return names;
+}
+
+function deriveResolvedFilters(
+    payload: unknown,
+    sanitizedArgs: Record<string, unknown>,
+    unresolvedFilters: unknown[],
+    hasError: boolean
+): Record<string, unknown> {
+    if (hasError) {
+        return {};
+    }
+    if (isRecord(payload) && isRecord(payload.resolvedFilters)) {
+        return sanitizeTraceArgs(payload.resolvedFilters);
+    }
+    const failedKeys = collectUnresolvedFilterNames(unresolvedFilters);
+    const resolved: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(sanitizedArgs)) {
+        if (
+            value !== null &&
+            value !== undefined &&
+            FILTER_ARG_KEYS.has(key) &&
+            !failedKeys.has(key)
+        ) {
+            resolved[key] = value;
+        }
+    }
+    return resolved;
 }
 
 export function buildToolExecutionTrace(params: {
     requestId: string;
     tool: string;
     args: unknown;
+    sanitizedArgs?: Record<string, unknown>;
     result: unknown;
     durationMs: number;
 }): ChatToolExecutionTrace {
     const { requestId, tool, args, result, durationMs } = params;
+    const sanitizedArgs = params.sanitizedArgs ?? sanitizeTraceArgs(args);
 
     let hasError = false;
     let payload: unknown = result;
@@ -154,6 +241,13 @@ export function buildToolExecutionTrace(params: {
             ? (sanitizeTraceValue(payload.unresolvedFilters, 0) as unknown[])
             : [];
 
+    const resolvedFilters = deriveResolvedFilters(
+        payload,
+        sanitizedArgs,
+        unresolvedFilters,
+        hasError
+    );
+
     const total =
         isRecord(payload) &&
         typeof payload.total === 'number' &&
@@ -165,28 +259,40 @@ export function buildToolExecutionTrace(params: {
     let returnedIds: string[] = [];
 
     if (!hasError && payload !== null && payload !== undefined) {
-        if (isRecord(payload) && Array.isArray(payload.motorcycles)) {
-            returnedCount =
-                typeof payload.count === 'number' && Number.isFinite(payload.count)
-                    ? payload.count
-                    : payload.motorcycles.length;
-            returnedIds = extractIdsFromItems(payload.motorcycles);
-        } else if (isRecord(payload) && Array.isArray(payload.shops)) {
-            returnedCount =
-                typeof payload.count === 'number' && Number.isFinite(payload.count)
-                    ? payload.count
-                    : payload.shops.length;
-            returnedIds = extractIdsFromItems(payload.shops);
-        } else if (Array.isArray(payload)) {
+        if (Array.isArray(payload)) {
             returnedCount = payload.length;
             returnedIds = extractIdsFromItems(payload);
-        } else if (
-            isRecord(payload) &&
-            ((typeof payload.id === 'string' && payload.id.trim().length > 0) ||
-                (typeof payload.id === 'number' && Number.isFinite(payload.id)))
-        ) {
-            returnedCount = 1;
-            returnedIds = [String(payload.id)];
+        } else if (isRecord(payload)) {
+            const listItems = Array.isArray(payload.motorcycles)
+                ? payload.motorcycles
+                : Array.isArray(payload.shops)
+                  ? payload.shops
+                  : null;
+
+            if (listItems !== null) {
+                ({ returnedCount, returnedIds } = extractCountAndIdsFromListPayload(
+                    payload,
+                    listItems
+                ));
+            } else if (
+                Array.isArray(payload.cities) ||
+                Array.isArray(payload.provinces) ||
+                Array.isArray(payload.countries)
+            ) {
+                const combinedLocations = [
+                    ...(Array.isArray(payload.cities) ? payload.cities : []),
+                    ...(Array.isArray(payload.provinces) ? payload.provinces : []),
+                    ...(Array.isArray(payload.countries) ? payload.countries : []),
+                ];
+                returnedCount = combinedLocations.length;
+                returnedIds = extractIdsFromItems(combinedLocations);
+            } else {
+                const singleId = extractItemIdentifier(payload);
+                if (singleId !== null) {
+                    returnedCount = 1;
+                    returnedIds = [singleId];
+                }
+            }
         }
     }
 
@@ -194,7 +300,8 @@ export function buildToolExecutionTrace(params: {
         event: 'chat.tool_execution',
         requestId,
         tool,
-        args: sanitizeTraceArgs(args),
+        args: sanitizedArgs,
+        resolvedFilters,
         unresolvedFilters,
         total,
         returnedCount,
@@ -211,6 +318,7 @@ export function buildTurnCompletedTrace(params: {
     toolNames: string[];
     finishReason: string | null | undefined;
     response: string | null | undefined;
+    hasError?: boolean;
     durationMs: number;
 }): ChatTurnCompletedTrace {
     const finishReason = params.finishReason ?? null;
@@ -224,6 +332,7 @@ export function buildTurnCompletedTrace(params: {
         finishReason,
         responseLength: typeof params.response === 'string' ? params.response.length : 0,
         wasTruncated: finishReason === 'length',
+        hasError: Boolean(params.hasError),
         durationMs: Math.max(0, Math.round(params.durationMs)),
     };
 }

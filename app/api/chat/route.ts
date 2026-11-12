@@ -26,6 +26,12 @@ import {
 import { getRateLimitHeaders, rateLimit } from '@/lib/api/rate-limit';
 import { timingSafeEqual } from 'node:crypto';
 
+interface ExecutedToolCallSummary {
+    name: string;
+    args: string;
+    result: string;
+}
+
 // Lazy initialization to avoid build-time failure
 let openaiClient: OpenAI | null = null;
 function getOpenAI(): OpenAI {
@@ -51,6 +57,45 @@ function createChatCompletion(
     });
 }
 
+function respondWithCompletedTurn(params: {
+    requestId: string;
+    prompt: string;
+    messageCount: number;
+    toolCalls: ExecutedToolCallSummary[];
+    finishReason: string | null | undefined;
+    response: string | null | undefined;
+    turnStartedAt: number;
+}) {
+    const {
+        requestId,
+        prompt,
+        messageCount,
+        toolCalls,
+        finishReason,
+        response,
+        turnStartedAt,
+    } = params;
+
+    emitChatTrace(
+        buildTurnCompletedTrace({
+            requestId,
+            prompt,
+            messageCount,
+            toolNames: toolCalls.map(tc => tc.name),
+            finishReason,
+            response,
+            hasError: false,
+            durationMs: Date.now() - turnStartedAt,
+        })
+    );
+
+    return NextResponse.json({
+        response,
+        toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+        requestId,
+    });
+}
+
 export async function POST(request: NextRequest) {
     const accessSecret = process.env.AI_CHAT_ACCESS_SECRET;
     // An absent or blank access secret makes chat public. The provider key stays required.
@@ -66,6 +111,12 @@ export async function POST(request: NextRequest) {
             );
         }
     }
+
+    const requestId = generateChatRequestId();
+    const turnStartedAt = Date.now();
+    let promptForTrace = '';
+    let messageCount = 0;
+    const toolCalls: ExecutedToolCallSummary[] = [];
 
     try {
         const { message, conversationHistory = [] } = await request.json();
@@ -110,26 +161,19 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const requestId = generateChatRequestId();
-        const turnStartedAt = Date.now();
+        promptForTrace = message;
         const sanitizedHistory = sanitizeConversationHistory(conversationHistory);
-        const messageCount = sanitizedHistory.length + 1;
+        messageCount = sanitizedHistory.length + 1;
 
         if (isRepetitionOrPaddingPrompt(message)) {
-            emitChatTrace(
-                buildTurnCompletedTrace({
-                    requestId,
-                    prompt: message,
-                    messageCount,
-                    toolNames: [],
-                    finishReason: 'redirect',
-                    response: CHAT_REDIRECT_MESSAGE,
-                    durationMs: Date.now() - turnStartedAt,
-                })
-            );
-            return NextResponse.json({
-                response: CHAT_REDIRECT_MESSAGE,
+            return respondWithCompletedTurn({
                 requestId,
+                prompt: message,
+                messageCount,
+                toolCalls,
+                finishReason: 'redirect',
+                response: CHAT_REDIRECT_MESSAGE,
+                turnStartedAt,
             });
         }
 
@@ -144,7 +188,6 @@ export async function POST(request: NextRequest) {
         let response = await createChatCompletion(messages, 'auto');
 
         let assistantMessage = response.choices[0].message;
-        const toolCalls: { name: string; args: string; result: string }[] = [];
         let toolIterations = 0;
 
         // Handle tool calls (loop for multi-step reasoning, bounded by iteration & call limits)
@@ -174,10 +217,11 @@ export async function POST(request: NextRequest) {
             for (const toolCall of allowedToolCalls) {
                 const toolName = toolCall.function.name;
                 const args = JSON.parse(toolCall.function.arguments);
+                const sanitizedArgs = sanitizeTraceArgs(args);
 
-                console.log('Executing tool:', toolCall.function.name, {
+                console.log('Executing tool:', toolName, {
                     question: message,
-                    args: sanitizeTraceArgs(args),
+                    args: sanitizedArgs,
                 });
 
                 // Execute the tool (calls services directly)
@@ -189,6 +233,7 @@ export async function POST(request: NextRequest) {
                         requestId,
                         tool: toolName,
                         args,
+                        sanitizedArgs,
                         result,
                         durationMs: toolDurationMs,
                     })
@@ -228,23 +273,29 @@ export async function POST(request: NextRequest) {
             assistantMessage.content,
             finishReason
         );
+        return respondWithCompletedTurn({
+            requestId,
+            prompt: message,
+            messageCount,
+            toolCalls,
+            finishReason,
+            response: finalResponse,
+            turnStartedAt,
+        });
+    } catch (error) {
         emitChatTrace(
             buildTurnCompletedTrace({
                 requestId,
-                prompt: message,
+                prompt: promptForTrace,
                 messageCount,
                 toolNames: toolCalls.map(tc => tc.name),
-                finishReason,
-                response: finalResponse,
+                finishReason: 'error',
+                response: null,
+                hasError: true,
                 durationMs: Date.now() - turnStartedAt,
             })
         );
-        return NextResponse.json({
-            response: finalResponse,
-            toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
-            requestId,
-        });
-    } catch (error) {
+
         if (error instanceof OpenAI.APIError) {
             // Keep provider headers, cookies, and credentials out of runtime logs.
             console.error('Chat AI service error:', { status: error.status, code: error.code, type: error.type });
