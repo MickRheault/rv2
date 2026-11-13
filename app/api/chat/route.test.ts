@@ -43,6 +43,7 @@ function request(
 beforeEach(() => {
     resetRateLimits?.();
     process.env.AI_CHAT_ACCESS_SECRET = configuredSecret;
+    jest.spyOn(console, 'info').mockImplementation(() => {});
     mockCreateCompletion.mockResolvedValue({
         choices: [{ message: { role: 'assistant', content: 'Here are some scooters.' } }],
     });
@@ -58,7 +59,10 @@ it.each([undefined, '', '   '])('allows public chat without credentials when the
     else process.env.AI_CHAT_ACCESS_SECRET = value;
     const response = await POST(request());
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ response: 'Here are some scooters.' });
+    expect(await response.json()).toEqual({
+        response: 'Here are some scooters.',
+        requestId: expect.any(String),
+    });
     expect(mockCreateCompletion).toHaveBeenCalledTimes(1);
 });
 
@@ -116,6 +120,7 @@ it('preserves tool execution in public mode', async () => {
         expect(await response.json()).toEqual({
             response: 'Here are some scooters.',
             toolCalls: [{ name: 'search_motorcycles', args: '{"city":"Bangkok"}', result: 'No motorcycles found.' }],
+            requestId: expect.any(String),
         });
     } finally {
         log.mockRestore();
@@ -138,7 +143,10 @@ it.each([undefined, 'Bearer wrong-code', `Basic ${configuredSecret}`, `Bearer ${
 it('preserves the OpenAI chat response for the correct access code', async () => {
     const response = await POST(request(`Bearer ${configuredSecret}`));
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ response: 'Here are some scooters.' });
+    expect(await response.json()).toEqual({
+        response: 'Here are some scooters.',
+        requestId: expect.any(String),
+    });
     expect(mockCreateCompletion).toHaveBeenCalledTimes(1);
 });
 
@@ -325,6 +333,7 @@ it.each([
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
         response: 'I can only help with motorcycle rentals, riding tips, and Global Moto Rentals services. How can I help you find a bike today?',
+        requestId: expect.any(String),
     });
     expect(mockCreateCompletion).not.toHaveBeenCalled();
     expect(executeTool).not.toHaveBeenCalled();
@@ -612,7 +621,617 @@ it.each([null, ''])('preserves non-length empty completion content (%s) as-is wi
 
     const response = await POST(request(`Bearer ${configuredSecret}`, 'Find scooters in Bangkok'));
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ response: emptyContent });
+    expect(await response.json()).toEqual({
+        response: emptyContent,
+        requestId: expect.any(String),
+    });
 });
+
+it('invokes chat.completions.create with temperature: 0 on both initial and post-tool turns', async () => {
+    jest.mocked(executeTool).mockResolvedValueOnce({
+        success: true,
+        data: { total: 1, motorcycles: [{ id: 'moto-1', model: 'Win' }] },
+    });
+    jest.mocked(formatToolResultForLLM).mockReturnValueOnce('{"total":1,"motorcycles":[{"id":"moto-1","model":"Win"}]}');
+    mockCreateCompletion
+        .mockResolvedValueOnce({
+            choices: [{
+                finish_reason: 'tool_calls',
+                message: {
+                    role: 'assistant',
+                    content: null,
+                    tool_calls: [{
+                        id: 'call-win-1',
+                        type: 'function',
+                        function: {
+                            name: 'list_motorcycles',
+                            arguments: '{"city":"Hanoi","query":"Win"}',
+                        },
+                    }],
+                },
+            }],
+        })
+        .mockResolvedValueOnce({
+            choices: [{
+                finish_reason: 'stop',
+                message: {
+                    role: 'assistant',
+                    content: 'Found 1 Win motorcycle in Hanoi.',
+                },
+            }],
+        });
+
+    const log = jest.spyOn(console, 'log').mockImplementation(() => {});
+    try {
+        const response = await POST(request(`Bearer ${configuredSecret}`, 'Find Win motorcycles in Hanoi'));
+        expect(response.status).toBe(200);
+        expect(mockCreateCompletion).toHaveBeenCalledTimes(2);
+        for (const [callArg] of mockCreateCompletion.mock.calls) {
+            expect(callArg.temperature).toBe(0);
+        }
+    } finally {
+        log.mockRestore();
+    }
+});
+
+it('instructs SYSTEM_PROMPT to report published address, phone, and engineCapacityCc accurately and identify null fields as unlisted without guessing', () => {
+    expect(SYSTEM_PROMPT).toContain('address');
+    expect(SYSTEM_PROMPT).toContain('phone');
+    expect(SYSTEM_PROMPT).toContain('engineCapacityCc');
+    expect(SYSTEM_PROMPT).toMatch(/\bnull\b/);
+    expect(SYSTEM_PROMPT).toMatch(/not listed|not published|unlisted/i);
+    expect(SYSTEM_PROMPT).toMatch(/never guess|rather than guessing|do not guess/i);
+});
+
+it('instructs SYSTEM_PROMPT to frame zero-match searches non-definitively rather than claiming a shop does not carry or stock a motorcycle', () => {
+    expect(SYSTEM_PROMPT).toMatch(/total:\s*0|zero[- ]match/i);
+    expect(SYSTEM_PROMPT).toMatch(/no matching \*\*?Catalog Listings\*\*? were found/i);
+    expect(SYSTEM_PROMPT).toMatch(/does not carry|does not stock|carry or stock/i);
+    expect(SYSTEM_PROMPT).toMatch(/searched criteria|search criteria/i);
+    expect(SYSTEM_PROMPT).toMatch(/shop or catalog links/i);
+    // Tool parameter schema guardrails belong to openAITools (#233), not SYSTEM_PROMPT (#234)
+    expect(SYSTEM_PROMPT).not.toMatch(/unstated `brand` or `category`/i);
+});
+
+it('returns a UUID requestId and emits correlated structured JSON trace logs for tool executions and turn completion', async () => {
+    const thirtyMotorcycles = Array.from({ length: 30 }, (_, idx) => ({
+        id: `moto-${idx + 1}`,
+        model: `Win ${idx + 1}`,
+    }));
+
+    jest.mocked(executeTool)
+        .mockResolvedValueOnce({
+            success: true,
+            data: {
+                total: 0,
+                motorcycles: [],
+                unresolvedFilters: [{ filter: 'shop', value: 'Unknown Shop' }],
+            },
+        })
+        .mockResolvedValueOnce({
+            success: true,
+            data: {
+                total: 42,
+                count: 30,
+                motorcycles: thirtyMotorcycles,
+            },
+        })
+        .mockResolvedValueOnce({
+            success: true,
+            data: {
+                total: 2,
+                shops: [{ id: 'shop-1' }, { id: 'shop-2' }],
+            },
+        })
+        .mockResolvedValueOnce({
+            success: true,
+            data: {
+                id: 'shop-detail-1',
+                name: 'Mr-Good Bikes',
+            },
+        })
+        .mockResolvedValueOnce({
+            success: false,
+            error: 'Motorcycle not found',
+        });
+
+    jest.mocked(formatToolResultForLLM).mockImplementation(res => JSON.stringify(res));
+
+    mockCreateCompletion
+        .mockResolvedValueOnce({
+            choices: [{
+                finish_reason: 'tool_calls',
+                message: {
+                    role: 'assistant',
+                    content: null,
+                    tool_calls: [
+                        {
+                            id: 'tc-1',
+                            type: 'function',
+                            function: {
+                                name: 'list_motorcycles',
+                                arguments: '{"city":"Hanoi","shop":"Unknown Shop"}',
+                            },
+                        },
+                        {
+                            id: 'tc-2',
+                            type: 'function',
+                            function: {
+                                name: 'list_motorcycles',
+                                arguments: '{"city":"  Hanoi  ","query":"Win","brand":"   ","unsupported":"ignored"}',
+                            },
+                        },
+                    ],
+                },
+            }],
+        })
+        .mockResolvedValueOnce({
+            choices: [{
+                finish_reason: 'tool_calls',
+                message: {
+                    role: 'assistant',
+                    content: null,
+                    tool_calls: [
+                        {
+                            id: 'tc-3',
+                            type: 'function',
+                            function: {
+                                name: 'list_shops',
+                                arguments: '{"city":"Hanoi"}',
+                            },
+                        },
+                        {
+                            id: 'tc-4',
+                            type: 'function',
+                            function: {
+                                name: 'get_shop',
+                                arguments: '{"id":"shop-detail-1"}',
+                            },
+                        },
+                        {
+                            id: 'tc-5',
+                            type: 'function',
+                            function: {
+                                name: 'get_motorcycle',
+                                arguments: '{"id":"missing-moto"}',
+                            },
+                        },
+                    ],
+                },
+            }],
+        })
+        .mockResolvedValueOnce({
+            choices: [{
+                finish_reason: 'stop',
+                message: {
+                    role: 'assistant',
+                    content: 'Found Win listings and shop details in Hanoi.',
+                },
+            }],
+        });
+
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    const infoSpy = jest.spyOn(console, 'info').mockImplementation(() => {});
+    try {
+        const longPrompt = 'Find Detech Win motorcycles and shop details in Hanoi — ' + 'p'.repeat(220);
+        const res = await POST(
+            request(`Bearer ${configuredSecret}`, longPrompt, {
+                conversationHistory: [
+                    { role: 'user', content: 'Hi' },
+                    { role: 'assistant', content: 'Hello! How can I help?' },
+                ],
+            })
+        );
+        expect(res.status).toBe(200);
+        const body = await res.json();
+
+        expect(body.requestId).toMatch(
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+        );
+        expect(body.response).toBe('Found Win listings and shop details in Hanoi.');
+        expect(body.toolCalls).toHaveLength(5);
+
+        const parsedEvents = infoSpy.mock.calls.map(call => {
+            expect(call).toHaveLength(1);
+            expect(typeof call[0]).toBe('string');
+            return JSON.parse(call[0] as string);
+        });
+
+        // 5 tool execution traces + 1 turn completed trace
+        expect(parsedEvents).toHaveLength(6);
+
+        const toolEvents = parsedEvents.slice(0, 5);
+        const completionEvent = parsedEvents[5];
+
+        expect(toolEvents[0]).toEqual({
+            event: 'chat.tool_execution',
+            requestId: body.requestId,
+            tool: 'list_motorcycles',
+            args: { city: 'Hanoi', shop: 'Unknown Shop' },
+            appliedFilters: {},
+            unresolvedFilters: [{ filter: 'shop', value: 'Unknown Shop' }],
+            total: 0,
+            returnedCount: 0,
+            returnedIds: [],
+            hasError: false,
+            durationMs: expect.any(Number),
+        });
+
+        expect(toolEvents[1]).toEqual({
+            event: 'chat.tool_execution',
+            requestId: body.requestId,
+            tool: 'list_motorcycles',
+            args: { city: '  Hanoi  ', query: 'Win', brand: '   ', unsupported: 'ignored' },
+            appliedFilters: { city: 'Hanoi', query: 'Win' },
+            unresolvedFilters: [],
+            total: 42,
+            returnedCount: 30,
+            returnedIds: thirtyMotorcycles.slice(0, 25).map(m => m.id),
+            hasError: false,
+            durationMs: expect.any(Number),
+        });
+        expect(toolEvents[1].returnedIds).toHaveLength(25);
+
+        expect(toolEvents[2]).toEqual({
+            event: 'chat.tool_execution',
+            requestId: body.requestId,
+            tool: 'list_shops',
+            args: { city: 'Hanoi' },
+            appliedFilters: { city: 'Hanoi' },
+            unresolvedFilters: [],
+            total: 2,
+            returnedCount: 2,
+            returnedIds: ['shop-1', 'shop-2'],
+            hasError: false,
+            durationMs: expect.any(Number),
+        });
+
+        expect(toolEvents[3]).toEqual({
+            event: 'chat.tool_execution',
+            requestId: body.requestId,
+            tool: 'get_shop',
+            args: { id: 'shop-detail-1' },
+            appliedFilters: {},
+            unresolvedFilters: [],
+            total: null,
+            returnedCount: 1,
+            returnedIds: ['shop-detail-1'],
+            hasError: false,
+            durationMs: expect.any(Number),
+        });
+
+        expect(toolEvents[4]).toEqual({
+            event: 'chat.tool_execution',
+            requestId: body.requestId,
+            tool: 'get_motorcycle',
+            args: { id: 'missing-moto' },
+            appliedFilters: {},
+            unresolvedFilters: [],
+            total: null,
+            returnedCount: 0,
+            returnedIds: [],
+            hasError: true,
+            durationMs: expect.any(Number),
+        });
+
+        expect(completionEvent).toEqual({
+            event: 'chat.turn_completed',
+            requestId: body.requestId,
+            promptPreview: longPrompt.slice(0, 200),
+            messageCount: 3,
+            toolCallCount: 5,
+            toolNames: [
+                'list_motorcycles',
+                'list_motorcycles',
+                'list_shops',
+                'get_shop',
+                'get_motorcycle',
+            ],
+            finishReason: 'stop',
+            responseLength: 'Found Win listings and shop details in Hanoi.'.length,
+            wasTruncated: false,
+            hasError: false,
+            durationMs: expect.any(Number),
+        });
+        expect(completionEvent.promptPreview.length).toBeLessThanOrEqual(200);
+    } finally {
+        logSpy.mockRestore();
+    }
+});
+
+it('marks wasTruncated: true in chat.turn_completed when finish_reason is length', async () => {
+    const infoSpy = jest.spyOn(console, 'info').mockImplementation(() => {});
+    mockCreateCompletion.mockResolvedValueOnce({
+        choices: [{
+            finish_reason: 'length',
+            message: {
+                role: 'assistant',
+                content: '1. **[Honda ADV 160](/motorcycle/111)** - ฿600/day.\n2. **[Yamaha NMAX',
+            },
+        }],
+    });
+
+    const res = await POST(request(`Bearer ${configuredSecret}`, 'Show scooters in Chiang Mai'));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+
+    const parsedEvents = infoSpy.mock.calls.map(call => JSON.parse(call[0] as string));
+    expect(parsedEvents).toEqual([
+        {
+            event: 'chat.turn_completed',
+            requestId: body.requestId,
+            promptPreview: 'Show scooters in Chiang Mai',
+            messageCount: 1,
+            toolCallCount: 0,
+            toolNames: [],
+            finishReason: 'length',
+            responseLength: body.response.length,
+            wasTruncated: true,
+            hasError: false,
+            durationMs: expect.any(Number),
+        },
+    ]);
+});
+
+it('extracts counts and id/code identifiers for search_locations and list_locations country payloads', async () => {
+    jest.mocked(executeTool)
+        .mockResolvedValueOnce({
+            success: true,
+            data: {
+                cities: [{ id: 'city-hanoi', name: 'Hanoi' }],
+                provinces: [{ id: 'prov-hn', name: 'Ha Noi' }],
+                countries: [{ code: 'VN', name: 'Vietnam' }],
+            },
+        })
+        .mockResolvedValueOnce({
+            success: true,
+            data: [
+                { code: 'TH', name: 'Thailand' },
+                { code: 'VN', name: 'Vietnam' },
+            ],
+        });
+    jest.mocked(formatToolResultForLLM).mockImplementation(res => JSON.stringify(res));
+
+    mockCreateCompletion
+        .mockResolvedValueOnce({
+            choices: [{
+                finish_reason: 'tool_calls',
+                message: {
+                    role: 'assistant',
+                    content: null,
+                    tool_calls: [
+                        {
+                            id: 'loc-1',
+                            type: 'function',
+                            function: {
+                                name: 'search_locations',
+                                arguments: '{"query":"Vietnam"}',
+                            },
+                        },
+                        {
+                            id: 'loc-2',
+                            type: 'function',
+                            function: {
+                                name: 'list_locations',
+                                arguments: '{"type":"countries"}',
+                            },
+                        },
+                    ],
+                },
+            }],
+        })
+        .mockResolvedValueOnce({
+            choices: [{
+                finish_reason: 'stop',
+                message: {
+                    role: 'assistant',
+                    content: 'Rentals are available in Vietnam and Thailand.',
+                },
+            }],
+        });
+
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    const infoSpy = jest.spyOn(console, 'info').mockImplementation(() => {});
+    try {
+        const res = await POST(request(`Bearer ${configuredSecret}`, 'Where in Vietnam can I rent?'));
+        expect(res.status).toBe(200);
+        const body = await res.json();
+
+        const parsedEvents = infoSpy.mock.calls.map(call => JSON.parse(call[0] as string));
+        expect(parsedEvents).toHaveLength(3);
+
+        expect(parsedEvents[0]).toEqual({
+            event: 'chat.tool_execution',
+            requestId: body.requestId,
+            tool: 'search_locations',
+            args: { query: 'Vietnam' },
+            appliedFilters: { query: 'Vietnam' },
+            unresolvedFilters: [],
+            total: null,
+            returnedCount: 3,
+            returnedIds: ['city-hanoi', 'prov-hn', 'VN'],
+            hasError: false,
+            durationMs: expect.any(Number),
+        });
+
+        expect(parsedEvents[1]).toEqual({
+            event: 'chat.tool_execution',
+            requestId: body.requestId,
+            tool: 'list_locations',
+            args: { type: 'countries' },
+            appliedFilters: { type: 'countries' },
+            unresolvedFilters: [],
+            total: null,
+            returnedCount: 2,
+            returnedIds: ['TH', 'VN'],
+            hasError: false,
+            durationMs: expect.any(Number),
+        });
+    } finally {
+        logSpy.mockRestore();
+    }
+});
+
+it('emits a correlated chat.turn_completed error trace when a post-tool OpenAI synthesis call fails', async () => {
+    jest.mocked(executeTool).mockResolvedValueOnce({
+        success: true,
+        data: {
+            total: 1,
+            motorcycles: [{ id: 'moto-win-1', model: 'Win 110' }],
+        },
+    });
+    jest.mocked(formatToolResultForLLM).mockReturnValueOnce('{"total":1}');
+
+    const apiError = Object.assign(
+        new OpenAI.APIError(503, undefined, 'Upstream failure', undefined),
+        { code: 'server_error', type: 'server_error' }
+    );
+    mockCreateCompletion
+        .mockResolvedValueOnce({
+            choices: [{
+                finish_reason: 'tool_calls',
+                message: {
+                    role: 'assistant',
+                    content: null,
+                    tool_calls: [{
+                        id: 'tc-err-1',
+                        type: 'function',
+                        function: {
+                            name: 'list_motorcycles',
+                            arguments: '{"city":"Hanoi","query":"Win"}',
+                        },
+                    }],
+                },
+            }],
+        })
+        .mockRejectedValueOnce(apiError);
+
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const infoSpy = jest.spyOn(console, 'info').mockImplementation(() => {});
+    try {
+        const res = await POST(
+            request(
+                `Bearer ${configuredSecret}`,
+                'Find Win bikes in Hanoi',
+                {},
+                { 'x-forwarded-for': '203.0.113.77' }
+            )
+        );
+        expect(res.status).toBe(503);
+
+        const parsedEvents = infoSpy.mock.calls.map(call => JSON.parse(call[0] as string));
+        expect(parsedEvents).toHaveLength(2);
+        const [toolTrace, errorTurnTrace] = parsedEvents;
+
+        expect(toolTrace.event).toBe('chat.tool_execution');
+        expect(toolTrace.requestId).toMatch(
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+        );
+        expect(errorTurnTrace).toEqual({
+            event: 'chat.turn_completed',
+            requestId: toolTrace.requestId,
+            promptPreview: 'Find Win bikes in Hanoi',
+            messageCount: 1,
+            toolCallCount: 1,
+            toolNames: ['list_motorcycles'],
+            finishReason: 'error',
+            responseLength: 0,
+            wasTruncated: false,
+            hasError: true,
+            durationMs: expect.any(Number),
+        });
+
+        for (const call of infoSpy.mock.calls) {
+            const raw = String(call[0]);
+            expect(raw).not.toContain(configuredSecret);
+            expect(raw).not.toContain('203.0.113.77');
+        }
+    } finally {
+        logSpy.mockRestore();
+        errSpy.mockRestore();
+    }
+});
+
+it('never logs Authorization headers, cookies, client IP addresses, or API keys in structured trace payloads', async () => {
+    const sensitiveToken = 'secret-token-123';
+    const sensitiveCookie = 'session=cookie-secret-456';
+    const clientIp = '203.0.113.9';
+    const originalOpenAiKey = process.env.OPENAI_API_KEY;
+    process.env.AI_CHAT_ACCESS_SECRET = sensitiveToken;
+    process.env.OPENAI_API_KEY = 'sk-test-secret-openai-key-999';
+
+    jest.mocked(executeTool).mockResolvedValueOnce({
+        success: true,
+        data: {
+            total: 1,
+            motorcycles: [{ id: 'moto-safe-1', model: 'PCX 160' }],
+        },
+    });
+    jest.mocked(formatToolResultForLLM).mockReturnValueOnce('{"total":1}');
+    mockCreateCompletion
+        .mockResolvedValueOnce({
+            choices: [{
+                finish_reason: 'tool_calls',
+                message: {
+                    role: 'assistant',
+                    content: null,
+                    tool_calls: [{
+                        id: 'call-sec-1',
+                        type: 'function',
+                        function: {
+                            name: 'list_motorcycles',
+                            arguments: JSON.stringify({
+                                city: 'Bangkok',
+                                authorization: `Bearer ${sensitiveToken}`,
+                                apiKey: 'sk-test-secret-openai-key-999',
+                            }),
+                        },
+                    }],
+                },
+            }],
+        })
+        .mockResolvedValueOnce({
+            choices: [{
+                finish_reason: 'stop',
+                message: {
+                    role: 'assistant',
+                    content: 'Found 1 PCX 160 in Bangkok.',
+                },
+            }],
+        });
+
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    const infoSpy = jest.spyOn(console, 'info').mockImplementation(() => {});
+    try {
+        const res = await POST(
+            request(
+                `Bearer ${sensitiveToken}`,
+                'Find PCX 160 in Bangkok',
+                {},
+                {
+                    Cookie: sensitiveCookie,
+                    'x-forwarded-for': clientIp,
+                }
+            )
+        );
+        expect(res.status).toBe(200);
+        expect(infoSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
+
+        for (const call of infoSpy.mock.calls) {
+            const rawJson = String(call[0]);
+            expect(() => JSON.parse(rawJson)).not.toThrow();
+            expect(rawJson).not.toContain(sensitiveToken);
+            expect(rawJson).not.toContain('cookie-secret-456');
+            expect(rawJson).not.toContain(clientIp);
+            expect(rawJson).not.toContain('sk-test-secret-openai-key-999');
+        }
+    } finally {
+        logSpy.mockRestore();
+        if (originalOpenAiKey === undefined) delete process.env.OPENAI_API_KEY;
+        else process.env.OPENAI_API_KEY = originalOpenAiKey;
+    }
+});
+
 
 

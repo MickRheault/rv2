@@ -16,8 +16,20 @@ import {
     sanitizeConversationHistory,
 } from '@/lib/chat/prompt';
 import { finalizeAssistantResponse } from '@/lib/chat/response';
+import {
+    buildToolExecutionTrace,
+    buildTurnCompletedTrace,
+    emitChatTrace,
+    sanitizeTraceArgs,
+} from '@/lib/chat/trace';
 import { getRateLimitHeaders, rateLimit } from '@/lib/api/rate-limit';
-import { timingSafeEqual } from 'node:crypto';
+import { randomUUID, timingSafeEqual } from 'node:crypto';
+
+interface ExecutedToolCallSummary {
+    name: string;
+    args: string;
+    result: string;
+}
 
 // Lazy initialization to avoid build-time failure
 let openaiClient: OpenAI | null = null;
@@ -39,7 +51,47 @@ function createChatCompletion(
         messages,
         tools: openAITools,
         tool_choice: toolChoice,
+        temperature: 0,
         max_completion_tokens: MAX_OUTPUT_TOKENS,
+    });
+}
+
+function respondWithCompletedTurn(params: {
+    requestId: string;
+    prompt: string;
+    messageCount: number;
+    toolCalls: ExecutedToolCallSummary[];
+    finishReason: string | null | undefined;
+    response: string | null | undefined;
+    turnStartedAt: number;
+}) {
+    const {
+        requestId,
+        prompt,
+        messageCount,
+        toolCalls,
+        finishReason,
+        response,
+        turnStartedAt,
+    } = params;
+
+    emitChatTrace(
+        buildTurnCompletedTrace({
+            requestId,
+            prompt,
+            messageCount,
+            toolNames: toolCalls.map(tc => tc.name),
+            finishReason,
+            response,
+            hasError: false,
+            durationMs: Date.now() - turnStartedAt,
+        })
+    );
+
+    return NextResponse.json({
+        response,
+        toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+        requestId,
     });
 }
 
@@ -58,6 +110,12 @@ export async function POST(request: NextRequest) {
             );
         }
     }
+
+    const requestId = randomUUID();
+    const turnStartedAt = Date.now();
+    let promptForTrace = '';
+    let messageCount = 0;
+    const toolCalls: ExecutedToolCallSummary[] = [];
 
     try {
         const { message, conversationHistory = [] } = await request.json();
@@ -102,13 +160,21 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        promptForTrace = message;
+        const sanitizedHistory = sanitizeConversationHistory(conversationHistory);
+        messageCount = sanitizedHistory.length + 1;
+
         if (isRepetitionOrPaddingPrompt(message)) {
-            return NextResponse.json({
+            return respondWithCompletedTurn({
+                requestId,
+                prompt: message,
+                messageCount,
+                toolCalls,
+                finishReason: 'redirect',
                 response: CHAT_REDIRECT_MESSAGE,
+                turnStartedAt,
             });
         }
-
-        const sanitizedHistory = sanitizeConversationHistory(conversationHistory);
 
         // Build messages array
         const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
@@ -121,7 +187,6 @@ export async function POST(request: NextRequest) {
         let response = await createChatCompletion(messages, 'auto');
 
         let assistantMessage = response.choices[0].message;
-        const toolCalls: { name: string; args: string; result: string }[] = [];
         let toolIterations = 0;
 
         // Handle tool calls (loop for multi-step reasoning, bounded by iteration & call limits)
@@ -151,14 +216,27 @@ export async function POST(request: NextRequest) {
             for (const toolCall of allowedToolCalls) {
                 const toolName = toolCall.function.name;
                 const args = JSON.parse(toolCall.function.arguments);
+                const sanitizedArgs = sanitizeTraceArgs(args);
 
-                console.log('Executing tool:', toolCall.function.name, {
+                console.log('Executing tool:', toolName, {
                     question: message,
-                    args: args,
+                    args: sanitizedArgs,
                 });
 
                 // Execute the tool (calls services directly)
+                const toolStartedAt = Date.now();
                 const result = await executeTool(toolName, args);
+                const toolDurationMs = Date.now() - toolStartedAt;
+                emitChatTrace(
+                    buildToolExecutionTrace({
+                        requestId,
+                        tool: toolName,
+                        args,
+                        sanitizedArgs,
+                        result,
+                        durationMs: toolDurationMs,
+                    })
+                );
                 const resultString = formatToolResultForLLM(result);
 
                 toolCalls.push({
@@ -189,15 +267,34 @@ export async function POST(request: NextRequest) {
         }
 
         // Return final response
+        const finishReason = response.choices[0]?.finish_reason;
         const finalResponse = finalizeAssistantResponse(
             assistantMessage.content,
-            response.choices[0]?.finish_reason
+            finishReason
         );
-        return NextResponse.json({
+        return respondWithCompletedTurn({
+            requestId,
+            prompt: message,
+            messageCount,
+            toolCalls,
+            finishReason,
             response: finalResponse,
-            toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+            turnStartedAt,
         });
     } catch (error) {
+        emitChatTrace(
+            buildTurnCompletedTrace({
+                requestId,
+                prompt: promptForTrace,
+                messageCount,
+                toolNames: toolCalls.map(tc => tc.name),
+                finishReason: 'error',
+                response: null,
+                hasError: true,
+                durationMs: Date.now() - turnStartedAt,
+            })
+        );
+
         if (error instanceof OpenAI.APIError) {
             // Keep provider headers, cookies, and credentials out of runtime logs.
             console.error('Chat AI service error:', { status: error.status, code: error.code, type: error.type });
