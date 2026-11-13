@@ -39,16 +39,14 @@ export function toSlugKey(value: string): string {
         .replace(/^-+|-+$/g, '');
 }
 
-export function matchesWholeTokenSequence(haystack: string, needle: string): boolean {
-    const hTokens = normalizeLocationKey(haystack).split(' ').filter(Boolean);
-    const nTokens = normalizeLocationKey(needle).split(' ').filter(Boolean);
-    if (hTokens.length === 0 || nTokens.length === 0 || nTokens.length > hTokens.length) {
+export function containsTokenSequence(haystack: string[], needle: string[]): boolean {
+    if (haystack.length === 0 || needle.length === 0 || needle.length > haystack.length) {
         return false;
     }
-    for (let i = 0; i <= hTokens.length - nTokens.length; i++) {
+    for (let i = 0; i <= haystack.length - needle.length; i++) {
         let allMatch = true;
-        for (let j = 0; j < nTokens.length; j++) {
-            if (hTokens[i + j] !== nTokens[j]) {
+        for (let j = 0; j < needle.length; j++) {
+            if (haystack[i + j] !== needle[j]) {
                 allMatch = false;
                 break;
             }
@@ -56,6 +54,12 @@ export function matchesWholeTokenSequence(haystack: string, needle: string): boo
         if (allMatch) return true;
     }
     return false;
+}
+
+export function matchesWholeTokenSequence(haystack: string, needle: string): boolean {
+    const hTokens = normalizeLocationKey(haystack).split(' ').filter(Boolean);
+    const nTokens = normalizeLocationKey(needle).split(' ').filter(Boolean);
+    return containsTokenSequence(hTokens, nTokens);
 }
 
 export function normalizeCountryTargetKey(input: string): string {
@@ -217,55 +221,307 @@ export function doesShopMatchScope(
     return true;
 }
 
+function toLegacyAsciiDroppedSlug(value: string): string {
+    return value
+        .normalize('NFC')
+        .replace(/[^\x00-\x7f]+/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
+function toConsonantTokens(value: string): string[] {
+    return toSlugKey(value)
+        .split('-')
+        .map((token) => token.replace(/[aeiouy]+/g, ''))
+        .filter(Boolean);
+}
+
+/**
+ * Matches a legacy vowel-dropped slug (e.g. "gia-hng-motorbike-rental" or "hng-motorbike-rental")
+ * ONLY when `provider_name` is absent or contains non-ASCII accented characters, and at least one
+ * slug token genuinely lost its vowels compared with the corresponding target token. When
+ * `provider_name` contains accented words whose ASCII-dropped token matches `sTok` (e.g. "Hưng" ->
+ * "hng"), the restored token ("hung") must match `tTok` so homophones like "hoang" never match.
+ */
+function matchesLossyVowelDroppedSlug(
+    slugVal: string,
+    targetSlug: string,
+    providerName?: string | null
+): boolean {
+    if (!slugVal || !targetSlug) return false;
+    const slugTokens = slugVal.split('-').filter(Boolean);
+    const targetTokens = targetSlug.split('-').filter(Boolean);
+    if (slugTokens.length < 2 || slugTokens.length !== targetTokens.length) {
+        return false;
+    }
+    const slugConsonants = toConsonantTokens(slugVal).join('');
+    const targetConsonants = toConsonantTokens(targetSlug).join('');
+    if (slugConsonants.length < 6 || slugConsonants !== targetConsonants) {
+        return false;
+    }
+
+    const legacyToRestored = new Map<string, Set<string>>();
+    if (providerName && providerName.trim().length > 0) {
+        for (const word of providerName.trim().split(/[\s\-_]+/)) {
+            const legacyTok = toLegacyAsciiDroppedSlug(word);
+            const restoredTok = toSlugKey(word);
+            if (legacyTok && restoredTok && legacyTok !== restoredTok) {
+                if (!legacyToRestored.has(legacyTok)) {
+                    legacyToRestored.set(legacyTok, new Set());
+                }
+                legacyToRestored.get(legacyTok)!.add(restoredTok);
+            }
+        }
+    }
+
+    let hasVowelDroppedToken = false;
+    for (let i = 0; i < slugTokens.length; i++) {
+        const sTok = slugTokens[i];
+        const tTok = targetTokens[i];
+        if (sTok === tTok) continue;
+        if (legacyToRestored.has(sTok)) {
+            if (!legacyToRestored.get(sTok)!.has(tTok)) {
+                return false;
+            }
+            hasVowelDroppedToken = true;
+            continue;
+        }
+        if (/[aeiouy]/.test(sTok) || !/[aeiouy]/.test(tTok)) {
+            return false;
+        }
+        if (sTok.replace(/[aeiouy]+/g, '') !== tTok.replace(/[aeiouy]+/g, '')) {
+            return false;
+        }
+        hasVowelDroppedToken = true;
+    }
+    return hasVowelDroppedToken;
+}
+
+function scoreShopMatchTier(
+    shop: { id?: string; provider_name?: string | null; slug?: string | null },
+    target: ReturnType<typeof buildShopMatchTarget>
+): number | null {
+    if (!shop?.id) return null;
+
+    if (shop.id.toLowerCase() === target.trimmedLower) {
+        return 1;
+    }
+
+    const slugVal = shop.slug?.trim().toLowerCase() ?? '';
+    if (slugVal.length > 0 && (slugVal === target.trimmedLower || slugVal === target.targetSlug)) {
+        return 2;
+    }
+
+    const hasProviderName = Boolean(shop.provider_name && shop.provider_name.trim().length > 0);
+    const nameKey = hasProviderName ? normalizeLocationKey(shop.provider_name!) : '';
+    if (nameKey.length > 0 && nameKey === target.targetNameKey) {
+        return 3;
+    }
+
+    const providerLegacySlug = hasProviderName
+        ? toLegacyAsciiDroppedSlug(shop.provider_name!)
+        : '';
+    if (
+        target.targetLegacyAsciiSlug.length >= 4 &&
+        slugVal.length > 0 &&
+        slugVal === target.targetLegacyAsciiSlug &&
+        (!hasProviderName || providerLegacySlug === slugVal)
+    ) {
+        return 3;
+    }
+
+    const nameCompact = hasProviderName ? normalizeModelKey(shop.provider_name!) : '';
+    const slugCompact = slugVal ? normalizeModelKey(slugVal) : '';
+    if (
+        target.targetCompact.length >= 4 &&
+        ((nameCompact.length > 0 && nameCompact === target.targetCompact) ||
+            (slugCompact.length > 0 && slugCompact === target.targetCompact))
+    ) {
+        return 4;
+    }
+
+    if (
+        (!hasProviderName || /[^\x00-\x7f]/.test(shop.provider_name!)) &&
+        matchesLossyVowelDroppedSlug(slugVal, target.targetSlug, shop.provider_name)
+    ) {
+        return 5;
+    }
+
+    const providerSlug = hasProviderName ? toSlugKey(shop.provider_name!) : '';
+    const providerSlugTokenCount = providerSlug ? providerSlug.split('-').filter(Boolean).length : 0;
+    const slugTokenCount = slugVal ? slugVal.split('-').filter(Boolean).length : 0;
+
+    if (
+        (hasProviderName ? matchesWholeTokenSequence(shop.provider_name!, target.trimmed) : false) ||
+        (slugVal ? matchesWholeTokenSequence(slugVal, target.trimmed) : false) ||
+        (target.targetCompact.length >= 5 &&
+            ((hasProviderName
+                ? matchesNormalizedModel(shop.provider_name!, target.trimmed)
+                : false) ||
+                (slugVal ? matchesNormalizedModel(slugVal, target.trimmed) : false)))
+    ) {
+        return 6;
+    }
+
+    if (
+        target.allowLocationSuffixPrefix &&
+        ((providerSlugTokenCount >= 2 &&
+            providerSlug.length >= 5 &&
+            target.targetSlug.startsWith(`${providerSlug}-`)) ||
+            (slugTokenCount >= 2 &&
+                slugVal.length >= 5 &&
+                target.targetSlug.startsWith(`${slugVal}-`)))
+    ) {
+        return 7;
+    }
+
+    return null;
+}
+
+function buildShopMatchTarget(
+    rawShopInput: string,
+    options: { allowLocationSuffixPrefix?: boolean } = {}
+) {
+    const trimmed = rawShopInput.trim();
+    return {
+        trimmed,
+        trimmedLower: trimmed.toLowerCase(),
+        targetSlug: toSlugKey(trimmed),
+        targetLegacyAsciiSlug: toLegacyAsciiDroppedSlug(trimmed),
+        targetNameKey: normalizeLocationKey(trimmed),
+        targetCompact: normalizeModelKey(trimmed),
+        allowLocationSuffixPrefix: Boolean(options.allowLocationSuffixPrefix),
+    };
+}
+
+export function filterMatchingShopIds(
+    shops: Array<{ id?: string; provider_name?: string | null; slug?: string | null }>,
+    rawShopInput: string
+): string[] {
+    const trimmed = rawShopInput.trim();
+    if (!trimmed || !Array.isArray(shops) || shops.length === 0) return [];
+
+    const target = buildShopMatchTarget(trimmed, { allowLocationSuffixPrefix: false });
+    const scored: Array<{ id: string; tier: number; index: number }> = [];
+    shops.forEach((shop, index) => {
+        const tier = scoreShopMatchTier(shop, target);
+        if (tier !== null && shop?.id) {
+            scored.push({ id: shop.id, tier, index });
+        }
+    });
+    scored.sort((a, b) => a.tier - b.tier || a.index - b.index);
+    return Array.from(new Set(scored.map((item) => item.id)));
+}
+
+export function pickBestShopMatch(
+    shops: Array<{ id?: string; provider_name?: string | null; slug?: string | null }>,
+    rawShopInput: string
+): { id: string; tier: number } | null {
+    const trimmed = rawShopInput.trim();
+    if (!trimmed || !Array.isArray(shops) || shops.length === 0) return null;
+
+    const target = buildShopMatchTarget(trimmed, { allowLocationSuffixPrefix: true });
+    let best: { id: string; tier: number; index: number } | null = null;
+    for (let index = 0; index < shops.length; index++) {
+        const shop = shops[index];
+        const tier = scoreShopMatchTier(shop, target);
+        if (tier !== null && shop?.id) {
+            if (!best || tier < best.tier || (tier === best.tier && index < best.index)) {
+                best = { id: shop.id, tier, index };
+            }
+        }
+    }
+    return best ? { id: best.id, tier: best.tier } : null;
+}
+
 export function pickBestMatchingShopId(
     shops: Array<{ id?: string; provider_name?: string | null; slug?: string | null }>,
     rawShopInput: string
 ): string | null {
-    const trimmed = rawShopInput.trim();
-    if (!trimmed || !Array.isArray(shops) || shops.length === 0) return null;
-
-    const trimmedLower = trimmed.toLowerCase();
-    const targetSlug = toSlugKey(trimmed);
-    const targetNameKey = normalizeLocationKey(trimmed);
-
-    const byId = shops.find((s) => s?.id?.toLowerCase() === trimmedLower);
-    if (byId?.id) return byId.id;
-
-    const byExactSlug = shops.find((s) => {
-        const slugVal = s?.slug?.trim().toLowerCase() ?? '';
-        return slugVal.length > 0 && (slugVal === trimmedLower || slugVal === targetSlug);
-    });
-    if (byExactSlug?.id) return byExactSlug.id;
-
-    const byExactName = shops.find((s) => {
-        const nameKey = s?.provider_name ? normalizeLocationKey(s.provider_name) : '';
-        return nameKey.length > 0 && nameKey === targetNameKey;
-    });
-    if (byExactName?.id) return byExactName.id;
-
-    const byWholeToken = shops.find((s) => {
-        const providerSlug = s?.provider_name ? toSlugKey(s.provider_name) : '';
-        return (
-            (s?.provider_name ? matchesWholeTokenSequence(s.provider_name, trimmed) : false) ||
-            (s?.slug ? matchesWholeTokenSequence(s.slug, trimmed) : false) ||
-            (providerSlug.length >= 3 && targetSlug.startsWith(`${providerSlug}-`))
-        );
-    });
-    return byWholeToken?.id ?? null;
+    return pickBestShopMatch(shops, rawShopInput)?.id ?? null;
 }
 
 function escapeRegExp(value: string): string {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+export const WIN_COLLOQUIAL_BRAND_KEYS: ReadonlySet<string> = new Set(['honda', 'detech']);
+
+export function tokenizeModelAlphanumeric(value: string): string[] {
+    return stripDiacritics(value).toLowerCase().match(/[a-z]+|[0-9]+/g) ?? [];
+}
+
+export function isWinModelFamilyQuery(modelInput: string | null | undefined): boolean {
+    if (!modelInput) return false;
+    const tokens = tokenizeModelAlphanumeric(modelInput);
+    return tokens.length > 0 && tokens[0] === 'win';
+}
+
+export function isColloquialWinBrandReference(
+    brandId: string | undefined,
+    brands: Array<{ id: string; name?: string | null }>
+): boolean {
+    if (!brandId) return false;
+    const lowerId = brandId.toLowerCase();
+    const normInput = normalizeLocationKey(brandId);
+    const matchedBrand = brands.find(
+        (b) =>
+            b?.id?.toLowerCase() === lowerId ||
+            (b?.name ? normalizeLocationKey(b.name) === normInput : false)
+    );
+    const brandKey = matchedBrand?.name ? normalizeLocationKey(matchedBrand.name) : normInput;
+    return WIN_COLLOQUIAL_BRAND_KEYS.has(brandKey);
+}
+
+export function resolveColloquialWinBrandIds(
+    brandInputOrId: string | undefined,
+    modelInput: string | undefined,
+    brands: Array<{ id: string; name?: string | null }>
+): string[] {
+    if (
+        !brandInputOrId ||
+        !isWinModelFamilyQuery(modelInput) ||
+        !isColloquialWinBrandReference(brandInputOrId, brands)
+    ) {
+        return [];
+    }
+    const matchedIds: string[] = [];
+    for (const b of brands) {
+        const key = b?.name ? normalizeLocationKey(b.name) : '';
+        if (b?.id && WIN_COLLOQUIAL_BRAND_KEYS.has(key) && !matchedIds.includes(b.id)) {
+            matchedIds.push(b.id);
+        }
+    }
+    return matchedIds;
+}
+
+export function expandColloquialBrandIds(
+    brandId: string | undefined,
+    modelInput: string | undefined,
+    brands: Array<{ id: string; name?: string | null }>
+): string[] {
+    if (!brandId) return [];
+    const colloquialCatalogIds = resolveColloquialWinBrandIds(brandId, modelInput, brands);
+    if (colloquialCatalogIds.length === 0) {
+        return [brandId];
+    }
+    const isCatalogId = brands.some((b) => b?.id === brandId);
+    const expanded = new Set<string>(isCatalogId ? [brandId] : []);
+    for (const id of colloquialCatalogIds) {
+        expanded.add(id);
+    }
+    return Array.from(expanded);
+}
+
 export function extractBrandPrefixFromQuery(
     rawQuery: string,
     brands: Array<{ id: string; name?: string | null }>,
     explicitBrandId?: string
-): { brandId?: string; model?: string } {
+): { brandId?: string; model?: string; matchedBrandPrefix?: boolean } {
     const cleanedQuery = stripDiacritics(rawQuery).replace(/\s+/g, ' ').trim();
     if (!cleanedQuery) {
-        return { brandId: explicitBrandId, model: undefined };
+        return { brandId: explicitBrandId, model: undefined, matchedBrandPrefix: false };
     }
 
     const sortedBrands = [...brands]
@@ -286,15 +542,41 @@ export function extractBrandPrefixFromQuery(
 
         const remainder = match[1]?.trim() || undefined;
         if (!explicitBrandId) {
-            return { brandId: brand.id, model: remainder };
+            return { brandId: brand.id, model: remainder, matchedBrandPrefix: true };
         }
         if (explicitBrandId === brand.id) {
-            return { brandId: explicitBrandId, model: remainder };
+            return { brandId: explicitBrandId, model: remainder, matchedBrandPrefix: true };
         }
-        return { brandId: explicitBrandId, model: rawQuery.trim() };
+        if (remainder) {
+            return { brandId: brand.id, model: remainder, matchedBrandPrefix: true };
+        }
+        return { brandId: explicitBrandId, model: rawQuery.trim(), matchedBrandPrefix: false };
     }
 
-    return { brandId: explicitBrandId, model: rawQuery.trim() };
+    // Colloquial "Honda Win" / "Detech Win" prefix fallback when only the sibling brand exists in `brands`
+    const colloquialPrefixPattern = Array.from(WIN_COLLOQUIAL_BRAND_KEYS)
+        .map(escapeRegExp)
+        .join('|');
+    const colloquialMatch = cleanedQuery.match(
+        new RegExp(`^(${colloquialPrefixPattern})[\\s\\-–—:/]+(.+)$`, 'i')
+    );
+    const colloquialRemainder = colloquialMatch?.[2]?.trim();
+    if (colloquialRemainder && isWinModelFamilyQuery(colloquialRemainder)) {
+        const colloquialIds = resolveColloquialWinBrandIds(
+            colloquialMatch![1],
+            colloquialRemainder,
+            brands
+        );
+        if (colloquialIds.length > 0) {
+            return {
+                brandId: colloquialIds[0],
+                model: colloquialRemainder,
+                matchedBrandPrefix: true,
+            };
+        }
+    }
+
+    return { brandId: explicitBrandId, model: rawQuery.trim(), matchedBrandPrefix: false };
 }
 
 export function normalizeModelKey(value: string): string {
@@ -308,7 +590,22 @@ export function matchesNormalizedModel(
     targetModel: string | null | undefined
 ): boolean {
     if (!candidateModel || !targetModel) return false;
-    const targetKey = normalizeModelKey(targetModel);
-    if (!targetKey) return false;
-    return normalizeModelKey(candidateModel).includes(targetKey);
+    const candidateTokens = tokenizeModelAlphanumeric(candidateModel);
+    const targetTokens = tokenizeModelAlphanumeric(targetModel);
+    if (candidateTokens.length === 0 || targetTokens.length === 0) return false;
+
+    const targetJoined = targetTokens.join('');
+    for (let start = 0; start < candidateTokens.length; start++) {
+        let span = '';
+        for (let end = start; end < candidateTokens.length; end++) {
+            span += candidateTokens[end];
+            if (span === targetJoined) {
+                return true;
+            }
+            if (span.length >= targetJoined.length) {
+                break;
+            }
+        }
+    }
+    return false;
 }

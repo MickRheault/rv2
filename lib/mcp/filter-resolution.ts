@@ -8,6 +8,7 @@ import {
     doesCityMatchCountry,
     doesShopMatchScope,
     expandCityCandidates,
+    expandColloquialBrandIds,
     extractBrandPrefixFromQuery,
     matchCountryFromCatalog,
     matchesWholeTokenSequence,
@@ -15,6 +16,7 @@ import {
     normalizeModelKey,
     parseCityCountryInput,
     pickBestMatchingShopId,
+    resolveColloquialWinBrandIds,
     stripDiacritics,
 } from './search-normalization';
 
@@ -28,6 +30,7 @@ export interface ResolvedMotorcycleFilters {
     countryCode?: string;
     shopId?: string;
     brandId?: string;
+    brandIds?: string[];
     categoryId?: string;
     model?: string;
     unresolvedFilters: UnresolvedFilter[];
@@ -294,13 +297,40 @@ export async function resolveMotorcycleToolFilters(
     const rawQuery = asNonEmptyString(args.query);
     const brands = rawBrand || rawQuery ? await loadCatalogBrands() : [];
 
-    if (rawBrand) {
-        const resolved = matchBrandFromList(rawBrand, brands);
-        if (resolved) {
-            brandId = resolved;
+    let effectiveModel = rawQuery;
+    const initialBrandMatch = rawBrand ? matchBrandFromList(rawBrand, brands) : null;
+    const extracted = rawQuery
+        ? extractBrandPrefixFromQuery(rawQuery, brands, initialBrandMatch ?? undefined)
+        : undefined;
+
+    if (
+        extracted &&
+        extracted.matchedBrandPrefix &&
+        extracted.model !== undefined &&
+        extracted.brandId
+    ) {
+        // Explicit "Brand Model" prefix in query takes precedence over conflicting args.brand
+        brandId = extracted.brandId;
+        effectiveModel = extracted.model;
+    } else if (rawBrand) {
+        if (initialBrandMatch) {
+            brandId = extracted ? extracted.brandId : initialBrandMatch;
+            if (extracted) {
+                effectiveModel = extracted.model;
+            }
         } else {
-            unresolvedFilters.push({ filter: 'brand', value: rawBrand });
+            const candidateModel = extracted?.model ?? rawQuery;
+            const colloquialWinIds = resolveColloquialWinBrandIds(rawBrand, candidateModel, brands);
+            if (colloquialWinIds.length > 0) {
+                brandId = colloquialWinIds[0];
+                effectiveModel = candidateModel;
+            } else {
+                unresolvedFilters.push({ filter: 'brand', value: rawBrand });
+            }
         }
+    } else if (extracted) {
+        brandId = extracted.brandId;
+        effectiveModel = extracted.model;
     }
 
     const rawCategory = asNonEmptyString(args.category);
@@ -313,18 +343,17 @@ export async function resolveMotorcycleToolFilters(
         }
     }
 
-    let effectiveModel = rawQuery;
-    if (rawQuery && unresolvedFilters.length === 0) {
-        const extracted = extractBrandPrefixFromQuery(rawQuery, brands, brandId);
-        brandId = extracted.brandId;
-        effectiveModel = extracted.model;
-    }
+    const brandIds =
+        unresolvedFilters.length === 0 && brandId
+            ? expandColloquialBrandIds(brandId, effectiveModel, brands)
+            : undefined;
 
     return {
         cityId,
         countryCode,
         shopId,
         brandId,
+        ...(brandIds && brandIds.length > 0 ? { brandIds } : {}),
         categoryId,
         model: effectiveModel,
         unresolvedFilters,

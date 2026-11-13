@@ -27,8 +27,14 @@ import {
   shopService,
 } from './shops'
 import {
+  WIN_COLLOQUIAL_BRAND_KEYS,
+  expandColloquialBrandIds,
   extractBrandPrefixFromQuery,
+  isColloquialWinBrandReference,
+  isWinModelFamilyQuery,
   matchesNormalizedModel,
+  normalizeLocationKey,
+  normalizeModelKey,
 } from '@/lib/mcp/search-normalization'
 
 const typedSupabase = supabase as unknown as SupabaseClient<Database>
@@ -106,6 +112,7 @@ export interface SearchFilters extends RentalOfferPriceFilterOptions {
   shopId?: string
   shop?: string
   brandId?: string
+  brandIds?: string[]
   categoryId?: string
   model?: string
   minEngineCapacity?: number
@@ -159,6 +166,42 @@ function compareNullableNumbers(
   if (!aValid) return 1
   if (!bValid) return -1
   return direction === 'asc' ? a - b : b - a
+}
+
+function compareMotorcyclesSecondaryOrder(
+  a: Record<string, any>,
+  b: Record<string, any>,
+  sortBy: SearchFilters['sortBy'] = 'newest'
+): number {
+  switch (sortBy) {
+    case 'price_asc':
+      return compareMotorcyclesByPrice(a, b, 'asc')
+    case 'price_desc':
+      return compareMotorcyclesByPrice(a, b, 'desc')
+    case 'engine_capacity_asc':
+      return compareNullableNumbers(a.engine_capacity_cc, b.engine_capacity_cc, 'asc')
+    case 'engine_capacity_desc':
+      return compareNullableNumbers(a.engine_capacity_cc, b.engine_capacity_cc, 'desc')
+    case 'rating_desc':
+      return compareNullableNumbers(a.rental_shops?.rating, b.rental_shops?.rating, 'desc')
+    case 'newest':
+    default:
+      return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+  }
+}
+
+function compareMotorcyclesWithExactModelPriority(
+  a: Record<string, any>,
+  b: Record<string, any>,
+  targetModelKey: string,
+  sortBy: SearchFilters['sortBy'] = 'newest'
+): number {
+  if (targetModelKey) {
+    const aExact = normalizeModelKey(a.model || '') === targetModelKey ? 0 : 1
+    const bExact = normalizeModelKey(b.model || '') === targetModelKey ? 0 : 1
+    if (aExact !== bExact) return aExact - bExact
+  }
+  return compareMotorcyclesSecondaryOrder(a, b, sortBy)
 }
 
 export function deriveFilterOptionsFromMotorcycles(motorcycles: any[] = []): DerivedFilterOptions {
@@ -219,8 +262,10 @@ export function filterAndSortMotorcycles<T extends Record<string, any>>(
   filters: Pick<
     SearchFilters,
     | 'brandId'
+    | 'brandIds'
     | 'categoryId'
     | 'model'
+    | 'query'
     | 'minPrice'
     | 'maxPrice'
     | 'currency'
@@ -233,8 +278,10 @@ export function filterAndSortMotorcycles<T extends Record<string, any>>(
 ): T[] {
   const {
     brandId,
+    brandIds,
     categoryId,
     model,
+    query: searchQuery,
     minPrice,
     maxPrice,
     currency,
@@ -245,16 +292,78 @@ export function filterAndSortMotorcycles<T extends Record<string, any>>(
     sortBy = 'newest'
   } = filters
 
-  const normalizedBrand = brandId?.toLowerCase()
+  const derivedBrandsMap = new Map<string, { id: string; name: string }>()
+  for (const m of motorcycles) {
+    const id = m?.brand_id || m?.brands?.id
+    const name = m?.brands?.name
+    if (id && name && !derivedBrandsMap.has(id)) {
+      derivedBrandsMap.set(id, { id, name })
+    }
+  }
+  const derivedBrands = Array.from(derivedBrandsMap.values())
+
+  let effectiveBrandId = brandId?.trim() || undefined
+  const rawModelInput = (model || searchQuery)?.trim() || undefined
+  const isFreeTextQuery = Boolean(searchQuery && searchQuery.trim().length > 0 && !model)
+  let effectiveModel = rawModelInput
+  let prefixOverrodeBrand = false
+
+  if (effectiveModel && derivedBrands.length > 0) {
+    const extracted = extractBrandPrefixFromQuery(
+      effectiveModel,
+      derivedBrands,
+      effectiveBrandId
+    )
+    if (extracted.matchedBrandPrefix && extracted.model !== undefined && extracted.brandId) {
+      prefixOverrodeBrand = true
+    }
+    effectiveBrandId = extracted.brandId
+    effectiveModel = extracted.model
+  }
+
+  const seedBrandIds = prefixOverrodeBrand
+    ? effectiveBrandId
+      ? [effectiveBrandId]
+      : []
+    : Array.from(
+        new Set(
+          [
+            ...(Array.isArray(brandIds) ? brandIds.map((b) => b?.trim()).filter(Boolean) : []),
+            ...(effectiveBrandId ? [effectiveBrandId] : []),
+          ] as string[]
+        )
+      )
+
+  const expandedBrandSet = new Set<string>()
+  for (const seedId of seedBrandIds) {
+    for (const expandedId of expandColloquialBrandIds(seedId, effectiveModel, derivedBrands)) {
+      expandedBrandSet.add(expandedId)
+    }
+  }
+  const effectiveBrandIds = Array.from(expandedBrandSet)
+  const isWinAliasActive =
+    seedBrandIds.length > 0 &&
+    isWinModelFamilyQuery(effectiveModel) &&
+    seedBrandIds.some((id) => isColloquialWinBrandReference(id, derivedBrands))
+  const lowerBrandTargets = effectiveBrandIds.map((id) => id.toLowerCase())
+
   const normalizedCategory = categoryId?.toLowerCase()
-  const normalizedModel = model?.toLowerCase()
+  const targetModelKey = effectiveModel ? normalizeModelKey(effectiveModel) : ''
 
   const filtered = motorcycles.filter((motorcycle) => {
-    if (
-      normalizedBrand &&
-      !matchesEntityFilter(motorcycle.brand_id, motorcycle.brands, normalizedBrand)
-    ) {
-      return false
+    if (seedBrandIds.length > 0) {
+      const matchesAnyExpandedBrand = lowerBrandTargets.some((target) =>
+        matchesEntityFilter(motorcycle.brand_id, motorcycle.brands, target)
+      )
+      const bikeBrandNameKey = motorcycle.brands?.name
+        ? normalizeLocationKey(motorcycle.brands.name)
+        : ''
+      const matchesWinColloquialBrand =
+        isWinAliasActive && WIN_COLLOQUIAL_BRAND_KEYS.has(bikeBrandNameKey)
+
+      if (!matchesAnyExpandedBrand && !matchesWinColloquialBrand) {
+        return false
+      }
     }
 
     if (
@@ -264,9 +373,15 @@ export function filterAndSortMotorcycles<T extends Record<string, any>>(
       return false
     }
 
-    if (normalizedModel) {
-      const bikeModel = motorcycle.model?.toLowerCase() || ''
-      if (bikeModel !== normalizedModel) return false
+    if (effectiveModel) {
+      if (isFreeTextQuery) {
+        if (!matchesNormalizedModel(motorcycle.model, effectiveModel)) return false
+      } else {
+        const bikeModelRaw = motorcycle.model || ''
+        if (normalizeModelKey(bikeModelRaw) !== targetModelKey) {
+          return false
+        }
+      }
     }
 
     if (
@@ -294,25 +409,9 @@ export function filterAndSortMotorcycles<T extends Record<string, any>>(
     return true
   })
 
-  return [...filtered].sort((a, b) => {
-    switch (sortBy) {
-      case 'price_asc':
-        return compareMotorcyclesByPrice(a, b, 'asc')
-      case 'price_desc':
-        return compareMotorcyclesByPrice(a, b, 'desc')
-      case 'engine_capacity_asc':
-        return compareNullableNumbers(a.engine_capacity_cc, b.engine_capacity_cc, 'asc')
-      case 'engine_capacity_desc':
-        return compareNullableNumbers(a.engine_capacity_cc, b.engine_capacity_cc, 'desc')
-      case 'rating_desc':
-        return compareNullableNumbers(a.rental_shops?.rating, b.rental_shops?.rating, 'desc')
-      case 'newest':
-      default:
-        return (
-          new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
-        )
-    }
-  })
+  return [...filtered].sort((a, b) =>
+    compareMotorcyclesWithExactModelPriority(a, b, targetModelKey, sortBy)
+  )
 }
 
 const brandsCache = createTtlListCache<Brand>()
@@ -497,6 +596,7 @@ export const motorcycleService = {
       shopId,
       shop,
       brandId,
+      brandIds: incomingBrandIds,
       categoryId,
       model,
       query: searchQuery,
@@ -550,6 +650,15 @@ export const motorcycleService = {
     const activeStatusIds = await getActiveBusinessStatusIds()
     let effectiveBrandId = brandId
     let effectiveModel = (model || searchQuery)?.trim() || undefined
+    const sanitizedIncomingBrandIds = Array.isArray(incomingBrandIds)
+      ? incomingBrandIds.map((b) => b?.trim()).filter((b): b is string => Boolean(b))
+      : []
+    let effectiveBrandIds: string[] = Array.from(
+      new Set([
+        ...sanitizedIncomingBrandIds,
+        ...(effectiveBrandId ? [effectiveBrandId] : []),
+      ])
+    )
 
     if (effectiveModel) {
       try {
@@ -560,11 +669,28 @@ export const motorcycleService = {
             catalogBrands,
             effectiveBrandId
           )
+          const prefixOverrodeBrand = Boolean(
+            extracted.matchedBrandPrefix && extracted.model !== undefined && extracted.brandId
+          )
           effectiveBrandId = extracted.brandId
           effectiveModel = extracted.model
+          const expandedIds = expandColloquialBrandIds(
+            effectiveBrandId,
+            effectiveModel,
+            catalogBrands
+          )
+          effectiveBrandIds = prefixOverrodeBrand
+            ? expandedIds
+            : Array.from(new Set([...sanitizedIncomingBrandIds, ...expandedIds]))
         }
       } catch {
         // Proceed with raw effectiveModel if brands cannot be loaded in isolated test mocks
+        effectiveBrandIds = Array.from(
+          new Set([
+            ...sanitizedIncomingBrandIds,
+            ...(effectiveBrandId ? [effectiveBrandId] : []),
+          ])
+        )
       }
     }
 
@@ -608,8 +734,10 @@ export const motorcycleService = {
       if (effectiveShopId) {
         query = query.eq('shop_id', effectiveShopId)
       }
-      if (effectiveBrandId) {
-        query = query.eq('brand_id', effectiveBrandId)
+      if (effectiveBrandIds.length === 1) {
+        query = query.eq('brand_id', effectiveBrandIds[0])
+      } else if (effectiveBrandIds.length > 1) {
+        query = query.in('brand_id', effectiveBrandIds)
       }
       if (categoryId) {
         query = query.eq('category_id', categoryId)
@@ -654,6 +782,15 @@ export const motorcycleService = {
       return query
     }
 
+    const targetModelKey = effectiveModel ? normalizeModelKey(effectiveModel) : ''
+    const needsExactModelPrioritySort = Boolean(
+      targetModelKey &&
+        matchedCanonicalModels &&
+        matchedCanonicalModels.length > 1 &&
+        matchedCanonicalModels.some((m) => normalizeModelKey(m) === targetModelKey) &&
+        matchedCanonicalModels.some((m) => normalizeModelKey(m) !== targetModelKey)
+    )
+
     const hasFeaturesFilter = Boolean(features && features.length > 0)
     const hasOfferPriceFilter =
       (minPrice !== undefined && minPrice !== null) ||
@@ -666,7 +803,7 @@ export const motorcycleService = {
       sortBy === 'price_asc' ||
       sortBy === 'price_desc'
 
-    if (hasFeaturesFilter || needsPricingPostProcess) {
+    if (hasFeaturesFilter || needsPricingPostProcess || needsExactModelPrioritySort) {
       const POSTGREST_BATCH_SIZE = 1000
       const allData: any[] = []
       let batchOffset = 0
@@ -714,7 +851,11 @@ export const motorcycleService = {
         )
       }
 
-      if (sortBy === 'price_asc' || sortBy === 'price_desc') {
+      if (needsExactModelPrioritySort) {
+        processedData = [...processedData].sort((a, b) =>
+          compareMotorcyclesWithExactModelPriority(a, b, targetModelKey, sortBy)
+        )
+      } else if (sortBy === 'price_asc' || sortBy === 'price_desc') {
         const direction = sortBy === 'price_asc' ? 'asc' : 'desc'
         processedData = [...processedData].sort((a, b) =>
           compareMotorcyclesByPrice(a, b, direction)
