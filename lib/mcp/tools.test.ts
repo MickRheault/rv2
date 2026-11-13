@@ -71,6 +71,35 @@ const motorcycle = {
     },
 };
 
+interface ToolParameterProperty {
+    type?: string;
+    description?: string;
+    default?: unknown;
+    enum?: string[];
+}
+
+function getToolFunctionSchema(name: string): {
+    name: string;
+    description?: string;
+    parameters: { properties: Record<string, ToolParameterProperty>; required?: string[] };
+} {
+    const tool = openAITools.find(
+        (t): t is Extract<(typeof openAITools)[number], { type: 'function' }> =>
+            t.type === 'function' && t.function.name === name
+    );
+    if (!tool) {
+        throw new Error(`Expected tool schema for ${name}`);
+    }
+    return {
+        name: tool.function.name,
+        description: tool.function.description,
+        parameters: (tool.function.parameters ?? { properties: {} }) as {
+            properties: Record<string, ToolParameterProperty>;
+            required?: string[];
+        },
+    };
+}
+
 it('includes the actual rental shop and its canonical link in motorcycle tool results', async () => {
     mockGetMotorcycles.mockResolvedValueOnce({ total: 1, motorcycles: [motorcycle] });
     const result = await executeTool('list_motorcycles', {});
@@ -330,11 +359,7 @@ it('exposes verbatim non-daily rentalOffers and real billing phrases with dailyR
 it('exposes currency, durationDays, and knownPriceOnly in list_motorcycles tool schema and forwards normalized filter args (#225)', async () => {
     mockGetMotorcycles.mockClear();
 
-    const listTool = openAITools.find(
-        (t) => t.type === 'function' && t.function.name === 'list_motorcycles'
-    );
-    expect(listTool).toBeDefined();
-    const props = (listTool as any).function.parameters.properties;
+    const props = getToolFunctionSchema('list_motorcycles').parameters.properties;
     expect(props.currency).toMatchObject({ type: 'string' });
     expect(props.durationDays).toMatchObject({ type: 'number' });
     expect(props.knownPriceOnly).toMatchObject({ type: 'boolean' });
@@ -1180,13 +1205,11 @@ it('normalizes diacritics (including accented catalog cities), curated aliases, 
 });
 
 it('supports single-shopId resolution (UUID, name, slug) without heavy getShopById calls, validates shop country scope, and supports pagination offset (#224)', async () => {
-    const listMotorcyclesSchema = openAITools.find(
-        (t) => t.type === 'function' && t.function.name === 'list_motorcycles'
-    );
-    expect((listMotorcyclesSchema as any)?.function?.parameters?.properties?.shop).toMatchObject({
+    const listMotorcyclesProps = getToolFunctionSchema('list_motorcycles').parameters.properties;
+    expect(listMotorcyclesProps.shop).toMatchObject({
         type: 'string',
     });
-    expect((listMotorcyclesSchema as any)?.function?.parameters?.properties?.offset).toMatchObject({
+    expect(listMotorcyclesProps.offset).toMatchObject({
         type: 'number',
         default: 0,
     });
@@ -1380,6 +1403,253 @@ it('splits leading catalog brand names from query in list_motorcycles without mi
         expect.objectContaining({ brandId: undefined, model: 'Winner X' })
     );
 });
+
+it('exposes engineCapacityCc on list_motorcycles and search_motorcycles items, returning null when absent (#233)', async () => {
+    mockGetMotorcycles.mockResolvedValueOnce({
+        total: 3,
+        motorcycles: [
+            {
+                ...motorcycle,
+                id: 'bike-125',
+                model: 'Lead 125',
+                engine_capacity_cc: 125,
+            },
+            {
+                ...motorcycle,
+                id: 'bike-null-cc',
+                model: 'Electric Scooter',
+                engine_capacity_cc: null,
+            },
+            {
+                ...motorcycle,
+                id: 'bike-omitted-cc',
+                model: 'Mystery Bike',
+            },
+        ],
+    });
+
+    const listRes = await executeTool('list_motorcycles', {});
+    expect(listRes.success).toBe(true);
+    const listData = JSON.parse(formatToolResultForLLM(listRes));
+    expect(listData.motorcycles).toEqual([
+        expect.objectContaining({ id: 'bike-125', model: 'Lead 125', engineCapacityCc: 125 }),
+        expect.objectContaining({ id: 'bike-null-cc', model: 'Electric Scooter', engineCapacityCc: null }),
+        expect.objectContaining({ id: 'bike-omitted-cc', model: 'Mystery Bike', engineCapacityCc: null }),
+    ]);
+
+    mockGetMotorcycles.mockResolvedValueOnce({
+        total: 1,
+        motorcycles: [
+            {
+                ...motorcycle,
+                id: 'bike-win-140',
+                model: 'Win',
+                engine_capacity_cc: 140,
+            },
+        ],
+    });
+
+    const searchAliasRes = await executeTool('search_motorcycles', {});
+    expect(searchAliasRes.success).toBe(true);
+    const searchAliasData = JSON.parse(formatToolResultForLLM(searchAliasRes));
+    expect(searchAliasData.motorcycles[0]).toMatchObject({
+        id: 'bike-win-140',
+        engineCapacityCc: 140,
+    });
+});
+
+it('exposes address, phone, website, and googleMapsUrl on list_shops items alongside conditions and inclusions, normalizing absent or blank/whitespace values to null (#233)', async () => {
+    mockGetShops.mockResolvedValueOnce({
+        total: 4,
+        shops: [
+            {
+                id: 'shop-full-contact',
+                slug: 'tigit-motorbikes-hanoi',
+                provider_name: 'Tigit Motorbikes Hanoi',
+                full_address: '72 Nguyen Hoang, My Dinh, Hanoi, Vietnam',
+                phone: '+84 386 518 481',
+                website: 'https://www.tigitmotorbikes.com',
+                google_maps_url: 'https://maps.google.com/?cid=123456789',
+                rating: 4.9,
+                review_count: 215,
+                cities: {
+                    name: 'Hanoi',
+                    provinces: { countries: { name: 'Vietnam' } },
+                },
+                rental_shop_inclusions: [
+                    { id: 'inc-h1', shop_id: 'shop-full-contact', inclusion_text: 'Helmet' },
+                ],
+                rental_shop_conditions: [
+                    {
+                        id: 'cond-h1',
+                        shop_id: 'shop-full-contact',
+                        condition_type_id: 'ct-hours',
+                        condition_value: '08:30-17:30 daily',
+                        notes: null,
+                        condition_types: {
+                            id: 'ct-hours',
+                            name: 'Opening Hours',
+                            description: null,
+                        },
+                    },
+                ],
+            },
+            {
+                id: 'shop-partial-contact',
+                slug: 'mr-good-bikes',
+                provider_name: 'Mr-Good Bikes',
+                full_address: '  10 Ngo Huyen, Hoan Kiem, Hanoi  ',
+                phone: null,
+                website: null,
+                google_maps_url: 'https://maps.google.com/?cid=987654321',
+                rating: 4.7,
+                review_count: 64,
+                cities: {
+                    name: 'Hanoi',
+                    provinces: { countries: { name: 'Vietnam' } },
+                },
+                rental_shop_inclusions: [],
+                rental_shop_conditions: [
+                    {
+                        id: 'cond-h2',
+                        shop_id: 'shop-partial-contact',
+                        condition_type_id: 'ct-hours',
+                        condition_value: '08:00-20:00',
+                        notes: null,
+                        condition_types: {
+                            id: 'ct-hours',
+                            name: 'Opening Hours',
+                            description: null,
+                        },
+                    },
+                ],
+            },
+            {
+                id: 'shop-no-contact',
+                slug: 'unlisted-contact-shop',
+                provider_name: 'Unlisted Contact Shop',
+                rating: null,
+                review_count: null,
+                cities: null,
+            },
+            {
+                id: 'shop-blank-whitespace-contact',
+                slug: 'blank-contact-shop',
+                provider_name: 'Blank Contact Shop',
+                full_address: '',
+                phone: '   ',
+                website: '',
+                google_maps_url: ' \t ',
+                rating: 4.2,
+                review_count: 8,
+                cities: null,
+            },
+        ],
+    });
+
+    const res = await executeTool('list_shops', { city: undefined });
+    expect(res.success).toBe(true);
+    const data = JSON.parse(formatToolResultForLLM(res));
+    expect(data.total).toBe(4);
+    expect(data.shops).toEqual([
+        {
+            id: 'shop-full-contact',
+            url: '/shop/vietnam/hanoi/tigit-motorbikes-hanoi',
+            name: 'Tigit Motorbikes Hanoi',
+            address: '72 Nguyen Hoang, My Dinh, Hanoi, Vietnam',
+            phone: '+84 386 518 481',
+            website: 'https://www.tigitmotorbikes.com',
+            googleMapsUrl: 'https://maps.google.com/?cid=123456789',
+            rating: 4.9,
+            reviewCount: 215,
+            city: 'Hanoi',
+            conditions: [
+                {
+                    name: 'Opening Hours',
+                    value: '08:30-17:30 daily',
+                    summary: 'Opening Hours: 08:30-17:30 daily',
+                },
+            ],
+            inclusions: ['Helmet'],
+        },
+        {
+            id: 'shop-partial-contact',
+            url: '/shop/vietnam/hanoi/mr-good-bikes',
+            name: 'Mr-Good Bikes',
+            address: '10 Ngo Huyen, Hoan Kiem, Hanoi',
+            phone: null,
+            website: null,
+            googleMapsUrl: 'https://maps.google.com/?cid=987654321',
+            rating: 4.7,
+            reviewCount: 64,
+            city: 'Hanoi',
+            conditions: [
+                {
+                    name: 'Opening Hours',
+                    value: '08:00-20:00',
+                    summary: 'Opening Hours: 08:00-20:00',
+                },
+            ],
+            inclusions: [],
+        },
+        {
+            id: 'shop-no-contact',
+            url: '/shop/unlisted-contact-shop',
+            name: 'Unlisted Contact Shop',
+            address: null,
+            phone: null,
+            website: null,
+            googleMapsUrl: null,
+            rating: null,
+            reviewCount: null,
+            conditions: [],
+            inclusions: [],
+        },
+        {
+            id: 'shop-blank-whitespace-contact',
+            url: '/shop/blank-contact-shop',
+            name: 'Blank Contact Shop',
+            address: null,
+            phone: null,
+            website: null,
+            googleMapsUrl: null,
+            rating: 4.2,
+            reviewCount: 8,
+            conditions: [],
+            inclusions: [],
+        },
+    ]);
+});
+
+it('includes strict filter guardrails and payload field guidance in openAITools schemas for list_motorcycles and list_shops (#233)', () => {
+    const motoFn = getToolFunctionSchema('list_motorcycles');
+    const motoProps = motoFn.parameters.properties;
+
+    expect(motoFn.description).toContain('engineCapacityCc');
+    expect(motoProps.brand.description).toMatch(/only when.*explicitly/i);
+    expect(motoProps.brand.description).toMatch(/leave unset/i);
+    expect(motoProps.category.description).toMatch(/only when.*explicitly/i);
+    expect(motoProps.category.description).toMatch(/never infer/i);
+    expect(motoProps.category.description).toContain('Semi-automatic');
+    expect(motoProps.category.description).toContain('list_categories');
+    expect(motoProps.category.description).not.toMatch(/\bManual\b/i);
+    expect(motoProps.shop.description).toMatch(/never put motorcycle brand or model names into shop/i);
+    expect(motoProps.query.description).toContain('Detech Win');
+    expect(motoProps.query.description).not.toContain('engineCapacityCc');
+
+    const shopsFn = getToolFunctionSchema('list_shops');
+
+    expect(shopsFn.description).toContain('address');
+    expect(shopsFn.description).toContain('phone');
+    expect(shopsFn.description).toContain('website');
+    expect(shopsFn.description).toContain('googleMapsUrl');
+    expect(shopsFn.description).toContain('inclusions');
+    expect(shopsFn.description).toContain('conditions (Opening Hours, Security Deposit, etc.)');
+    expect(shopsFn.description).toMatch(/null.*no published value/i);
+});
+
+
+
 
 
 
