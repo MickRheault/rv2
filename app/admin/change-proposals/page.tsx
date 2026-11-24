@@ -547,13 +547,13 @@ export default function ChangeProposalsPage() {
             </Alert>
           )}
 
-          <Card>
+          <Card padding="none" className="overflow-hidden">
             {loadingProposals ? (
-              <div className="flex justify-center items-center py-16">
+              <div className="flex justify-center items-center px-6 py-16">
                 <Spinner size="lg" />
               </div>
             ) : proposals.length === 0 ? (
-              <div className="text-center py-16 space-y-2">
+              <div className="text-center px-6 py-16 space-y-2">
                 <p className="text-gray-500 text-base">No change proposals found matching current filter.</p>
                 <p className="text-gray-400 text-sm">
                   When external crawler agents run, incoming diffs will appear here for review.
@@ -564,19 +564,19 @@ export default function ChangeProposalsPage() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Rental Shop
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Crawl Date
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Proposed Mutations
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
@@ -585,6 +585,7 @@ export default function ChangeProposalsPage() {
                     {proposals.map((prop) => {
                       const gmrUrl = prop.shopUrl || (prop.shopSlug ? `/shop/${prop.shopSlug}` : undefined);
                       const safeSourceUrl = toSafeHttpUrl(prop.sourceUrl);
+                      const createdDate = new Date(prop.createdAt);
                       const addCount = prop.summaryCounts?.add ?? 0;
                       const updateCount = prop.summaryCounts?.update ?? 0;
                       const delistCount = prop.summaryCounts?.delist ?? 0;
@@ -605,21 +606,27 @@ export default function ChangeProposalsPage() {
 
                       return (
                         <tr key={prop.id} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-6 py-4">
-                            <div className="font-semibold text-gray-900">{prop.shopName}</div>
-                            <div className="flex flex-wrap items-center gap-3 mt-0.5">
+                          <td className="px-4 py-3">
+                            <div className="font-semibold text-gray-900 text-sm leading-snug">
+                              {prop.shopName}
+                            </div>
+                            <div className="flex flex-col gap-0.5 mt-1">
                               {safeSourceUrl ? (
                                 <a
                                   href={safeSourceUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1 truncate max-w-xs"
+                                  title={prop.sourceUrl}
+                                  className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 max-w-[200px]"
                                 >
-                                  {prop.sourceUrl}
+                                  <span className="truncate">{prop.sourceUrl}</span>
                                   <ArrowTopRightOnSquareIcon className="w-3 h-3 flex-shrink-0" />
                                 </a>
                               ) : (
-                                <span className="text-xs font-mono text-gray-500 truncate max-w-xs">
+                                <span
+                                  title={prop.sourceUrl}
+                                  className="text-xs font-mono text-gray-500 truncate max-w-[200px] block"
+                                >
                                   {prop.sourceUrl}
                                 </span>
                               )}
@@ -628,7 +635,7 @@ export default function ChangeProposalsPage() {
                                   href={gmrUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-xs text-emerald-700 hover:text-emerald-900 font-medium flex items-center gap-1"
+                                  className="inline-flex items-center gap-1 text-xs text-emerald-700 hover:text-emerald-900 font-medium w-fit"
                                 >
                                   View on GMR
                                   <ArrowTopRightOnSquareIcon className="w-3 h-3 flex-shrink-0" />
@@ -637,20 +644,26 @@ export default function ChangeProposalsPage() {
                             </div>
                           </td>
 
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {new Date(prop.createdAt).toLocaleString(undefined, {
-                              dateStyle: 'medium',
-                              timeStyle: 'short',
-                            })}
+                          <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-600">
+                            <div className="font-medium text-gray-700">
+                              {createdDate.toLocaleDateString(undefined, {
+                                dateStyle: 'medium',
+                              })}
+                            </div>
+                            <div className="text-gray-500">
+                              {createdDate.toLocaleTimeString(undefined, {
+                                timeStyle: 'short',
+                              })}
+                            </div>
                           </td>
 
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-3 py-3">
                             <div>{getProposalStatusBadge(prop.status)}</div>
                             {renderQueueQualityBadges(prop)}
                           </td>
 
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-1.5 flex-wrap">
+                          <td className="px-3 py-3">
+                            <div className="flex items-center gap-1 flex-wrap max-w-[210px]">
                               {addCount > 0 && (
                                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
                                   +{addCount} new
@@ -705,21 +718,22 @@ export default function ChangeProposalsPage() {
                             </div>
                           </td>
 
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                            <div className="inline-flex items-center gap-2">
+                          <td className="px-4 py-3 text-right text-sm">
+                            <div className="inline-flex flex-wrap items-center justify-end gap-1.5">
                               {prop.status === 'pending' && !isReportOnlyRow && actionableCount > 0 && (
                                 <button
                                   type="button"
                                   onClick={() => handleQuickApproveAll(prop)}
                                   disabled={isAnyProposalActionInFlight}
-                                  className="inline-flex items-center px-2.5 py-1.5 border border-emerald-600 text-xs font-medium rounded-md shadow-sm text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50"
+                                  title="Approve & apply all pending changes"
+                                  className="inline-flex items-center whitespace-nowrap px-2 py-1.5 border border-emerald-600 text-xs font-medium rounded-md shadow-sm text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50"
                                 >
                                   {rowActionType === 'approve' ? (
                                     <ArrowPathIcon className="w-3.5 h-3.5 mr-1 animate-spin" />
                                   ) : (
                                     <CheckIcon className="w-3.5 h-3.5 mr-1" />
                                   )}
-                                  {rowActionType === 'approve' ? 'Applying...' : 'Approve & Apply All'}
+                                  {rowActionType === 'approve' ? 'Applying...' : 'Approve All'}
                                 </button>
                               )}
                               {prop.status === 'pending' && isReportOnlyRow && (
@@ -727,7 +741,7 @@ export default function ChangeProposalsPage() {
                                   type="button"
                                   onClick={() => handleQuickAcknowledge(prop.id, prop.version)}
                                   disabled={isAnyProposalActionInFlight}
-                                  className="inline-flex items-center px-2.5 py-1.5 border border-emerald-300 text-xs font-medium rounded-md text-emerald-800 bg-white hover:bg-emerald-50 disabled:opacity-50"
+                                  className="inline-flex items-center whitespace-nowrap px-2 py-1.5 border border-emerald-300 text-xs font-medium rounded-md text-emerald-800 bg-white hover:bg-emerald-50 disabled:opacity-50"
                                 >
                                   <CheckIcon className="w-3.5 h-3.5 mr-1" />
                                   {rowActionType === 'acknowledge' ? 'Acknowledging...' : 'Acknowledge'}
@@ -738,7 +752,7 @@ export default function ChangeProposalsPage() {
                                   type="button"
                                   onClick={() => handleQuickReject(prop.id, prop.version)}
                                   disabled={isAnyProposalActionInFlight}
-                                  className="inline-flex items-center px-2.5 py-1.5 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50 disabled:opacity-50"
+                                  className="inline-flex items-center whitespace-nowrap px-2 py-1.5 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50 disabled:opacity-50"
                                 >
                                   <XMarkIcon className="w-3.5 h-3.5 mr-1" />
                                   {rowActionType === 'reject' ? 'Rejecting...' : 'Reject'}
@@ -746,9 +760,10 @@ export default function ChangeProposalsPage() {
                               )}
                               <Link
                                 href={`/admin/change-proposals/${prop.id}`}
-                                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
+                                title="Inspect Diff"
+                                className="inline-flex items-center whitespace-nowrap px-2.5 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
                               >
-                                Inspect Diff
+                                Inspect
                               </Link>
                             </div>
                           </td>
@@ -768,13 +783,13 @@ export default function ChangeProposalsPage() {
         <>
           {crawlerError && <Alert variant="error">{crawlerError}</Alert>}
 
-          <Card>
+          <Card padding="none" className="overflow-hidden">
             {loadingCrawler ? (
-              <div className="flex justify-center items-center py-16">
+              <div className="flex justify-center items-center px-6 py-16">
                 <Spinner size="lg" />
               </div>
             ) : crawlerRuns.length === 0 ? (
-              <div className="text-center py-16 space-y-2">
+              <div className="text-center px-6 py-16 space-y-2">
                 <p className="text-gray-500 text-base">No crawler audit logs found matching current filter.</p>
                 <p className="text-gray-400 text-sm">
                   When crawler agents run, audit logs will be tracked here.
@@ -785,31 +800,35 @@ export default function ChangeProposalsPage() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Rental Shop
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Timestamp
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Outcome Details
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {crawlerRuns.map((run) => (
+                    {crawlerRuns.map((run) => {
+                      const runDate = new Date(run.createdAt);
+                      return (
                       <tr
                         key={run.id}
                         className="hover:bg-gray-50 transition-colors"
                       >
-                        <td className="px-6 py-4">
-                          <div className="font-semibold text-gray-900">{run.shopName}</div>
+                        <td className="px-4 py-3">
+                          <div className="font-semibold text-gray-900 text-sm leading-snug">
+                            {run.shopName}
+                          </div>
                           {run.agentRunId && (
                             <div className="text-xs text-gray-400 font-mono mt-0.5">
                               Run: {run.agentRunId}
@@ -817,19 +836,25 @@ export default function ChangeProposalsPage() {
                           )}
                         </td>
 
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-3 py-3">
                           <div>{getCrawlerStatusBadge(run.status)}</div>
                           {renderCrawlerQualityBadges(run)}
                         </td>
 
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {new Date(run.createdAt).toLocaleString(undefined, {
-                            dateStyle: 'medium',
-                            timeStyle: 'short',
-                          })}
+                        <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-600">
+                          <div className="font-medium text-gray-700">
+                            {runDate.toLocaleDateString(undefined, {
+                              dateStyle: 'medium',
+                            })}
+                          </div>
+                          <div className="text-gray-500">
+                            {runDate.toLocaleTimeString(undefined, {
+                              timeStyle: 'short',
+                            })}
+                          </div>
                         </td>
 
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-3 py-3">
                           {run.proposalId ? (
                             <Link
                               href={`/admin/change-proposals/${run.proposalId}`}
@@ -885,7 +910,7 @@ export default function ChangeProposalsPage() {
                           )}
                         </td>
 
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                        <td className="px-4 py-3 whitespace-nowrap text-right text-sm">
                           <Button
                             size="sm"
                             variant="outline"
@@ -895,7 +920,8 @@ export default function ChangeProposalsPage() {
                           </Button>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
