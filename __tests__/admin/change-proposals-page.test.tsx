@@ -904,6 +904,7 @@ describe('ChangeProposalsPage', () => {
     // Filter options include Acknowledged and Superseded
     expect(screen.getByRole('option', { name: 'Acknowledged' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Superseded' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Approve & Apply All/i })).not.toBeInTheDocument();
 
     // Quick Acknowledge sends action: 'acknowledge' with expectedVersion: 1
     mockFetch.mockResolvedValueOnce({
@@ -1268,6 +1269,267 @@ describe('ChangeProposalsPage', () => {
       expect(mockFetch).toHaveBeenLastCalledWith(
         '/api/admin/crawler-logs?status=partial&limit=50'
       );
+    });
+  });
+
+  it('executes one-click AJAX Approve & Apply All with global table action lock and in-place row removal without extra GET (#239)', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        proposals: [
+          {
+            id: 'prop-auto-1',
+            shopId: 'shop-1',
+            shopName: 'Pai Motor Shop',
+            sourceUrl: 'https://paimotorshop.com/rates',
+            status: 'pending',
+            coverageStatus: 'partial',
+            reconciliationStatus: 'unresolved',
+            applicationStatus: 'pending',
+            version: 3,
+            summaryCounts: { add: 2, update: 1, delist: 0, unresolved: 1 },
+            createdAt: '2026-11-01T10:00:00Z',
+          },
+          {
+            id: 'prop-auto-2',
+            shopId: 'shop-2',
+            shopName: 'Samui Scooter Club',
+            sourceUrl: 'https://samuiscooter.com',
+            status: 'pending',
+            applicationStatus: 'pending',
+            version: 1,
+            summaryCounts: { add: 1, update: 0, delist: 0 },
+            createdAt: '2026-11-01T09:00:00Z',
+          },
+        ],
+        totalCount: 2,
+      }),
+    });
+
+    render(<ChangeProposalsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Pai Motor Shop')).toBeInTheDocument();
+    });
+
+    // Shown on both pending rows with ready mutations, including Partial Coverage + Unresolved row
+    const approveButtons = screen.getAllByRole('button', { name: /Approve & Apply All/i });
+    expect(approveButtons).toHaveLength(2);
+
+    let resolveApply!: (val: any) => void;
+    mockFetch.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveApply = resolve;
+        })
+    );
+
+    fireEvent.click(approveButtons[0]);
+
+    // While in flight: active button shows Applying... and ALL row action buttons across the table are disabled globally
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Applying\.\.\./i })).toBeDisabled();
+    });
+    expect(screen.getByRole('button', { name: /Approve & Apply All/i })).toBeDisabled();
+    for (const rejectBtn of screen.getAllByRole('button', { name: /^Reject$/i })) {
+      expect(rejectBtn).toBeDisabled();
+    }
+
+    await React.act(async () => {
+      resolveApply({
+        ok: true,
+        json: async () => ({
+          success: true,
+          appliedCount: 3,
+          status: 'applied',
+          applicationStatus: 'applied',
+          reconciliationStatus: 'unresolved',
+        }),
+      });
+    });
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/admin/change-proposals/prop-auto-1/apply',
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ approveAll: true, expectedVersion: 3 }),
+        })
+      );
+    });
+
+    // Pure single AJAX POST update: zero extra GET refresh
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    await waitFor(() => {
+      expect(screen.queryByText('Pai Motor Shop')).not.toBeInTheDocument();
+    });
+    expect(screen.getByText('Samui Scooter Club')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Approve & Apply All/i })).not.toBeDisabled();
+    expect(
+      screen.getByText(/Approved & applied 3 changes for Pai Motor Shop\./i)
+    ).toBeInTheDocument();
+
+    // Success alert is dismissible
+    fireEvent.click(screen.getByRole('button', { name: /Dismiss/i }));
+    expect(
+      screen.queryByText(/Approved & applied 3 changes for Pai Motor Shop\./i)
+    ).not.toBeInTheDocument();
+  });
+
+  it('updates row status badge in-place under All Statuses, surfaces dismissible errors, and keeps Reject silent without wiping the table (#239)', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        proposals: [],
+        totalCount: 0,
+      }),
+    });
+
+    render(<ChangeProposalsPage />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/No change proposals found matching current filter/i)
+      ).toBeInTheDocument();
+    });
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        proposals: [
+          {
+            id: 'prop-all-view-1',
+            shopId: 'shop-1',
+            shopName: 'Chiang Mai Riders',
+            sourceUrl: 'https://cmriders.com',
+            status: 'pending',
+            applicationStatus: 'pending',
+            version: 1,
+            summaryCounts: { add: 1, update: 0, delist: 0 },
+            createdAt: '2026-11-01T10:00:00Z',
+          },
+          {
+            id: 'prop-all-view-2',
+            shopId: 'shop-2',
+            shopName: 'Phuket Touring',
+            sourceUrl: 'https://phukettouring.com',
+            status: 'pending',
+            applicationStatus: 'pending',
+            version: 1,
+            summaryCounts: { add: 0, update: 1, delist: 0 },
+            createdAt: '2026-11-01T09:00:00Z',
+          },
+        ],
+        totalCount: 2,
+      }),
+    });
+
+    fireEvent.change(screen.getByDisplayValue('Pending Review'), { target: { value: 'all' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('Chiang Mai Riders')).toBeInTheDocument();
+    });
+
+    // Failure shows dismissible error alert and preserves row
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 409,
+      json: async () => ({
+        error: 'Stale motorcycle state detected.',
+      }),
+    });
+
+    const approveBtns = screen.getAllByRole('button', { name: /Approve & Apply All/i });
+    fireEvent.click(approveBtns[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText('Stale motorcycle state detected.')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Chiang Mai Riders')).toBeInTheDocument();
+
+    // Retry succeeds and updates status badge in-place to Applied without removing row
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        appliedCount: 1,
+        status: 'applied',
+        applicationStatus: 'applied',
+      }),
+    });
+
+    fireEvent.click(screen.getAllByRole('button', { name: /Approve & Apply All/i })[0]);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Approved & applied 1 change for Chiang Mai Riders\./i)
+      ).toBeInTheDocument();
+    });
+    expect(screen.getByText('Chiang Mai Riders')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /Approve & Apply All/i })).toHaveLength(1);
+
+    // Reject on remaining pending row refreshes silently without wiping out the table
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ success: true, appliedCount: 0, status: 'rejected' }),
+    });
+    let resolveSilentRefresh!: (val: any) => void;
+    mockFetch.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveSilentRefresh = resolve;
+        })
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /^Reject$/i }));
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenLastCalledWith('/api/admin/change-proposals?status=all&limit=50');
+    });
+    // Table stays visible during silent background refresh (no full-table spinner wipe)
+    expect(screen.getByText('Chiang Mai Riders')).toBeInTheDocument();
+    expect(screen.getByText('Phuket Touring')).toBeInTheDocument();
+
+    await React.act(async () => {
+      resolveSilentRefresh({
+        ok: true,
+        json: async () => ({
+          success: true,
+          proposals: [
+            {
+              id: 'prop-all-view-1',
+              shopId: 'shop-1',
+              shopName: 'Chiang Mai Riders',
+              sourceUrl: 'https://cmriders.com',
+              status: 'applied',
+              applicationStatus: 'applied',
+              version: 2,
+              summaryCounts: { add: 1, update: 0, delist: 0 },
+              createdAt: '2026-11-01T10:00:00Z',
+            },
+            {
+              id: 'prop-all-view-2',
+              shopId: 'shop-2',
+              shopName: 'Phuket Touring',
+              sourceUrl: 'https://phukettouring.com',
+              status: 'rejected',
+              applicationStatus: 'rejected',
+              version: 2,
+              summaryCounts: { add: 0, update: 1, delist: 0 },
+              createdAt: '2026-11-01T09:00:00Z',
+            },
+          ],
+          totalCount: 2,
+        }),
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: /^Reject$/i })).not.toBeInTheDocument();
     });
   });
 });

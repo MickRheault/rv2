@@ -7,6 +7,7 @@ import { shopService } from '@/services/shops';
 import {
   submitProposalDecision,
   acknowledgeReportProposal,
+  approveAllProposalChanges,
   toSafeHttpUrl,
 } from '@/components/admin/ChangeProposalDiffViewer';
 import {
@@ -109,9 +110,15 @@ export default function ChangeProposalsPage() {
   const [proposalTotalCount, setProposalTotalCount] = useState<number>(0);
   const [proposalStatusFilter, setProposalStatusFilter] = useState<string>('pending');
   const [loadingProposals, setLoadingProposals] = useState<boolean>(true);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
   const [proposalError, setProposalError] = useState<string | null>(null);
+  const [proposalSuccess, setProposalSuccess] = useState<string | null>(null);
+
+  const isAnyProposalActionInFlight = Boolean(
+    approvingId || rejectingId || acknowledgingId
+  );
 
   // Crawler logs state
   const [crawlerRuns, setCrawlerRuns] = useState<CrawlRunItem[]>([]);
@@ -140,8 +147,11 @@ export default function ChangeProposalsPage() {
     ...shops.map((s) => ({ value: s.id, label: s.provider_name })),
   ];
 
-  const fetchProposals = useCallback(async () => {
-    setLoadingProposals(true);
+  const fetchProposals = useCallback(async (options?: { silent?: boolean }) => {
+    const isSilent = options?.silent === true;
+    if (!isSilent) {
+      setLoadingProposals(true);
+    }
     setProposalError(null);
 
     try {
@@ -156,17 +166,69 @@ export default function ChangeProposalsPage() {
       console.error('Error fetching proposals:', err);
       setProposalError(err.message || 'Error loading proposals');
     } finally {
-      setLoadingProposals(false);
+      if (!isSilent) {
+        setLoadingProposals(false);
+      }
     }
   }, [proposalStatusFilter]);
 
+  const handleQuickApproveAll = async (prop: ProposalSummaryItem) => {
+    if (isAnyProposalActionInFlight) return;
+    setApprovingId(prop.id);
+    setProposalError(null);
+    setProposalSuccess(null);
+
+    try {
+      const result = await approveAllProposalChanges(prop.id, prop.version);
+      const nextStatus = (result.status || 'applied') as ProposalSummaryItem['status'];
+      const matchesFilter =
+        proposalStatusFilter === 'all' || proposalStatusFilter === nextStatus;
+
+      setProposals((prev) => {
+        if (!matchesFilter) {
+          return prev.filter((item) => item.id !== prop.id);
+        }
+        return prev.map((item) =>
+          item.id === prop.id
+            ? {
+                ...item,
+                status: nextStatus,
+                applicationStatus:
+                  (result.applicationStatus as ProposalSummaryItem['applicationStatus']) ??
+                  item.applicationStatus,
+                reconciliationStatus:
+                  (result.reconciliationStatus as ProposalSummaryItem['reconciliationStatus']) ??
+                  item.reconciliationStatus,
+                version: (item.version ?? 1) + 1,
+                reviewedAt: new Date().toISOString(),
+              }
+            : item
+        );
+      });
+      if (!matchesFilter) {
+        setProposalTotalCount((prev) => Math.max(0, prev - 1));
+      }
+
+      setProposalSuccess(
+        `Approved & applied ${result.appliedCount} change${result.appliedCount === 1 ? '' : 's'} for ${prop.shopName}.`
+      );
+    } catch (err: any) {
+      console.error('Error approving all proposal changes:', err);
+      setProposalError(err.message || 'Error approving and applying changes');
+    } finally {
+      setApprovingId(null);
+    }
+  };
+
   const handleQuickReject = async (proposalId: string, expectedVersion?: number) => {
+    if (isAnyProposalActionInFlight) return;
     setRejectingId(proposalId);
     setProposalError(null);
+    setProposalSuccess(null);
 
     try {
       await submitProposalDecision(proposalId, [], expectedVersion);
-      await fetchProposals();
+      await fetchProposals({ silent: true });
     } catch (err: any) {
       console.error('Error rejecting proposal:', err);
       setProposalError(err.message || 'Error rejecting proposal');
@@ -176,12 +238,14 @@ export default function ChangeProposalsPage() {
   };
 
   const handleQuickAcknowledge = async (proposalId: string, expectedVersion?: number) => {
+    if (isAnyProposalActionInFlight) return;
     setAcknowledgingId(proposalId);
     setProposalError(null);
+    setProposalSuccess(null);
 
     try {
       await acknowledgeReportProposal(proposalId, expectedVersion);
-      await fetchProposals();
+      await fetchProposals({ silent: true });
     } catch (err: any) {
       console.error('Error acknowledging report:', err);
       setProposalError(err.message || 'Error acknowledging reconciliation report');
@@ -381,7 +445,7 @@ export default function ChangeProposalsPage() {
             />
             <Button
               variant="outline"
-              onClick={fetchProposals}
+              onClick={() => fetchProposals()}
               disabled={loadingProposals}
               title="Refresh List"
             >
@@ -457,7 +521,16 @@ export default function ChangeProposalsPage() {
       {/* Proposals Tab Content */}
       {activeTab === 'proposals' && (
         <>
-          {proposalError && <Alert variant="error">{proposalError}</Alert>}
+          {proposalError && (
+            <Alert variant="error" dismissible onDismiss={() => setProposalError(null)}>
+              {proposalError}
+            </Alert>
+          )}
+          {proposalSuccess && (
+            <Alert variant="success" dismissible onDismiss={() => setProposalSuccess(null)}>
+              {proposalSuccess}
+            </Alert>
+          )}
 
           <Card>
             {loadingProposals ? (
@@ -617,11 +690,26 @@ export default function ChangeProposalsPage() {
 
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                             <div className="inline-flex items-center gap-2">
+                              {prop.status === 'pending' && !isReportOnlyRow && actionableCount > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleQuickApproveAll(prop)}
+                                  disabled={isAnyProposalActionInFlight}
+                                  className="inline-flex items-center px-2.5 py-1.5 border border-emerald-600 text-xs font-medium rounded-md shadow-sm text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50"
+                                >
+                                  {approvingId === prop.id ? (
+                                    <ArrowPathIcon className="w-3.5 h-3.5 mr-1 animate-spin" />
+                                  ) : (
+                                    <CheckIcon className="w-3.5 h-3.5 mr-1" />
+                                  )}
+                                  {approvingId === prop.id ? 'Applying...' : 'Approve & Apply All'}
+                                </button>
+                              )}
                               {prop.status === 'pending' && isReportOnlyRow && (
                                 <button
                                   type="button"
                                   onClick={() => handleQuickAcknowledge(prop.id, prop.version)}
-                                  disabled={acknowledgingId === prop.id || rejectingId === prop.id}
+                                  disabled={isAnyProposalActionInFlight}
                                   className="inline-flex items-center px-2.5 py-1.5 border border-emerald-300 text-xs font-medium rounded-md text-emerald-800 bg-white hover:bg-emerald-50 disabled:opacity-50"
                                 >
                                   <CheckIcon className="w-3.5 h-3.5 mr-1" />
@@ -632,7 +720,7 @@ export default function ChangeProposalsPage() {
                                 <button
                                   type="button"
                                   onClick={() => handleQuickReject(prop.id, prop.version)}
-                                  disabled={rejectingId === prop.id || acknowledgingId === prop.id}
+                                  disabled={isAnyProposalActionInFlight}
                                   className="inline-flex items-center px-2.5 py-1.5 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50 disabled:opacity-50"
                                 >
                                   <XMarkIcon className="w-3.5 h-3.5 mr-1" />

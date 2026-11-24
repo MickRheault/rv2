@@ -3654,6 +3654,71 @@ export class ChangeProposalService {
   }
 
   /**
+   * Approves and applies all pending actionable mutation items on a pending proposal.
+   */
+  static async applyAll(
+    proposalId: string,
+    options: { expectedVersion?: number; actorId?: string | null; notes?: string | null } = {}
+  ) {
+    const supabase = getSupabaseAdmin();
+
+    const { data: proposal, error: propError } = await (supabase
+      .from('change_proposals') as any)
+      .select('id, status, application_status, version')
+      .eq('id', proposalId)
+      .single();
+
+    if (propError || !proposal) {
+      throw new Error(`Proposal not found: ${propError?.message || proposalId}`);
+    }
+
+    if (proposal.status === 'reviewing') {
+      throw new ProposalVersionConflictError(
+        `Concurrent apply or review already in progress for proposal '${proposalId}'.`
+      );
+    }
+
+    if (
+      proposal.status === 'applied' ||
+      proposal.status === 'partially_applied' ||
+      proposal.status === 'rejected' ||
+      proposal.status === 'acknowledged' ||
+      proposal.status === 'superseded'
+    ) {
+      throw new ProposalItemValidationError(
+        `Cannot apply proposal with status '${proposal.status}'`
+      );
+    }
+
+    if (proposal.application_status === 'not_applicable') {
+      throw new ProposalItemValidationError(
+        `Cannot approve items on report-only proposal '${proposalId}'; use action='acknowledge' instead.`
+      );
+    }
+
+    const { data: allItems, error: itemsError } = await supabase
+      .from('change_proposal_items')
+      .select('id, action, status')
+      .eq('proposal_id', proposalId);
+
+    if (itemsError || !allItems) {
+      throw new Error(`Failed to load items: ${itemsError?.message}`);
+    }
+
+    const pendingMutableIds = allItems
+      .filter((i: any) => isActionableProposalAction(i.action) && (!i.status || i.status === 'pending'))
+      .map((i: any) => i.id);
+
+    if (pendingMutableIds.length === 0) {
+      throw new ProposalItemValidationError(
+        `Proposal '${proposalId}' has no pending actionable changes to apply.`
+      );
+    }
+
+    return ChangeProposalService.apply(proposalId, pendingMutableIds, options);
+  }
+
+  /**
    * Applies approved mutation items to live database records.
    * Enforces geodata immutability, apply-time revalidation (ownership, pricing, concurrency),
    * unresolved candidate transitions, and soft-delisting.

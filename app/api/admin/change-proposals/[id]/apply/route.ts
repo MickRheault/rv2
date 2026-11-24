@@ -41,7 +41,38 @@ export async function POST(
       return NextResponse.json(ackResult, { status: 200 });
     }
 
-    const { approvedItemIds } = body || {};
+    const { approvedItemIds, approveAll } = body || {};
+
+    if (approveAll !== undefined && typeof approveAll !== 'boolean') {
+      return NextResponse.json(
+        { error: 'approveAll must be a boolean when provided.' },
+        { status: 400 }
+      );
+    }
+
+    const hasApplyOptions =
+      body?.expectedVersion !== undefined || Boolean(actorId) || body?.notes !== undefined;
+    const applyOptions = {
+      ...(body?.expectedVersion !== undefined ? { expectedVersion: body.expectedVersion } : {}),
+      ...(actorId ? { actorId } : {}),
+      ...(body?.notes !== undefined ? { notes: body.notes ?? null } : {}),
+    };
+
+    if (approveAll === true) {
+      if (approvedItemIds !== undefined) {
+        return NextResponse.json(
+          { error: 'Specify either approveAll: true or approvedItemIds, not both.' },
+          { status: 400 }
+        );
+      }
+
+      const result = hasApplyOptions
+        ? await ChangeProposalService.applyAll(id, applyOptions)
+        : await ChangeProposalService.applyAll(id);
+      purgePublicCache();
+
+      return NextResponse.json(result, { status: 200 });
+    }
 
     if (!Array.isArray(approvedItemIds)) {
       return NextResponse.json(
@@ -50,14 +81,8 @@ export async function POST(
       );
     }
 
-    const hasApplyOptions =
-      body?.expectedVersion !== undefined || Boolean(actorId) || body?.notes !== undefined;
     const result = hasApplyOptions
-      ? await ChangeProposalService.apply(id, approvedItemIds, {
-          ...(body?.expectedVersion !== undefined ? { expectedVersion: body.expectedVersion } : {}),
-          ...(actorId ? { actorId } : {}),
-          ...(body?.notes !== undefined ? { notes: body.notes ?? null } : {}),
-        })
+      ? await ChangeProposalService.apply(id, approvedItemIds, applyOptions)
       : await ChangeProposalService.apply(id, approvedItemIds);
     purgePublicCache();
 

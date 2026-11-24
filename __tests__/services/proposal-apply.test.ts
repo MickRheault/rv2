@@ -5020,6 +5020,135 @@ describe('Change Proposal Application & Geodata Protection', () => {
       });
     });
   });
+
+  describe('ChangeProposalService.applyAll', () => {
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it('collects only pending actionable items and delegates to ChangeProposalService.apply with options', async () => {
+      (getSupabaseAdmin as jest.Mock).mockReturnValue({
+        from: jest.fn((table: string) => {
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({
+                    data: {
+                      id: 'prop-all-1',
+                      status: 'pending',
+                      application_status: 'pending',
+                      version: 2,
+                    },
+                    error: null,
+                  }),
+                }),
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({
+                  data: [
+                    { id: 'item-add', action: 'add', status: 'pending' },
+                    { id: 'item-upd', action: 'update', status: 'pending' },
+                    { id: 'item-del', action: 'delist', status: null },
+                    { id: 'item-unchanged', action: 'unchanged', status: 'applied' },
+                    { id: 'item-already', action: 'update', status: 'applied' },
+                  ],
+                  error: null,
+                }),
+              }),
+            };
+          }
+          return {};
+        }),
+      });
+
+      const applySpy = jest.spyOn(ChangeProposalService, 'apply').mockResolvedValue({
+        success: true,
+        appliedCount: 3,
+        status: 'applied',
+        applicationStatus: 'applied',
+      });
+
+      const result = await ChangeProposalService.applyAll('prop-all-1', {
+        expectedVersion: 2,
+        actorId: '11111111-1111-4111-8111-111111111111',
+        notes: 'Quick approve',
+      });
+
+      expect(applySpy).toHaveBeenCalledWith(
+        'prop-all-1',
+        ['item-add', 'item-upd', 'item-del'],
+        {
+          expectedVersion: 2,
+          actorId: '11111111-1111-4111-8111-111111111111',
+          notes: 'Quick approve',
+        }
+      );
+      expect(result).toEqual({
+        success: true,
+        appliedCount: 3,
+        status: 'applied',
+        applicationStatus: 'applied',
+      });
+    });
+
+    it('rejects reviewing, non-pending, report-only, and zero-actionable proposals without calling apply', async () => {
+      const applySpy = jest.spyOn(ChangeProposalService, 'apply');
+
+      const mockProposalRow = (row: Record<string, any>, items: any[] = []) => {
+        (getSupabaseAdmin as jest.Mock).mockReturnValue({
+          from: jest.fn((table: string) => {
+            if (table === 'change_proposals') {
+              return {
+                select: jest.fn().mockReturnValue({
+                  eq: jest.fn().mockReturnValue({
+                    single: jest.fn().mockResolvedValue({ data: row, error: null }),
+                  }),
+                }),
+              };
+            }
+            if (table === 'change_proposal_items') {
+              return {
+                select: jest.fn().mockReturnValue({
+                  eq: jest.fn().mockResolvedValue({ data: items, error: null }),
+                }),
+              };
+            }
+            return {};
+          }),
+        });
+      };
+
+      mockProposalRow({ id: 'prop-rev', status: 'reviewing', application_status: 'pending', version: 1 });
+      await expect(ChangeProposalService.applyAll('prop-rev')).rejects.toThrow(
+        /Concurrent apply or review already in progress/i
+      );
+
+      mockProposalRow({ id: 'prop-done', status: 'applied', application_status: 'applied', version: 2 });
+      await expect(ChangeProposalService.applyAll('prop-done')).rejects.toThrow(
+        ProposalItemValidationError
+      );
+
+      mockProposalRow({ id: 'prop-report', status: 'pending', application_status: 'not_applicable', version: 1 });
+      await expect(ChangeProposalService.applyAll('prop-report')).rejects.toThrow(
+        ProposalItemValidationError
+      );
+
+      mockProposalRow(
+        { id: 'prop-empty', status: 'pending', application_status: 'pending', version: 1 },
+        [{ id: 'item-unchanged', action: 'unchanged', status: 'applied' }]
+      );
+      await expect(ChangeProposalService.applyAll('prop-empty')).rejects.toThrow(
+        ProposalItemValidationError
+      );
+
+      expect(applySpy).not.toHaveBeenCalled();
+    });
+  });
 });
 
 
