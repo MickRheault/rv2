@@ -9,19 +9,27 @@ import { ChangeProposalService } from '@/services/change-proposals';
 jest.mock('@/services/change-proposals', () => ({
   ChangeProposalService: {
     apply: jest.fn(),
+    applyAll: jest.fn(),
   },
+}));
+
+jest.mock('@/lib/cache/purgePublicCache', () => ({
+  purgePublicCache: jest.fn(),
 }));
 
 jest.mock('@/lib/auth/admin-auth', () => ({
   isAuthorizedAdmin: jest.fn(),
+  getAuthenticatedAdminUserId: jest.fn(),
 }));
 
-import { isAuthorizedAdmin } from '@/lib/auth/admin-auth';
+import { isAuthorizedAdmin, getAuthenticatedAdminUserId } from '@/lib/auth/admin-auth';
+import { purgePublicCache } from '@/lib/cache/purgePublicCache';
 
 describe('POST /api/admin/change-proposals/[id]/apply', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (isAuthorizedAdmin as jest.Mock).mockResolvedValue(true);
+    (getAuthenticatedAdminUserId as jest.Mock).mockResolvedValue(null);
   });
 
   it('rejects unauthenticated requests with 401', async () => {
@@ -199,6 +207,66 @@ describe('POST /api/admin/change-proposals/[id]/apply', () => {
     const res409 = await POST(req409, { params: Promise.resolve({ id: 'prop-1' }) });
     expect(res409.status).toBe(409);
     expect((await res409.json()).error).toMatch(/Stale motorcycle category/i);
+  });
+
+  it('calls ChangeProposalService.applyAll with options and purges public cache when approveAll is true', async () => {
+    (getAuthenticatedAdminUserId as jest.Mock).mockResolvedValue('admin-user-42');
+    (ChangeProposalService.applyAll as jest.Mock).mockResolvedValue({
+      success: true,
+      appliedCount: 3,
+      status: 'applied',
+      version: 3,
+    });
+
+    const request = new NextRequest(
+      'http://localhost:3000/api/admin/change-proposals/prop-1/apply',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ approveAll: true, expectedVersion: 2, notes: 'Looks good' }),
+      }
+    );
+
+    const response = await POST(request, { params: Promise.resolve({ id: 'prop-1' }) });
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.success).toBe(true);
+    expect(body.appliedCount).toBe(3);
+    expect(body.status).toBe('applied');
+    expect(body.version).toBe(3);
+    expect(ChangeProposalService.applyAll).toHaveBeenCalledWith('prop-1', {
+      expectedVersion: 2,
+      actorId: 'admin-user-42',
+      notes: 'Looks good',
+    });
+    expect(ChangeProposalService.apply).not.toHaveBeenCalled();
+    expect(purgePublicCache).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns 400 when approveAll is not a boolean or combined with approvedItemIds', async () => {
+    const nonBoolReq = new NextRequest(
+      'http://localhost:3000/api/admin/change-proposals/prop-1/apply',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ approveAll: 'yes' }),
+      }
+    );
+    const nonBoolRes = await POST(nonBoolReq, { params: Promise.resolve({ id: 'prop-1' }) });
+    expect(nonBoolRes.status).toBe(400);
+
+    const conflictReq = new NextRequest(
+      'http://localhost:3000/api/admin/change-proposals/prop-1/apply',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ approveAll: true, approvedItemIds: ['item-1'] }),
+      }
+    );
+    const conflictRes = await POST(conflictReq, { params: Promise.resolve({ id: 'prop-1' }) });
+    expect(conflictRes.status).toBe(400);
+    expect(ChangeProposalService.applyAll).not.toHaveBeenCalled();
+    expect(purgePublicCache).not.toHaveBeenCalled();
   });
 });
 

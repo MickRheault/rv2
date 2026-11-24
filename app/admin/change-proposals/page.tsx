@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { Card, Button, Badge, Spinner, Alert, Select, Modal } from '@/components/ui';
 import { shopService } from '@/services/shops';
 import {
   submitProposalDecision,
   acknowledgeReportProposal,
+  approveAllProposalChanges,
   toSafeHttpUrl,
 } from '@/components/admin/ChangeProposalDiffViewer';
 import {
@@ -108,10 +109,18 @@ export default function ChangeProposalsPage() {
   const [proposals, setProposals] = useState<ProposalSummaryItem[]>([]);
   const [proposalTotalCount, setProposalTotalCount] = useState<number>(0);
   const [proposalStatusFilter, setProposalStatusFilter] = useState<string>('pending');
+  const proposalStatusFilterRef = useRef<string>(proposalStatusFilter);
+  proposalStatusFilterRef.current = proposalStatusFilter;
   const [loadingProposals, setLoadingProposals] = useState<boolean>(true);
-  const [rejectingId, setRejectingId] = useState<string | null>(null);
-  const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
+  const [activeProposalAction, setActiveProposalAction] = useState<{
+    id: string;
+    type: 'approve' | 'reject' | 'acknowledge';
+  } | null>(null);
+  const actionInFlightRef = useRef<boolean>(false);
   const [proposalError, setProposalError] = useState<string | null>(null);
+  const [proposalSuccess, setProposalSuccess] = useState<string | null>(null);
+
+  const isAnyProposalActionInFlight = activeProposalAction !== null;
 
   // Crawler logs state
   const [crawlerRuns, setCrawlerRuns] = useState<CrawlRunItem[]>([]);
@@ -140,8 +149,11 @@ export default function ChangeProposalsPage() {
     ...shops.map((s) => ({ value: s.id, label: s.provider_name })),
   ];
 
-  const fetchProposals = useCallback(async () => {
-    setLoadingProposals(true);
+  const fetchProposals = useCallback(async (options?: { silent?: boolean }) => {
+    const isSilent = options?.silent === true;
+    if (!isSilent) {
+      setLoadingProposals(true);
+    }
     setProposalError(null);
 
     try {
@@ -156,38 +168,104 @@ export default function ChangeProposalsPage() {
       console.error('Error fetching proposals:', err);
       setProposalError(err.message || 'Error loading proposals');
     } finally {
-      setLoadingProposals(false);
+      if (!isSilent) {
+        setLoadingProposals(false);
+      }
     }
   }, [proposalStatusFilter]);
 
-  const handleQuickReject = async (proposalId: string, expectedVersion?: number) => {
-    setRejectingId(proposalId);
+  const runProposalRowAction = async (
+    proposalId: string,
+    type: 'approve' | 'reject' | 'acknowledge',
+    action: () => Promise<void>,
+    logLabel: string,
+    fallbackError: string
+  ) => {
+    if (actionInFlightRef.current) return;
+    actionInFlightRef.current = true;
+    setActiveProposalAction({ id: proposalId, type });
     setProposalError(null);
+    setProposalSuccess(null);
 
     try {
-      await submitProposalDecision(proposalId, [], expectedVersion);
-      await fetchProposals();
+      await action();
     } catch (err: any) {
-      console.error('Error rejecting proposal:', err);
-      setProposalError(err.message || 'Error rejecting proposal');
+      console.error(logLabel, err);
+      setProposalError(err.message || fallbackError);
     } finally {
-      setRejectingId(null);
+      actionInFlightRef.current = false;
+      setActiveProposalAction(null);
     }
   };
 
-  const handleQuickAcknowledge = async (proposalId: string, expectedVersion?: number) => {
-    setAcknowledgingId(proposalId);
-    setProposalError(null);
+  const handleQuickApproveAll = async (prop: ProposalSummaryItem) => {
+    await runProposalRowAction(
+      prop.id,
+      'approve',
+      async () => {
+        const result = await approveAllProposalChanges(prop.id, prop.version);
+        const nextStatus = (result.status || 'applied') as ProposalSummaryItem['status'];
+        const currentFilter = proposalStatusFilterRef.current;
+        const matchesFilter = currentFilter === 'all' || currentFilter === nextStatus;
 
-    try {
-      await acknowledgeReportProposal(proposalId, expectedVersion);
-      await fetchProposals();
-    } catch (err: any) {
-      console.error('Error acknowledging report:', err);
-      setProposalError(err.message || 'Error acknowledging reconciliation report');
-    } finally {
-      setAcknowledgingId(null);
-    }
+        setProposals((prev) => {
+          if (!matchesFilter) {
+            return prev.filter((item) => item.id !== prop.id);
+          }
+          return prev.map((item) =>
+            item.id === prop.id
+              ? {
+                  ...item,
+                  status: nextStatus,
+                  applicationStatus:
+                    (result.applicationStatus as ProposalSummaryItem['applicationStatus']) ??
+                    item.applicationStatus,
+                  reconciliationStatus:
+                    (result.reconciliationStatus as ProposalSummaryItem['reconciliationStatus']) ??
+                    item.reconciliationStatus,
+                  version: result.version ?? (item.version ?? 1) + 1,
+                  reviewedAt: new Date().toISOString(),
+                }
+              : item
+          );
+        });
+        if (!matchesFilter) {
+          setProposalTotalCount((prev) => Math.max(0, prev - 1));
+        }
+
+        setProposalSuccess(
+          `Approved & applied ${result.appliedCount} change${result.appliedCount === 1 ? '' : 's'} for ${prop.shopName}.`
+        );
+      },
+      'Error approving all proposal changes:',
+      'Error approving and applying changes'
+    );
+  };
+
+  const handleQuickReject = async (proposalId: string, expectedVersion?: number) => {
+    await runProposalRowAction(
+      proposalId,
+      'reject',
+      async () => {
+        await submitProposalDecision(proposalId, [], expectedVersion);
+        await fetchProposals({ silent: true });
+      },
+      'Error rejecting proposal:',
+      'Error rejecting proposal'
+    );
+  };
+
+  const handleQuickAcknowledge = async (proposalId: string, expectedVersion?: number) => {
+    await runProposalRowAction(
+      proposalId,
+      'acknowledge',
+      async () => {
+        await acknowledgeReportProposal(proposalId, expectedVersion);
+        await fetchProposals({ silent: true });
+      },
+      'Error acknowledging report:',
+      'Error acknowledging reconciliation report'
+    );
   };
 
 
@@ -377,12 +455,13 @@ export default function ChangeProposalsPage() {
               options={PROPOSAL_STATUS_FILTER_OPTIONS}
               value={proposalStatusFilter}
               onChange={(e) => setProposalStatusFilter(e.target.value)}
+              disabled={isAnyProposalActionInFlight}
               className="w-48"
             />
             <Button
               variant="outline"
-              onClick={fetchProposals}
-              disabled={loadingProposals}
+              onClick={() => fetchProposals()}
+              disabled={loadingProposals || isAnyProposalActionInFlight}
               title="Refresh List"
             >
               <ArrowPathIcon className={`w-4 h-4 ${loadingProposals ? 'animate-spin' : ''}`} />
@@ -457,7 +536,16 @@ export default function ChangeProposalsPage() {
       {/* Proposals Tab Content */}
       {activeTab === 'proposals' && (
         <>
-          {proposalError && <Alert variant="error">{proposalError}</Alert>}
+          {proposalError && (
+            <Alert variant="error" dismissible onDismiss={() => setProposalError(null)}>
+              {proposalError}
+            </Alert>
+          )}
+          {proposalSuccess && (
+            <Alert variant="success" dismissible onDismiss={() => setProposalSuccess(null)}>
+              {proposalSuccess}
+            </Alert>
+          )}
 
           <Card>
             {loadingProposals ? (
@@ -512,6 +600,8 @@ export default function ChangeProposalsPage() {
                       const isReportOnlyRow =
                         prop.applicationStatus === 'not_applicable' ||
                         (Boolean(prop.hasReconciliationReport) && actionableCount === 0);
+                      const rowActionType =
+                        activeProposalAction?.id === prop.id ? activeProposalAction.type : null;
 
                       return (
                         <tr key={prop.id} className="hover:bg-gray-50 transition-colors">
@@ -617,26 +707,41 @@ export default function ChangeProposalsPage() {
 
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                             <div className="inline-flex items-center gap-2">
+                              {prop.status === 'pending' && !isReportOnlyRow && actionableCount > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleQuickApproveAll(prop)}
+                                  disabled={isAnyProposalActionInFlight}
+                                  className="inline-flex items-center px-2.5 py-1.5 border border-emerald-600 text-xs font-medium rounded-md shadow-sm text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50"
+                                >
+                                  {rowActionType === 'approve' ? (
+                                    <ArrowPathIcon className="w-3.5 h-3.5 mr-1 animate-spin" />
+                                  ) : (
+                                    <CheckIcon className="w-3.5 h-3.5 mr-1" />
+                                  )}
+                                  {rowActionType === 'approve' ? 'Applying...' : 'Approve & Apply All'}
+                                </button>
+                              )}
                               {prop.status === 'pending' && isReportOnlyRow && (
                                 <button
                                   type="button"
                                   onClick={() => handleQuickAcknowledge(prop.id, prop.version)}
-                                  disabled={acknowledgingId === prop.id || rejectingId === prop.id}
+                                  disabled={isAnyProposalActionInFlight}
                                   className="inline-flex items-center px-2.5 py-1.5 border border-emerald-300 text-xs font-medium rounded-md text-emerald-800 bg-white hover:bg-emerald-50 disabled:opacity-50"
                                 >
                                   <CheckIcon className="w-3.5 h-3.5 mr-1" />
-                                  {acknowledgingId === prop.id ? 'Acknowledging...' : 'Acknowledge'}
+                                  {rowActionType === 'acknowledge' ? 'Acknowledging...' : 'Acknowledge'}
                                 </button>
                               )}
                               {prop.status === 'pending' && (
                                 <button
                                   type="button"
                                   onClick={() => handleQuickReject(prop.id, prop.version)}
-                                  disabled={rejectingId === prop.id || acknowledgingId === prop.id}
+                                  disabled={isAnyProposalActionInFlight}
                                   className="inline-flex items-center px-2.5 py-1.5 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50 disabled:opacity-50"
                                 >
                                   <XMarkIcon className="w-3.5 h-3.5 mr-1" />
-                                  {rejectingId === prop.id ? 'Rejecting...' : 'Reject'}
+                                  {rowActionType === 'reject' ? 'Rejecting...' : 'Reject'}
                                 </button>
                               )}
                               <Link

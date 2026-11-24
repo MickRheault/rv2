@@ -1865,16 +1865,12 @@ function resolveProposalExtractionHints(proposal: DiffViewerProposal): string | 
   return null;
 }
 
-export async function submitProposalDecision(
+async function postProposalApply<T = any>(
   proposalId: string,
-  approvedItemIds: string[],
-  expectedVersion?: number
-): Promise<{ appliedCount: number; status: string }> {
-  const payload: Record<string, any> = { approvedItemIds };
-  if (expectedVersion !== undefined) {
-    payload.expectedVersion = expectedVersion;
-  }
-
+  payload: Record<string, any>,
+  fallbackError: string,
+  timeoutError?: string
+): Promise<T> {
   const res = await fetch(`/api/admin/change-proposals/${proposalId}/apply`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -1891,11 +1887,7 @@ export async function submitProposalDecision(
   if (!res.ok) {
     throw new Error(
       data?.error ||
-        (res.status === 504
-          ? 'Request timed out while applying changes. Some items may have been applied — please refresh to review remaining items.'
-          : approvedItemIds.length === 0
-          ? 'Failed to reject proposal.'
-          : 'Failed to apply selected changes.')
+        (res.status === 504 && timeoutError ? timeoutError : fallbackError)
     );
   }
 
@@ -1903,7 +1895,54 @@ export async function submitProposalDecision(
     throw new Error('Unexpected non-JSON response from server.');
   }
 
-  return data;
+  return data as T;
+}
+
+const PROPOSAL_APPLY_TIMEOUT_MESSAGE =
+  'Request timed out while applying changes. Some items may have been applied — please refresh to review remaining items.';
+
+export async function submitProposalDecision(
+  proposalId: string,
+  approvedItemIds: string[],
+  expectedVersion?: number
+): Promise<{ appliedCount: number; status: string }> {
+  const payload: Record<string, any> = { approvedItemIds };
+  if (expectedVersion !== undefined) {
+    payload.expectedVersion = expectedVersion;
+  }
+
+  return postProposalApply(
+    proposalId,
+    payload,
+    approvedItemIds.length === 0
+      ? 'Failed to reject proposal.'
+      : 'Failed to apply selected changes.',
+    PROPOSAL_APPLY_TIMEOUT_MESSAGE
+  );
+}
+
+export async function approveAllProposalChanges(
+  proposalId: string,
+  expectedVersion?: number
+): Promise<{
+  success: boolean;
+  appliedCount: number;
+  status: string;
+  applicationStatus?: string;
+  reconciliationStatus?: string;
+  version?: number;
+}> {
+  const payload: Record<string, any> = { approveAll: true };
+  if (expectedVersion !== undefined) {
+    payload.expectedVersion = expectedVersion;
+  }
+
+  return postProposalApply(
+    proposalId,
+    payload,
+    'Failed to approve and apply all changes.',
+    PROPOSAL_APPLY_TIMEOUT_MESSAGE
+  );
 }
 
 export async function submitCandidateDecision(
@@ -1959,26 +1998,11 @@ export async function acknowledgeReportProposal(
     payload.notes = notes.trim();
   }
 
-  const res = await fetch(`/api/admin/change-proposals/${proposalId}/apply`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-
-  let data: any = null;
-  try {
-    data = await res.json();
-  } catch {
-    // Non-JSON response body
-  }
-
-  if (!res.ok) {
-    throw new Error(data?.error || 'Failed to acknowledge reconciliation report.');
-  }
-  if (!data) {
-    throw new Error('Unexpected non-JSON response from server.');
-  }
-  return data;
+  return postProposalApply(
+    proposalId,
+    payload,
+    'Failed to acknowledge reconciliation report.'
+  );
 }
 
 function renderCoverageStatusBadge(coverageStatus?: string) {

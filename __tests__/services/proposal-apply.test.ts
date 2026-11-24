@@ -6,6 +6,7 @@ import {
   validateGeodataImmutability,
   GeodataImmutabilityError,
   ProposalItemValidationError,
+  ProposalVersionConflictError,
   StaleCategoryStateError,
   ChangeProposalService,
 } from '@/services/change-proposals';
@@ -5018,6 +5019,218 @@ describe('Change Proposal Application & Geodata Protection', () => {
         inclusions: ['2 Helmets', 'Phone Holder'],
         conditions: ['Passport Copy'],
       });
+    });
+  });
+
+  describe('ChangeProposalService.applyAll', () => {
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it('applies only pending actionable items through the full pipeline and returns incremented version', async () => {
+      const updatedBikeIds: string[] = [];
+      const updatedItemStatuses: Array<{ id: string; payload: any }> = [];
+      let finalProposalUpdate: any = null;
+      let proposalSelectCount = 0;
+
+      (getSupabaseAdmin as jest.Mock).mockReturnValue({
+        from: jest.fn((table: string) => {
+          if (table === 'change_proposals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockImplementation(async () => {
+                    proposalSelectCount++;
+                    return {
+                      data: {
+                        id: 'prop-all-1',
+                        shop_id: 'shop-1',
+                        status: 'pending',
+                        application_status: 'pending',
+                        version: 2,
+                      },
+                      error: null,
+                    };
+                  }),
+                }),
+              }),
+              update: jest.fn().mockImplementation((payload: any) => {
+                if (payload.status === 'applied') {
+                  finalProposalUpdate = payload;
+                }
+                const chain: any = {
+                  eq: jest.fn().mockImplementation(() => chain),
+                  select: jest.fn().mockResolvedValue({ data: [{ id: 'prop-all-1' }], error: null }),
+                };
+                return chain;
+              }),
+            };
+          }
+          if (table === 'change_proposal_items') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: 'item-del',
+                      proposal_id: 'prop-all-1',
+                      entity_type: 'motorcycle',
+                      action: 'delist',
+                      entity_id: 'bike-del-1',
+                      proposed_data: {},
+                      status: 'pending',
+                    },
+                    {
+                      id: 'item-unchanged',
+                      proposal_id: 'prop-all-1',
+                      entity_type: 'motorcycle',
+                      action: 'unchanged',
+                      entity_id: 'bike-keep-1',
+                      proposed_data: {},
+                      status: 'applied',
+                    },
+                    {
+                      id: 'item-already',
+                      proposal_id: 'prop-all-1',
+                      entity_type: 'motorcycle',
+                      action: 'delist',
+                      entity_id: 'bike-done-1',
+                      proposed_data: {},
+                      status: 'applied',
+                    },
+                  ],
+                  error: null,
+                }),
+              }),
+              update: jest.fn().mockImplementation((payload: any) => ({
+                eq: jest.fn().mockImplementation(async (_col: string, id: string) => {
+                  updatedItemStatuses.push({ id, payload });
+                  return { error: null };
+                }),
+                in: jest.fn().mockResolvedValue({ error: null }),
+              })),
+            };
+          }
+          if (table === 'motorcycle_rentals') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  maybeSingle: jest.fn().mockResolvedValue({
+                    data: {
+                      id: 'bike-del-1',
+                      shop_id: 'shop-1',
+                      availability_status: 'available',
+                    },
+                    error: null,
+                  }),
+                }),
+              }),
+              update: jest.fn().mockReturnValue({
+                eq: jest.fn().mockImplementation(async (_col: string, id: string) => {
+                  updatedBikeIds.push(id);
+                  return { error: null };
+                }),
+              }),
+            };
+          }
+          if (table === 'proposal_decision_events') {
+            return { insert: jest.fn().mockResolvedValue({ error: null }) };
+          }
+          return {};
+        }),
+      });
+
+      const result = await ChangeProposalService.applyAll('prop-all-1', {
+        expectedVersion: 2,
+        actorId: '11111111-1111-4111-8111-111111111111',
+        notes: 'Quick approve',
+      });
+
+      // Single pass: no duplicate proposal fetch
+      expect(proposalSelectCount).toBe(1);
+      // Only the pending actionable delist item mutated live inventory
+      expect(updatedBikeIds).toEqual(['bike-del-1']);
+      expect(updatedItemStatuses).toEqual([{ id: 'item-del', payload: { status: 'applied' } }]);
+      expect(finalProposalUpdate).toMatchObject({
+        status: 'applied',
+        application_status: 'applied',
+        version: 3,
+        reviewed_by: '11111111-1111-4111-8111-111111111111',
+        notes: 'Quick approve',
+      });
+      expect(result).toEqual({
+        success: true,
+        appliedCount: 1,
+        status: 'applied',
+        applicationStatus: 'applied',
+        version: 3,
+      });
+    });
+
+    it('rejects reviewing, stale version (409 before 400), non-pending, report-only, and zero-actionable proposals with zero mutations', async () => {
+      const mutationSpy = jest.fn();
+
+      const mockProposalRow = (row: Record<string, any>, items: any[] = []) => {
+        (getSupabaseAdmin as jest.Mock).mockReturnValue({
+          from: jest.fn((table: string) => {
+            if (table === 'change_proposals') {
+              return {
+                select: jest.fn().mockReturnValue({
+                  eq: jest.fn().mockReturnValue({
+                    single: jest.fn().mockResolvedValue({ data: row, error: null }),
+                  }),
+                }),
+                update: mutationSpy,
+              };
+            }
+            if (table === 'change_proposal_items') {
+              return {
+                select: jest.fn().mockReturnValue({
+                  eq: jest.fn().mockResolvedValue({ data: items, error: null }),
+                }),
+                update: mutationSpy,
+              };
+            }
+            return { update: mutationSpy, insert: mutationSpy, delete: mutationSpy };
+          }),
+        });
+      };
+
+      mockProposalRow({ id: 'prop-rev', status: 'reviewing', application_status: 'pending', version: 1 });
+      await expect(ChangeProposalService.applyAll('prop-rev')).rejects.toThrow(
+        ProposalVersionConflictError
+      );
+
+      // Stale expectedVersion raises 409 ProposalVersionConflictError before report-only 400 check
+      mockProposalRow({
+        id: 'prop-stale-ver',
+        status: 'pending',
+        application_status: 'not_applicable',
+        version: 4,
+      });
+      await expect(
+        ChangeProposalService.applyAll('prop-stale-ver', { expectedVersion: 2 })
+      ).rejects.toThrow(ProposalVersionConflictError);
+
+      mockProposalRow({ id: 'prop-done', status: 'applied', application_status: 'applied', version: 2 });
+      await expect(ChangeProposalService.applyAll('prop-done')).rejects.toThrow(
+        ProposalItemValidationError
+      );
+
+      mockProposalRow({ id: 'prop-report', status: 'pending', application_status: 'not_applicable', version: 1 });
+      await expect(ChangeProposalService.applyAll('prop-report')).rejects.toThrow(
+        ProposalItemValidationError
+      );
+
+      mockProposalRow(
+        { id: 'prop-empty', status: 'pending', application_status: 'pending', version: 1 },
+        [{ id: 'item-unchanged', action: 'unchanged', status: 'applied' }]
+      );
+      await expect(ChangeProposalService.applyAll('prop-empty')).rejects.toThrow(
+        ProposalItemValidationError
+      );
+
+      expect(mutationSpy).not.toHaveBeenCalled();
     });
   });
 });

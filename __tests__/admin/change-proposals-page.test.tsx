@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import ChangeProposalsPage from '@/app/admin/change-proposals/page';
 import ProposalReviewPage from '@/app/admin/change-proposals/[id]/page';
 
@@ -904,8 +904,9 @@ describe('ChangeProposalsPage', () => {
     // Filter options include Acknowledged and Superseded
     expect(screen.getByRole('option', { name: 'Acknowledged' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Superseded' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Approve & Apply All/i })).not.toBeInTheDocument();
 
-    // Quick Acknowledge sends action: 'acknowledge' with expectedVersion: 1
+    // Quick Acknowledge sends action: 'acknowledge' with expectedVersion: 1 and refreshes silently
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -915,14 +916,13 @@ describe('ChangeProposalsPage', () => {
         version: 2,
       }),
     });
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        success: true,
-        proposals: [],
-        totalCount: 0,
-      }),
-    });
+    let resolveAckRefresh!: (val: any) => void;
+    mockFetch.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveAckRefresh = resolve;
+        })
+    );
 
     fireEvent.click(screen.getByRole('button', { name: /^Acknowledge$/i }));
 
@@ -935,6 +935,25 @@ describe('ChangeProposalsPage', () => {
           body: JSON.stringify({ action: 'acknowledge', expectedVersion: 1 }),
         })
       );
+      expect(mockFetch).toHaveBeenLastCalledWith('/api/admin/change-proposals?status=pending&limit=50');
+    });
+
+    // Table remains mounted during Acknowledge silent background refresh (no full-table spinner wipe)
+    expect(screen.getByText('Ride On - Alquiler moto Barcelona')).toBeInTheDocument();
+
+    await React.act(async () => {
+      resolveAckRefresh({
+        ok: true,
+        json: async () => ({
+          success: true,
+          proposals: [],
+          totalCount: 0,
+        }),
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Ride On - Alquiler moto Barcelona')).not.toBeInTheDocument();
     });
   });
 
@@ -1268,6 +1287,287 @@ describe('ChangeProposalsPage', () => {
       expect(mockFetch).toHaveBeenLastCalledWith(
         '/api/admin/crawler-logs?status=partial&limit=50'
       );
+    });
+  });
+
+  it('executes one-click AJAX Approve & Apply All with global table action lock and in-place row removal without extra GET (#239)', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        proposals: [
+          {
+            id: 'prop-auto-1',
+            shopId: 'shop-1',
+            shopName: 'Pai Motor Shop',
+            sourceUrl: 'https://paimotorshop.com/rates',
+            status: 'pending',
+            coverageStatus: 'partial',
+            reconciliationStatus: 'unresolved',
+            applicationStatus: 'pending',
+            version: 3,
+            summaryCounts: { add: 2, update: 1, delist: 0, unresolved: 1 },
+            createdAt: '2026-11-01T10:00:00Z',
+          },
+          {
+            id: 'prop-auto-2',
+            shopId: 'shop-2',
+            shopName: 'Samui Scooter Club',
+            sourceUrl: 'https://samuiscooter.com',
+            status: 'pending',
+            applicationStatus: 'pending',
+            version: 1,
+            summaryCounts: { add: 1, update: 0, delist: 0 },
+            createdAt: '2026-11-01T09:00:00Z',
+          },
+        ],
+        totalCount: 2,
+      }),
+    });
+
+    render(<ChangeProposalsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Pai Motor Shop')).toBeInTheDocument();
+    });
+
+    // Shown on both pending rows with ready mutations, including Partial Coverage + Unresolved row
+    const proposalsTab = screen.getByRole('button', { name: /Review Queue \(Proposals\)/i });
+    expect(within(proposalsTab).getByText('2')).toBeInTheDocument();
+    const approveButtons = screen.getAllByRole('button', { name: /Approve & Apply All/i });
+    expect(approveButtons).toHaveLength(2);
+
+    let resolveApply!: (val: any) => void;
+    mockFetch.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveApply = resolve;
+        })
+    );
+
+    fireEvent.click(approveButtons[0]);
+
+    // While in flight: active button shows Applying..., ALL row action buttons & toolbar filter/refresh are disabled globally
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Applying\.\.\./i })).toBeDisabled();
+    });
+    expect(screen.getByRole('button', { name: /Approve & Apply All/i })).toBeDisabled();
+    for (const rejectBtn of screen.getAllByRole('button', { name: /^Reject$/i })) {
+      expect(rejectBtn).toBeDisabled();
+    }
+    expect(screen.getByDisplayValue('Pending Review')).toBeDisabled();
+    expect(screen.getByTitle('Refresh List')).toBeDisabled();
+
+    await React.act(async () => {
+      resolveApply({
+        ok: true,
+        json: async () => ({
+          success: true,
+          appliedCount: 3,
+          status: 'applied',
+          applicationStatus: 'applied',
+          reconciliationStatus: 'unresolved',
+          version: 4,
+        }),
+      });
+    });
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/admin/change-proposals/prop-auto-1/apply',
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ approveAll: true, expectedVersion: 3 }),
+        })
+      );
+    });
+
+    // Pure single AJAX POST update: zero extra GET refresh, queue count decremented 2 -> 1
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    await waitFor(() => {
+      expect(screen.queryByText('Pai Motor Shop')).not.toBeInTheDocument();
+    });
+    expect(within(proposalsTab).getByText('1')).toBeInTheDocument();
+    expect(screen.getByText('Samui Scooter Club')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Approve & Apply All/i })).not.toBeDisabled();
+    expect(screen.getByDisplayValue('Pending Review')).not.toBeDisabled();
+    expect(
+      screen.getByText(/Approved & applied 3 changes for Pai Motor Shop\./i)
+    ).toBeInTheDocument();
+
+    // Success alert is dismissible
+    fireEvent.click(screen.getByRole('button', { name: /Dismiss/i }));
+    expect(
+      screen.queryByText(/Approved & applied 3 changes for Pai Motor Shop\./i)
+    ).not.toBeInTheDocument();
+  });
+
+  it('updates row status badge in-place under All Statuses, surfaces dismissible errors, and keeps Reject silent without wiping the table (#239)', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        proposals: [],
+        totalCount: 0,
+      }),
+    });
+
+    render(<ChangeProposalsPage />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/No change proposals found matching current filter/i)
+      ).toBeInTheDocument();
+    });
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        proposals: [
+          {
+            id: 'prop-all-view-1',
+            shopId: 'shop-1',
+            shopName: 'Chiang Mai Riders',
+            sourceUrl: 'https://cmriders.com',
+            status: 'pending',
+            coverageStatus: 'complete',
+            reconciliationStatus: 'unresolved',
+            applicationStatus: 'pending',
+            version: 1,
+            summaryCounts: { add: 1, update: 0, delist: 0 },
+            createdAt: '2026-11-01T10:00:00Z',
+          },
+          {
+            id: 'prop-all-view-2',
+            shopId: 'shop-2',
+            shopName: 'Phuket Touring',
+            sourceUrl: 'https://phukettouring.com',
+            status: 'pending',
+            applicationStatus: 'pending',
+            version: 1,
+            summaryCounts: { add: 0, update: 1, delist: 0 },
+            createdAt: '2026-11-01T09:00:00Z',
+          },
+        ],
+        totalCount: 2,
+      }),
+    });
+
+    fireEvent.change(screen.getByDisplayValue('Pending Review'), { target: { value: 'all' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('Chiang Mai Riders')).toBeInTheDocument();
+    });
+
+    // Failure shows dismissible error alert and preserves row
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 409,
+      json: async () => ({
+        error: 'Stale motorcycle state detected.',
+      }),
+    });
+
+    const approveBtns = screen.getAllByRole('button', { name: /Approve & Apply All/i });
+    fireEvent.click(approveBtns[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText('Stale motorcycle state detected.')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Chiang Mai Riders')).toBeInTheDocument();
+
+    // Error alert is dismissible
+    fireEvent.click(screen.getByRole('button', { name: /Dismiss/i }));
+    expect(screen.queryByText('Stale motorcycle state detected.')).not.toBeInTheDocument();
+
+    // Retry succeeds and updates status & reconciliation badges in-place without removing row
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        appliedCount: 1,
+        status: 'applied',
+        applicationStatus: 'applied',
+        reconciliationStatus: 'complete',
+        version: 2,
+      }),
+    });
+
+    fireEvent.click(screen.getAllByRole('button', { name: /Approve & Apply All/i })[0]);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Approved & applied 1 change for Chiang Mai Riders\./i)
+      ).toBeInTheDocument();
+    });
+    const cmRow = screen.getByText('Chiang Mai Riders').closest('tr')!;
+    expect(within(cmRow).getByText('Applied')).toBeInTheDocument();
+    expect(within(cmRow).getByText('Reconciled')).toBeInTheDocument();
+    expect(within(cmRow).queryByText('Unresolved')).not.toBeInTheDocument();
+    expect(within(cmRow).queryByRole('button', { name: /Approve & Apply All/i })).not.toBeInTheDocument();
+    expect(within(cmRow).queryByRole('button', { name: /^Reject$/i })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /Approve & Apply All/i })).toHaveLength(1);
+
+    // Reject on remaining pending row refreshes silently without wiping out the table
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ success: true, appliedCount: 0, status: 'rejected' }),
+    });
+    let resolveSilentRefresh!: (val: any) => void;
+    mockFetch.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveSilentRefresh = resolve;
+        })
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /^Reject$/i }));
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenLastCalledWith('/api/admin/change-proposals?status=all&limit=50');
+    });
+    // Table stays visible during silent background refresh (no full-table spinner wipe)
+    expect(screen.getByText('Chiang Mai Riders')).toBeInTheDocument();
+    expect(screen.getByText('Phuket Touring')).toBeInTheDocument();
+
+    await React.act(async () => {
+      resolveSilentRefresh({
+        ok: true,
+        json: async () => ({
+          success: true,
+          proposals: [
+            {
+              id: 'prop-all-view-1',
+              shopId: 'shop-1',
+              shopName: 'Chiang Mai Riders',
+              sourceUrl: 'https://cmriders.com',
+              status: 'applied',
+              applicationStatus: 'applied',
+              version: 2,
+              summaryCounts: { add: 1, update: 0, delist: 0 },
+              createdAt: '2026-11-01T10:00:00Z',
+            },
+            {
+              id: 'prop-all-view-2',
+              shopId: 'shop-2',
+              shopName: 'Phuket Touring',
+              sourceUrl: 'https://phukettouring.com',
+              status: 'rejected',
+              applicationStatus: 'rejected',
+              version: 2,
+              summaryCounts: { add: 0, update: 1, delist: 0 },
+              createdAt: '2026-11-01T09:00:00Z',
+            },
+          ],
+          totalCount: 2,
+        }),
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: /^Reject$/i })).not.toBeInTheDocument();
     });
   });
 });
