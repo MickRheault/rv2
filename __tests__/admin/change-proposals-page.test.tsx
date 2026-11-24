@@ -904,7 +904,11 @@ describe('ChangeProposalsPage', () => {
     // Filter options include Acknowledged and Superseded
     expect(screen.getByRole('option', { name: 'Acknowledged' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Superseded' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Approve & Apply All/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Approve All$/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Reject$/i })).toBeInTheDocument();
+    const inspectLink = screen.getByRole('link', { name: /^Inspect$/i });
+    expect(inspectLink).toHaveAttribute('title', 'Inspect Diff');
+    expect(inspectLink).toHaveAttribute('href', '/admin/change-proposals/prop-rideon-bcn');
 
     // Quick Acknowledge sends action: 'acknowledge' with expectedVersion: 1 and refreshes silently
     mockFetch.mockResolvedValueOnce({
@@ -1334,8 +1338,18 @@ describe('ChangeProposalsPage', () => {
     // Shown on both pending rows with ready mutations, including Partial Coverage + Unresolved row
     const proposalsTab = screen.getByRole('button', { name: /Review Queue \(Proposals\)/i });
     expect(within(proposalsTab).getByText('2')).toBeInTheDocument();
-    const approveButtons = screen.getAllByRole('button', { name: /Approve & Apply All/i });
+    const approveButtons = screen.getAllByRole('button', { name: /^Approve All$/i });
     expect(approveButtons).toHaveLength(2);
+    expect(approveButtons[0]).toHaveAttribute('title', 'Approve & apply all pending changes');
+
+    const inspectLinks = screen.getAllByRole('link', { name: /^Inspect$/i });
+    expect(inspectLinks).toHaveLength(2);
+    expect(inspectLinks[0]).toHaveAttribute('title', 'Inspect Diff');
+    expect(inspectLinks[0]).toHaveAttribute('href', '/admin/change-proposals/prop-auto-1');
+
+    // Truncated source URL exposes full URL on hover via title
+    const sourceLink = screen.getByRole('link', { name: /https:\/\/paimotorshop\.com\/rates/i });
+    expect(sourceLink).toHaveAttribute('title', 'https://paimotorshop.com/rates');
 
     let resolveApply!: (val: any) => void;
     mockFetch.mockImplementationOnce(
@@ -1351,7 +1365,7 @@ describe('ChangeProposalsPage', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /Applying\.\.\./i })).toBeDisabled();
     });
-    expect(screen.getByRole('button', { name: /Approve & Apply All/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^Approve All$/i })).toBeDisabled();
     for (const rejectBtn of screen.getAllByRole('button', { name: /^Reject$/i })) {
       expect(rejectBtn).toBeDisabled();
     }
@@ -1390,7 +1404,7 @@ describe('ChangeProposalsPage', () => {
     });
     expect(within(proposalsTab).getByText('1')).toBeInTheDocument();
     expect(screen.getByText('Samui Scooter Club')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Approve & Apply All/i })).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: /^Approve All$/i })).not.toBeDisabled();
     expect(screen.getByDisplayValue('Pending Review')).not.toBeDisabled();
     expect(
       screen.getByText(/Approved & applied 3 changes for Pai Motor Shop\./i)
@@ -1470,7 +1484,7 @@ describe('ChangeProposalsPage', () => {
       }),
     });
 
-    const approveBtns = screen.getAllByRole('button', { name: /Approve & Apply All/i });
+    const approveBtns = screen.getAllByRole('button', { name: /^Approve All$/i });
     fireEvent.click(approveBtns[0]);
 
     await waitFor(() => {
@@ -1495,7 +1509,7 @@ describe('ChangeProposalsPage', () => {
       }),
     });
 
-    fireEvent.click(screen.getAllByRole('button', { name: /Approve & Apply All/i })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: /^Approve All$/i })[0]);
 
     await waitFor(() => {
       expect(
@@ -1506,9 +1520,9 @@ describe('ChangeProposalsPage', () => {
     expect(within(cmRow).getByText('Applied')).toBeInTheDocument();
     expect(within(cmRow).getByText('Reconciled')).toBeInTheDocument();
     expect(within(cmRow).queryByText('Unresolved')).not.toBeInTheDocument();
-    expect(within(cmRow).queryByRole('button', { name: /Approve & Apply All/i })).not.toBeInTheDocument();
+    expect(within(cmRow).queryByRole('button', { name: /^Approve All$/i })).not.toBeInTheDocument();
     expect(within(cmRow).queryByRole('button', { name: /^Reject$/i })).not.toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /Approve & Apply All/i })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: /^Approve All$/i })).toHaveLength(1);
 
     // Reject on remaining pending row refreshes silently without wiping out the table
     mockFetch.mockResolvedValueOnce({
@@ -1569,6 +1583,101 @@ describe('ChangeProposalsPage', () => {
     await waitFor(() => {
       expect(screen.queryByRole('button', { name: /^Reject$/i })).not.toBeInTheDocument();
     });
+  });
+
+  it('renders compact proposal and crawler rows with stacked date/time, URL tooltips, and shortened action labels (#242)', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        proposals: [
+          {
+            id: 'prop-compact-1',
+            shopId: 'shop-1',
+            shopName: 'Rent A Bike Samui',
+            shopUrl: '/shop/thailand/koh-samui/rent-a-bike-samui',
+            sourceUrl: 'https://rentabikesamui.com/motorcycle-list/',
+            status: 'pending',
+            coverageStatus: 'complete',
+            reconciliationStatus: 'unresolved',
+            applicationStatus: 'pending',
+            version: 1,
+            summaryCounts: { add: 2, update: 15, delist: 1, unresolved: 3 },
+            createdAt: '2026-11-21T04:10:00Z',
+          },
+        ],
+        totalCount: 1,
+      }),
+    });
+
+    render(<ChangeProposalsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Rent A Bike Samui')).toBeInTheDocument();
+    });
+
+    const row = screen.getByText('Rent A Bike Samui').closest('tr')!;
+    const cells = within(row).getAllByRole('cell');
+
+    // Rental Shop cell exposes full source URL via title alongside View on GMR link
+    const sourceLink = within(cells[0]).getByRole('link', {
+      name: /https:\/\/rentabikesamui\.com\/motorcycle-list\//i,
+    });
+    expect(sourceLink).toHaveAttribute('title', 'https://rentabikesamui.com/motorcycle-list/');
+    expect(within(cells[0]).getByRole('link', { name: /View on GMR/i })).toHaveAttribute(
+      'href',
+      '/shop/thailand/koh-samui/rent-a-bike-samui'
+    );
+
+    // Crawl Date renders date and time stacked in separate elements
+    const expectedDate = new Date('2026-11-21T04:10:00Z').toLocaleDateString(undefined, {
+      dateStyle: 'medium',
+    });
+    const expectedTime = new Date('2026-11-21T04:10:00Z').toLocaleTimeString(undefined, {
+      timeStyle: 'short',
+    });
+    expect(within(cells[1]).getByText(expectedDate)).toBeInTheDocument();
+    expect(within(cells[1]).getByText(expectedTime)).toBeInTheDocument();
+
+    // Actions cell renders concise Approve All, Reject, and Inspect controls with descriptive tooltips
+    const approveBtn = within(cells[4]).getByRole('button', { name: /^Approve All$/i });
+    expect(approveBtn).toHaveAttribute('title', 'Approve & apply all pending changes');
+    expect(within(cells[4]).getByRole('button', { name: /^Reject$/i })).toBeInTheDocument();
+    const inspectLink = within(cells[4]).getByRole('link', { name: /^Inspect$/i });
+    expect(inspectLink).toHaveAttribute('title', 'Inspect Diff');
+    expect(inspectLink).toHaveAttribute('href', '/admin/change-proposals/prop-compact-1');
+
+    // Switch to Crawler Activity Log and verify compact stacked timestamp & actions render cleanly
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        runs: [
+          {
+            id: 'run-compact-1',
+            shopId: 'shop-1',
+            shopName: 'Rent A Bike Samui',
+            status: 'success',
+            proposalId: null,
+            createdAt: '2026-11-21T04:10:00Z',
+            metadata: {},
+          },
+        ],
+        totalCount: 1,
+      }),
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Crawler Activity Log/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Clean Crawl (No changes detected)')).toBeInTheDocument();
+    });
+
+    const crawlerRow = screen.getByText('Clean Crawl (No changes detected)').closest('tr')!;
+    const crawlerCells = within(crawlerRow).getAllByRole('cell');
+    expect(within(crawlerCells[2]).getByText(expectedDate)).toBeInTheDocument();
+    expect(within(crawlerCells[2]).getByText(expectedTime)).toBeInTheDocument();
+    expect(within(crawlerCells[4]).getByRole('button', { name: /View Details/i })).toBeInTheDocument();
   });
 });
 

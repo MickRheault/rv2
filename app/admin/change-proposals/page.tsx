@@ -307,19 +307,19 @@ export default function ChangeProposalsPage() {
   const getProposalStatusBadge = (status: ProposalSummaryItem['status']) => {
     switch (status) {
       case 'pending':
-        return <Badge variant="warning">Pending Review</Badge>;
+        return <Badge variant="warning" className="whitespace-nowrap">Pending Review</Badge>;
       case 'acknowledged':
-        return <Badge variant="default">Acknowledged</Badge>;
+        return <Badge variant="default" className="whitespace-nowrap">Acknowledged</Badge>;
       case 'applied':
-        return <Badge variant="success">Applied</Badge>;
+        return <Badge variant="success" className="whitespace-nowrap">Applied</Badge>;
       case 'partially_applied':
-        return <Badge variant="info">Partially Applied</Badge>;
+        return <Badge variant="info" className="whitespace-nowrap">Partially Applied</Badge>;
       case 'rejected':
-        return <Badge variant="danger">Rejected</Badge>;
+        return <Badge variant="danger" className="whitespace-nowrap">Rejected</Badge>;
       case 'superseded':
-        return <Badge variant="default">Superseded</Badge>;
+        return <Badge variant="default" className="whitespace-nowrap">Superseded</Badge>;
       default:
-        return <Badge variant="default">{status}</Badge>;
+        return <Badge variant="default" className="whitespace-nowrap">{status}</Badge>;
     }
   };
 
@@ -337,7 +337,7 @@ export default function ChangeProposalsPage() {
       badges.push(
         <span
           key={`${prefix}-cov-partial`}
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300"
+          className="inline-flex items-center gap-1 whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300"
         >
           <ExclamationTriangleIcon className="w-3 h-3" />
           Partial Coverage
@@ -347,7 +347,7 @@ export default function ChangeProposalsPage() {
       badges.push(
         <span
           key={`${prefix}-cov-failed`}
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-300"
+          className="inline-flex items-center gap-1 whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-300"
         >
           <ExclamationTriangleIcon className="w-3 h-3" />
           Failed Coverage
@@ -357,7 +357,7 @@ export default function ChangeProposalsPage() {
       badges.push(
         <span
           key={`${prefix}-cov-complete`}
-          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200"
+          className="inline-flex items-center whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200"
         >
           Complete Coverage
         </span>
@@ -366,7 +366,7 @@ export default function ChangeProposalsPage() {
       badges.push(
         <span
           key={`${prefix}-cov-unknown`}
-          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
+          className="inline-flex items-center whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
         >
           Unknown Coverage
         </span>
@@ -377,7 +377,7 @@ export default function ChangeProposalsPage() {
       badges.push(
         <span
           key={`${prefix}-rec-unresolved`}
-          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300"
+          className="inline-flex items-center whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300"
         >
           Unresolved
         </span>
@@ -386,7 +386,7 @@ export default function ChangeProposalsPage() {
       badges.push(
         <span
           key={`${prefix}-rec-complete`}
-          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200"
+          className="inline-flex items-center whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200"
         >
           Reconciled
         </span>
@@ -397,7 +397,7 @@ export default function ChangeProposalsPage() {
       badges.push(
         <span
           key={`${prefix}-app-na`}
-          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800 border border-slate-300"
+          className="inline-flex items-center whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800 border border-slate-300"
         >
           Report Only
         </span>
@@ -412,18 +412,32 @@ export default function ChangeProposalsPage() {
   const getCrawlerStatusBadge = (status: CrawlRunItem['status']) => {
     switch (status) {
       case 'success':
-        return <Badge variant="success">Success</Badge>;
+        return <Badge variant="success" className="whitespace-nowrap">Success</Badge>;
       case 'partial':
-        return <Badge variant="warning">Partial</Badge>;
+        return <Badge variant="warning" className="whitespace-nowrap">Partial</Badge>;
       case 'failed':
-        return <Badge variant="danger">Failed</Badge>;
+        return <Badge variant="danger" className="whitespace-nowrap">Failed</Badge>;
       default:
-        return <Badge variant="default">{status}</Badge>;
+        return <Badge variant="default" className="whitespace-nowrap">{status}</Badge>;
     }
   };
 
   const renderCrawlerQualityBadges = (run: CrawlRunItem) =>
     renderQualityBadges(run, { showUnknownCoverage: false, keyPrefix: 'run' });
+
+  const renderStackedTimestamp = (isoString: string) => {
+    const date = new Date(isoString);
+    return (
+      <>
+        <div className="font-medium text-gray-700">
+          {date.toLocaleDateString(undefined, { dateStyle: 'medium' })}
+        </div>
+        <div className="text-gray-500">
+          {date.toLocaleTimeString(undefined, { timeStyle: 'short' })}
+        </div>
+      </>
+    );
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
@@ -547,13 +561,13 @@ export default function ChangeProposalsPage() {
             </Alert>
           )}
 
-          <Card>
+          <Card padding="none" className="overflow-hidden">
             {loadingProposals ? (
-              <div className="flex justify-center items-center py-16">
+              <div className="flex justify-center items-center px-6 py-16">
                 <Spinner size="lg" />
               </div>
             ) : proposals.length === 0 ? (
-              <div className="text-center py-16 space-y-2">
+              <div className="text-center px-6 py-16 space-y-2">
                 <p className="text-gray-500 text-base">No change proposals found matching current filter.</p>
                 <p className="text-gray-400 text-sm">
                   When external crawler agents run, incoming diffs will appear here for review.
@@ -564,19 +578,19 @@ export default function ChangeProposalsPage() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Rental Shop
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Crawl Date
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Proposed Mutations
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
@@ -605,21 +619,27 @@ export default function ChangeProposalsPage() {
 
                       return (
                         <tr key={prop.id} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-6 py-4">
-                            <div className="font-semibold text-gray-900">{prop.shopName}</div>
-                            <div className="flex flex-wrap items-center gap-3 mt-0.5">
+                          <td className="px-4 py-3">
+                            <div className="font-semibold text-gray-900 text-sm leading-snug">
+                              {prop.shopName}
+                            </div>
+                            <div className="flex flex-col items-start gap-0.5 mt-1">
                               {safeSourceUrl ? (
                                 <a
                                   href={safeSourceUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1 truncate max-w-xs"
+                                  title={prop.sourceUrl}
+                                  className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 max-w-[200px]"
                                 >
-                                  {prop.sourceUrl}
+                                  <span className="truncate">{prop.sourceUrl}</span>
                                   <ArrowTopRightOnSquareIcon className="w-3 h-3 flex-shrink-0" />
                                 </a>
                               ) : (
-                                <span className="text-xs font-mono text-gray-500 truncate max-w-xs">
+                                <span
+                                  title={prop.sourceUrl}
+                                  className="text-xs font-mono text-gray-500 truncate max-w-[200px] block"
+                                >
                                   {prop.sourceUrl}
                                 </span>
                               )}
@@ -628,7 +648,7 @@ export default function ChangeProposalsPage() {
                                   href={gmrUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-xs text-emerald-700 hover:text-emerald-900 font-medium flex items-center gap-1"
+                                  className="inline-flex items-center gap-1 text-xs text-emerald-700 hover:text-emerald-900 font-medium"
                                 >
                                   View on GMR
                                   <ArrowTopRightOnSquareIcon className="w-3 h-3 flex-shrink-0" />
@@ -637,32 +657,29 @@ export default function ChangeProposalsPage() {
                             </div>
                           </td>
 
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {new Date(prop.createdAt).toLocaleString(undefined, {
-                              dateStyle: 'medium',
-                              timeStyle: 'short',
-                            })}
+                          <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-600">
+                            {renderStackedTimestamp(prop.createdAt)}
                           </td>
 
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-3 py-3">
                             <div>{getProposalStatusBadge(prop.status)}</div>
                             {renderQueueQualityBadges(prop)}
                           </td>
 
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-1.5 flex-wrap">
+                          <td className="px-3 py-3">
+                            <div className="flex items-center gap-1 flex-wrap max-w-[210px]">
                               {addCount > 0 && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
+                                <span className="inline-flex items-center whitespace-nowrap px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
                                   +{addCount} new
                                 </span>
                               )}
                               {updateCount > 0 && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                <span className="inline-flex items-center whitespace-nowrap px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
                                   ~{updateCount} updated
                                 </span>
                               )}
                               {delistCount > 0 && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                                <span className="inline-flex items-center whitespace-nowrap px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
                                   -{delistCount} delisted
                                 </span>
                               )}
@@ -670,27 +687,27 @@ export default function ChangeProposalsPage() {
                                 (Boolean(prop.hasReconciliationReport) ||
                                   isReportOnlyRow ||
                                   unresolvedCount > 0) && (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                                  <span className="inline-flex items-center whitespace-nowrap px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
                                     0 ready mutations
                                   </span>
                                 )}
                               {unresolvedCount > 0 && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300">
+                                <span className="inline-flex items-center whitespace-nowrap px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300">
                                   {unresolvedCount} unresolved
                                 </span>
                               )}
                               {unchangedCount > 0 && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                <span className="inline-flex items-center whitespace-nowrap px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">
                                   ={unchangedCount} unchanged
                                 </span>
                               )}
                               {excludedCount > 0 && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                                <span className="inline-flex items-center whitespace-nowrap px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
                                   {excludedCount} excluded
                                 </span>
                               )}
                               {duplicateCount > 0 && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                <span className="inline-flex items-center whitespace-nowrap px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
                                   {duplicateCount} duplicate
                                 </span>
                               )}
@@ -705,21 +722,26 @@ export default function ChangeProposalsPage() {
                             </div>
                           </td>
 
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                            <div className="inline-flex items-center gap-2">
+                          <td className="px-4 py-3 text-right text-sm">
+                            <div className="inline-flex flex-wrap items-center justify-end gap-1.5">
                               {prop.status === 'pending' && !isReportOnlyRow && actionableCount > 0 && (
                                 <button
                                   type="button"
                                   onClick={() => handleQuickApproveAll(prop)}
                                   disabled={isAnyProposalActionInFlight}
-                                  className="inline-flex items-center px-2.5 py-1.5 border border-emerald-600 text-xs font-medium rounded-md shadow-sm text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50"
+                                  title={
+                                    rowActionType === 'approve'
+                                      ? 'Applying all pending changes...'
+                                      : 'Approve & apply all pending changes'
+                                  }
+                                  className="inline-flex items-center whitespace-nowrap px-2 py-1.5 border border-emerald-600 text-xs font-medium rounded-md shadow-sm text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50"
                                 >
                                   {rowActionType === 'approve' ? (
                                     <ArrowPathIcon className="w-3.5 h-3.5 mr-1 animate-spin" />
                                   ) : (
                                     <CheckIcon className="w-3.5 h-3.5 mr-1" />
                                   )}
-                                  {rowActionType === 'approve' ? 'Applying...' : 'Approve & Apply All'}
+                                  {rowActionType === 'approve' ? 'Applying...' : 'Approve All'}
                                 </button>
                               )}
                               {prop.status === 'pending' && isReportOnlyRow && (
@@ -727,7 +749,7 @@ export default function ChangeProposalsPage() {
                                   type="button"
                                   onClick={() => handleQuickAcknowledge(prop.id, prop.version)}
                                   disabled={isAnyProposalActionInFlight}
-                                  className="inline-flex items-center px-2.5 py-1.5 border border-emerald-300 text-xs font-medium rounded-md text-emerald-800 bg-white hover:bg-emerald-50 disabled:opacity-50"
+                                  className="inline-flex items-center whitespace-nowrap px-2 py-1.5 border border-emerald-300 text-xs font-medium rounded-md text-emerald-800 bg-white hover:bg-emerald-50 disabled:opacity-50"
                                 >
                                   <CheckIcon className="w-3.5 h-3.5 mr-1" />
                                   {rowActionType === 'acknowledge' ? 'Acknowledging...' : 'Acknowledge'}
@@ -738,7 +760,7 @@ export default function ChangeProposalsPage() {
                                   type="button"
                                   onClick={() => handleQuickReject(prop.id, prop.version)}
                                   disabled={isAnyProposalActionInFlight}
-                                  className="inline-flex items-center px-2.5 py-1.5 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50 disabled:opacity-50"
+                                  className="inline-flex items-center whitespace-nowrap px-2 py-1.5 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50 disabled:opacity-50"
                                 >
                                   <XMarkIcon className="w-3.5 h-3.5 mr-1" />
                                   {rowActionType === 'reject' ? 'Rejecting...' : 'Reject'}
@@ -746,9 +768,10 @@ export default function ChangeProposalsPage() {
                               )}
                               <Link
                                 href={`/admin/change-proposals/${prop.id}`}
-                                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
+                                title="Inspect Diff"
+                                className="inline-flex items-center whitespace-nowrap px-2 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
                               >
-                                Inspect Diff
+                                Inspect
                               </Link>
                             </div>
                           </td>
@@ -768,13 +791,13 @@ export default function ChangeProposalsPage() {
         <>
           {crawlerError && <Alert variant="error">{crawlerError}</Alert>}
 
-          <Card>
+          <Card padding="none" className="overflow-hidden">
             {loadingCrawler ? (
-              <div className="flex justify-center items-center py-16">
+              <div className="flex justify-center items-center px-6 py-16">
                 <Spinner size="lg" />
               </div>
             ) : crawlerRuns.length === 0 ? (
-              <div className="text-center py-16 space-y-2">
+              <div className="text-center px-6 py-16 space-y-2">
                 <p className="text-gray-500 text-base">No crawler audit logs found matching current filter.</p>
                 <p className="text-gray-400 text-sm">
                   When crawler agents run, audit logs will be tracked here.
@@ -785,19 +808,19 @@ export default function ChangeProposalsPage() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Rental Shop
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Timestamp
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Outcome Details
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
@@ -808,8 +831,10 @@ export default function ChangeProposalsPage() {
                         key={run.id}
                         className="hover:bg-gray-50 transition-colors"
                       >
-                        <td className="px-6 py-4">
-                          <div className="font-semibold text-gray-900">{run.shopName}</div>
+                        <td className="px-4 py-3">
+                          <div className="font-semibold text-gray-900 text-sm leading-snug">
+                            {run.shopName}
+                          </div>
                           {run.agentRunId && (
                             <div className="text-xs text-gray-400 font-mono mt-0.5">
                               Run: {run.agentRunId}
@@ -817,47 +842,44 @@ export default function ChangeProposalsPage() {
                           )}
                         </td>
 
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-3 py-3">
                           <div>{getCrawlerStatusBadge(run.status)}</div>
                           {renderCrawlerQualityBadges(run)}
                         </td>
 
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {new Date(run.createdAt).toLocaleString(undefined, {
-                            dateStyle: 'medium',
-                            timeStyle: 'short',
-                          })}
+                        <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-600">
+                          {renderStackedTimestamp(run.createdAt)}
                         </td>
 
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-3 py-3">
                           {run.proposalId ? (
                             <Link
                               href={`/admin/change-proposals/${run.proposalId}`}
                               className="inline-flex items-center gap-1.5 flex-wrap text-xs text-indigo-600 hover:text-indigo-800 font-medium"
                             >
-                              <Badge variant="info">Proposal Generated</Badge>
+                              <Badge variant="info" className="whitespace-nowrap">Proposal Generated</Badge>
                               {run.proposalSummaryCounts && (
-                                <span className="text-gray-500 text-xs">
+                                <span className="text-gray-500 text-xs whitespace-nowrap">
                                   (+{run.proposalSummaryCounts.add || 0} ~{run.proposalSummaryCounts.update || 0} -{run.proposalSummaryCounts.delist || 0})
                                 </span>
                               )}
                               {(run.proposalSummaryCounts?.unresolved ?? 0) > 0 && (
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300">
+                                <span className="inline-flex items-center whitespace-nowrap px-1.5 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300">
                                   {run.proposalSummaryCounts?.unresolved} unresolved
                                 </span>
                               )}
                               {(run.proposalSummaryCounts?.unchanged ?? 0) > 0 && (
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                <span className="inline-flex items-center whitespace-nowrap px-1.5 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200">
                                   ={run.proposalSummaryCounts?.unchanged} unchanged
                                 </span>
                               )}
                               {(run.proposalSummaryCounts?.excluded ?? 0) > 0 && (
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                                <span className="inline-flex items-center whitespace-nowrap px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
                                   {run.proposalSummaryCounts?.excluded} excluded
                                 </span>
                               )}
                               {(run.proposalSummaryCounts?.duplicate ?? 0) > 0 && (
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                <span className="inline-flex items-center whitespace-nowrap px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
                                   {run.proposalSummaryCounts?.duplicate} duplicate
                                 </span>
                               )}
@@ -885,7 +907,7 @@ export default function ChangeProposalsPage() {
                           )}
                         </td>
 
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                        <td className="px-4 py-3 whitespace-nowrap text-right text-sm">
                           <Button
                             size="sm"
                             variant="outline"
