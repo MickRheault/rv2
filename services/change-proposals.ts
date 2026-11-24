@@ -3753,13 +3753,14 @@ export class ChangeProposalService {
       (i) => !i.status || i.status === 'pending'
     );
 
+    if (isReportOnly && (selection.approveAll || selection.approvedItemIds.length > 0)) {
+      throw new ProposalItemValidationError(
+        `Cannot approve items on report-only proposal '${proposalId}'; use action='acknowledge' instead.`
+      );
+    }
+
     let approvedSet: Set<string>;
     if (selection.approveAll) {
-      if (isReportOnly) {
-        throw new ProposalItemValidationError(
-          `Cannot approve items on report-only proposal '${proposalId}'; use action='acknowledge' instead.`
-        );
-      }
       if (pendingMutableItems.length === 0) {
         throw new ProposalItemValidationError(
           `Proposal '${proposalId}' has no pending actionable changes to apply.`
@@ -3768,11 +3769,6 @@ export class ChangeProposalService {
       approvedSet = new Set(pendingMutableItems.map((i) => i.id));
     } else {
       approvedSet = new Set(selection.approvedItemIds);
-      if (isReportOnly && approvedSet.size > 0) {
-        throw new ProposalItemValidationError(
-          `Cannot approve items on report-only proposal '${proposalId}'; use action='acknowledge' instead.`
-        );
-      }
     }
 
     const approvedItems = pendingMutableItems.filter((i) => approvedSet.has(i.id));

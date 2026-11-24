@@ -1898,6 +1898,9 @@ async function postProposalApply<T = any>(
   return data as T;
 }
 
+const PROPOSAL_APPLY_TIMEOUT_MESSAGE =
+  'Request timed out while applying changes. Some items may have been applied — please refresh to review remaining items.';
+
 export async function submitProposalDecision(
   proposalId: string,
   approvedItemIds: string[],
@@ -1914,7 +1917,7 @@ export async function submitProposalDecision(
     approvedItemIds.length === 0
       ? 'Failed to reject proposal.'
       : 'Failed to apply selected changes.',
-    'Request timed out while applying changes. Some items may have been applied — please refresh to review remaining items.'
+    PROPOSAL_APPLY_TIMEOUT_MESSAGE
   );
 }
 
@@ -1938,7 +1941,7 @@ export async function approveAllProposalChanges(
     proposalId,
     payload,
     'Failed to approve and apply all changes.',
-    'Request timed out while applying changes. Some items may have been applied — please refresh to review remaining items.'
+    PROPOSAL_APPLY_TIMEOUT_MESSAGE
   );
 }
 

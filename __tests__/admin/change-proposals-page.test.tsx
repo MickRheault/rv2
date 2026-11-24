@@ -1432,6 +1432,8 @@ describe('ChangeProposalsPage', () => {
             shopName: 'Chiang Mai Riders',
             sourceUrl: 'https://cmriders.com',
             status: 'pending',
+            coverageStatus: 'complete',
+            reconciliationStatus: 'unresolved',
             applicationStatus: 'pending',
             version: 1,
             summaryCounts: { add: 1, update: 0, delist: 0 },
@@ -1480,7 +1482,7 @@ describe('ChangeProposalsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Dismiss/i }));
     expect(screen.queryByText('Stale motorcycle state detected.')).not.toBeInTheDocument();
 
-    // Retry succeeds and updates status badge in-place to Applied and hides pending buttons without removing row
+    // Retry succeeds and updates status & reconciliation badges in-place without removing row
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -1488,6 +1490,7 @@ describe('ChangeProposalsPage', () => {
         appliedCount: 1,
         status: 'applied',
         applicationStatus: 'applied',
+        reconciliationStatus: 'complete',
         version: 2,
       }),
     });
@@ -1501,6 +1504,8 @@ describe('ChangeProposalsPage', () => {
     });
     const cmRow = screen.getByText('Chiang Mai Riders').closest('tr')!;
     expect(within(cmRow).getByText('Applied')).toBeInTheDocument();
+    expect(within(cmRow).getByText('Reconciled')).toBeInTheDocument();
+    expect(within(cmRow).queryByText('Unresolved')).not.toBeInTheDocument();
     expect(within(cmRow).queryByRole('button', { name: /Approve & Apply All/i })).not.toBeInTheDocument();
     expect(within(cmRow).queryByRole('button', { name: /^Reject$/i })).not.toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /Approve & Apply All/i })).toHaveLength(1);
