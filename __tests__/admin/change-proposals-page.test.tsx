@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import ChangeProposalsPage from '@/app/admin/change-proposals/page';
 import ProposalReviewPage from '@/app/admin/change-proposals/[id]/page';
 
@@ -906,7 +906,7 @@ describe('ChangeProposalsPage', () => {
     expect(screen.getByRole('option', { name: 'Superseded' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Approve & Apply All/i })).not.toBeInTheDocument();
 
-    // Quick Acknowledge sends action: 'acknowledge' with expectedVersion: 1
+    // Quick Acknowledge sends action: 'acknowledge' with expectedVersion: 1 and refreshes silently
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -916,14 +916,13 @@ describe('ChangeProposalsPage', () => {
         version: 2,
       }),
     });
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        success: true,
-        proposals: [],
-        totalCount: 0,
-      }),
-    });
+    let resolveAckRefresh!: (val: any) => void;
+    mockFetch.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveAckRefresh = resolve;
+        })
+    );
 
     fireEvent.click(screen.getByRole('button', { name: /^Acknowledge$/i }));
 
@@ -936,6 +935,25 @@ describe('ChangeProposalsPage', () => {
           body: JSON.stringify({ action: 'acknowledge', expectedVersion: 1 }),
         })
       );
+      expect(mockFetch).toHaveBeenLastCalledWith('/api/admin/change-proposals?status=pending&limit=50');
+    });
+
+    // Table remains mounted during Acknowledge silent background refresh (no full-table spinner wipe)
+    expect(screen.getByText('Ride On - Alquiler moto Barcelona')).toBeInTheDocument();
+
+    await React.act(async () => {
+      resolveAckRefresh({
+        ok: true,
+        json: async () => ({
+          success: true,
+          proposals: [],
+          totalCount: 0,
+        }),
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Ride On - Alquiler moto Barcelona')).not.toBeInTheDocument();
     });
   });
 
@@ -1314,6 +1332,8 @@ describe('ChangeProposalsPage', () => {
     });
 
     // Shown on both pending rows with ready mutations, including Partial Coverage + Unresolved row
+    const proposalsTab = screen.getByRole('button', { name: /Review Queue \(Proposals\)/i });
+    expect(within(proposalsTab).getByText('2')).toBeInTheDocument();
     const approveButtons = screen.getAllByRole('button', { name: /Approve & Apply All/i });
     expect(approveButtons).toHaveLength(2);
 
@@ -1327,7 +1347,7 @@ describe('ChangeProposalsPage', () => {
 
     fireEvent.click(approveButtons[0]);
 
-    // While in flight: active button shows Applying... and ALL row action buttons across the table are disabled globally
+    // While in flight: active button shows Applying..., ALL row action buttons & toolbar filter/refresh are disabled globally
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /Applying\.\.\./i })).toBeDisabled();
     });
@@ -1335,6 +1355,8 @@ describe('ChangeProposalsPage', () => {
     for (const rejectBtn of screen.getAllByRole('button', { name: /^Reject$/i })) {
       expect(rejectBtn).toBeDisabled();
     }
+    expect(screen.getByDisplayValue('Pending Review')).toBeDisabled();
+    expect(screen.getByTitle('Refresh List')).toBeDisabled();
 
     await React.act(async () => {
       resolveApply({
@@ -1345,6 +1367,7 @@ describe('ChangeProposalsPage', () => {
           status: 'applied',
           applicationStatus: 'applied',
           reconciliationStatus: 'unresolved',
+          version: 4,
         }),
       });
     });
@@ -1360,13 +1383,15 @@ describe('ChangeProposalsPage', () => {
       );
     });
 
-    // Pure single AJAX POST update: zero extra GET refresh
+    // Pure single AJAX POST update: zero extra GET refresh, queue count decremented 2 -> 1
     expect(mockFetch).toHaveBeenCalledTimes(2);
     await waitFor(() => {
       expect(screen.queryByText('Pai Motor Shop')).not.toBeInTheDocument();
     });
+    expect(within(proposalsTab).getByText('1')).toBeInTheDocument();
     expect(screen.getByText('Samui Scooter Club')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Approve & Apply All/i })).not.toBeDisabled();
+    expect(screen.getByDisplayValue('Pending Review')).not.toBeDisabled();
     expect(
       screen.getByText(/Approved & applied 3 changes for Pai Motor Shop\./i)
     ).toBeInTheDocument();
@@ -1451,7 +1476,11 @@ describe('ChangeProposalsPage', () => {
     });
     expect(screen.getByText('Chiang Mai Riders')).toBeInTheDocument();
 
-    // Retry succeeds and updates status badge in-place to Applied without removing row
+    // Error alert is dismissible
+    fireEvent.click(screen.getByRole('button', { name: /Dismiss/i }));
+    expect(screen.queryByText('Stale motorcycle state detected.')).not.toBeInTheDocument();
+
+    // Retry succeeds and updates status badge in-place to Applied and hides pending buttons without removing row
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -1459,6 +1488,7 @@ describe('ChangeProposalsPage', () => {
         appliedCount: 1,
         status: 'applied',
         applicationStatus: 'applied',
+        version: 2,
       }),
     });
 
@@ -1469,7 +1499,10 @@ describe('ChangeProposalsPage', () => {
         screen.getByText(/Approved & applied 1 change for Chiang Mai Riders\./i)
       ).toBeInTheDocument();
     });
-    expect(screen.getByText('Chiang Mai Riders')).toBeInTheDocument();
+    const cmRow = screen.getByText('Chiang Mai Riders').closest('tr')!;
+    expect(within(cmRow).getByText('Applied')).toBeInTheDocument();
+    expect(within(cmRow).queryByRole('button', { name: /Approve & Apply All/i })).not.toBeInTheDocument();
+    expect(within(cmRow).queryByRole('button', { name: /^Reject$/i })).not.toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /Approve & Apply All/i })).toHaveLength(1);
 
     // Reject on remaining pending row refreshes silently without wiping out the table

@@ -19,15 +19,17 @@ jest.mock('@/lib/cache/purgePublicCache', () => ({
 
 jest.mock('@/lib/auth/admin-auth', () => ({
   isAuthorizedAdmin: jest.fn(),
+  getAuthenticatedAdminUserId: jest.fn(),
 }));
 
-import { isAuthorizedAdmin } from '@/lib/auth/admin-auth';
+import { isAuthorizedAdmin, getAuthenticatedAdminUserId } from '@/lib/auth/admin-auth';
 import { purgePublicCache } from '@/lib/cache/purgePublicCache';
 
 describe('POST /api/admin/change-proposals/[id]/apply', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (isAuthorizedAdmin as jest.Mock).mockResolvedValue(true);
+    (getAuthenticatedAdminUserId as jest.Mock).mockResolvedValue(null);
   });
 
   it('rejects unauthenticated requests with 401', async () => {
@@ -207,11 +209,13 @@ describe('POST /api/admin/change-proposals/[id]/apply', () => {
     expect((await res409.json()).error).toMatch(/Stale motorcycle category/i);
   });
 
-  it('calls ChangeProposalService.applyAll and purges public cache when approveAll is true', async () => {
+  it('calls ChangeProposalService.applyAll with options and purges public cache when approveAll is true', async () => {
+    (getAuthenticatedAdminUserId as jest.Mock).mockResolvedValue('admin-user-42');
     (ChangeProposalService.applyAll as jest.Mock).mockResolvedValue({
       success: true,
       appliedCount: 3,
       status: 'applied',
+      version: 3,
     });
 
     const request = new NextRequest(
@@ -219,7 +223,7 @@ describe('POST /api/admin/change-proposals/[id]/apply', () => {
       {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ approveAll: true, expectedVersion: 2 }),
+        body: JSON.stringify({ approveAll: true, expectedVersion: 2, notes: 'Looks good' }),
       }
     );
 
@@ -229,8 +233,11 @@ describe('POST /api/admin/change-proposals/[id]/apply', () => {
     expect(body.success).toBe(true);
     expect(body.appliedCount).toBe(3);
     expect(body.status).toBe('applied');
+    expect(body.version).toBe(3);
     expect(ChangeProposalService.applyAll).toHaveBeenCalledWith('prop-1', {
       expectedVersion: 2,
+      actorId: 'admin-user-42',
+      notes: 'Looks good',
     });
     expect(ChangeProposalService.apply).not.toHaveBeenCalled();
     expect(purgePublicCache).toHaveBeenCalledTimes(1);

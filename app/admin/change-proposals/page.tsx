@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { Card, Button, Badge, Spinner, Alert, Select, Modal } from '@/components/ui';
 import { shopService } from '@/services/shops';
@@ -109,16 +109,17 @@ export default function ChangeProposalsPage() {
   const [proposals, setProposals] = useState<ProposalSummaryItem[]>([]);
   const [proposalTotalCount, setProposalTotalCount] = useState<number>(0);
   const [proposalStatusFilter, setProposalStatusFilter] = useState<string>('pending');
+  const proposalStatusFilterRef = useRef<string>(proposalStatusFilter);
+  proposalStatusFilterRef.current = proposalStatusFilter;
   const [loadingProposals, setLoadingProposals] = useState<boolean>(true);
-  const [approvingId, setApprovingId] = useState<string | null>(null);
-  const [rejectingId, setRejectingId] = useState<string | null>(null);
-  const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
+  const [activeProposalAction, setActiveProposalAction] = useState<{
+    id: string;
+    type: 'approve' | 'reject' | 'acknowledge';
+  } | null>(null);
   const [proposalError, setProposalError] = useState<string | null>(null);
   const [proposalSuccess, setProposalSuccess] = useState<string | null>(null);
 
-  const isAnyProposalActionInFlight = Boolean(
-    approvingId || rejectingId || acknowledgingId
-  );
+  const isAnyProposalActionInFlight = activeProposalAction !== null;
 
   // Crawler logs state
   const [crawlerRuns, setCrawlerRuns] = useState<CrawlRunItem[]>([]);
@@ -174,15 +175,15 @@ export default function ChangeProposalsPage() {
 
   const handleQuickApproveAll = async (prop: ProposalSummaryItem) => {
     if (isAnyProposalActionInFlight) return;
-    setApprovingId(prop.id);
+    setActiveProposalAction({ id: prop.id, type: 'approve' });
     setProposalError(null);
     setProposalSuccess(null);
 
     try {
       const result = await approveAllProposalChanges(prop.id, prop.version);
       const nextStatus = (result.status || 'applied') as ProposalSummaryItem['status'];
-      const matchesFilter =
-        proposalStatusFilter === 'all' || proposalStatusFilter === nextStatus;
+      const currentFilter = proposalStatusFilterRef.current;
+      const matchesFilter = currentFilter === 'all' || currentFilter === nextStatus;
 
       setProposals((prev) => {
         if (!matchesFilter) {
@@ -199,7 +200,7 @@ export default function ChangeProposalsPage() {
                 reconciliationStatus:
                   (result.reconciliationStatus as ProposalSummaryItem['reconciliationStatus']) ??
                   item.reconciliationStatus,
-                version: (item.version ?? 1) + 1,
+                version: result.version ?? (item.version ?? 1) + 1,
                 reviewedAt: new Date().toISOString(),
               }
             : item
@@ -216,13 +217,13 @@ export default function ChangeProposalsPage() {
       console.error('Error approving all proposal changes:', err);
       setProposalError(err.message || 'Error approving and applying changes');
     } finally {
-      setApprovingId(null);
+      setActiveProposalAction(null);
     }
   };
 
   const handleQuickReject = async (proposalId: string, expectedVersion?: number) => {
     if (isAnyProposalActionInFlight) return;
-    setRejectingId(proposalId);
+    setActiveProposalAction({ id: proposalId, type: 'reject' });
     setProposalError(null);
     setProposalSuccess(null);
 
@@ -233,13 +234,13 @@ export default function ChangeProposalsPage() {
       console.error('Error rejecting proposal:', err);
       setProposalError(err.message || 'Error rejecting proposal');
     } finally {
-      setRejectingId(null);
+      setActiveProposalAction(null);
     }
   };
 
   const handleQuickAcknowledge = async (proposalId: string, expectedVersion?: number) => {
     if (isAnyProposalActionInFlight) return;
-    setAcknowledgingId(proposalId);
+    setActiveProposalAction({ id: proposalId, type: 'acknowledge' });
     setProposalError(null);
     setProposalSuccess(null);
 
@@ -250,7 +251,7 @@ export default function ChangeProposalsPage() {
       console.error('Error acknowledging report:', err);
       setProposalError(err.message || 'Error acknowledging reconciliation report');
     } finally {
-      setAcknowledgingId(null);
+      setActiveProposalAction(null);
     }
   };
 
@@ -441,12 +442,13 @@ export default function ChangeProposalsPage() {
               options={PROPOSAL_STATUS_FILTER_OPTIONS}
               value={proposalStatusFilter}
               onChange={(e) => setProposalStatusFilter(e.target.value)}
+              disabled={isAnyProposalActionInFlight}
               className="w-48"
             />
             <Button
               variant="outline"
               onClick={() => fetchProposals()}
-              disabled={loadingProposals}
+              disabled={loadingProposals || isAnyProposalActionInFlight}
               title="Refresh List"
             >
               <ArrowPathIcon className={`w-4 h-4 ${loadingProposals ? 'animate-spin' : ''}`} />
@@ -697,12 +699,16 @@ export default function ChangeProposalsPage() {
                                   disabled={isAnyProposalActionInFlight}
                                   className="inline-flex items-center px-2.5 py-1.5 border border-emerald-600 text-xs font-medium rounded-md shadow-sm text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50"
                                 >
-                                  {approvingId === prop.id ? (
+                                  {activeProposalAction?.id === prop.id &&
+                                  activeProposalAction.type === 'approve' ? (
                                     <ArrowPathIcon className="w-3.5 h-3.5 mr-1 animate-spin" />
                                   ) : (
                                     <CheckIcon className="w-3.5 h-3.5 mr-1" />
                                   )}
-                                  {approvingId === prop.id ? 'Applying...' : 'Approve & Apply All'}
+                                  {activeProposalAction?.id === prop.id &&
+                                  activeProposalAction.type === 'approve'
+                                    ? 'Applying...'
+                                    : 'Approve & Apply All'}
                                 </button>
                               )}
                               {prop.status === 'pending' && isReportOnlyRow && (
@@ -713,7 +719,10 @@ export default function ChangeProposalsPage() {
                                   className="inline-flex items-center px-2.5 py-1.5 border border-emerald-300 text-xs font-medium rounded-md text-emerald-800 bg-white hover:bg-emerald-50 disabled:opacity-50"
                                 >
                                   <CheckIcon className="w-3.5 h-3.5 mr-1" />
-                                  {acknowledgingId === prop.id ? 'Acknowledging...' : 'Acknowledge'}
+                                  {activeProposalAction?.id === prop.id &&
+                                  activeProposalAction.type === 'acknowledge'
+                                    ? 'Acknowledging...'
+                                    : 'Acknowledge'}
                                 </button>
                               )}
                               {prop.status === 'pending' && (
@@ -724,7 +733,10 @@ export default function ChangeProposalsPage() {
                                   className="inline-flex items-center px-2.5 py-1.5 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50 disabled:opacity-50"
                                 >
                                   <XMarkIcon className="w-3.5 h-3.5 mr-1" />
-                                  {rejectingId === prop.id ? 'Rejecting...' : 'Reject'}
+                                  {activeProposalAction?.id === prop.id &&
+                                  activeProposalAction.type === 'reject'
+                                    ? 'Rejecting...'
+                                    : 'Reject'}
                                 </button>
                               )}
                               <Link

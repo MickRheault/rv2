@@ -1927,6 +1927,7 @@ export async function approveAllProposalChanges(
   status: string;
   applicationStatus?: string;
   reconciliationStatus?: string;
+  version?: number;
 }> {
   const payload: Record<string, any> = { approveAll: true };
   if (expectedVersion !== undefined) {

@@ -3660,62 +3660,7 @@ export class ChangeProposalService {
     proposalId: string,
     options: { expectedVersion?: number; actorId?: string | null; notes?: string | null } = {}
   ) {
-    const supabase = getSupabaseAdmin();
-
-    const { data: proposal, error: propError } = await (supabase
-      .from('change_proposals') as any)
-      .select('id, status, application_status, version')
-      .eq('id', proposalId)
-      .single();
-
-    if (propError || !proposal) {
-      throw new Error(`Proposal not found: ${propError?.message || proposalId}`);
-    }
-
-    if (proposal.status === 'reviewing') {
-      throw new ProposalVersionConflictError(
-        `Concurrent apply or review already in progress for proposal '${proposalId}'.`
-      );
-    }
-
-    if (
-      proposal.status === 'applied' ||
-      proposal.status === 'partially_applied' ||
-      proposal.status === 'rejected' ||
-      proposal.status === 'acknowledged' ||
-      proposal.status === 'superseded'
-    ) {
-      throw new ProposalItemValidationError(
-        `Cannot apply proposal with status '${proposal.status}'`
-      );
-    }
-
-    if (proposal.application_status === 'not_applicable') {
-      throw new ProposalItemValidationError(
-        `Cannot approve items on report-only proposal '${proposalId}'; use action='acknowledge' instead.`
-      );
-    }
-
-    const { data: allItems, error: itemsError } = await supabase
-      .from('change_proposal_items')
-      .select('id, action, status')
-      .eq('proposal_id', proposalId);
-
-    if (itemsError || !allItems) {
-      throw new Error(`Failed to load items: ${itemsError?.message}`);
-    }
-
-    const pendingMutableIds = allItems
-      .filter((i: any) => isActionableProposalAction(i.action) && (!i.status || i.status === 'pending'))
-      .map((i: any) => i.id);
-
-    if (pendingMutableIds.length === 0) {
-      throw new ProposalItemValidationError(
-        `Proposal '${proposalId}' has no pending actionable changes to apply.`
-      );
-    }
-
-    return ChangeProposalService.apply(proposalId, pendingMutableIds, options);
+    return ChangeProposalService.executeApply(proposalId, { approveAll: true }, options);
   }
 
   /**
@@ -3726,6 +3671,18 @@ export class ChangeProposalService {
   static async apply(
     proposalId: string,
     approvedItemIds: string[],
+    options: { expectedVersion?: number; actorId?: string | null; notes?: string | null } = {}
+  ) {
+    return ChangeProposalService.executeApply(
+      proposalId,
+      { approveAll: false, approvedItemIds },
+      options
+    );
+  }
+
+  private static async executeApply(
+    proposalId: string,
+    selection: { approveAll: true } | { approveAll: false; approvedItemIds: string[] },
     options: { expectedVersion?: number; actorId?: string | null; notes?: string | null } = {}
   ) {
     const supabase = getSupabaseAdmin();
@@ -3786,14 +3743,8 @@ export class ChangeProposalService {
       throw new Error(`Failed to load items: ${itemsError?.message}`);
     }
 
-    const approvedSet = new Set(approvedItemIds);
     const isReportOnly =
       proposal.application_status === 'not_applicable' || allItems.length === 0;
-    if (isReportOnly && approvedSet.size > 0) {
-      throw new ProposalItemValidationError(
-        `Cannot approve items on report-only proposal '${proposalId}'; use action='acknowledge' instead.`
-      );
-    }
 
     // Partition actionable mutation items from unchanged informational items
     const mutableItems = allItems.filter((i) => isActionableProposalAction(i.action));
@@ -3801,6 +3752,29 @@ export class ChangeProposalService {
     const pendingMutableItems = mutableItems.filter(
       (i) => !i.status || i.status === 'pending'
     );
+
+    let approvedSet: Set<string>;
+    if (selection.approveAll) {
+      if (isReportOnly) {
+        throw new ProposalItemValidationError(
+          `Cannot approve items on report-only proposal '${proposalId}'; use action='acknowledge' instead.`
+        );
+      }
+      if (pendingMutableItems.length === 0) {
+        throw new ProposalItemValidationError(
+          `Proposal '${proposalId}' has no pending actionable changes to apply.`
+        );
+      }
+      approvedSet = new Set(pendingMutableItems.map((i) => i.id));
+    } else {
+      approvedSet = new Set(selection.approvedItemIds);
+      if (isReportOnly && approvedSet.size > 0) {
+        throw new ProposalItemValidationError(
+          `Cannot approve items on report-only proposal '${proposalId}'; use action='acknowledge' instead.`
+        );
+      }
+    }
+
     const approvedItems = pendingMutableItems.filter((i) => approvedSet.has(i.id));
 
     // 3. Revalidate geodata immutability, ownership, pricing, motorcycle categories, motorcycle conditions, and before-state freshness across all approved items
@@ -5014,6 +4988,7 @@ export class ChangeProposalService {
       appliedCount,
       status: finalStatus,
       applicationStatus: nextApplicationStatus,
+      version: nextVersion,
       ...(nextReconciliationStatus !== undefined
         ? { reconciliationStatus: nextReconciliationStatus }
         : {}),
