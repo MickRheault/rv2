@@ -905,6 +905,7 @@ describe('ChangeProposalsPage', () => {
     expect(screen.getByRole('option', { name: 'Acknowledged' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Superseded' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Approve All$/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Reject$/i })).toBeInTheDocument();
     const inspectLink = screen.getByRole('link', { name: /^Inspect$/i });
     expect(inspectLink).toHaveAttribute('title', 'Inspect Diff');
     expect(inspectLink).toHaveAttribute('href', '/admin/change-proposals/prop-rideon-bcn');
@@ -1584,7 +1585,7 @@ describe('ChangeProposalsPage', () => {
     });
   });
 
-  it('uses compact card/table layout with stacked date/time and wrapping mutations on both tabs (#242)', async () => {
+  it('renders compact proposal and crawler rows with stacked date/time, URL tooltips, and shortened action labels (#242)', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -1615,14 +1616,20 @@ describe('ChangeProposalsPage', () => {
       expect(screen.getByText('Rent A Bike Samui')).toBeInTheDocument();
     });
 
-    const proposalsTable = screen.getByRole('table');
-    const proposalsCard = proposalsTable.closest('.rounded-2xl')!;
-    expect(proposalsCard.className).not.toContain('p-6');
-    expect(proposalsCard.className).toContain('overflow-hidden');
-
     const row = screen.getByText('Rent A Bike Samui').closest('tr')!;
     const cells = within(row).getAllByRole('cell');
-    // Crawl Date renders date and time stacked in two elements
+
+    // Rental Shop cell exposes full source URL via title alongside View on GMR link
+    const sourceLink = within(cells[0]).getByRole('link', {
+      name: /https:\/\/rentabikesamui\.com\/motorcycle-list\//i,
+    });
+    expect(sourceLink).toHaveAttribute('title', 'https://rentabikesamui.com/motorcycle-list/');
+    expect(within(cells[0]).getByRole('link', { name: /View on GMR/i })).toHaveAttribute(
+      'href',
+      '/shop/thailand/koh-samui/rent-a-bike-samui'
+    );
+
+    // Crawl Date renders date and time stacked in separate elements
     const expectedDate = new Date('2026-11-21T04:10:00Z').toLocaleDateString(undefined, {
       dateStyle: 'medium',
     });
@@ -1632,10 +1639,15 @@ describe('ChangeProposalsPage', () => {
     expect(within(cells[1]).getByText(expectedDate)).toBeInTheDocument();
     expect(within(cells[1]).getByText(expectedTime)).toBeInTheDocument();
 
-    // Proposed Mutations cell allows wrapping (no cell-level whitespace-nowrap)
-    expect(cells[3].className).not.toContain('whitespace-nowrap');
+    // Actions cell renders concise Approve All, Reject, and Inspect controls with descriptive tooltips
+    const approveBtn = within(cells[4]).getByRole('button', { name: /^Approve All$/i });
+    expect(approveBtn).toHaveAttribute('title', 'Approve & apply all pending changes');
+    expect(within(cells[4]).getByRole('button', { name: /^Reject$/i })).toBeInTheDocument();
+    const inspectLink = within(cells[4]).getByRole('link', { name: /^Inspect$/i });
+    expect(inspectLink).toHaveAttribute('title', 'Inspect Diff');
+    expect(inspectLink).toHaveAttribute('href', '/admin/change-proposals/prop-compact-1');
 
-    // Switch to Crawler Activity Log and verify compact Card padding matches
+    // Switch to Crawler Activity Log and verify compact stacked timestamp & actions render cleanly
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -1661,10 +1673,11 @@ describe('ChangeProposalsPage', () => {
       expect(screen.getByText('Clean Crawl (No changes detected)')).toBeInTheDocument();
     });
 
-    const crawlerTable = screen.getByRole('table');
-    const crawlerCard = crawlerTable.closest('.rounded-2xl')!;
-    expect(crawlerCard.className).not.toContain('p-6');
-    expect(crawlerCard.className).toContain('overflow-hidden');
+    const crawlerRow = screen.getByText('Clean Crawl (No changes detected)').closest('tr')!;
+    const crawlerCells = within(crawlerRow).getAllByRole('cell');
+    expect(within(crawlerCells[2]).getByText(expectedDate)).toBeInTheDocument();
+    expect(within(crawlerCells[2]).getByText(expectedTime)).toBeInTheDocument();
+    expect(within(crawlerCells[4]).getByRole('button', { name: /View Details/i })).toBeInTheDocument();
   });
 });
 
