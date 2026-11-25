@@ -634,16 +634,23 @@ function areRateTierStatesEqual(
   return true;
 }
 
-function canonicalizeOffersForComparison(rawOffers: any[]): any[] {
-  if (!Array.isArray(rawOffers) || rawOffers.length === 0) return [];
+function canonicalizeOffersForComparison(
+  rawOffers: any[],
+  options?: { preHydrated?: boolean }
+): any[] | null {
+  if (!Array.isArray(rawOffers)) return null;
+  if (rawOffers.length === 0) return [];
   let normalized: NormalizedRentalOffer[];
   try {
-    normalized =
-      rawOffers[0] && typeof rawOffers[0] === 'object' && 'offer_type' in rawOffers[0]
-        ? hydrateRentalOffersFromRows(rawOffers)
-        : validateAndNormalizeRentalOffers(rawOffers, { requireNonEmpty: false });
+    if (options?.preHydrated) {
+      normalized = rawOffers as NormalizedRentalOffer[];
+    } else if (rawOffers[0] && typeof rawOffers[0] === 'object' && 'offer_type' in rawOffers[0]) {
+      normalized = hydrateRentalOffersFromRows(rawOffers);
+    } else {
+      normalized = validateAndNormalizeRentalOffers(rawOffers, { requireNonEmpty: false });
+    }
   } catch {
-    return rawOffers;
+    return null;
   }
 
   return normalized
@@ -723,10 +730,13 @@ function areOfferStatesEqual(
   expectedOriginalOffers: any[],
   liveOffers: NormalizedRentalOffer[]
 ): boolean {
-  const expectedDigest = computeCanonicalSha256Digest(
-    canonicalizeOffersForComparison(expectedOriginalOffers)
-  );
-  const liveDigest = computeCanonicalSha256Digest(canonicalizeOffersForComparison(liveOffers));
+  const expectedCanonical = canonicalizeOffersForComparison(expectedOriginalOffers);
+  const liveCanonical = canonicalizeOffersForComparison(liveOffers, { preHydrated: true });
+  if (!expectedCanonical || !liveCanonical) {
+    return false;
+  }
+  const expectedDigest = computeCanonicalSha256Digest(expectedCanonical);
+  const liveDigest = computeCanonicalSha256Digest(liveCanonical);
   return expectedDigest === liveDigest;
 }
 
@@ -4367,10 +4377,19 @@ export class ChangeProposalService {
                       summary_rate_per_day: prev.rental_rate_per_day ?? null,
                       summary_currency: prev.rental_rate_currency ?? null,
                     };
-                await (supabase as any).rpc('replace_motorcycle_rental_offers', {
-                  p_motorcycle_id: item.entity_id,
-                  p_payload: rpcRestorePayload,
-                });
+                const rollbackRpcRes = await (supabase as any).rpc(
+                  'replace_motorcycle_rental_offers',
+                  {
+                    p_motorcycle_id: item.entity_id,
+                    p_payload: rpcRestorePayload,
+                  }
+                );
+                if (rollbackRpcRes?.error) {
+                  console.error(
+                    `Failed to roll back rental_offers for motorcycle ${item.entity_id}:`,
+                    rollbackRpcRes.error
+                  );
+                }
               } catch {
                 // Best-effort offers rollback
               }

@@ -46,7 +46,7 @@ export const openAITools: ChatCompletionTool[] = [
         function: {
             name: 'list_motorcycles',
             description:
-                'Search and list available motorcycles for rent. Returns results with model, brand, category, engineCapacityCc (null when unlisted in the catalog — treat null as unlisted rather than guessing), pricing/rentalOffers, conditions, inclusions, shop, and location. Use city and category NAMES (e.g., "Bangkok", "Scooter") — they will be resolved automatically. Set brand and category ONLY when explicitly requested by the user.',
+                'Search and list available motorcycles for rent. Returns results with model, brand, category, engineCapacityCc (null when unlisted in the catalog — treat null as unlisted rather than guessing), pricing/rentalOffers (including optional calendarEligibility such as Saturday–Sunday weekend restrictions and overlapPolicy), conditions, inclusions, shop, and location. Use city and category NAMES (e.g., "Bangkok", "Scooter") — they will be resolved automatically. Set brand and category ONLY when explicitly requested by the user.',
             parameters: {
                 type: 'object',
                 properties: {
@@ -73,8 +73,8 @@ export const openAITools: ChatCompletionTool[] = [
                         description:
                             'Motorcycle model or free-text search term (e.g., "Win", "Detech Win", "X-ADV 750", "NVX 155").',
                     },
-                    minPrice: { type: 'number', description: 'Minimum daily rental price (or daily equivalent when durationDays is set)' },
-                    maxPrice: { type: 'number', description: 'Maximum daily rental price (or daily equivalent when durationDays is set)' },
+                    minPrice: { type: 'number', description: 'Minimum daily rental price (or daily equivalent when durationDays is set; excludes calendar-restricted offers)' },
+                    maxPrice: { type: 'number', description: 'Maximum daily rental price (or daily equivalent when durationDays is set; excludes calendar-restricted offers)' },
                     currency: {
                         type: 'string',
                         description: '3-letter ISO currency code such as THB, USD, VND, or EUR — use when the user specifies a currency',
@@ -96,7 +96,7 @@ export const openAITools: ChatCompletionTool[] = [
         type: 'function',
         function: {
             name: 'get_motorcycle',
-            description: 'Get detailed information about a specific motorcycle by its ID.',
+            description: 'Get detailed information about a specific motorcycle by its ID, including rentalOffers (with calendarEligibility and overlapPolicy), conditions, and shop inclusions.',
             parameters: {
                 type: 'object',
                 properties: {
@@ -130,7 +130,7 @@ export const openAITools: ChatCompletionTool[] = [
         type: 'function',
         function: {
             name: 'get_shop',
-            description: 'Get detailed information about a specific rental shop.',
+            description: 'Get detailed information about a specific rental shop, including its fleet with rentalOffers (calendarEligibility and overlapPolicy), conditions, and inclusions.',
             parameters: {
                 type: 'object',
                 properties: {
@@ -267,15 +267,18 @@ function parseListMotorcyclesPriceFilters(args: Record<string, unknown>) {
 function buildMotorcycleToolPricing(m: MotorcyclePricingRecord | null | undefined) {
     const offers = resolveMotorcycleRentalOffers(m);
     const dailyRate = getStandaloneDailyRate(m);
-    const { headlineOffer, unitLabel, showFrom } = resolveListingHeadline(m);
+    const { headlineOffer, showFrom } = resolveListingHeadline(m);
     const fallbackCurrency =
         typeof m?.rental_rate_currency === 'string' && m.rental_rate_currency.trim().length > 0
             ? m.rental_rate_currency.trim().toUpperCase()
             : null;
     const currency = headlineOffer?.currency || fallbackCurrency;
 
+    const headlineCalendarSuffix = headlineOffer?.calendarEligibility
+        ? ` (${formatCalendarEligibilityLabel(headlineOffer.calendarEligibility, 'short')})`
+        : '';
     const priceDisplay = headlineOffer
-        ? `${showFrom ? 'From ' : ''}${formatPlainAmount(headlineOffer.amount)} ${headlineOffer.currency} ${unitLabel}`
+        ? `${showFrom ? 'From ' : ''}${formatPlainAmount(headlineOffer.amount)} ${headlineOffer.currency} ${formatOfferBillingUnitPhrase(headlineOffer)}${headlineCalendarSuffix}`
         : 'Price on request';
 
     const rentalOffers = sortRentalOffersForDisplay(offers).map((o) => {

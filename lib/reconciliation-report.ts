@@ -1396,8 +1396,8 @@ function hasContradictoryEvidence(
   const stripObservedAt = (records: any[]) =>
     (Array.isArray(records) ? records : []).map((rec) => {
       if (!rec || typeof rec !== 'object') return rec;
-      const { observedAt: _ignored, ...rest } = rec;
-      return rest;
+      const { observedAt: _ignored, provenance, ...rest } = rec;
+      return { ...rest, provenance: provenance ?? 'supplier_explicit' };
     });
 
   const prevEvDigest = computeCanonicalSha256Digest(

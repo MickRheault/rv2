@@ -497,7 +497,7 @@ Standalone offers in `proposedData.offers[]` (and returned on `GET /api/agent/ta
 
 Each `ReconciliationEvidenceRecord` inside `reconciliationReport.entries[].evidence[]` supports an optional private `provenance` field:
 
-- `'supplier_explicit'` — directly observed on the supplier's published page/table (default when omitted).
+- `'supplier_explicit'` — directly observed on the supplier's published page/table (omitted or `null` provenance is interpreted as supplier-explicit while the `provenance` property remains absent on readback).
 - `'owner_approved_interpretation'` — reflects an explicit owner-approved rule/mapping (for example, mapping a supplier's `"Weekend"` column to `Saturday–Sunday` with `overlapPolicy: 'unknown'` and `startTime: null, endTime: null` per an approved policy decision).
 - Any other non-null value fails validation with `400 Bad Request`.
 - **Privacy boundary**: `evidence[].provenance` is stored strictly inside private reconciliation JSONB records for admin review and is never exposed on public motorcycle pages, `/api/v1/*`, AI chat, or MCP responses.

@@ -581,6 +581,12 @@ export function createInMemorySupabaseClient(
       }
     };
 
+    const readColumnValue = (row: any, col: string) => {
+      if (!col.includes('.')) return row[col];
+      const enriched = enrichRow(table, row, state);
+      return col.split('.').reduce((acc: any, part: string) => acc?.[part], enriched);
+    };
+
     const builder: any = {
       select(this: any, _cols?: string, opts?: { count?: string }) {
         assertBound(this, 'select');
@@ -608,18 +614,18 @@ export function createInMemorySupabaseClient(
       },
       eq(this: any, col: string, val: any) {
         assertBound(this, 'eq');
-        filters.push((r) => r[col] === val);
+        filters.push((r) => readColumnValue(r, col) === val);
         return builder;
       },
       neq(this: any, col: string, val: any) {
         assertBound(this, 'neq');
-        filters.push((r) => r[col] !== val);
+        filters.push((r) => readColumnValue(r, col) !== val);
         return builder;
       },
       in(this: any, col: string, vals: any[]) {
         assertBound(this, 'in');
         const set = new Set(vals);
-        filters.push((r) => set.has(r[col]));
+        filters.push((r) => set.has(readColumnValue(r, col)));
         return builder;
       },
       ilike(this: any, col: string, pattern: string) {

@@ -19,14 +19,22 @@ import {
   PUT as putAdminMotorcycleOffers,
 } from '@/app/api/admin/motorcycles/[id]/offers/route';
 import { PUT as putMotorcycleRateTiers } from '@/app/api/v1/motorcycles/[id]/rate-tiers/route';
-import { POST as createV1Motorcycle } from '@/app/api/v1/motorcycles/route';
-import { GET as getV1MotorcycleById } from '@/app/api/v1/motorcycles/[id]/route';
+import {
+  GET as listV1Motorcycles,
+  POST as createV1Motorcycle,
+} from '@/app/api/v1/motorcycles/route';
+import {
+  GET as getV1MotorcycleById,
+  PUT as updateV1MotorcycleById,
+} from '@/app/api/v1/motorcycles/[id]/route';
+import { GET as getV1ShopById } from '@/app/api/v1/shops/[id]/route';
 import { GET as handleGetAgentTasks } from '@/app/api/agent/tasks/route';
 import { POST as handleStageProposal } from '@/app/api/agent/change-proposals/route';
 import { GET as handleGetAgentProposal } from '@/app/api/agent/change-proposals/[id]/route';
 import { GET as handleGetAdminProposal } from '@/app/api/admin/change-proposals/[id]/route';
 import { POST as handleApplyProposal } from '@/app/api/admin/change-proposals/[id]/apply/route';
 import { executeTool } from '@/lib/mcp/tools';
+import { planCandidateOperations } from '@/lib/reconciliation-report';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { isAuthorizedAdmin, getAuthenticatedAdminUserId } from '@/lib/auth/admin-auth';
 import {
@@ -814,6 +822,427 @@ describe('Calendar Eligibility, Overlap Policy & Reconciliation Provenance APIs 
         })
       );
       expect(badProvenanceRes.status).toBe(400);
+    });
+
+    it('covers REST PUT/GET list/shop round-trips, Internal/External MCP daily & fleet formats, apply-time 409, add + rollback, provenance edge cases, and public privacy boundary', async () => {
+      // 1. REST PUT /api/v1/motorcycles/[id] round-trip, scalar 409 guard, extension 400, GET list durationDays exclusion, GET /api/v1/shops/[id]
+      const putBikeRes = await updateV1MotorcycleById(
+        new NextRequest(`http://localhost/api/v1/motorcycles/${EXISTING_PCX_ID}`, {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ rental_offers: [LA_DUCATESSA_OFFERS[1]] }),
+        }),
+        { params: Promise.resolve({ id: EXISTING_PCX_ID }) }
+      );
+      expect(putBikeRes.status).toBe(200);
+      expect((await putBikeRes.json()).data.rental_offers[0].calendarEligibility?.kind).toBe(
+        'weekend'
+      );
+
+      // Scalar daily rate overwrite on calendar-restricted bike returns 409
+      const scalarConflict = await updateV1MotorcycleById(
+        new NextRequest(`http://localhost/api/v1/motorcycles/${EXISTING_PCX_ID}`, {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ rental_rate_per_day: 99, rental_rate_currency: 'EUR' }),
+        }),
+        { params: Promise.resolve({ id: EXISTING_PCX_ID }) }
+      );
+      expect(scalarConflict.status).toBe(409);
+
+      // Extension holding calendarEligibility returns 400
+      const extCalendarRes = await putV1MotorcycleOffers(
+        new NextRequest(`http://localhost/api/v1/motorcycles/${EXISTING_PCX_ID}/offers`, {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            offers: [
+              {
+                ...LA_DUCATESSA_OFFERS[0],
+                extensions: [
+                  {
+                    amount: 80,
+                    currency: 'EUR',
+                    billingBasis: 'per_day',
+                    calendarEligibility: { kind: 'weekend' },
+                  },
+                ],
+              },
+            ],
+          }),
+        }),
+        { params: Promise.resolve({ id: EXISTING_PCX_ID }) }
+      );
+      expect(extCalendarRes.status).toBe(400);
+
+      // GET /api/v1/motorcycles?durationDays=2 excludes weekend-only bike while still returning unrestricted EUR bikes
+      const listRes = await listV1Motorcycles(
+        new NextRequest('http://localhost/api/v1/motorcycles?durationDays=2&currency=EUR&maxPrice=200')
+      );
+      expect(listRes.status).toBe(200);
+      const listIds = ((await listRes.json()).data || []).map((m: any) => m.id);
+      expect(listIds).not.toContain(EXISTING_PCX_ID);
+      expect(listIds).toContain('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
+
+      // GET /api/v1/shops/[id] returns hydrated calendarEligibility & overlapPolicy on shop fleet without any reconciliation/provenance fields
+      const shopRes = await getV1ShopById(
+        new NextRequest(`http://localhost/api/v1/shops/${RIDE_ON_SHOP_ID}`),
+        { params: Promise.resolve({ id: RIDE_ON_SHOP_ID }) }
+      );
+      expect(shopRes.status).toBe(200);
+      const shopJson = await shopRes.json();
+      const shopPcx = shopJson.data.motorcycle_rentals.find((m: any) => m.id === EXISTING_PCX_ID);
+      expect(shopPcx.rental_offers[0].calendarEligibility?.kind).toBe('weekend');
+      expect(shopPcx.rental_offers[0].overlapPolicy).toBe('unknown');
+      expect(JSON.stringify(shopJson)).not.toContain('owner_approved_interpretation');
+
+      // 2. Internal MCP daily prose priceDisplay regression check + list_motorcycles & get_shop
+      state.rental_offers = [
+        {
+          id: 'off-daily-unrestricted',
+          motorcycle_id: EXISTING_PCX_ID,
+          parent_offer_id: null,
+          offer_type: 'daily',
+          amount: 450,
+          currency: 'THB',
+          billing_basis: 'per_day',
+          duration_unit: 'day',
+          min_duration: 1,
+          max_duration: null,
+          supplier_label: null,
+          is_from: false,
+          calendar_eligibility: null,
+          overlap_policy: null,
+          sort_order: 0,
+        },
+      ];
+      const dailyGetRes = await executeTool('get_motorcycle', { id: EXISTING_PCX_ID });
+      expect((dailyGetRes.data as any).priceDisplay).toBe('450 THB per day');
+
+      // Restricted-only daily offer uses prose 'per day (Sat–Sun)' (never '/day')
+      state.rental_offers[0].calendar_eligibility = LA_DUCATESSA_OFFERS[1].calendarEligibility;
+      state.rental_offers[0].overlap_policy = 'unknown';
+      const restrictedDailyGetRes = await executeTool('get_motorcycle', { id: EXISTING_PCX_ID });
+      expect((restrictedDailyGetRes.data as any).priceDisplay).toBe('450 THB per day (Sat–Sun)');
+
+      const mcpListRes = await executeTool('list_motorcycles', {});
+      expect(mcpListRes.success).toBe(true);
+      const listedPcx = (mcpListRes.data as any).motorcycles.find(
+        (m: any) => m.id === EXISTING_PCX_ID
+      );
+      expect(listedPcx.priceDisplay).toBe('450 THB per day (Sat–Sun)');
+      expect(listedPcx.rentalOffers[0].calendarEligibilityLabel).toBe('Saturday–Sunday');
+
+      const mcpShopRes = await executeTool('get_shop', { id: RIDE_ON_SHOP_ID });
+      expect(mcpShopRes.success).toBe(true);
+      const mcpShopPcx = (mcpShopRes.data as any).motorcycle_rentals.find(
+        (m: any) => m.id === EXISTING_PCX_ID
+      );
+      expect(mcpShopPcx.priceDisplay).toBe('450 THB per day (Sat–Sun)');
+
+      // External MCP create_motorcycle & update_motorcycle forward rental_offers with calendarEligibility/overlapPolicy
+      const mockFetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ success: true, data: { id: 'bike-ext-mcp' } }),
+      });
+      global.fetch = mockFetch as any;
+      await registeredMcpTools.create_motorcycle.handler(
+        { model: 'Scrambler', shop_id: RIDE_ON_SHOP_ID, rental_offers: JSON.stringify(LA_DUCATESSA_OFFERS) },
+        { authInfo: { extra: { accessLevel: 'admin' } } }
+      );
+      await registeredMcpTools.update_motorcycle.handler(
+        { id: 'bike-ext-mcp', rental_offers: JSON.stringify(LA_DUCATESSA_OFFERS) },
+        { authInfo: { extra: { accessLevel: 'admin' } } }
+      );
+      expect(JSON.parse(mockFetch.mock.calls[0][1].body).rental_offers).toEqual(LA_DUCATESSA_OFFERS);
+      expect(JSON.parse(mockFetch.mock.calls[1][1].body).rental_offers).toEqual(LA_DUCATESSA_OFFERS);
+
+      // 3. Apply-time 409 when legacy rates[]-only proposal was staged BEFORE a calendar-restricted offer was added concurrently
+      state.rental_offers = [
+        {
+          id: 'off-plain-daily',
+          motorcycle_id: EXISTING_PCX_ID,
+          parent_offer_id: null,
+          offer_type: 'daily',
+          amount: 35,
+          currency: 'EUR',
+          billing_basis: 'per_day',
+          duration_unit: 'day',
+          min_duration: 1,
+          max_duration: null,
+          supplier_label: null,
+          is_from: false,
+          calendar_eligibility: null,
+          overlap_policy: null,
+          sort_order: 0,
+        },
+      ];
+      state.rental_rate_tiers = [
+        {
+          id: 'tier-plain-1',
+          motorcycle_id: EXISTING_PCX_ID,
+          min_days: 1,
+          max_days: null,
+          rate_per_day: 35,
+          currency: 'EUR',
+        },
+      ];
+      const legacyStageOk = await handleStageProposal(
+        new NextRequest('http://localhost/api/agent/change-proposals', {
+          method: 'POST',
+          headers: agentHeaders(),
+          body: JSON.stringify({
+            shopId: RIDE_ON_SHOP_ID,
+            sourceUrl: RIDE_ON_SOURCE_URL,
+            agentRunId: 'run-247-apply-time-409',
+            items: [
+              {
+                entityType: 'motorcycle',
+                action: 'update',
+                entityId: EXISTING_PCX_ID,
+                proposedData: {
+                  rates: [{ minDays: 1, maxDays: null, ratePerDay: 40, currency: 'EUR' }],
+                },
+              },
+            ],
+          }),
+        })
+      );
+      expect(legacyStageOk.status).toBe(201);
+      const legacyStaged = await legacyStageOk.json();
+      const legacyItemId = (
+        await (
+          await handleGetAgentProposal(
+            new NextRequest(
+              `http://localhost/api/agent/change-proposals/${legacyStaged.proposalId}`,
+              { headers: agentHeaders() }
+            ),
+            { params: Promise.resolve({ id: legacyStaged.proposalId }) }
+          )
+        ).json()
+      ).items[0].id;
+
+      // Concurrently add a calendar-restricted offer to the live bike before approval
+      state.rental_offers.push({
+        id: 'off-concurrent-wknd',
+        motorcycle_id: EXISTING_PCX_ID,
+        parent_offer_id: null,
+        offer_type: 'package',
+        amount: 260,
+        currency: 'EUR',
+        billing_basis: 'package_total',
+        duration_unit: 'day',
+        min_duration: 2,
+        max_duration: 2,
+        supplier_label: 'Weekend package',
+        is_from: false,
+        calendar_eligibility: LA_DUCATESSA_OFFERS[1].calendarEligibility,
+        overlap_policy: 'unknown',
+        sort_order: 1,
+      });
+
+      const legacyApply409 = await handleApplyProposal(
+        new NextRequest(
+          `http://localhost/api/admin/change-proposals/${legacyStaged.proposalId}/apply`,
+          {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+              approvedItemIds: [legacyItemId],
+              expectedVersion: legacyStaged.proposalVersion,
+            }),
+          }
+        ),
+        { params: Promise.resolve({ id: legacyStaged.proposalId }) }
+      );
+      expect(legacyApply409.status).toBe(409);
+
+      // 4. Mid-apply rollback restores live calendar_eligibility and overlap_policy intact on failure
+      const failingClient = createInMemorySupabaseClient(state, {
+        failConditionInsertForMotorcycleId: EXISTING_PCX_ID,
+      });
+      activeClient = failingClient;
+      (getSupabaseAdmin as jest.Mock).mockImplementation(() => failingClient);
+
+      const rollbackStageRes = await handleStageProposal(
+        new NextRequest('http://localhost/api/agent/change-proposals', {
+          method: 'POST',
+          headers: agentHeaders(),
+          body: JSON.stringify({
+            shopId: RIDE_ON_SHOP_ID,
+            sourceUrl: RIDE_ON_SOURCE_URL,
+            agentRunId: 'run-247-rollback-calendar',
+            items: [
+              {
+                entityType: 'motorcycle',
+                action: 'update',
+                entityId: EXISTING_PCX_ID,
+                proposedData: {
+                  offers: [LA_DUCATESSA_OFFERS[0]],
+                  conditions: [
+                    { condition_type_id: '11111111-1111-4111-8111-111111111111', notes: 'Trigger failure' },
+                  ],
+                },
+              },
+            ],
+          }),
+        })
+      );
+      expect(rollbackStageRes.status).toBe(201);
+      const rollbackStaged = await rollbackStageRes.json();
+      const rollbackItemId = (
+        await (
+          await handleGetAgentProposal(
+            new NextRequest(
+              `http://localhost/api/agent/change-proposals/${rollbackStaged.proposalId}`,
+              { headers: agentHeaders() }
+            ),
+            { params: Promise.resolve({ id: rollbackStaged.proposalId }) }
+          )
+        ).json()
+      ).items[0].id;
+
+      const rollbackApplyRes = await handleApplyProposal(
+        new NextRequest(
+          `http://localhost/api/admin/change-proposals/${rollbackStaged.proposalId}/apply`,
+          {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+              approvedItemIds: [rollbackItemId],
+              expectedVersion: rollbackStaged.proposalVersion,
+            }),
+          }
+        ),
+        { params: Promise.resolve({ id: rollbackStaged.proposalId }) }
+      );
+      expect(rollbackApplyRes.status).toBe(500);
+      const restoredWeekend = state.rental_offers.find(
+        (o) => o.motorcycle_id === EXISTING_PCX_ID && o.calendar_eligibility !== null
+      );
+      expect(restoredWeekend?.calendar_eligibility).toEqual(
+        LA_DUCATESSA_OFFERS[1].calendarEligibility
+      );
+      expect(restoredWeekend?.overlap_policy).toBe('unknown');
+
+      // 5. Provenance strictness (null/omitted/whitespace/empty/non-string) & hasContradictoryEvidence normalization
+      activeClient = createInMemorySupabaseClient(state);
+      (getSupabaseAdmin as jest.Mock).mockImplementation(() => activeClient);
+
+      for (const invalidProvenance of [' supplier_explicit ', '', 123]) {
+        const invalidProvRes = await handleStageProposal(
+          new NextRequest('http://localhost/api/agent/change-proposals', {
+            method: 'POST',
+            headers: agentHeaders(),
+            body: JSON.stringify({
+              shopId: RIDE_ON_SHOP_ID,
+              sourceUrl: RIDE_ON_SOURCE_URL,
+              agentRunId: `run-247-bad-prov-${String(invalidProvenance)}`,
+              items: [],
+              reconciliationReport: {
+                schemaVersion: 1,
+                scope: {
+                  branch: 'Barcelona',
+                  catalogType: 'branch',
+                  services: ['daily_rental'],
+                  availabilityBasis: 'supplier_catalog_not_live_stock',
+                },
+                coverage: {
+                  status: 'complete',
+                  discoveryComplete: true,
+                  limitations: [],
+                  pages: [{ url: RIDE_ON_SOURCE_URL, role: 'catalog', required: true, status: 'processed' }],
+                },
+                entries: [
+                  {
+                    entryKey: 'honda-pcx-125',
+                    brand: 'Honda',
+                    model: 'PCX 125',
+                    existingMotorcycleId: EXISTING_PCX_ID,
+                    disposition: 'unchanged',
+                    proposalItemRefs: [],
+                    comparedAttributes: ['offers', 'model'],
+                    evidence: [
+                      {
+                        sourceUrl: RIDE_ON_SOURCE_URL,
+                        kind: 'pricing_table',
+                        snippet: 'Weekend EUR 260',
+                        provenance: invalidProvenance,
+                      },
+                    ],
+                  },
+                ],
+              },
+            }),
+          })
+        );
+        expect(invalidProvRes.status).toBe(400);
+      }
+
+      // Omitted provenance vs explicit 'supplier_explicit' does NOT trigger contradictory_evidence_on_dismissed
+      const candidatePlan = planCandidateOperations({
+        entries: [
+          {
+            entryIndex: 0,
+            entryKey: 'bmw-r1250',
+            brandName: 'BMW',
+            modelName: 'R 1250 GS',
+            year: null,
+            yearTo: null,
+            variantLabel: null,
+            existingMotorcycleId: null,
+            candidateId: 'cand-dismissed-1',
+            disposition: 'unresolved',
+            proposalItemRefs: [],
+            comparedAttributes: null,
+            issues: [{ code: 'PRICE_UNVERIFIED', detail: 'No price' }],
+            nextAction: 'Verify price',
+            reason: null,
+            duplicateOfEntryKey: null,
+            duplicateOfMotorcycleId: null,
+            evidence: [
+              {
+                sourceUrl: RIDE_ON_SOURCE_URL,
+                snippet: 'BMW R 1250 GS',
+                kind: 'card_text',
+                linkedUrl: null,
+                observedAt: null,
+                contentHash: null,
+                provenance: 'supplier_explicit',
+              },
+            ],
+          },
+        ],
+        items: [],
+        existingCandidates: [
+          {
+            id: 'cand-dismissed-1',
+            identity_key: 'bmw::r-1250-gs::any-single::base',
+            brand_name: 'BMW',
+            model_name: 'R 1250 GS',
+            year: null,
+            year_to: null,
+            variant_label: null,
+            state: 'dismissed',
+            flagged_for_review: false,
+            current_issues: [{ code: 'PRICE_UNVERIFIED', detail: 'No price' }],
+            latest_evidence: [
+              {
+                sourceUrl: RIDE_ON_SOURCE_URL,
+                snippet: 'BMW R 1250 GS',
+                kind: 'card_text',
+                linkedUrl: null,
+                observedAt: null,
+                contentHash: null,
+              },
+            ],
+          },
+        ],
+        coverage: { status: 'complete', discoveryComplete: true, limitations: [], pages: [] },
+        sourceUrl: RIDE_ON_SOURCE_URL,
+        validationErrorCtor: Error,
+      });
+      expect(candidatePlan.operations[0].flaggedForReview).toBe(false);
     });
   });
 

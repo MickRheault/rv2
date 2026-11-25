@@ -204,7 +204,7 @@
             },
             "put": {
                 "summary": "Update motorcycle",
-                "description": "Update a motorcycle (admin only)",
+                "description": "Update a motorcycle (admin only). Returns 409 Conflict if attempting to overwrite non-daily, calendar-restricted, or extension offers via legacy scalar or rate-tier fields.",
                 "operationId": "updateMotorcycle",
                 "tags": [
                     "Motorcycles"
@@ -252,7 +252,7 @@
             },
             "patch": {
                 "summary": "Partially update motorcycle",
-                "description": "Partially update a motorcycle (admin only). Returns 409 Conflict if attempting to overwrite non-daily or extension offers via legacy scalar or rate-tier fields.",
+                "description": "Partially update a motorcycle (admin only). Returns 409 Conflict if attempting to overwrite non-daily, calendar-restricted, or extension offers via legacy scalar or rate-tier fields.",
                 "operationId": "patchMotorcycle",
                 "tags": [
                     "Motorcycles"
@@ -331,7 +331,7 @@
         "/motorcycles/{id}/offers": {
             "get": {
                 "summary": "Get motorcycle rental offers",
-                "description": "Retrieve canonical structured Rental Offers (with nested Extension Charges and read-only dailyEquivalent) for a motorcycle",
+                "description": "Retrieve canonical structured Rental Offers (with optional calendarEligibility, overlapPolicy, nested Extension Charges, and read-only dailyEquivalent) for a motorcycle",
                 "operationId": "getMotorcycleOffers",
                 "tags": [
                     "Motorcycles"
@@ -1041,7 +1041,7 @@
                 }
             },
             "Conflict": {
-                "description": "Conflict with existing resource state (e.g. non-daily offers exist on motorcycle)",
+                "description": "Conflict with existing resource state (e.g. non-daily, calendar-restricted, or extension offers exist on motorcycle)",
                 "content": {
                     "application/json": {
                         "schema": {
@@ -1157,7 +1157,7 @@
                         "items": {
                             "$ref": "#/components/schemas/RentalOffer"
                         },
-                        "description": "Hydrated canonical Rental Offers (including nested extensions and read-only dailyEquivalent)"
+                        "description": "Hydrated canonical Rental Offers (including optional calendarEligibility, overlapPolicy, nested extensions, and read-only dailyEquivalent)"
                     },
                     "created_at": {
                         "type": "string",
@@ -1464,7 +1464,11 @@
                         "type": "boolean"
                     },
                     "calendarEligibility": {
-                        "$ref": "#/components/schemas/RentalOfferCalendarEligibility",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/RentalOfferCalendarEligibility"
+                            }
+                        ],
                         "nullable": true,
                         "description": "Optional calendar restriction (null = unrestricted). Calendar-restricted offers coexist with same-duration unrestricted offers and are excluded from legacy daily projections and duration-only price filters."
                     },
