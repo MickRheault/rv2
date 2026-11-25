@@ -2,7 +2,9 @@
 import { Metadata } from 'next';
 import { formatMotorcycleYear, type MotorcycleYearRangeInput } from '@/lib/utils';
 import {
+  formatCalendarEligibilityLabel,
   formatOfferBillingUnitPhrase,
+  type OfferCalendarEligibility,
   type OfferDurationTerms,
 } from '@/lib/rental-offers';
 
@@ -232,6 +234,7 @@ export function generateMotorcycleSEO(
       amount: number;
       currency: string;
       isFrom?: boolean;
+      calendarEligibility?: OfferCalendarEligibility | null;
     }) | null;
     category?: string;
     image?: string;
@@ -250,8 +253,11 @@ export function generateMotorcycleSEO(
       maximumFractionDigits: Number.isInteger(headlineOffer.amount) ? 0 : 2,
     }).format(headlineOffer.amount);
     const unitPhrase = formatOfferBillingUnitPhrase(headlineOffer);
+    const calendarSuffix = headlineOffer.calendarEligibility
+      ? ` (${formatCalendarEligibilityLabel(headlineOffer.calendarEligibility, 'short')})`
+      : '';
     const prefix = headlineOffer.isFrom ? 'from' : 'at';
-    priceText = ` ${prefix} ${headlineOffer.currency.trim()} ${formattedAmt} ${unitPhrase}`;
+    priceText = ` ${prefix} ${headlineOffer.currency.trim()} ${formattedAmt} ${unitPhrase}${calendarSuffix}`;
   } else if (pricePerDay && currency) {
     priceText = ` from ${currency}${pricePerDay}/day`;
   } else if (pricePerDay) {
