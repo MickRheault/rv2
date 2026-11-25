@@ -194,7 +194,7 @@ export async function replaceMotorcycleRateTiersLegacyCompat(
   const currentOffers = await getMotorcycleRentalOffers(motorcycleId);
   if (hasUnrepresentableLegacyDailyOffers(currentOffers)) {
     throw new RentalOfferConflictError(
-      'Cannot overwrite flexible non-daily, labeled, or extension offers via legacy rate-tiers endpoint; use /offers instead.'
+      'Cannot overwrite flexible non-daily, labeled, calendar-restricted, or extension offers via legacy rate-tiers endpoint; use /offers instead.'
     );
   }
 
@@ -245,7 +245,7 @@ export async function prepareMotorcyclePricingMutation(params: {
       const currentOffers = await getMotorcycleRentalOffers(motorcycleId);
       if (hasUnrepresentableLegacyDailyOffers(currentOffers)) {
         throw new RentalOfferConflictError(
-          'Cannot overwrite flexible non-daily, labeled, or extension offers via legacy rental_rate_tiers; use rental_offers instead.'
+          'Cannot overwrite flexible non-daily, labeled, calendar-restricted, or extension offers via legacy rental_rate_tiers; use rental_offers instead.'
         );
       }
     }
@@ -275,7 +275,7 @@ export async function prepareMotorcyclePricingMutation(params: {
       const currentOffers = await getMotorcycleRentalOffers(motorcycleId);
       if (hasUnrepresentableLegacyDailyOffers(currentOffers)) {
         throw new RentalOfferConflictError(
-          'Cannot overwrite flexible non-daily, labeled, or extension offers via scalar rental_rate_per_day; use rental_offers instead.'
+          'Cannot overwrite flexible non-daily, labeled, calendar-restricted, or extension offers via scalar rental_rate_per_day; use rental_offers instead.'
         );
       }
       if (!fallbackCurrency && currentOffers.length > 0) {
@@ -365,7 +365,7 @@ export async function prepareMotorcyclePricingMutation(params: {
       const currentOffers = await getMotorcycleRentalOffers(motorcycleId);
       if (hasUnrepresentableLegacyDailyOffers(currentOffers)) {
         throw new RentalOfferConflictError(
-          'Cannot overwrite currency on flexible non-daily, labeled, or extension offers via scalar rental_rate_currency; use rental_offers instead.'
+          'Cannot overwrite currency on flexible non-daily, labeled, calendar-restricted, or extension offers via scalar rental_rate_currency; use rental_offers instead.'
         );
       }
 

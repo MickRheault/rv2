@@ -18,6 +18,10 @@ ALTER TABLE public.rental_offers
       calendar_eligibility IS NULL
       OR (
         jsonb_typeof(calendar_eligibility) = 'object'
+        AND (
+          calendar_eligibility
+          - ARRAY['kind', 'startDay', 'endDay', 'startTime', 'endTime', 'timezoneBasis']
+        ) = '{}'::jsonb
         AND calendar_eligibility->>'kind' = 'weekend'
         AND calendar_eligibility->>'startDay' = 'saturday'
         AND calendar_eligibility->>'endDay' = 'sunday'
@@ -97,7 +101,7 @@ BEGIN
       END;
 
       v_overlap_policy := CASE
-        WHEN v_calendar_eligibility IS NULL THEN NULL
+        WHEN v_calendar_eligibility IS NULL THEN NULLIF(v_offer->>'overlap_policy', '')
         ELSE COALESCE(NULLIF(v_offer->>'overlap_policy', ''), 'unknown')
       END;
 

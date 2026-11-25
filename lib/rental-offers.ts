@@ -273,6 +273,15 @@ function parseQuantitySpec<U extends string>(
   };
 }
 
+const ALLOWED_CALENDAR_ELIGIBILITY_KEYS = new Set([
+  'kind',
+  'startDay',
+  'endDay',
+  'startTime',
+  'endTime',
+  'timezoneBasis',
+]);
+
 function parseOptionalTimeOfDay(raw: unknown, path: string): string | null {
   if (raw === undefined || raw === null) return null;
   if (typeof raw !== 'string' || !HH_MM_TIME_REGEX.test(raw)) {
@@ -292,18 +301,24 @@ function parseCalendarEligibility(
     throw new RentalOfferValidationError(`${path} must be an object or null`);
   }
   const candidate = raw as Record<string, unknown>;
+  for (const key of Object.keys(candidate)) {
+    if (!ALLOWED_CALENDAR_ELIGIBILITY_KEYS.has(key)) {
+      throw new RentalOfferValidationError(`${path}.${key} is not a supported field`);
+    }
+  }
   if (candidate.kind !== 'weekend') {
     throw new RentalOfferValidationError(`${path}.kind must be 'weekend'`);
   }
-  const startDay = candidate.startDay ?? 'saturday';
+  const startDay = candidate.startDay === undefined ? 'saturday' : candidate.startDay;
   if (startDay !== 'saturday') {
     throw new RentalOfferValidationError(`${path}.startDay must be 'saturday' for weekend offers`);
   }
-  const endDay = candidate.endDay ?? 'sunday';
+  const endDay = candidate.endDay === undefined ? 'sunday' : candidate.endDay;
   if (endDay !== 'sunday') {
     throw new RentalOfferValidationError(`${path}.endDay must be 'sunday' for weekend offers`);
   }
-  const timezoneBasis = candidate.timezoneBasis ?? 'shop_local';
+  const timezoneBasis =
+    candidate.timezoneBasis === undefined ? 'shop_local' : candidate.timezoneBasis;
   if (timezoneBasis !== 'shop_local') {
     throw new RentalOfferValidationError(`${path}.timezoneBasis must be 'shop_local'`);
   }
@@ -744,22 +759,14 @@ function sortRentalOffersByPersistedOrder(offers: NormalizedRentalOffer[]): Norm
 
 function hydrateOptionalCalendarEligibility(raw: unknown): OfferCalendarEligibility | null {
   if (raw === undefined || raw === null) return null;
-  try {
-    return parseCalendarEligibility(raw, 'calendar_eligibility');
-  } catch {
-    return null;
-  }
+  return parseCalendarEligibility(raw, 'calendar_eligibility');
 }
 
 function hydrateOptionalOverlapPolicy(
   raw: unknown,
   calendarEligibility: OfferCalendarEligibility | null
 ): OfferOverlapPolicy | null {
-  if (calendarEligibility === null) return null;
-  if (typeof raw === 'string' && OVERLAP_POLICIES.has(raw as OfferOverlapPolicy)) {
-    return raw as OfferOverlapPolicy;
-  }
-  return 'unknown';
+  return parseOverlapPolicy(raw, calendarEligibility, 'overlap_policy');
 }
 
 export function hydrateRentalOffersFromRows(rows: any[] | null | undefined): NormalizedRentalOffer[] {
@@ -1080,13 +1087,19 @@ export function formatCalendarEligibilityLabel(
 ): string {
   const base = style === 'short' ? 'Sat–Sun' : 'Saturday–Sunday';
   if (eligibility.startTime && eligibility.endTime) {
-    return `${base} (${eligibility.startTime}–${eligibility.endTime})`;
+    return style === 'short'
+      ? `${base}, ${eligibility.startTime}–${eligibility.endTime}`
+      : `${base} (${eligibility.startTime}–${eligibility.endTime})`;
   }
   if (eligibility.startTime) {
-    return `${base} (from ${eligibility.startTime})`;
+    return style === 'short'
+      ? `${base}, from ${eligibility.startTime}`
+      : `${base} (from ${eligibility.startTime})`;
   }
   if (eligibility.endTime) {
-    return `${base} (until ${eligibility.endTime})`;
+    return style === 'short'
+      ? `${base}, until ${eligibility.endTime}`
+      : `${base} (until ${eligibility.endTime})`;
   }
   return base;
 }
@@ -1405,6 +1418,11 @@ export function compareMotorcyclesByPrice(
   const nonDailyB = selectPrimaryHeadlineOffer(resolveMotorcycleRentalOffers(b));
 
   if (nonDailyA && nonDailyB) {
+    const restrictedDiff =
+      (isCalendarRestrictedOffer(nonDailyA) ? 1 : 0) -
+      (isCalendarRestrictedOffer(nonDailyB) ? 1 : 0);
+    if (restrictedDiff !== 0) return restrictedDiff;
+
     const prioDiff =
       HEADLINE_FALLBACK_PRIORITY[nonDailyA.offerType] -
       HEADLINE_FALLBACK_PRIORITY[nonDailyB.offerType];
@@ -1468,6 +1486,9 @@ export interface CalendarEligibilityEvaluationResult {
   hoursSpecified: boolean;
 }
 
+const ISO_TIMESTAMP_WITH_OFFSET_REGEX =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:[zZ]|[+-]\d{2}:\d{2})$/;
+
 function isValidIanaTimeZone(tz: string): boolean {
   try {
     new Intl.DateTimeFormat('en-US', { timeZone: tz });
@@ -1482,7 +1503,7 @@ interface LocalDateTimeParts {
   month: number;
   day: number;
   weekday: string;
-  minutesOfDay: number;
+  secondsOfDay: number;
 }
 
 function extractLocalDateTimeParts(date: Date, timeZone: string): LocalDateTimeParts {
@@ -1494,6 +1515,7 @@ function extractLocalDateTimeParts(date: Date, timeZone: string): LocalDateTimeP
     weekday: 'short',
     hour: '2-digit',
     minute: '2-digit',
+    second: '2-digit',
     hourCycle: 'h23',
   });
   const parts = formatter.formatToParts(date);
@@ -1505,12 +1527,13 @@ function extractLocalDateTimeParts(date: Date, timeZone: string): LocalDateTimeP
   const hourRaw = Number(byType.get('hour'));
   const hour = hourRaw === 24 ? 0 : hourRaw;
   const minute = Number(byType.get('minute'));
+  const second = Number(byType.get('second'));
   return {
     year,
     month,
     day,
     weekday,
-    minutesOfDay: hour * 60 + minute,
+    secondsOfDay: hour * 3600 + minute * 60 + second,
   };
 }
 
@@ -1518,9 +1541,9 @@ function toDaySerial(parts: Pick<LocalDateTimeParts, 'year' | 'month' | 'day'>):
   return Math.floor(Date.UTC(parts.year, parts.month - 1, parts.day) / 86_400_000);
 }
 
-function parseMinutesOfDay(hhmm: string): number {
+function parseSecondsOfDay(hhmm: string): number {
   const [h, m] = hhmm.split(':').map(Number);
-  return h * 60 + m;
+  return h * 3600 + m * 60;
 }
 
 export function evaluateOfferCalendarEligibility(
@@ -1543,6 +1566,17 @@ export function evaluateOfferCalendarEligibility(
     return {
       status: 'unevaluable',
       reason: 'dates_missing',
+      hoursSpecified,
+    };
+  }
+
+  if (
+    !ISO_TIMESTAMP_WITH_OFFSET_REGEX.test(window.startIso.trim()) ||
+    !ISO_TIMESTAMP_WITH_OFFSET_REGEX.test(window.endIso.trim())
+  ) {
+    return {
+      status: 'unevaluable',
+      reason: 'invalid_window',
       hoursSpecified,
     };
   }
@@ -1588,7 +1622,8 @@ export function evaluateOfferCalendarEligibility(
 
   if (
     eligibility.startTime !== null &&
-    startLocal.minutesOfDay < parseMinutesOfDay(eligibility.startTime)
+    startLocal.weekday === 'Sat' &&
+    startLocal.secondsOfDay < parseSecondsOfDay(eligibility.startTime)
   ) {
     return {
       status: 'ineligible',
@@ -1599,7 +1634,8 @@ export function evaluateOfferCalendarEligibility(
 
   if (
     eligibility.endTime !== null &&
-    endLocal.minutesOfDay > parseMinutesOfDay(eligibility.endTime)
+    endLocal.weekday === 'Sun' &&
+    endLocal.secondsOfDay > parseSecondsOfDay(eligibility.endTime)
   ) {
     return {
       status: 'ineligible',
@@ -1641,6 +1677,18 @@ function offerMatchesDurationDays(offer: NormalizedRentalOffer, durationDays: nu
     );
   }
   return false;
+}
+
+function offersOverlapDurationScope(
+  restricted: NormalizedRentalOffer,
+  unrestricted: NormalizedRentalOffer
+): boolean {
+  if (restricted.durationUnit !== unrestricted.durationUnit) return false;
+  const restrictedMax = restricted.maxDuration ?? Number.POSITIVE_INFINITY;
+  const unrestrictedMax = unrestricted.maxDuration ?? Number.POSITIVE_INFINITY;
+  return (
+    unrestricted.minDuration <= restrictedMax && unrestrictedMax >= restricted.minDuration
+  );
 }
 
 export function evaluateApplicableOffersForWindow(
@@ -1692,14 +1740,37 @@ export function evaluateApplicableOffersForWindow(
   }
 
   if (eligibleRestricted.length > 0 && eligibleUnrestricted.length > 0) {
-    const hasUnknown = eligibleRestricted.some(
-      (o) => (o.overlapPolicy ?? 'unknown') === 'unknown'
-    );
-    const allReplacesStandard = eligibleRestricted.every(
-      (o) => o.overlapPolicy === 'replaces_standard'
-    );
+    let hasUnknownConflict = false;
+    const remainingUnrestricted: NormalizedRentalOffer[] = [];
+    const supersededOffers: NormalizedRentalOffer[] = [];
 
-    if (hasUnknown) {
+    for (const unrestricted of eligibleUnrestricted) {
+      const overlappingRestricted =
+        options.durationDays !== undefined
+          ? eligibleRestricted
+          : eligibleRestricted.filter((restricted) =>
+              offersOverlapDurationScope(restricted, unrestricted)
+            );
+
+      if (overlappingRestricted.length === 0) {
+        remainingUnrestricted.push(unrestricted);
+        continue;
+      }
+
+      if (overlappingRestricted.some((o) => (o.overlapPolicy ?? 'unknown') === 'unknown')) {
+        hasUnknownConflict = true;
+        remainingUnrestricted.push(unrestricted);
+        continue;
+      }
+
+      if (overlappingRestricted.some((o) => o.overlapPolicy === 'replaces_standard')) {
+        supersededOffers.push(unrestricted);
+      } else {
+        remainingUnrestricted.push(unrestricted);
+      }
+    }
+
+    if (hasUnknownConflict) {
       return {
         precedenceStatus: 'unknown_overlap_policy',
         authoritativeOffer: null,
@@ -1710,22 +1781,12 @@ export function evaluateApplicableOffersForWindow(
       };
     }
 
-    if (allReplacesStandard) {
-      return {
-        precedenceStatus: 'resolved',
-        authoritativeOffer: eligibleRestricted.length === 1 ? eligibleRestricted[0] : null,
-        applicableOffers: eligibleRestricted,
-        supersededOffers: eligibleUnrestricted,
-        unevaluableRestrictedOffers,
-        ineligibleRestrictedOffers,
-      };
-    }
-
+    const applicableOffers = [...remainingUnrestricted, ...eligibleRestricted];
     return {
       precedenceStatus: 'resolved',
-      authoritativeOffer: null,
-      applicableOffers: [...eligibleUnrestricted, ...eligibleRestricted],
-      supersededOffers: [],
+      authoritativeOffer: applicableOffers.length === 1 ? applicableOffers[0] : null,
+      applicableOffers,
+      supersededOffers,
       unevaluableRestrictedOffers,
       ineligibleRestrictedOffers,
     };
