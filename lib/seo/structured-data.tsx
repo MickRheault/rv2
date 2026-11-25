@@ -5,9 +5,11 @@ import { getShopUrl } from '@/lib/utils/urls';
 import { formatMotorcycleYear, type MotorcycleYearRangeInput } from '@/lib/utils';
 import {
   formatBillingIncrementPhrase,
+  formatCalendarEligibilityLabel,
   formatDurationUnitLabel,
   formatExtensionBillingPhrase,
   formatOfferBillingUnitPhrase,
+  formatOverlapPolicyLabel,
   hydrateRentalOffersFromRows,
   resolveMotorcycleRentalOffers,
   type DurationUnit,
@@ -486,7 +488,12 @@ export function generateOfferPricingSchema(rentalOffers: NormalizedRentalOffer[]
         ? offer.minDuration
         : effectiveMinInOfferUnit;
 
-    const billingSummary = `${offer.isFrom ? 'From ' : ''}${offer.amount} ${offer.currency} ${formatOfferBillingUnitPhrase(offer)}`;
+    const calendarLabel = offer.calendarEligibility
+      ? formatCalendarEligibilityLabel(offer.calendarEligibility)
+      : null;
+    const billingSummary = `${offer.isFrom ? 'From ' : ''}${offer.amount} ${offer.currency} ${formatOfferBillingUnitPhrase(offer)}${
+      calendarLabel ? `, ${calendarLabel}` : ''
+    }`;
     const name = offer.supplierLabel
       ? offer.isFrom
         ? `From — ${offer.supplierLabel}`
@@ -496,6 +503,11 @@ export function generateOfferPricingSchema(rentalOffers: NormalizedRentalOffer[]
     const detailClauses: string[] = [];
     if (offer.supplierLabel) {
       detailClauses.push(billingSummary);
+    } else if (calendarLabel) {
+      detailClauses.push(`Eligible: ${calendarLabel}`);
+    }
+    if (offer.calendarEligibility && offer.overlapPolicy) {
+      detailClauses.push(formatOverlapPolicyLabel(offer.overlapPolicy));
     }
     if (typeof offer.dailyEquivalent === 'number') {
       detailClauses.push(`${offer.dailyEquivalent} ${offer.currency}/day daily equivalent`);

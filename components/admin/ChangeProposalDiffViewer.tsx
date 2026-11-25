@@ -27,10 +27,12 @@ import { getShopUrl } from '@/lib/utils/urls';
 import {
   computeDailyEquivalent,
   formatBillingIncrementPhrase,
+  formatCalendarEligibilityLabel,
   formatDurationUnitLabel,
   formatExtensionBillingPhrase,
   formatOfferBillingUnitPhrase,
   formatOfferDurationRangeLabel,
+  formatOverlapPolicyLabel,
   hydrateRentalOffersFromRows,
   sortRentalOffersForDisplay,
   type BillingBasis,
@@ -39,6 +41,8 @@ import {
   type ExtensionBillingBasis,
   type NormalizedRentalOffer,
   type NormalizedRentalOfferExtension,
+  type OfferCalendarEligibility,
+  type OfferOverlapPolicy,
   type StandaloneOfferType,
 } from '@/lib/rental-offers';
 
@@ -152,6 +156,7 @@ export interface DiffViewerEvidence {
   observation?: Record<string, any> | string | null;
   observedAt?: string | null;
   contentHash?: string | null;
+  provenance?: 'supplier_explicit' | 'owner_approved_interpretation' | null;
 }
 
 export interface DiffViewerReportEntry {
@@ -990,6 +995,24 @@ function normalizeOffersForViewer(
         ? o.supplierLabel.trim()
         : null;
     const isFrom = Boolean(o?.isFrom);
+    const rawCal = o?.calendarEligibility ?? o?.calendar_eligibility ?? null;
+    const calendarEligibility: OfferCalendarEligibility | null =
+      rawCal && typeof rawCal === 'object' && rawCal.kind === 'weekend'
+        ? {
+            kind: 'weekend',
+            startDay: 'saturday',
+            endDay: 'sunday',
+            startTime: typeof rawCal.startTime === 'string' && rawCal.startTime.trim() ? rawCal.startTime.trim() : null,
+            endTime: typeof rawCal.endTime === 'string' && rawCal.endTime.trim() ? rawCal.endTime.trim() : null,
+            timezoneBasis: 'shop_local',
+          }
+        : null;
+    const rawOverlapPolicy = o?.overlapPolicy ?? o?.overlap_policy ?? null;
+    const overlapPolicy: OfferOverlapPolicy | null = calendarEligibility
+      ? rawOverlapPolicy === 'alternative' || rawOverlapPolicy === 'replaces_standard'
+        ? rawOverlapPolicy
+        : 'unknown'
+      : null;
     const sortOrder = typeof o?.sortOrder === 'number' ? o.sortOrder : idx;
     const dailyEquivalent = computeDailyEquivalent({
       offerType,
@@ -1050,6 +1073,8 @@ function normalizeOffersForViewer(
       billingIncrement,
       supplierLabel,
       isFrom,
+      calendarEligibility,
+      overlapPolicy,
       sortOrder,
       dailyEquivalent,
       extensions,
@@ -1084,6 +1109,8 @@ function isViewerOfferIdentical(a: NormalizedRentalOffer, b: NormalizedRentalOff
     a.maxDuration !== b.maxDuration ||
     a.supplierLabel !== b.supplierLabel ||
     a.isFrom !== b.isFrom ||
+    JSON.stringify(a.calendarEligibility ?? null) !== JSON.stringify(b.calendarEligibility ?? null) ||
+    (a.overlapPolicy ?? null) !== (b.overlapPolicy ?? null) ||
     JSON.stringify(a.minCommitment) !== JSON.stringify(b.minCommitment) ||
     JSON.stringify(a.billingIncrement) !== JSON.stringify(b.billingIncrement)
   ) {
@@ -1161,7 +1188,17 @@ function renderViewerOfferCard(
               </span>
             )}
             <span className="opacity-85">· {formatOfferDurationRangeLabel(offer)}</span>
+            {offer.calendarEligibility && (
+              <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-semibold no-underline">
+                {formatCalendarEligibilityLabel(offer.calendarEligibility)}
+              </span>
+            )}
           </div>
+          {offer.calendarEligibility && offer.overlapPolicy && (
+            <div className="text-[11px] text-amber-900 font-medium">
+              {formatOverlapPolicyLabel(offer.overlapPolicy)}
+            </div>
+          )}
           {offer.minCommitment && (
             <div className="text-[11px] opacity-85">
               {`Min. commitment: ${offer.minCommitment.value} ${formatDurationUnitLabel(
@@ -1308,8 +1345,19 @@ function computeRentalOffersDiff(
   const entries: ViewerOfferDiffEntry[] = [];
 
   const normLabel = (lbl: string | null) => (lbl || '').trim().toLowerCase();
+  const calendarKey = (o: NormalizedRentalOffer) =>
+    o.calendarEligibility
+      ? JSON.stringify({
+          kind: o.calendarEligibility.kind,
+          startDay: o.calendarEligibility.startDay,
+          endDay: o.calendarEligibility.endDay,
+          startTime: o.calendarEligibility.startTime ?? null,
+          endTime: o.calendarEligibility.endTime ?? null,
+          timezoneBasis: o.calendarEligibility.timezoneBasis,
+        })
+      : 'unrestricted';
 
-  // Pass 1: exact (offerType, billingBasis, durationUnit, minDuration, maxDuration, currency, label)
+  // Pass 1: exact (offerType, billingBasis, durationUnit, minDuration, maxDuration, currency, label, calendarEligibility)
   for (let nIdx = 0; nIdx < newOffers.length; nIdx++) {
     const n = newOffers[nIdx];
     const oIdx = oldOffers.findIndex(
@@ -1321,7 +1369,8 @@ function computeRentalOffersDiff(
         o.minDuration === n.minDuration &&
         o.maxDuration === n.maxDuration &&
         o.currency === n.currency &&
-        normLabel(o.supplierLabel) === normLabel(n.supplierLabel)
+        normLabel(o.supplierLabel) === normLabel(n.supplierLabel) &&
+        calendarKey(o) === calendarKey(n)
     );
     if (oIdx === -1) continue;
     usedOld.add(oIdx);
@@ -1334,27 +1383,7 @@ function computeRentalOffersDiff(
     });
   }
 
-  // Pass 2: same (offerType, billingBasis, durationUnit, minDuration, currency, label) where maxDuration changed
-  for (let nIdx = 0; nIdx < newOffers.length; nIdx++) {
-    if (usedNew.has(nIdx)) continue;
-    const n = newOffers[nIdx];
-    const oIdx = oldOffers.findIndex(
-      (o, idx) =>
-        !usedOld.has(idx) &&
-        o.offerType === n.offerType &&
-        o.billingBasis === n.billingBasis &&
-        o.durationUnit === n.durationUnit &&
-        o.minDuration === n.minDuration &&
-        o.currency === n.currency &&
-        normLabel(o.supplierLabel) === normLabel(n.supplierLabel)
-    );
-    if (oIdx === -1) continue;
-    usedOld.add(oIdx);
-    usedNew.add(nIdx);
-    entries.push({ status: 'modified', oldOffer: oldOffers[oIdx], newOffer: n });
-  }
-
-  // Pass 3: same (offerType, billingBasis, durationUnit, minDuration, maxDuration, currency) where supplierLabel changed
+  // Pass 2: same (offerType, billingBasis, durationUnit, minDuration, maxDuration, currency, label) where calendarEligibility changed (e.g. hours added/edited)
   for (let nIdx = 0; nIdx < newOffers.length; nIdx++) {
     if (usedNew.has(nIdx)) continue;
     const n = newOffers[nIdx];
@@ -1366,7 +1395,51 @@ function computeRentalOffersDiff(
         o.durationUnit === n.durationUnit &&
         o.minDuration === n.minDuration &&
         o.maxDuration === n.maxDuration &&
-        o.currency === n.currency
+        o.currency === n.currency &&
+        normLabel(o.supplierLabel) === normLabel(n.supplierLabel) &&
+        Boolean(o.calendarEligibility) === Boolean(n.calendarEligibility)
+    );
+    if (oIdx === -1) continue;
+    usedOld.add(oIdx);
+    usedNew.add(nIdx);
+    entries.push({ status: 'modified', oldOffer: oldOffers[oIdx], newOffer: n });
+  }
+
+  // Pass 3: same (offerType, billingBasis, durationUnit, minDuration, currency, label, calendarEligibility) where maxDuration changed
+  for (let nIdx = 0; nIdx < newOffers.length; nIdx++) {
+    if (usedNew.has(nIdx)) continue;
+    const n = newOffers[nIdx];
+    const oIdx = oldOffers.findIndex(
+      (o, idx) =>
+        !usedOld.has(idx) &&
+        o.offerType === n.offerType &&
+        o.billingBasis === n.billingBasis &&
+        o.durationUnit === n.durationUnit &&
+        o.minDuration === n.minDuration &&
+        o.currency === n.currency &&
+        normLabel(o.supplierLabel) === normLabel(n.supplierLabel) &&
+        calendarKey(o) === calendarKey(n)
+    );
+    if (oIdx === -1) continue;
+    usedOld.add(oIdx);
+    usedNew.add(nIdx);
+    entries.push({ status: 'modified', oldOffer: oldOffers[oIdx], newOffer: n });
+  }
+
+  // Pass 4: same (offerType, billingBasis, durationUnit, minDuration, maxDuration, currency, calendarEligibility) where supplierLabel changed
+  for (let nIdx = 0; nIdx < newOffers.length; nIdx++) {
+    if (usedNew.has(nIdx)) continue;
+    const n = newOffers[nIdx];
+    const oIdx = oldOffers.findIndex(
+      (o, idx) =>
+        !usedOld.has(idx) &&
+        o.offerType === n.offerType &&
+        o.billingBasis === n.billingBasis &&
+        o.durationUnit === n.durationUnit &&
+        o.minDuration === n.minDuration &&
+        o.maxDuration === n.maxDuration &&
+        o.currency === n.currency &&
+        calendarKey(o) === calendarKey(n)
     );
     if (oIdx === -1) continue;
     usedOld.add(oIdx);
@@ -1643,6 +1716,24 @@ function renderRentalOffersDiff(
 
               const dailyEqChanged = oldOffer.dailyEquivalent !== newOffer.dailyEquivalent;
 
+              const oldCalendarText = oldOffer.calendarEligibility
+                ? formatCalendarEligibilityLabel(oldOffer.calendarEligibility)
+                : null;
+              const newCalendarText = newOffer.calendarEligibility
+                ? formatCalendarEligibilityLabel(newOffer.calendarEligibility)
+                : null;
+              const calendarChanged = oldCalendarText !== newCalendarText;
+
+              const oldOverlapText =
+                oldOffer.calendarEligibility && oldOffer.overlapPolicy
+                  ? formatOverlapPolicyLabel(oldOffer.overlapPolicy)
+                  : null;
+              const newOverlapText =
+                newOffer.calendarEligibility && newOffer.overlapPolicy
+                  ? formatOverlapPolicyLabel(newOffer.overlapPolicy)
+                  : null;
+              const overlapChanged = oldOverlapText !== newOverlapText;
+
               return (
                 <div
                   key={`${keyPrefix}-diff-${idx}`}
@@ -1684,6 +1775,59 @@ function renderRentalOffersDiff(
                           )}
                         </span>
                       </div>
+                      {calendarChanged ? (
+                        <div className="text-[11px] text-amber-900 flex items-center gap-1 flex-wrap">
+                          <span>Calendar:</span>
+                          {oldCalendarText && newCalendarText && (
+                            <>
+                              <span className="line-through text-red-500">{oldCalendarText}</span>
+                              <span className="text-gray-400">→</span>
+                              <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 font-semibold">
+                                {newCalendarText}
+                              </span>
+                            </>
+                          )}
+                          {oldCalendarText && !newCalendarText && (
+                            <span className="text-red-600">{`${oldCalendarText} (removed)`}</span>
+                          )}
+                          {!oldCalendarText && newCalendarText && (
+                            <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 font-semibold">
+                              {newCalendarText}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        newCalendarText && (
+                          <div className="text-[11px] text-amber-900">
+                            <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 font-semibold">
+                              {newCalendarText}
+                            </span>
+                          </div>
+                        )
+                      )}
+                      {overlapChanged ? (
+                        <div className="text-[11px] text-amber-900 flex items-center gap-1 flex-wrap">
+                          {oldOverlapText && newOverlapText && (
+                            <>
+                              <span className="line-through text-red-500">{oldOverlapText}</span>
+                              <span className="text-gray-400">→</span>
+                              <span className="text-blue-700 font-medium">{newOverlapText}</span>
+                            </>
+                          )}
+                          {oldOverlapText && !newOverlapText && (
+                            <span className="text-red-600">{`${oldOverlapText} (removed)`}</span>
+                          )}
+                          {!oldOverlapText && newOverlapText && (
+                            <span className="text-blue-700 font-medium">{newOverlapText}</span>
+                          )}
+                        </div>
+                      ) : (
+                        newOverlapText && (
+                          <div className="text-[11px] text-amber-900 font-medium">
+                            {newOverlapText}
+                          </div>
+                        )
+                      )}
                       {commitmentChanged ? (
                         <div className="text-[11px] text-gray-600 flex items-center gap-1 flex-wrap">
                           <span>Min. commitment:</span>
@@ -2103,6 +2247,22 @@ function renderEvidenceList(evidenceList?: DiffViewerEvidence[] | null) {
             <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 font-mono text-[11px]">
               {ev.kind}
             </span>
+            {ev.provenance === 'owner_approved_interpretation' && (
+              <span
+                data-testid="evidence-provenance-owner-approved"
+                className="inline-flex items-center px-1.5 py-0.5 rounded bg-purple-100 text-purple-900 border border-purple-300 font-semibold text-[10px] uppercase tracking-wide"
+              >
+                Owner-Approved Interpretation
+              </span>
+            )}
+            {ev.provenance === 'supplier_explicit' && (
+              <span
+                data-testid="evidence-provenance-supplier-explicit"
+                className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 font-medium text-[10px] uppercase tracking-wide"
+              >
+                Supplier Explicit
+              </span>
+            )}
             {renderSafeExternalLink(ev.sourceUrl, {
               className: 'inline-flex items-center gap-1 text-indigo-600 hover:underline break-all',
             })}
@@ -2342,6 +2502,31 @@ export function ChangeProposalDiffViewer({
   const unchangedReportEntries = entries.filter((e) => e.disposition === 'unchanged');
   const excludedReportEntries = entries.filter((e) => e.disposition === 'excluded');
   const duplicateReportEntries = entries.filter((e) => e.disposition === 'duplicate');
+
+  const readyEvidenceByItemKey = new Map<string, DiffViewerEvidence[]>();
+  const appendLinkedEvidence = (key: string, evidence?: DiffViewerEvidence[] | null) => {
+    if (!key || !Array.isArray(evidence) || evidence.length === 0) return;
+    const existing = readyEvidenceByItemKey.get(key) || [];
+    readyEvidenceByItemKey.set(key, [...existing, ...evidence]);
+  };
+  for (const entry of readyChangeEntries) {
+    for (const linkedId of entry.linkedProposalItemIds || []) {
+      appendLinkedEvidence(linkedId, entry.evidence);
+    }
+    for (const ref of entry.proposalItemRefs || []) {
+      appendLinkedEvidence(`ref:${ref}`, entry.evidence);
+    }
+  }
+  const getLinkedReadyEvidence = (item: DiffViewerItem): DiffViewerEvidence[] | null => {
+    const byId = readyEvidenceByItemKey.get(item.id);
+    if (byId && byId.length > 0) return byId;
+    const clientId = (item as any).client_item_id;
+    if (typeof clientId === 'string' && clientId.trim()) {
+      const byRef = readyEvidenceByItemKey.get(`ref:${clientId.trim()}`);
+      if (byRef && byRef.length > 0) return byRef;
+    }
+    return null;
+  };
 
   const candidateById = new Map<string, DiffViewerCandidate>();
   for (const cand of candidates) {
@@ -2751,6 +2936,7 @@ export function ChangeProposalDiffViewer({
                           'indigo'
                         )}
                     {renderMotorcycleConditionsList(item.proposed_data?.conditions, 'amber')}
+                    {renderEvidenceList(getLinkedReadyEvidence(item))}
                   </div>
                 </div>
               );
@@ -3132,6 +3318,7 @@ export function ChangeProposalDiffViewer({
                           </div>
                         </div>
                       )}
+                      {renderEvidenceList(getLinkedReadyEvidence(item))}
                     </div>
                   </div>
                 </div>
@@ -3187,6 +3374,7 @@ export function ChangeProposalDiffViewer({
                       true
                     );
                   })()}
+                  {renderEvidenceList(getLinkedReadyEvidence(item))}
                 </div>
               </div>
             ))}
