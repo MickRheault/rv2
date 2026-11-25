@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { normalizeMotorcycleYearRange } from '@/lib/utils';
 import {
   convertLegacyRateTiersToOffers,
+  isCalendarRestrictedOffer,
   NormalizedRentalOffer,
   projectOffersToLegacyDaily,
   RentalOfferValidationError,
@@ -362,7 +363,9 @@ export function stripIdsFromNormalizedOffers(
 }
 
 export function hasStrictNonDailyOrExtensionOffers(offers: NormalizedRentalOffer[]): boolean {
-  return offers.some((o) => o.offerType !== 'daily' || o.extensions.length > 0);
+  return offers.some(
+    (o) => o.offerType !== 'daily' || o.extensions.length > 0 || isCalendarRestrictedOffer(o)
+  );
 }
 
 export interface HydratedMotorcycleBaselinePricing {

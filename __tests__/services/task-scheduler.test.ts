@@ -300,6 +300,8 @@ describe('TaskSchedulerService', () => {
               billingIncrement: null,
               supplierLabel: null,
               isFrom: false,
+              calendarEligibility: null,
+              overlapPolicy: null,
               sortOrder: 0,
               dailyEquivalent: null,
               extensions: [],

@@ -4,6 +4,27 @@ export type BillingBasis = 'per_hour' | 'per_day' | 'per_calendar_month' | 'pack
 export type ExtensionBillingBasis = 'per_hour' | 'per_day';
 export type DurationUnit = 'hour' | 'day' | 'calendar_month';
 export type BillingIncrementUnit = 'minute' | 'hour' | 'day' | 'calendar_month';
+export type OfferCalendarEligibilityKind = 'weekend';
+export type OfferCalendarTimezoneBasis = 'shop_local';
+export type OfferOverlapPolicy = 'unknown' | 'alternative' | 'replaces_standard';
+
+export interface OfferCalendarEligibilityInput {
+  kind: OfferCalendarEligibilityKind;
+  startDay?: 'saturday';
+  endDay?: 'sunday';
+  startTime?: string | null;
+  endTime?: string | null;
+  timezoneBasis?: OfferCalendarTimezoneBasis;
+}
+
+export interface OfferCalendarEligibility {
+  kind: 'weekend';
+  startDay: 'saturday';
+  endDay: 'sunday';
+  startTime: string | null;
+  endTime: string | null;
+  timezoneBasis: 'shop_local';
+}
 
 export interface OfferQuantitySpec<U extends string = DurationUnit> {
   value: number;
@@ -15,6 +36,7 @@ export interface OfferDurationTerms {
   durationUnit: DurationUnit;
   minDuration: number;
   maxDuration: number | null;
+  calendarEligibility?: OfferCalendarEligibility | null;
 }
 
 export interface RentalOfferExtensionInput {
@@ -41,6 +63,8 @@ export interface RentalOfferInput {
   billingIncrement?: OfferQuantitySpec<BillingIncrementUnit> | null;
   supplierLabel?: string | null;
   isFrom?: boolean;
+  calendarEligibility?: OfferCalendarEligibilityInput | null;
+  overlapPolicy?: OfferOverlapPolicy | null;
   extensions?: RentalOfferExtensionInput[];
 }
 
@@ -73,6 +97,8 @@ export interface NormalizedRentalOffer {
   billingIncrement: OfferQuantitySpec<BillingIncrementUnit> | null;
   supplierLabel: string | null;
   isFrom: boolean;
+  calendarEligibility?: OfferCalendarEligibility | null;
+  overlapPolicy?: OfferOverlapPolicy | null;
   sortOrder: number;
   dailyEquivalent: number | null;
   extensions: NormalizedRentalOfferExtension[];
@@ -124,8 +150,20 @@ const EXTENSION_BILLING_BASES = new Set<ExtensionBillingBasis>(['per_hour', 'per
 const DURATION_UNITS = new Set<DurationUnit>(['hour', 'day', 'calendar_month']);
 const INCREMENT_UNITS = new Set<BillingIncrementUnit>(['minute', 'hour', 'day', 'calendar_month']);
 const EXTENSION_INCREMENT_UNITS = new Set<'minute' | 'hour' | 'day'>(['minute', 'hour', 'day']);
+const OVERLAP_POLICIES = new Set<OfferOverlapPolicy>([
+  'unknown',
+  'alternative',
+  'replaces_standard',
+]);
 const CURRENCY_CODE_REGEX = /^[A-Z]{3}$/;
+const HH_MM_TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 const MAX_SUPPLIER_LABEL_LENGTH = 200;
+
+export function isCalendarRestrictedOffer(
+  offer: { calendarEligibility?: OfferCalendarEligibility | null } | null | undefined
+): boolean {
+  return offer?.calendarEligibility != null;
+}
 
 const OFFER_TYPE_DISPLAY_PRIORITY: Record<StandaloneOfferType, number> = {
   daily: 0,
@@ -235,6 +273,90 @@ function parseQuantitySpec<U extends string>(
   };
 }
 
+const ALLOWED_CALENDAR_ELIGIBILITY_KEYS = new Set([
+  'kind',
+  'startDay',
+  'endDay',
+  'startTime',
+  'endTime',
+  'timezoneBasis',
+]);
+
+function parseOptionalTimeOfDay(raw: unknown, path: string): string | null {
+  if (raw === undefined || raw === null) return null;
+  if (typeof raw !== 'string' || !HH_MM_TIME_REGEX.test(raw)) {
+    throw new RentalOfferValidationError(
+      `${path} must be null or a 24-hour HH:MM string (00:00-23:59)`
+    );
+  }
+  return raw;
+}
+
+function parseCalendarEligibility(
+  raw: unknown,
+  path: string
+): OfferCalendarEligibility | null {
+  if (raw === undefined || raw === null) return null;
+  if (typeof raw !== 'object' || Array.isArray(raw)) {
+    throw new RentalOfferValidationError(`${path} must be an object or null`);
+  }
+  const candidate = raw as Record<string, unknown>;
+  for (const key of Object.keys(candidate)) {
+    if (!ALLOWED_CALENDAR_ELIGIBILITY_KEYS.has(key)) {
+      throw new RentalOfferValidationError(`${path}.${key} is not a supported field`);
+    }
+  }
+  if (candidate.kind !== 'weekend') {
+    throw new RentalOfferValidationError(`${path}.kind must be 'weekend'`);
+  }
+  const startDay = candidate.startDay === undefined ? 'saturday' : candidate.startDay;
+  if (startDay !== 'saturday') {
+    throw new RentalOfferValidationError(`${path}.startDay must be 'saturday' for weekend offers`);
+  }
+  const endDay = candidate.endDay === undefined ? 'sunday' : candidate.endDay;
+  if (endDay !== 'sunday') {
+    throw new RentalOfferValidationError(`${path}.endDay must be 'sunday' for weekend offers`);
+  }
+  const timezoneBasis =
+    candidate.timezoneBasis === undefined ? 'shop_local' : candidate.timezoneBasis;
+  if (timezoneBasis !== 'shop_local') {
+    throw new RentalOfferValidationError(`${path}.timezoneBasis must be 'shop_local'`);
+  }
+  const startTime = parseOptionalTimeOfDay(candidate.startTime, `${path}.startTime`);
+  const endTime = parseOptionalTimeOfDay(candidate.endTime, `${path}.endTime`);
+
+  return {
+    kind: 'weekend',
+    startDay: 'saturday',
+    endDay: 'sunday',
+    startTime,
+    endTime,
+    timezoneBasis: 'shop_local',
+  };
+}
+
+function parseOverlapPolicy(
+  raw: unknown,
+  calendarEligibility: OfferCalendarEligibility | null,
+  path: string
+): OfferOverlapPolicy | null {
+  if (calendarEligibility === null) {
+    if (raw === undefined || raw === null) return null;
+    throw new RentalOfferValidationError(
+      `${path} cannot be set on an unrestricted offer (calendarEligibility is null)`
+    );
+  }
+  if (raw === undefined || raw === null) {
+    return 'unknown';
+  }
+  if (typeof raw !== 'string' || !OVERLAP_POLICIES.has(raw as OfferOverlapPolicy)) {
+    throw new RentalOfferValidationError(
+      `${path} must be one of: unknown, alternative, replaces_standard`
+    );
+  }
+  return raw as OfferOverlapPolicy;
+}
+
 function validateExtensionInput(
   rawExt: unknown,
   extIndex: number,
@@ -247,6 +369,14 @@ function validateExtensionInput(
   const ext = rawExt as Record<string, unknown>;
   if (ext.extensions !== undefined && ext.extensions !== null) {
     throw new RentalOfferValidationError(`${path} cannot nest further extensions`);
+  }
+  if (
+    (ext.calendarEligibility !== undefined && ext.calendarEligibility !== null) ||
+    (ext.overlapPolicy !== undefined && ext.overlapPolicy !== null)
+  ) {
+    throw new RentalOfferValidationError(
+      `${path}: extension charges cannot define calendarEligibility or overlapPolicy`
+    );
   }
 
   const amount = parsePositiveAmount(ext.amount, path);
@@ -400,6 +530,7 @@ function validateTypeBasisAndDuration(
 }
 
 function buildStandaloneDuplicateSignature(offer: NormalizedRentalOffer): string {
+  const cal = offer.calendarEligibility ?? null;
   return JSON.stringify([
     offer.offerType,
     offer.billingBasis,
@@ -412,6 +543,9 @@ function buildStandaloneDuplicateSignature(offer: NormalizedRentalOffer): string
     offer.billingIncrement?.unit ?? null,
     offer.currency,
     offer.supplierLabel ? offer.supplierLabel.toLowerCase() : null,
+    cal
+      ? [cal.kind, cal.startDay, cal.endDay, cal.startTime, cal.endTime, cal.timezoneBasis]
+      : null,
   ]);
 }
 
@@ -511,6 +645,15 @@ export function validateAndNormalizeRentalOffers(
 
     const supplierLabel = parseSupplierLabel(item.supplierLabel, path);
     const isFrom = parseIsFrom(item.isFrom, path);
+    const calendarEligibility = parseCalendarEligibility(
+      item.calendarEligibility,
+      `${path}.calendarEligibility`
+    );
+    const overlapPolicy = parseOverlapPolicy(
+      item.overlapPolicy,
+      calendarEligibility,
+      `${path}.overlapPolicy`
+    );
 
     const rawExtensions = item.extensions ?? [];
     if (!Array.isArray(rawExtensions)) {
@@ -541,6 +684,8 @@ export function validateAndNormalizeRentalOffers(
       billingIncrement,
       supplierLabel,
       isFrom,
+      calendarEligibility,
+      overlapPolicy,
       sortOrder: i,
       dailyEquivalent: computeDailyEquivalent({
         offerType,
@@ -564,7 +709,11 @@ export function validateAndNormalizeRentalOffers(
 
   const unlabeledDailyByCurrency = new Map<string, NormalizedRentalOffer[]>();
   for (const offer of normalized) {
-    if (offer.offerType === 'daily' && offer.supplierLabel === null) {
+    if (
+      offer.offerType === 'daily' &&
+      offer.supplierLabel === null &&
+      !isCalendarRestrictedOffer(offer)
+    ) {
       const group = unlabeledDailyByCurrency.get(offer.currency) || [];
       group.push(offer);
       unlabeledDailyByCurrency.set(offer.currency, group);
@@ -608,10 +757,30 @@ function sortRentalOffersByPersistedOrder(offers: NormalizedRentalOffer[]): Norm
   });
 }
 
+function hydrateOptionalCalendarEligibility(raw: unknown): OfferCalendarEligibility | null {
+  if (raw === undefined || raw === null) return null;
+  return parseCalendarEligibility(raw, 'calendar_eligibility');
+}
+
+function hydrateOptionalOverlapPolicy(
+  raw: unknown,
+  calendarEligibility: OfferCalendarEligibility | null
+): OfferOverlapPolicy | null {
+  return parseOverlapPolicy(raw, calendarEligibility, 'overlap_policy');
+}
+
 export function hydrateRentalOffersFromRows(rows: any[] | null | undefined): NormalizedRentalOffer[] {
   if (!Array.isArray(rows) || rows.length === 0) return [];
   if (rows[0] && typeof rows[0] === 'object' && 'offerType' in rows[0] && 'extensions' in rows[0]) {
-    return sortRentalOffersByPersistedOrder(rows as NormalizedRentalOffer[]);
+    const normalizedPreHydrated = (rows as NormalizedRentalOffer[]).map((o) => {
+      const cal = hydrateOptionalCalendarEligibility(o.calendarEligibility);
+      return {
+        ...o,
+        calendarEligibility: cal,
+        overlapPolicy: hydrateOptionalOverlapPolicy(o.overlapPolicy, cal),
+      };
+    });
+    return sortRentalOffersByPersistedOrder(normalizedPreHydrated);
   }
 
   const parentRows = rows.filter((r) => !r.parent_offer_id && r.offer_type !== 'extension');
@@ -632,6 +801,13 @@ export function hydrateRentalOffersFromRows(rows: any[] | null | undefined): Nor
     const durationUnit = r.duration_unit as DurationUnit;
     const minDuration = Number(r.min_duration);
     const maxDuration = r.max_duration === null || r.max_duration === undefined ? null : Number(r.max_duration);
+    const calendarEligibility = hydrateOptionalCalendarEligibility(
+      r.calendar_eligibility ?? r.calendarEligibility
+    );
+    const overlapPolicy = hydrateOptionalOverlapPolicy(
+      r.overlap_policy ?? r.overlapPolicy,
+      calendarEligibility
+    );
 
     const childRows = [...(extByParent.get(r.id) || [])].sort(
       (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
@@ -681,6 +857,8 @@ export function hydrateRentalOffersFromRows(rows: any[] | null | undefined): Nor
           : null,
       supplierLabel: r.supplier_label ?? null,
       isFrom: Boolean(r.is_from),
+      calendarEligibility,
+      overlapPolicy,
       sortOrder: r.sort_order ?? idx,
       dailyEquivalent: computeDailyEquivalent({
         offerType,
@@ -733,7 +911,8 @@ export function hasUnrepresentableLegacyDailyOffers(offers: NormalizedRentalOffe
       o.supplierLabel !== null ||
       o.minCommitment !== null ||
       o.billingIncrement !== null ||
-      o.isFrom === true
+      o.isFrom === true ||
+      isCalendarRestrictedOffer(o)
   );
 }
 
@@ -786,7 +965,12 @@ export function resolveFallbackRentalOffers(input: {
 
 export function projectOffersToLegacyDaily(offers: NormalizedRentalOffer[]): LegacyDailyProjection {
   const unlabeledDaily = offers
-    .filter((o) => o.offerType === 'daily' && o.supplierLabel === null)
+    .filter(
+      (o) =>
+        o.offerType === 'daily' &&
+        o.supplierLabel === null &&
+        !isCalendarRestrictedOffer(o)
+    )
     .sort((a, b) => a.minDuration - b.minDuration || a.amount - b.amount);
 
   const legacyRateTiers = unlabeledDaily.map((o) => ({
@@ -797,7 +981,7 @@ export function projectOffersToLegacyDaily(offers: NormalizedRentalOffer[]): Leg
   }));
 
   const allDaily = offers
-    .filter((o) => o.offerType === 'daily')
+    .filter((o) => o.offerType === 'daily' && !isCalendarRestrictedOffer(o))
     .sort((a, b) => a.minDuration - b.minDuration || a.amount - b.amount);
 
   if (allDaily.length > 0) {
@@ -821,6 +1005,9 @@ export function selectPrimaryHeadlineOffer(
 ): NormalizedRentalOffer | null {
   if (!offers || offers.length === 0) return null;
   const sorted = [...offers].sort((a, b) => {
+    const aRestricted = isCalendarRestrictedOffer(a) ? 1 : 0;
+    const bRestricted = isCalendarRestrictedOffer(b) ? 1 : 0;
+    if (aRestricted !== bRestricted) return aRestricted - bRestricted;
     const prioDiff = HEADLINE_FALLBACK_PRIORITY[a.offerType] - HEADLINE_FALLBACK_PRIORITY[b.offerType];
     if (prioDiff !== 0) return prioDiff;
     if (a.offerType === 'daily' && b.offerType === 'daily') {
@@ -841,10 +1028,11 @@ export function shouldShowHeadlineFromPrefix(
 ): boolean {
   if (!headlineOffer) return false;
   if (headlineOffer.isFrom) return true;
-  if (headlineOffer.offerType === 'daily') {
+  if (headlineOffer.offerType === 'daily' && !isCalendarRestrictedOffer(headlineOffer)) {
     return offers.some(
       (o) =>
         o.offerType === 'daily' &&
+        !isCalendarRestrictedOffer(o) &&
         o.currency === headlineOffer.currency &&
         o.amount < headlineOffer.amount
     );
@@ -893,8 +1081,47 @@ const LISTING_UNIT_SLASH_LABELS: Partial<Record<BillingBasis, string>> = {
   per_calendar_month: '/ calendar month',
 };
 
+export function formatCalendarEligibilityLabel(
+  eligibility: OfferCalendarEligibility,
+  style: 'full' | 'short' = 'full'
+): string {
+  const base = style === 'short' ? 'Sat–Sun' : 'Saturday–Sunday';
+  if (eligibility.startTime && eligibility.endTime) {
+    return style === 'short'
+      ? `${base}, ${eligibility.startTime}–${eligibility.endTime}`
+      : `${base} (${eligibility.startTime}–${eligibility.endTime})`;
+  }
+  if (eligibility.startTime) {
+    return style === 'short'
+      ? `${base}, from ${eligibility.startTime}`
+      : `${base} (from ${eligibility.startTime})`;
+  }
+  if (eligibility.endTime) {
+    return style === 'short'
+      ? `${base}, until ${eligibility.endTime}`
+      : `${base} (until ${eligibility.endTime})`;
+  }
+  return base;
+}
+
+export function formatOverlapPolicyLabel(policy: OfferOverlapPolicy): string {
+  switch (policy) {
+    case 'alternative':
+      return 'Alternative to standard rates';
+    case 'replaces_standard':
+      return 'Replaces standard rates on eligible days';
+    case 'unknown':
+    default:
+      return 'Overlap policy unknown';
+  }
+}
+
 export function formatListingHeadlineUnitLabel(offer: OfferDurationTerms): string {
-  return LISTING_UNIT_SLASH_LABELS[offer.billingBasis] ?? formatOfferBillingUnitPhrase(offer);
+  const base = LISTING_UNIT_SLASH_LABELS[offer.billingBasis] ?? formatOfferBillingUnitPhrase(offer);
+  if (offer.calendarEligibility) {
+    return `${base} (${formatCalendarEligibilityLabel(offer.calendarEligibility, 'short')})`;
+  }
+  return base;
 }
 
 export interface MotorcyclePricingRecord {
@@ -1013,6 +1240,7 @@ function selectPrimaryStandaloneDailyRate(offers: NormalizedRentalOffer[]): numb
         o.offerType === 'daily' &&
         o.billingBasis === 'per_day' &&
         o.durationUnit === 'day' &&
+        !isCalendarRestrictedOffer(o) &&
         typeof o.amount === 'number' &&
         Number.isFinite(o.amount) &&
         o.amount > 0
@@ -1084,6 +1312,9 @@ export function matchesRentalOfferFilter(
   if (durationDays !== undefined) {
     const candidateRates: number[] = [];
     for (const offer of offers) {
+      if (isCalendarRestrictedOffer(offer)) {
+        continue;
+      }
       if (
         offer.offerType === 'daily' &&
         offer.billingBasis === 'per_day' &&
@@ -1187,6 +1418,11 @@ export function compareMotorcyclesByPrice(
   const nonDailyB = selectPrimaryHeadlineOffer(resolveMotorcycleRentalOffers(b));
 
   if (nonDailyA && nonDailyB) {
+    const restrictedDiff =
+      (isCalendarRestrictedOffer(nonDailyA) ? 1 : 0) -
+      (isCalendarRestrictedOffer(nonDailyB) ? 1 : 0);
+    if (restrictedDiff !== 0) return restrictedDiff;
+
     const prioDiff =
       HEADLINE_FALLBACK_PRIORITY[nonDailyA.offerType] -
       HEADLINE_FALLBACK_PRIORITY[nonDailyB.offerType];
@@ -1228,4 +1464,378 @@ export function formatExtensionBillingPhrase(ext: {
   billingBasis: ExtensionBillingBasis;
 }): string {
   return ext.billingBasis === 'per_day' ? 'per extra day' : 'per extra hour';
+}
+
+export interface RentalCalendarWindow {
+  startIso: string;
+  endIso: string;
+}
+
+export type CalendarEligibilityEvaluationStatus = 'eligible' | 'ineligible' | 'unevaluable';
+
+export interface CalendarEligibilityEvaluationResult {
+  status: CalendarEligibilityEvaluationStatus;
+  reason:
+    | 'unrestricted'
+    | 'weekend_match'
+    | 'outside_weekend_window'
+    | 'outside_time_bounds'
+    | 'dates_missing'
+    | 'invalid_window'
+    | 'timezone_missing';
+  hoursSpecified: boolean;
+}
+
+const ISO_TIMESTAMP_WITH_OFFSET_REGEX =
+  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?(?:([zZ])|([+-])(\d{2}):(\d{2}))$/;
+
+function parseStrictIsoTimestampWithOffset(raw: unknown): Date | null {
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  const match = ISO_TIMESTAMP_WITH_OFFSET_REGEX.exec(trimmed);
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const second = match[6] !== undefined ? Number(match[6]) : 0;
+
+  if (
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > 31 ||
+    hour < 0 ||
+    hour > 23 ||
+    minute < 0 ||
+    minute > 59 ||
+    second < 0 ||
+    second > 59
+  ) {
+    return null;
+  }
+
+  if (!match[7]) {
+    const offsetHour = Number(match[9]);
+    const offsetMinute = Number(match[10]);
+    if (offsetHour < 0 || offsetHour > 23 || offsetMinute < 0 || offsetMinute > 59) {
+      return null;
+    }
+  }
+
+  // Reject calendar date rollover such as 2026-02-29 or 2026-04-31
+  const calendarCheck = new Date(Date.UTC(year, month - 1, day));
+  if (
+    calendarCheck.getUTCFullYear() !== year ||
+    calendarCheck.getUTCMonth() !== month - 1 ||
+    calendarCheck.getUTCDate() !== day
+  ) {
+    return null;
+  }
+
+  const parsed = new Date(trimmed);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function createLocalDateTimeFormatter(timeZone: string): Intl.DateTimeFormat | null {
+  try {
+    return new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      weekday: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+    });
+  } catch {
+    return null;
+  }
+}
+
+interface LocalDateTimeParts {
+  year: number;
+  month: number;
+  day: number;
+  weekday: string;
+  msOfDay: number;
+}
+
+function extractLocalDateTimeParts(
+  date: Date,
+  formatter: Intl.DateTimeFormat
+): LocalDateTimeParts {
+  const parts = formatter.formatToParts(date);
+  const byType = new Map(parts.map((p) => [p.type, p.value]));
+  const year = Number(byType.get('year'));
+  const month = Number(byType.get('month'));
+  const day = Number(byType.get('day'));
+  const weekday = byType.get('weekday') || '';
+  const hourRaw = Number(byType.get('hour'));
+  const hour = hourRaw === 24 ? 0 : hourRaw;
+  const minute = Number(byType.get('minute'));
+  const second = Number(byType.get('second'));
+  return {
+    year,
+    month,
+    day,
+    weekday,
+    msOfDay: (hour * 3600 + minute * 60 + second) * 1000 + date.getUTCMilliseconds(),
+  };
+}
+
+function toDaySerial(parts: Pick<LocalDateTimeParts, 'year' | 'month' | 'day'>): number {
+  return Math.floor(Date.UTC(parts.year, parts.month - 1, parts.day) / 86_400_000);
+}
+
+function parseMsOfDay(hhmm: string): number {
+  const [h, m] = hhmm.split(':').map(Number);
+  return (h * 3600 + m * 60) * 1000;
+}
+
+export function evaluateOfferCalendarEligibility(
+  offer: Pick<NormalizedRentalOffer, 'calendarEligibility'>,
+  window: RentalCalendarWindow | null | undefined,
+  shopTimezone: string | null | undefined
+): CalendarEligibilityEvaluationResult {
+  const eligibility = offer.calendarEligibility ?? null;
+  if (!eligibility) {
+    return {
+      status: 'eligible',
+      reason: 'unrestricted',
+      hoursSpecified: false,
+    };
+  }
+
+  const hoursSpecified = eligibility.startTime !== null || eligibility.endTime !== null;
+
+  if (!window || window.startIso == null || window.endIso == null) {
+    return {
+      status: 'unevaluable',
+      reason: 'dates_missing',
+      hoursSpecified,
+    };
+  }
+
+  const startDate = parseStrictIsoTimestampWithOffset(window.startIso);
+  const endDate = parseStrictIsoTimestampWithOffset(window.endIso);
+  if (!startDate || !endDate || endDate.getTime() <= startDate.getTime()) {
+    return {
+      status: 'unevaluable',
+      reason: 'invalid_window',
+      hoursSpecified,
+    };
+  }
+
+  const trimmedTz = typeof shopTimezone === 'string' ? shopTimezone.trim() : '';
+  const formatter = trimmedTz ? createLocalDateTimeFormatter(trimmedTz) : null;
+  if (!formatter) {
+    return {
+      status: 'unevaluable',
+      reason: 'timezone_missing',
+      hoursSpecified,
+    };
+  }
+
+  const startLocal = extractLocalDateTimeParts(startDate, formatter);
+  const endLocal = extractLocalDateTimeParts(endDate, formatter);
+  const dayDiff = toDaySerial(endLocal) - toDaySerial(startLocal);
+
+  const isSatToSun = startLocal.weekday === 'Sat' && endLocal.weekday === 'Sun' && dayDiff === 1;
+  const isSameDayWeekend =
+    dayDiff === 0 && (startLocal.weekday === 'Sat' || startLocal.weekday === 'Sun');
+
+  if (!isSatToSun && !isSameDayWeekend) {
+    return {
+      status: 'ineligible',
+      reason: 'outside_weekend_window',
+      hoursSpecified,
+    };
+  }
+
+  if (
+    eligibility.startTime !== null &&
+    startLocal.weekday === 'Sat' &&
+    startLocal.msOfDay < parseMsOfDay(eligibility.startTime)
+  ) {
+    return {
+      status: 'ineligible',
+      reason: 'outside_time_bounds',
+      hoursSpecified,
+    };
+  }
+
+  if (
+    eligibility.endTime !== null &&
+    endLocal.weekday === 'Sun' &&
+    endLocal.msOfDay > parseMsOfDay(eligibility.endTime)
+  ) {
+    return {
+      status: 'ineligible',
+      reason: 'outside_time_bounds',
+      hoursSpecified,
+    };
+  }
+
+  return {
+    status: 'eligible',
+    reason: 'weekend_match',
+    hoursSpecified,
+  };
+}
+
+export type OfferPrecedenceStatus =
+  | 'resolved'
+  | 'unknown_overlap_policy'
+  | 'dates_or_timezone_unevaluable';
+
+export interface ApplicableOffersEvaluationResult {
+  precedenceStatus: OfferPrecedenceStatus;
+  authoritativeOffer: NormalizedRentalOffer | null;
+  applicableOffers: NormalizedRentalOffer[];
+  supersededOffers: NormalizedRentalOffer[];
+  unevaluableRestrictedOffers: NormalizedRentalOffer[];
+  ineligibleRestrictedOffers: NormalizedRentalOffer[];
+}
+
+function offerMatchesDurationDays(offer: NormalizedRentalOffer, durationDays: number): boolean {
+  if (offer.durationUnit !== 'day') return false;
+  if (offer.billingBasis === 'package_total') {
+    return offer.minDuration === durationDays && offer.maxDuration === durationDays;
+  }
+  if (offer.billingBasis === 'per_day') {
+    return (
+      offer.minDuration <= durationDays &&
+      (offer.maxDuration === null || offer.maxDuration >= durationDays)
+    );
+  }
+  return false;
+}
+
+function offersOverlapDurationScope(
+  restricted: NormalizedRentalOffer,
+  unrestricted: NormalizedRentalOffer
+): boolean {
+  if (restricted.durationUnit !== unrestricted.durationUnit) return false;
+  const restrictedMax = restricted.maxDuration ?? Number.POSITIVE_INFINITY;
+  const unrestrictedMax = unrestricted.maxDuration ?? Number.POSITIVE_INFINITY;
+  return (
+    unrestricted.minDuration <= restrictedMax && unrestrictedMax >= restricted.minDuration
+  );
+}
+
+export function evaluateApplicableOffersForWindow(
+  offers: NormalizedRentalOffer[],
+  options: {
+    durationDays?: number;
+    window?: RentalCalendarWindow | null;
+    shopTimezone?: string | null;
+  } = {}
+): ApplicableOffersEvaluationResult {
+  const candidates =
+    options.durationDays !== undefined
+      ? offers.filter((o) => offerMatchesDurationDays(o, options.durationDays!))
+      : [...offers];
+
+  const eligibleUnrestricted: NormalizedRentalOffer[] = [];
+  const eligibleRestricted: NormalizedRentalOffer[] = [];
+  const unevaluableRestrictedOffers: NormalizedRentalOffer[] = [];
+  const ineligibleRestrictedOffers: NormalizedRentalOffer[] = [];
+
+  for (const offer of candidates) {
+    if (!isCalendarRestrictedOffer(offer)) {
+      eligibleUnrestricted.push(offer);
+      continue;
+    }
+    const evalResult = evaluateOfferCalendarEligibility(
+      offer,
+      options.window,
+      options.shopTimezone
+    );
+    if (evalResult.status === 'eligible') {
+      eligibleRestricted.push(offer);
+    } else if (evalResult.status === 'unevaluable') {
+      unevaluableRestrictedOffers.push(offer);
+    } else {
+      ineligibleRestrictedOffers.push(offer);
+    }
+  }
+
+  if (unevaluableRestrictedOffers.length > 0) {
+    return {
+      precedenceStatus: 'dates_or_timezone_unevaluable',
+      authoritativeOffer: null,
+      applicableOffers: eligibleUnrestricted,
+      supersededOffers: [],
+      unevaluableRestrictedOffers,
+      ineligibleRestrictedOffers,
+    };
+  }
+
+  if (eligibleRestricted.length > 0 && eligibleUnrestricted.length > 0) {
+    let hasUnknownConflict = false;
+    const remainingUnrestricted: NormalizedRentalOffer[] = [];
+    const supersededOffers: NormalizedRentalOffer[] = [];
+
+    for (const unrestricted of eligibleUnrestricted) {
+      const overlappingRestricted =
+        options.durationDays !== undefined
+          ? eligibleRestricted
+          : eligibleRestricted.filter((restricted) =>
+              offersOverlapDurationScope(restricted, unrestricted)
+            );
+
+      if (overlappingRestricted.length === 0) {
+        remainingUnrestricted.push(unrestricted);
+        continue;
+      }
+
+      if (overlappingRestricted.some((o) => (o.overlapPolicy ?? 'unknown') === 'unknown')) {
+        hasUnknownConflict = true;
+        remainingUnrestricted.push(unrestricted);
+        continue;
+      }
+
+      if (overlappingRestricted.some((o) => o.overlapPolicy === 'replaces_standard')) {
+        supersededOffers.push(unrestricted);
+      } else {
+        remainingUnrestricted.push(unrestricted);
+      }
+    }
+
+    if (hasUnknownConflict) {
+      return {
+        precedenceStatus: 'unknown_overlap_policy',
+        authoritativeOffer: null,
+        applicableOffers: [...eligibleUnrestricted, ...eligibleRestricted],
+        supersededOffers: [],
+        unevaluableRestrictedOffers,
+        ineligibleRestrictedOffers,
+      };
+    }
+
+    const applicableOffers = [...remainingUnrestricted, ...eligibleRestricted];
+    return {
+      precedenceStatus: 'resolved',
+      authoritativeOffer: applicableOffers.length === 1 ? applicableOffers[0] : null,
+      applicableOffers,
+      supersededOffers,
+      unevaluableRestrictedOffers,
+      ineligibleRestrictedOffers,
+    };
+  }
+
+  const combined = [...eligibleUnrestricted, ...eligibleRestricted];
+  return {
+    precedenceStatus: 'resolved',
+    authoritativeOffer: combined.length === 1 ? combined[0] : null,
+    applicableOffers: combined,
+    supersededOffers: [],
+    unevaluableRestrictedOffers,
+    ineligibleRestrictedOffers,
+  };
 }
