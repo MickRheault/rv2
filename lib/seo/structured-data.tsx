@@ -506,8 +506,8 @@ export function generateOfferPricingSchema(rentalOffers: NormalizedRentalOffer[]
     } else if (calendarLabel) {
       detailClauses.push(`Eligible: ${calendarLabel}`);
     }
-    if (offer.calendarEligibility && offer.overlapPolicy) {
-      detailClauses.push(formatOverlapPolicyLabel(offer.overlapPolicy));
+    if (offer.calendarEligibility) {
+      detailClauses.push(formatOverlapPolicyLabel(offer.overlapPolicy ?? 'unknown'));
     }
     if (typeof offer.dailyEquivalent === 'number') {
       detailClauses.push(`${offer.dailyEquivalent} ${offer.currency}/day daily equivalent`);

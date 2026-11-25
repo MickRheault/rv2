@@ -253,9 +253,9 @@ export default function MotorcycleDetails({
                             <div className="text-sm text-gray-600">
                               {formatOfferDurationRangeLabel(offer)}
                             </div>
-                            {offer.calendarEligibility && offer.overlapPolicy && (
+                            {offer.calendarEligibility && (
                               <div className="text-xs text-amber-800">
-                                {formatOverlapPolicyLabel(offer.overlapPolicy)}
+                                {formatOverlapPolicyLabel(offer.overlapPolicy ?? 'unknown')}
                               </div>
                             )}
                             {offer.minCommitment && (

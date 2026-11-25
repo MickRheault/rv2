@@ -424,6 +424,14 @@ export function RentalOffersModal({
     setError(null);
     const next = offers.filter((_, idx) => idx !== index);
     setOffers(next);
+    if (editingIndex !== null) {
+      if (editingIndex === index) {
+        setShowEditor(false);
+        setEditingIndex(null);
+      } else if (index < editingIndex) {
+        setEditingIndex(editingIndex - 1);
+      }
+    }
     setDirty(true);
   };
 
@@ -609,9 +617,9 @@ export function RentalOffersModal({
                         </div>
 
                         <div className="flex flex-wrap gap-3 text-xs text-gray-600">
-                          {offer.calendarEligibility && offer.overlapPolicy && (
+                          {offer.calendarEligibility && (
                             <span className="text-amber-800 font-medium">
-                              {formatOverlapPolicyLabel(offer.overlapPolicy)}
+                              {formatOverlapPolicyLabel(offer.overlapPolicy ?? 'unknown')}
                             </span>
                           )}
                           {offer.minCommitment && (
@@ -1438,7 +1446,7 @@ export function RentalOffersModal({
         {/* Footer Actions */}
         <div className="flex items-center justify-between border-t border-gray-200 pt-4">
           <p className="text-xs text-gray-500">
-            Standalone daily offers automatically sync legacy daily rate summaries.
+            Unrestricted standalone daily offers automatically sync legacy daily rate summaries.
           </p>
           <div className="flex items-center gap-2">
             <Button

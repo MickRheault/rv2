@@ -959,20 +959,25 @@ function normalizeOffersForViewer(
     'offer_type' in rawOffers[0] &&
     !('offerType' in rawOffers[0])
   ) {
-    return sortRentalOffersForDisplay(hydrateRentalOffersFromRows(rawOffers));
+    try {
+      return sortRentalOffersForDisplay(hydrateRentalOffersFromRows(rawOffers));
+    } catch {
+      // Fall through to lenient viewer normalization so corrupted snapshot rows never crash the diff UI
+    }
   }
 
   const mapped: NormalizedRentalOffer[] = rawOffers.map((o: any, idx: number) => {
-    const offerType = (o?.offerType || 'daily') as StandaloneOfferType;
+    const offerType = (o?.offerType ?? o?.offer_type ?? 'daily') as StandaloneOfferType;
     const amount = Number(o?.amount || 0);
     const currency = String(o?.currency || defaultCurrency || 'THB')
       .trim()
       .toUpperCase();
-    const billingBasis = (o?.billingBasis || 'per_day') as BillingBasis;
-    const durationUnit = (o?.durationUnit || 'day') as DurationUnit;
-    const minDuration = Number(o?.minDuration ?? 1);
+    const billingBasis = (o?.billingBasis ?? o?.billing_basis ?? 'per_day') as BillingBasis;
+    const durationUnit = (o?.durationUnit ?? o?.duration_unit ?? 'day') as DurationUnit;
+    const minDuration = Number(o?.minDuration ?? o?.min_duration ?? 1);
+    const rawMaxDur = o?.maxDuration !== undefined ? o.maxDuration : o?.max_duration;
     const maxDuration =
-      o?.maxDuration === null || o?.maxDuration === undefined ? null : Number(o.maxDuration);
+      rawMaxDur === null || rawMaxDur === undefined ? null : Number(rawMaxDur);
 
     const minCommitment =
       o?.minCommitment && typeof o.minCommitment === 'object'
@@ -990,20 +995,23 @@ function normalizeOffersForViewer(
           }
         : null;
 
+    const rawLabel = o?.supplierLabel ?? o?.supplier_label;
     const supplierLabel =
-      typeof o?.supplierLabel === 'string' && o.supplierLabel.trim().length > 0
-        ? o.supplierLabel.trim()
+      typeof rawLabel === 'string' && rawLabel.trim().length > 0
+        ? rawLabel.trim()
         : null;
-    const isFrom = Boolean(o?.isFrom);
+    const isFrom = Boolean(o?.isFrom ?? o?.is_from);
     const rawCal = o?.calendarEligibility ?? o?.calendar_eligibility ?? null;
+    const rawStartTime = rawCal?.startTime ?? rawCal?.start_time;
+    const rawEndTime = rawCal?.endTime ?? rawCal?.end_time;
     const calendarEligibility: OfferCalendarEligibility | null =
       rawCal && typeof rawCal === 'object' && rawCal.kind === 'weekend'
         ? {
             kind: 'weekend',
             startDay: 'saturday',
             endDay: 'sunday',
-            startTime: typeof rawCal.startTime === 'string' && rawCal.startTime.trim() ? rawCal.startTime.trim() : null,
-            endTime: typeof rawCal.endTime === 'string' && rawCal.endTime.trim() ? rawCal.endTime.trim() : null,
+            startTime: typeof rawStartTime === 'string' && rawStartTime.trim() ? rawStartTime.trim() : null,
+            endTime: typeof rawEndTime === 'string' && rawEndTime.trim() ? rawEndTime.trim() : null,
             timezoneBasis: 'shop_local',
           }
         : null;
@@ -1194,9 +1202,9 @@ function renderViewerOfferCard(
               </span>
             )}
           </div>
-          {offer.calendarEligibility && offer.overlapPolicy && (
+          {offer.calendarEligibility && (
             <div className="text-[11px] text-amber-900 font-medium">
-              {formatOverlapPolicyLabel(offer.overlapPolicy)}
+              {formatOverlapPolicyLabel(offer.overlapPolicy ?? 'unknown')}
             </div>
           )}
           {offer.minCommitment && (
@@ -1440,6 +1448,52 @@ function computeRentalOffersDiff(
         o.maxDuration === n.maxDuration &&
         o.currency === n.currency &&
         calendarKey(o) === calendarKey(n)
+    );
+    if (oIdx === -1) continue;
+    usedOld.add(oIdx);
+    usedNew.add(nIdx);
+    entries.push({ status: 'modified', oldOffer: oldOffers[oIdx], newOffer: n });
+  }
+
+  // Pass 4b: both calendar-restricted with same duration & currency where both supplierLabel and calendar hours changed
+  for (let nIdx = 0; nIdx < newOffers.length; nIdx++) {
+    if (usedNew.has(nIdx)) continue;
+    const n = newOffers[nIdx];
+    if (!n.calendarEligibility) continue;
+    const oIdx = oldOffers.findIndex(
+      (o, idx) =>
+        !usedOld.has(idx) &&
+        Boolean(o.calendarEligibility) &&
+        o.offerType === n.offerType &&
+        o.billingBasis === n.billingBasis &&
+        o.durationUnit === n.durationUnit &&
+        o.minDuration === n.minDuration &&
+        o.maxDuration === n.maxDuration &&
+        o.currency === n.currency
+    );
+    if (oIdx === -1) continue;
+    usedOld.add(oIdx);
+    usedNew.add(nIdx);
+    entries.push({ status: 'modified', oldOffer: oldOffers[oIdx], newOffer: n });
+  }
+
+  // Pass 5: same non-empty supplierLabel & duration/currency transitioning between unrestricted <-> calendar-restricted
+  for (let nIdx = 0; nIdx < newOffers.length; nIdx++) {
+    if (usedNew.has(nIdx)) continue;
+    const n = newOffers[nIdx];
+    const nLabel = normLabel(n.supplierLabel);
+    if (!nLabel) continue;
+    const oIdx = oldOffers.findIndex(
+      (o, idx) =>
+        !usedOld.has(idx) &&
+        o.offerType === n.offerType &&
+        o.billingBasis === n.billingBasis &&
+        o.durationUnit === n.durationUnit &&
+        o.minDuration === n.minDuration &&
+        o.maxDuration === n.maxDuration &&
+        o.currency === n.currency &&
+        normLabel(o.supplierLabel) === nLabel &&
+        Boolean(o.calendarEligibility) !== Boolean(n.calendarEligibility)
     );
     if (oIdx === -1) continue;
     usedOld.add(oIdx);
@@ -1724,14 +1778,12 @@ function renderRentalOffersDiff(
                 : null;
               const calendarChanged = oldCalendarText !== newCalendarText;
 
-              const oldOverlapText =
-                oldOffer.calendarEligibility && oldOffer.overlapPolicy
-                  ? formatOverlapPolicyLabel(oldOffer.overlapPolicy)
-                  : null;
-              const newOverlapText =
-                newOffer.calendarEligibility && newOffer.overlapPolicy
-                  ? formatOverlapPolicyLabel(newOffer.overlapPolicy)
-                  : null;
+              const oldOverlapText = oldOffer.calendarEligibility
+                ? formatOverlapPolicyLabel(oldOffer.overlapPolicy ?? 'unknown')
+                : null;
+              const newOverlapText = newOffer.calendarEligibility
+                ? formatOverlapPolicyLabel(newOffer.overlapPolicy ?? 'unknown')
+                : null;
               const overlapChanged = oldOverlapText !== newOverlapText;
 
               return (
@@ -2505,27 +2557,57 @@ export function ChangeProposalDiffViewer({
 
   const readyEvidenceByItemKey = new Map<string, DiffViewerEvidence[]>();
   const appendLinkedEvidence = (key: string, evidence?: DiffViewerEvidence[] | null) => {
-    if (!key || !Array.isArray(evidence) || evidence.length === 0) return;
-    const existing = readyEvidenceByItemKey.get(key) || [];
-    readyEvidenceByItemKey.set(key, [...existing, ...evidence]);
+    const trimmedKey = typeof key === 'string' ? key.trim() : '';
+    if (!trimmedKey || !Array.isArray(evidence) || evidence.length === 0) return;
+    const existing = readyEvidenceByItemKey.get(trimmedKey) || [];
+    readyEvidenceByItemKey.set(trimmedKey, [...existing, ...evidence]);
   };
   for (const entry of readyChangeEntries) {
     for (const linkedId of entry.linkedProposalItemIds || []) {
       appendLinkedEvidence(linkedId, entry.evidence);
     }
     for (const ref of entry.proposalItemRefs || []) {
-      appendLinkedEvidence(`ref:${ref}`, entry.evidence);
+      if (typeof ref === 'string' && ref.trim()) {
+        appendLinkedEvidence(`ref:${ref.trim()}`, entry.evidence);
+      }
     }
   }
   const getLinkedReadyEvidence = (item: DiffViewerItem): DiffViewerEvidence[] | null => {
+    const collected: DiffViewerEvidence[] = [];
     const byId = readyEvidenceByItemKey.get(item.id);
-    if (byId && byId.length > 0) return byId;
-    const clientId = (item as any).client_item_id;
+    if (byId && byId.length > 0) {
+      collected.push(...byId);
+    }
+    const clientId = item.client_item_id ?? (item as any).clientItemId;
     if (typeof clientId === 'string' && clientId.trim()) {
       const byRef = readyEvidenceByItemKey.get(`ref:${clientId.trim()}`);
-      if (byRef && byRef.length > 0) return byRef;
+      if (byRef && byRef.length > 0) {
+        collected.push(...byRef);
+      }
+    } else if (collected.length === 0) {
+      const byItemIdRef = readyEvidenceByItemKey.get(`ref:${item.id}`);
+      if (byItemIdRef && byItemIdRef.length > 0) {
+        collected.push(...byItemIdRef);
+      }
     }
-    return null;
+    if (collected.length === 0) return null;
+    const seen = new Set<string>();
+    const deduped: DiffViewerEvidence[] = [];
+    for (const ev of collected) {
+      const sig = JSON.stringify([
+        ev.sourceUrl,
+        ev.linkedUrl ?? null,
+        ev.kind,
+        ev.snippet ?? null,
+        ev.provenance ?? null,
+        ev.contentHash ?? null,
+        ev.observation ?? null,
+      ]);
+      if (seen.has(sig)) continue;
+      seen.add(sig);
+      deduped.push(ev);
+    }
+    return deduped;
   };
 
   const candidateById = new Map<string, DiffViewerCandidate>();

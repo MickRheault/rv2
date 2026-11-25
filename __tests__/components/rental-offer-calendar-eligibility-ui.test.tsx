@@ -14,6 +14,7 @@ import { SYSTEM_PROMPT } from '@/lib/chat/prompt';
 import {
   generateEnhancedMotorcycleSchema,
   generateOfferPricingSchema,
+  generateShopMotorcycleSchemas,
 } from '@/lib/seo/structured-data';
 import { generateMotorcycleSEO } from '@/lib/seo/config';
 import type { NormalizedRentalOffer, OfferCalendarEligibility } from '@/lib/rental-offers';
@@ -395,11 +396,7 @@ describe('Calendar Eligibility & Overlap Policy across UI, Admin, Chat & JSON-LD
         within(diffBox).getByText(/Replaces standard rates on eligible days/i)
       ).toBeInTheDocument();
 
-      // Switch to Reconciliation Report / Entries tab or verify evidence provenance badges render
-      const reportTab = screen.queryByRole('button', { name: /Reconciliation|All Discovered|Entries/i });
-      if (reportTab) {
-        fireEvent.click(reportTab);
-      }
+      // Evidence provenance badges render directly inline on the linked ready_change card
       expect(screen.getByTestId('evidence-provenance-owner-approved')).toHaveTextContent(
         /Owner-Approved Interpretation/i
       );
@@ -407,14 +404,233 @@ describe('Calendar Eligibility & Overlap Policy across UI, Admin, Chat & JSON-LD
         /Supplier Explicit/i
       );
     });
+
+    it('covers RentalOffersModal edit/reset/invalid-HH:MM flows, DiffViewer add/delist/unchanged/unlabeled/transition/snake_case/dedup evidence, and unrestricted catalog note absence', async () => {
+      // 1. MotorcycleDetails: no catalog note on unrestricted-only bikes; known-policy note when replaces_standard
+      const { unmount: unmountUnrestricted } = render(
+        <MotorcycleDetails motorcycle={buildMotorcycle({ rental_offers: [LA_DUCATESSA_OFFERS[0]] })} />
+      );
+      expect(screen.queryByTestId('calendar-offers-catalog-note')).not.toBeInTheDocument();
+      unmountUnrestricted();
+
+      const { unmount: unmountKnown } = render(
+        <MotorcycleDetails
+          motorcycle={buildMotorcycle({
+            rental_offers: [{ ...LA_DUCATESSA_OFFERS[1], overlapPolicy: 'replaces_standard' }],
+          })}
+        />
+      );
+      expect(screen.getByTestId('calendar-offers-catalog-note')).toHaveTextContent(
+        /Calendar restrictions apply in shop-local time/i
+      );
+      unmountKnown();
+
+      // 2. RentalOffersModal: edit existing weekend offer, validate invalid HH:MM, switch weekend -> unrestricted -> null/null
+      const mockFetch = jest
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ offers: LA_DUCATESSA_OFFERS }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ offers: [LA_DUCATESSA_OFFERS[0]] }),
+        });
+      global.fetch = mockFetch as any;
+
+      const { unmount: unmountModal } = render(
+        <RentalOffersModal
+          isOpen={true}
+          onClose={jest.fn()}
+          motorcycle={{ id: 'bike-ducatessa-1', model: 'Scrambler Icon', brand: 'Ducati', currency: 'EUR' }}
+        />
+      );
+      await waitFor(() => {
+        expect(screen.getByText('Weekend package')).toBeInTheDocument();
+      });
+
+      // Click Edit on the 2nd offer (Weekend package)
+      const editButtons = screen.getAllByTitle('Edit offer');
+      fireEvent.click(editButtons[1]);
+      expect((screen.getByLabelText(/Calendar Eligibility/i) as HTMLSelectElement).value).toBe('weekend');
+      expect((screen.getByLabelText(/Overlap Policy/i) as HTMLSelectElement).value).toBe('unknown');
+
+      // Malformed HH:MM time is rejected with error alert
+      fireEvent.change(screen.getByLabelText(/Saturday Start Time/i), { target: { value: '25:00' } });
+      fireEvent.click(screen.getByRole('button', { name: /Update Offer in List/i }));
+      expect(screen.getByText(/startTime/i)).toBeInTheDocument();
+
+      // Switch to unrestricted (must clear times & overlapPolicy) and change duration so it doesn't collide with 2-day standard
+      fireEvent.change(screen.getByLabelText(/Calendar Eligibility/i), {
+        target: { value: 'unrestricted' },
+      });
+      fireEvent.change(screen.getByLabelText(/Package Duration/i), { target: { value: '3' } });
+      fireEvent.click(screen.getByRole('button', { name: /Update Offer in List/i }));
+
+      fireEvent.click(screen.getByRole('button', { name: /Save Rental Offers/i }));
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledTimes(2);
+      });
+      const savedOffers = JSON.parse(mockFetch.mock.calls[1][1].body).offers;
+      expect(savedOffers[1].calendarEligibility).toBeNull();
+      expect(savedOffers[1].overlapPolicy).toBeNull();
+      unmountModal();
+
+      // 3. ChangeProposalDiffViewer: add, delist, unlabeled coexistence, labeled unrestricted->weekend transition, snake_case rows + corrupt DB row resilience, proposalItemRefs + dedup + javascript: URL safety
+      const proposal: DiffViewerProposal = {
+        id: 'prop-248-edge',
+        shop_id: 'shop-ducatessa',
+        source_url: 'https://laducatessa.example/rental',
+        status: 'pending',
+        coverage_status: 'complete',
+        reconciliation_status: 'complete',
+        application_status: 'pending',
+        version: 1,
+        created_at: '2026-11-25T10:00:00Z',
+      };
+
+      const edgeItems: DiffViewerItem[] = [
+        {
+          id: 'item-add-wknd',
+          client_item_id: 'client-add-1',
+          proposal_id: 'prop-248-edge',
+          entity_type: 'motorcycle',
+          action: 'add',
+          entity_id: null,
+          brand_name: 'Ducati',
+          model_name: 'Monster',
+          original_data: null,
+          proposed_data: {
+            offers: [
+              {
+                offerType: 'package',
+                amount: 260,
+                currency: 'EUR',
+                billingBasis: 'package_total',
+                durationUnit: 'day',
+                minDuration: 2,
+                maxDuration: 2,
+                calendar_eligibility: { kind: 'weekend', start_time: '10:00', end_time: '19:00' },
+                overlap_policy: 'alternative',
+              },
+            ],
+          },
+          diff_summary: null,
+          status: 'pending',
+        },
+        {
+          id: 'item-upd-transition',
+          proposal_id: 'prop-248-edge',
+          entity_type: 'motorcycle',
+          action: 'update',
+          entity_id: 'bike-trans',
+          brand_name: 'Ducati',
+          model_name: 'Multistrada',
+          original_data: {
+            offers: [
+              { ...LA_DUCATESSA_OFFERS[0], supplierLabel: null },
+              { ...LA_DUCATESSA_OFFERS[0], amount: 260, supplierLabel: 'Weekend Special' },
+            ],
+          },
+          proposed_data: {
+            offers: [
+              { ...LA_DUCATESSA_OFFERS[0], supplierLabel: null },
+              { ...LA_DUCATESSA_OFFERS[1], supplierLabel: null },
+              { ...LA_DUCATESSA_OFFERS[1], amount: 260, supplierLabel: 'Weekend Special' },
+            ],
+          },
+          diff_summary: null,
+          status: 'pending',
+        },
+        {
+          id: 'item-delist-corrupt',
+          proposal_id: 'prop-248-edge',
+          entity_type: 'motorcycle',
+          action: 'delist',
+          entity_id: 'bike-delist',
+          brand_name: 'Ducati',
+          model_name: 'DesertX',
+          original_data: {
+            offers: [
+              {
+                offer_type: 'package',
+                amount: 300,
+                currency: 'EUR',
+                billing_basis: 'package_total',
+                duration_unit: 'day',
+                min_duration: 2,
+                max_duration: 2,
+                calendar_eligibility: { kind: 'invalid_corrupt_kind' },
+                overlap_policy: 'unknown',
+              },
+            ],
+          },
+          proposed_data: null,
+          diff_summary: null,
+          status: 'pending',
+        },
+      ];
+
+      const dupEv = {
+        sourceUrl: 'javascript:alert(1)',
+        kind: 'policy_clarification',
+        snippet: 'Mapped via owner decision',
+        provenance: 'owner_approved_interpretation' as const,
+      };
+
+      render(
+        <ChangeProposalDiffViewer
+          proposal={proposal}
+          items={edgeItems}
+          entries={[
+            {
+              id: 'entry-add-ref',
+              entryIndex: 0,
+              entryKey: 'ducati-monster',
+              brand: 'Ducati',
+              model: 'Monster',
+              disposition: 'ready_change',
+              proposalItemRefs: [' client-add-1 '],
+              linkedProposalItemIds: ['item-add-wknd'],
+              evidence: [dupEv, dupEv],
+            },
+            {
+              id: 'entry-unchanged-wknd',
+              entryIndex: 1,
+              entryKey: 'ducati-hypermotard',
+              brand: 'Ducati',
+              model: 'Hypermotard',
+              existingMotorcycleId: 'bike-hyper',
+              disposition: 'unchanged',
+              baseline_data: { offers: [LA_DUCATESSA_OFFERS[1]] },
+              evidence: [],
+            },
+          ]}
+        />
+      );
+
+      // Snake_case start_time/end_time rendered cleanly on Added item
+      expect(screen.getByText('Saturday–Sunday (10:00–19:00)')).toBeInTheDocument();
+      // Evidence linked by both linkedProposalItemIds + proposalItemRefs is deduplicated to a single provenance badge and javascript: URL is inert
+      expect(screen.getAllByTestId('evidence-provenance-owner-approved')).toHaveLength(1);
+      expect(screen.queryByRole('link', { name: /javascript:/i })).not.toBeInTheDocument();
+
+      // Transition diff pairs labeled 'Weekend Special' unrestricted -> weekend as modified while keeping unlabeled standard unchanged & unlabeled weekend added
+      const transDiff = screen.getByTestId('proposal-offers-diff-item-upd-transition');
+      expect(within(transDiff).getByText(/✓ Unchanged/i)).toBeInTheDocument();
+      expect(within(transDiff).getByText(/\+ Added/i)).toBeInTheDocument();
+      expect(within(transDiff).getByText('Weekend Special')).toBeInTheDocument();
+    });
   });
 
   describe('4. AI Chat Prompt & SEO JSON-LD / Meta Helpers', () => {
-    it('instructs AI Chat to preserve calendar restrictions, avoid fabricating hours, and refuse guessing unknown overlap precedence', () => {
+    it('instructs AI Chat to preserve calendar restrictions, avoid fabricating hours, refuse guessing unknown overlap precedence, and never present catalog options as live date-specific quotes', () => {
       expect(SYSTEM_PROMPT).toMatch(/calendarEligibility|calendar-restricted/i);
       expect(SYSTEM_PROMPT).toMatch(/overlapPolicy/i);
       expect(SYSTEM_PROMPT).toMatch(/unknown/i);
       expect(SYSTEM_PROMPT).toMatch(/never.*fabricat|invent.*hour|48\s*hours/i);
+      expect(SYSTEM_PROMPT).toMatch(/live date-specific quotes/i);
+      expect(SYSTEM_PROMPT).toMatch(/cheapest wins/i);
     });
 
     it('preserves calendar restrictions in JSON-LD offer descriptions and meta SEO without mislabeling package totals as daily rates', () => {
@@ -443,6 +659,18 @@ describe('Calendar Eligibility & Overlap Policy across UI, Admin, Chat & JSON-LD
       expect(specs[1].description).toMatch(/Overlap policy unknown/i);
       expect(specs[1].description).not.toMatch(/09:00|18:00|48 hours/i);
 
+      // Unlabeled calendar-restricted offer with omitted overlapPolicy defaults cleanly in JSON-LD
+      const [unlabeledSpec] = generateOfferPricingSchema([
+        {
+          ...LA_DUCATESSA_OFFERS[1],
+          supplierLabel: null,
+          overlapPolicy: undefined,
+        },
+      ]);
+      expect(unlabeledSpec.name).toBe('260 EUR for 2 days, Saturday–Sunday');
+      expect(unlabeledSpec.description).toMatch(/Eligible: Saturday–Sunday/);
+      expect(unlabeledSpec.description).toMatch(/Overlap policy unknown/);
+
       const enhanced = generateEnhancedMotorcycleSchema({
         id: 'bike-ducatessa-1',
         brand: 'Ducati',
@@ -450,6 +678,41 @@ describe('Calendar Eligibility & Overlap Policy across UI, Admin, Chat & JSON-LD
         rentalOffers: LA_DUCATESSA_OFFERS,
       });
       expect(enhanced.offers?.priceSpecification).toHaveLength(2);
+
+      // Shop motorcycle schemas hydrate snake_case DB calendar_eligibility & overlap_policy
+      const shopSchemas = generateShopMotorcycleSchemas({
+        provider_name: 'La Ducatessa',
+        motorcycle_rentals: [
+          {
+            id: 'bike-shop-wknd',
+            model: 'Scrambler Icon',
+            availability_status: 'available',
+            brands: { name: 'Ducati' },
+            rental_offers: [
+              {
+                id: 'row-wknd',
+                motorcycle_id: 'bike-shop-wknd',
+                parent_offer_id: null,
+                offer_type: 'package',
+                amount: 260,
+                currency: 'EUR',
+                billing_basis: 'package_total',
+                duration_unit: 'day',
+                min_duration: 2,
+                max_duration: 2,
+                supplier_label: 'Weekend package',
+                is_from: false,
+                calendar_eligibility: { ...WEEKEND_SAT_SUN, startTime: '09:00', endTime: '18:00' },
+                overlap_policy: 'replaces_standard',
+                sort_order: 0,
+              },
+            ],
+          },
+        ],
+      });
+      expect((shopSchemas[0].offers?.priceSpecification[0] as any)?.description).toMatch(
+        /Saturday–Sunday \(09:00–18:00\)/
+      );
 
       // Meta SEO description appends (Sat–Sun) when restricted-only offer is the headline
       const restrictedSeo = generateMotorcycleSEO({
