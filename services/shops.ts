@@ -286,6 +286,8 @@ export const MOTORCYCLE_LISTING_OFFERS_COLUMNS = `
   billing_increment_unit,
   supplier_label,
   is_from,
+  calendar_eligibility,
+  overlap_policy,
   sort_order
 `
 

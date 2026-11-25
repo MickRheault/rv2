@@ -19,6 +19,7 @@ import {
   type OfferCalendarEligibility,
 } from '@/lib/rental-offers';
 import { hasStrictNonDailyOrExtensionOffers } from '@/lib/reconciliation-report';
+import { MOTORCYCLE_LISTING_OFFERS_COLUMNS } from '@/services/shops';
 import {
   prepareMotorcyclePricingMutation,
   replaceMotorcycleRateTiersLegacyCompat,
@@ -103,6 +104,10 @@ describe('Rental Offer Calendar Eligibility & Overlap Policy (#246)', () => {
       expect(hydrated[0].overlapPolicy).toBeNull();
       expect(hydrated[1].calendarEligibility).toEqual(WEEKEND_SAT_SUN);
       expect(hydrated[1].overlapPolicy).toBe('unknown');
+
+      // Listing query projection selects calendar_eligibility and overlap_policy so Postgres queries never drop them
+      expect(MOTORCYCLE_LISTING_OFFERS_COLUMNS).toContain('calendar_eligibility');
+      expect(MOTORCYCLE_LISTING_OFFERS_COLUMNS).toContain('overlap_policy');
     });
 
     it('rejects duplicate weekend offers, invalid overlapPolicy on unrestricted offers, calendar fields on extensions, and malformed times', () => {
@@ -244,7 +249,30 @@ describe('Rental Offer Calendar Eligibility & Overlap Policy (#246)', () => {
         ])
       ).toThrow(RentalOfferValidationError);
 
-      // Calendar eligibility on extension is rejected
+      // Corrupted persisted overlap_policy on unrestricted row fails loudly on hydration
+      expect(() =>
+        hydrateRentalOffersFromRows([
+          {
+            id: 'off-corrupt-policy',
+            motorcycle_id: 'bike-1',
+            parent_offer_id: null,
+            offer_type: 'package',
+            amount: 215,
+            currency: 'EUR',
+            billing_basis: 'package_total',
+            duration_unit: 'day',
+            min_duration: 2,
+            max_duration: 2,
+            supplier_label: null,
+            is_from: false,
+            sort_order: 0,
+            calendar_eligibility: null,
+            overlap_policy: 'alternative',
+          },
+        ])
+      ).toThrow(RentalOfferValidationError);
+
+      // Calendar eligibility or overlapPolicy on extension is rejected
       expect(() =>
         validateAndNormalizeRentalOffers([
           {
@@ -261,6 +289,28 @@ describe('Rental Offer Calendar Eligibility & Overlap Policy (#246)', () => {
                 currency: 'EUR',
                 billingBasis: 'per_day',
                 calendarEligibility: { kind: 'weekend' },
+              } as any,
+            ],
+          },
+        ])
+      ).toThrow(RentalOfferValidationError);
+
+      expect(() =>
+        validateAndNormalizeRentalOffers([
+          {
+            offerType: 'package',
+            amount: 215,
+            currency: 'EUR',
+            billingBasis: 'package_total',
+            durationUnit: 'day',
+            minDuration: 2,
+            maxDuration: 2,
+            extensions: [
+              {
+                amount: 90,
+                currency: 'EUR',
+                billingBasis: 'per_day',
+                overlapPolicy: 'unknown',
               } as any,
             ],
           },
@@ -443,6 +493,20 @@ describe('Rental Offer Calendar Eligibility & Overlap Policy (#246)', () => {
         })
       ).rejects.toThrow(RentalOfferConflictError);
 
+      await expect(
+        prepareMotorcyclePricingMutation({
+          motorcycleId: 'bike-wknd-daily',
+          scalarCurrency: 'USD',
+        })
+      ).rejects.toThrow(RentalOfferConflictError);
+
+      await expect(
+        prepareMotorcyclePricingMutation({
+          motorcycleId: 'bike-wknd-daily',
+          scalarCurrency: null,
+        })
+      ).rejects.toThrow(RentalOfferConflictError);
+
       // Reconciliation helper also flags calendar-restricted daily offers as unrepresentable by legacy rates[]
       const restrictedDaily = validateAndNormalizeRentalOffers([
         {
@@ -619,6 +683,53 @@ describe('Rental Offer Calendar Eligibility & Overlap Policy (#246)', () => {
         hoursSpecified: false,
       });
 
+      // Non-existent calendar dates must NOT silently roll over (2026-02-29 is not a leap year)
+      expect(
+        evaluateOfferCalendarEligibility(
+          weekendUnknown,
+          {
+            startIso: '2026-02-28T09:00:00Z',
+            endIso: '2026-02-29T17:00:00Z',
+          },
+          'Europe/Rome'
+        )
+      ).toEqual({
+        status: 'unevaluable',
+        reason: 'invalid_window',
+        hoursSpecified: false,
+      });
+
+      // Valid leap-year Sat–Sun (2028-02-26 Sat -> 2028-02-27 Sun), month-end (2026-10-31 Sat -> 2026-11-01 Sun),
+      // DST spring-forward (2026-03-28 Sat -> 2026-03-29 Sun Europe/Rome), and DST fall-back (2026-10-24 Sat -> 2026-10-25 Sun Europe/Rome)
+      expect(
+        evaluateOfferCalendarEligibility(
+          weekendUnknown,
+          { startIso: '2028-02-26T09:00:00Z', endIso: '2028-02-27T17:00:00Z' },
+          'Europe/Rome'
+        ).status
+      ).toBe('eligible');
+      expect(
+        evaluateOfferCalendarEligibility(
+          weekendUnknown,
+          { startIso: '2026-10-31T09:00:00Z', endIso: '2026-11-01T17:00:00Z' },
+          'Europe/Rome'
+        ).status
+      ).toBe('eligible');
+      expect(
+        evaluateOfferCalendarEligibility(
+          weekendUnknown,
+          { startIso: '2026-03-28T09:00:00Z', endIso: '2026-03-29T15:00:00Z' },
+          'Europe/Rome'
+        ).status
+      ).toBe('eligible');
+      expect(
+        evaluateOfferCalendarEligibility(
+          weekendUnknown,
+          { startIso: '2026-10-24T09:00:00Z', endIso: '2026-10-25T16:00:00Z' },
+          'Europe/Rome'
+        ).status
+      ).toBe('eligible');
+
       // Missing shopTimezone returns explicit unevaluable (never silently falls back to UTC)
       expect(
         evaluateOfferCalendarEligibility(
@@ -682,7 +793,7 @@ describe('Rental Offer Calendar Eligibility & Overlap Policy (#246)', () => {
         ).status
       ).toBe('ineligible');
 
-      // Sun 18:00:59 Europe/Rome exceeds 18:00 endTime (seconds respected) -> ineligible
+      // Sun 18:00:59 and Sun 18:00:00.500 Europe/Rome both exceed 18:00 endTime -> ineligible
       expect(
         evaluateOfferCalendarEligibility(
           timedWeekend,
@@ -693,6 +804,62 @@ describe('Rental Offer Calendar Eligibility & Overlap Policy (#246)', () => {
           'Europe/Rome'
         ).status
       ).toBe('ineligible');
+      expect(
+        evaluateOfferCalendarEligibility(
+          timedWeekend,
+          {
+            startIso: '2026-11-28T09:00:00Z',
+            endIso: '2026-11-29T17:00:00.500Z', // 18:00:00.500 CET
+          },
+          'Europe/Rome'
+        ).status
+      ).toBe('ineligible');
+
+      // Single-sided startTime-only and endTime-only formatting and evaluation
+      const [startOnly, endOnly] = validateAndNormalizeRentalOffers([
+        {
+          offerType: 'package',
+          amount: 260,
+          currency: 'EUR',
+          billingBasis: 'package_total',
+          durationUnit: 'day',
+          minDuration: 2,
+          maxDuration: 2,
+          supplierLabel: 'Start bound only',
+          calendarEligibility: { kind: 'weekend', startTime: '09:00', endTime: null },
+        },
+        {
+          offerType: 'package',
+          amount: 260,
+          currency: 'EUR',
+          billingBasis: 'package_total',
+          durationUnit: 'day',
+          minDuration: 2,
+          maxDuration: 2,
+          supplierLabel: 'End bound only',
+          calendarEligibility: { kind: 'weekend', startTime: null, endTime: '18:00' },
+        },
+      ]);
+      expect(formatCalendarEligibilityLabel(startOnly.calendarEligibility!)).toBe(
+        'Saturday–Sunday (from 09:00)'
+      );
+      expect(formatCalendarEligibilityLabel(endOnly.calendarEligibility!)).toBe(
+        'Saturday–Sunday (until 18:00)'
+      );
+      expect(
+        evaluateOfferCalendarEligibility(
+          startOnly,
+          { startIso: '2026-11-28T08:00:00Z', endIso: '2026-11-29T22:30:00Z' },
+          'Europe/Rome'
+        ).status
+      ).toBe('eligible');
+      expect(
+        evaluateOfferCalendarEligibility(
+          endOnly,
+          { startIso: '2026-11-27T23:30:00Z', endIso: '2026-11-29T17:00:00Z' },
+          'Europe/Rome'
+        ).status
+      ).toBe('eligible');
 
       // Same-day sub-windows inside [Sat 09:00, Sun 18:00]: Sat 10:00-20:00 and Sun 08:00-17:00 are both eligible
       expect(
@@ -967,6 +1134,15 @@ describe('Rental Offer Calendar Eligibility & Overlap Policy (#246)', () => {
         ],
       };
       expect(compareMotorcyclesByPrice(coexistingBike, restrictedDailyBike, 'asc')).toBeLessThan(0);
+
+      // Durationless minPrice/maxPrice filter also excludes calendar-restricted daily offers
+      expect(
+        matchesRentalOfferFilter(restrictedDailyBike, {
+          currency: 'EUR',
+          minPrice: 50,
+          maxPrice: 150,
+        })
+      ).toBe(false);
     });
   });
 });

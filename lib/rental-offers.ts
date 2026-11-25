@@ -1487,14 +1487,73 @@ export interface CalendarEligibilityEvaluationResult {
 }
 
 const ISO_TIMESTAMP_WITH_OFFSET_REGEX =
-  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:[zZ]|[+-]\d{2}:\d{2})$/;
+  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?(?:([zZ])|([+-])(\d{2}):(\d{2}))$/;
 
-function isValidIanaTimeZone(tz: string): boolean {
+function parseStrictIsoTimestampWithOffset(raw: unknown): Date | null {
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  const match = ISO_TIMESTAMP_WITH_OFFSET_REGEX.exec(trimmed);
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const second = match[6] !== undefined ? Number(match[6]) : 0;
+
+  if (
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > 31 ||
+    hour < 0 ||
+    hour > 23 ||
+    minute < 0 ||
+    minute > 59 ||
+    second < 0 ||
+    second > 59
+  ) {
+    return null;
+  }
+
+  if (!match[7]) {
+    const offsetHour = Number(match[9]);
+    const offsetMinute = Number(match[10]);
+    if (offsetHour < 0 || offsetHour > 23 || offsetMinute < 0 || offsetMinute > 59) {
+      return null;
+    }
+  }
+
+  // Reject calendar date rollover such as 2026-02-29 or 2026-04-31
+  const calendarCheck = new Date(Date.UTC(year, month - 1, day));
+  if (
+    calendarCheck.getUTCFullYear() !== year ||
+    calendarCheck.getUTCMonth() !== month - 1 ||
+    calendarCheck.getUTCDate() !== day
+  ) {
+    return null;
+  }
+
+  const parsed = new Date(trimmed);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function createLocalDateTimeFormatter(timeZone: string): Intl.DateTimeFormat | null {
   try {
-    new Intl.DateTimeFormat('en-US', { timeZone: tz });
-    return true;
+    return new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      weekday: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+    });
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -1503,21 +1562,13 @@ interface LocalDateTimeParts {
   month: number;
   day: number;
   weekday: string;
-  secondsOfDay: number;
+  msOfDay: number;
 }
 
-function extractLocalDateTimeParts(date: Date, timeZone: string): LocalDateTimeParts {
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    weekday: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hourCycle: 'h23',
-  });
+function extractLocalDateTimeParts(
+  date: Date,
+  formatter: Intl.DateTimeFormat
+): LocalDateTimeParts {
   const parts = formatter.formatToParts(date);
   const byType = new Map(parts.map((p) => [p.type, p.value]));
   const year = Number(byType.get('year'));
@@ -1533,7 +1584,7 @@ function extractLocalDateTimeParts(date: Date, timeZone: string): LocalDateTimeP
     month,
     day,
     weekday,
-    secondsOfDay: hour * 3600 + minute * 60 + second,
+    msOfDay: (hour * 3600 + minute * 60 + second) * 1000 + date.getUTCMilliseconds(),
   };
 }
 
@@ -1541,9 +1592,9 @@ function toDaySerial(parts: Pick<LocalDateTimeParts, 'year' | 'month' | 'day'>):
   return Math.floor(Date.UTC(parts.year, parts.month - 1, parts.day) / 86_400_000);
 }
 
-function parseSecondsOfDay(hhmm: string): number {
+function parseMsOfDay(hhmm: string): number {
   const [h, m] = hhmm.split(':').map(Number);
-  return h * 3600 + m * 60;
+  return (h * 3600 + m * 60) * 1000;
 }
 
 export function evaluateOfferCalendarEligibility(
@@ -1562,7 +1613,7 @@ export function evaluateOfferCalendarEligibility(
 
   const hoursSpecified = eligibility.startTime !== null || eligibility.endTime !== null;
 
-  if (!window || !window.startIso || !window.endIso) {
+  if (!window || window.startIso == null || window.endIso == null) {
     return {
       status: 'unevaluable',
       reason: 'dates_missing',
@@ -1570,24 +1621,9 @@ export function evaluateOfferCalendarEligibility(
     };
   }
 
-  if (
-    !ISO_TIMESTAMP_WITH_OFFSET_REGEX.test(window.startIso.trim()) ||
-    !ISO_TIMESTAMP_WITH_OFFSET_REGEX.test(window.endIso.trim())
-  ) {
-    return {
-      status: 'unevaluable',
-      reason: 'invalid_window',
-      hoursSpecified,
-    };
-  }
-
-  const startDate = new Date(window.startIso);
-  const endDate = new Date(window.endIso);
-  if (
-    Number.isNaN(startDate.getTime()) ||
-    Number.isNaN(endDate.getTime()) ||
-    endDate.getTime() <= startDate.getTime()
-  ) {
+  const startDate = parseStrictIsoTimestampWithOffset(window.startIso);
+  const endDate = parseStrictIsoTimestampWithOffset(window.endIso);
+  if (!startDate || !endDate || endDate.getTime() <= startDate.getTime()) {
     return {
       status: 'unevaluable',
       reason: 'invalid_window',
@@ -1596,7 +1632,8 @@ export function evaluateOfferCalendarEligibility(
   }
 
   const trimmedTz = typeof shopTimezone === 'string' ? shopTimezone.trim() : '';
-  if (!trimmedTz || !isValidIanaTimeZone(trimmedTz)) {
+  const formatter = trimmedTz ? createLocalDateTimeFormatter(trimmedTz) : null;
+  if (!formatter) {
     return {
       status: 'unevaluable',
       reason: 'timezone_missing',
@@ -1604,8 +1641,8 @@ export function evaluateOfferCalendarEligibility(
     };
   }
 
-  const startLocal = extractLocalDateTimeParts(startDate, trimmedTz);
-  const endLocal = extractLocalDateTimeParts(endDate, trimmedTz);
+  const startLocal = extractLocalDateTimeParts(startDate, formatter);
+  const endLocal = extractLocalDateTimeParts(endDate, formatter);
   const dayDiff = toDaySerial(endLocal) - toDaySerial(startLocal);
 
   const isSatToSun = startLocal.weekday === 'Sat' && endLocal.weekday === 'Sun' && dayDiff === 1;
@@ -1623,7 +1660,7 @@ export function evaluateOfferCalendarEligibility(
   if (
     eligibility.startTime !== null &&
     startLocal.weekday === 'Sat' &&
-    startLocal.secondsOfDay < parseSecondsOfDay(eligibility.startTime)
+    startLocal.msOfDay < parseMsOfDay(eligibility.startTime)
   ) {
     return {
       status: 'ineligible',
@@ -1635,7 +1672,7 @@ export function evaluateOfferCalendarEligibility(
   if (
     eligibility.endTime !== null &&
     endLocal.weekday === 'Sun' &&
-    endLocal.secondsOfDay > parseSecondsOfDay(eligibility.endTime)
+    endLocal.msOfDay > parseMsOfDay(eligibility.endTime)
   ) {
     return {
       status: 'ineligible',

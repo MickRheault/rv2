@@ -168,6 +168,8 @@ BEGIN
             billing_increment_unit,
             supplier_label,
             is_from,
+            calendar_eligibility,
+            overlap_policy,
             sort_order
           )
           VALUES (
@@ -186,6 +188,9 @@ BEGIN
             NULLIF(v_ext->>'billing_increment_unit', ''),
             NULLIF(v_ext->>'supplier_label', ''),
             COALESCE((v_ext->>'is_from')::BOOLEAN, false),
+            CASE WHEN v_ext->'calendar_eligibility' IS NULL OR jsonb_typeof(v_ext->'calendar_eligibility') = 'null'
+              THEN NULL ELSE v_ext->'calendar_eligibility' END,
+            NULLIF(v_ext->>'overlap_policy', ''),
             COALESCE((v_ext->>'sort_order')::INT, v_ext_idx)
           );
           v_ext_idx := v_ext_idx + 1;
