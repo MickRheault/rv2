@@ -10,10 +10,12 @@ import Spinner from '@/components/ui/Spinner';
 import {
   computeDailyEquivalent,
   formatBillingIncrementPhrase,
+  formatCalendarEligibilityLabel,
   formatDurationUnitLabel,
   formatExtensionBillingPhrase,
   formatOfferBillingUnitPhrase,
   formatOfferDurationRangeLabel,
+  formatOverlapPolicyLabel,
   RentalOfferValidationError,
   validateAndNormalizeRentalOffers,
   type BillingBasis,
@@ -21,6 +23,7 @@ import {
   type DurationUnit,
   type ExtensionBillingBasis,
   type NormalizedRentalOffer,
+  type OfferOverlapPolicy,
   type RentalOfferExtensionInput,
   type RentalOfferInput,
   type StandaloneOfferType,
@@ -78,6 +81,10 @@ interface DraftOfferForm {
   billingIncrementUnit: BillingIncrementUnit;
   supplierLabel: string;
   isFrom: boolean;
+  calendarKind: 'unrestricted' | 'weekend';
+  calendarStartTime: string;
+  calendarEndTime: string;
+  overlapPolicy: OfferOverlapPolicy;
   extensions: DraftExtension[];
 }
 
@@ -97,6 +104,10 @@ function createEmptyDraftOffer(defaultCurrency: string): DraftOfferForm {
     billingIncrementUnit: 'hour',
     supplierLabel: '',
     isFrom: false,
+    calendarKind: 'unrestricted',
+    calendarStartTime: '',
+    calendarEndTime: '',
+    overlapPolicy: 'unknown',
     extensions: [],
   };
 }
@@ -128,6 +139,10 @@ function normalizedOfferToDraftForm(offer: NormalizedRentalOffer): DraftOfferFor
     billingIncrementUnit: offer.billingIncrement ? offer.billingIncrement.unit : 'hour',
     supplierLabel: offer.supplierLabel || '',
     isFrom: offer.isFrom,
+    calendarKind: offer.calendarEligibility ? 'weekend' : 'unrestricted',
+    calendarStartTime: offer.calendarEligibility?.startTime || '',
+    calendarEndTime: offer.calendarEligibility?.endTime || '',
+    overlapPolicy: offer.overlapPolicy ?? 'unknown',
     extensions: offer.extensions.map((ext) => ({
       amount: String(ext.amount),
       currency: ext.currency,
@@ -187,6 +202,18 @@ function draftFormToOfferInput(draft: DraftOfferForm): RentalOfferInput {
     isFrom: ext.isFrom,
   }));
 
+  const calendarEligibility =
+    draft.calendarKind === 'weekend'
+      ? {
+          kind: 'weekend' as const,
+          startDay: 'saturday' as const,
+          endDay: 'sunday' as const,
+          startTime: draft.calendarStartTime.trim() || null,
+          endTime: draft.calendarEndTime.trim() || null,
+          timezoneBasis: 'shop_local' as const,
+        }
+      : null;
+
   return {
     offerType: draft.offerType,
     amount,
@@ -199,6 +226,8 @@ function draftFormToOfferInput(draft: DraftOfferForm): RentalOfferInput {
     billingIncrement,
     supplierLabel: draft.supplierLabel.trim() || null,
     isFrom: draft.isFrom,
+    calendarEligibility,
+    overlapPolicy: calendarEligibility ? draft.overlapPolicy : null,
     extensions,
   };
 }
@@ -395,6 +424,14 @@ export function RentalOffersModal({
     setError(null);
     const next = offers.filter((_, idx) => idx !== index);
     setOffers(next);
+    if (editingIndex !== null) {
+      if (editingIndex === index) {
+        setShowEditor(false);
+        setEditingIndex(null);
+      } else if (index < editingIndex) {
+        setEditingIndex(editingIndex - 1);
+      }
+    }
     setDirty(true);
   };
 
@@ -572,9 +609,19 @@ export function RentalOffersModal({
                               {offer.supplierLabel}
                             </span>
                           )}
+                          {offer.calendarEligibility && (
+                            <Badge variant="warning">
+                              {formatCalendarEligibilityLabel(offer.calendarEligibility)}
+                            </Badge>
+                          )}
                         </div>
 
                         <div className="flex flex-wrap gap-3 text-xs text-gray-600">
+                          {offer.calendarEligibility && (
+                            <span className="text-amber-800 font-medium">
+                              {formatOverlapPolicyLabel(offer.overlapPolicy ?? 'unknown')}
+                            </span>
+                          )}
                           {offer.minCommitment && (
                             <span>
                               Min. commitment: {offer.minCommitment.value}{' '}
@@ -1048,6 +1095,121 @@ export function RentalOffersModal({
               </label>
             </div>
 
+            {/* Calendar Eligibility & Overlap Policy */}
+            <div className="border-t border-blue-200 pt-3 space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label
+                    htmlFor="calendar-eligibility-select"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    Calendar Eligibility
+                  </label>
+                  <select
+                    id="calendar-eligibility-select"
+                    value={draft.calendarKind}
+                    onChange={(e) => {
+                      const nextKind = e.target.value as 'unrestricted' | 'weekend';
+                      setDraft((prev) => ({
+                        ...prev,
+                        calendarKind: nextKind,
+                        ...(nextKind === 'unrestricted'
+                          ? {
+                              calendarStartTime: '',
+                              calendarEndTime: '',
+                              overlapPolicy: 'unknown',
+                            }
+                          : {}),
+                      }));
+                    }}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+                  >
+                    <option value="unrestricted">Unrestricted (all days)</option>
+                    <option value="weekend">Weekend (Saturday–Sunday, shop-local)</option>
+                  </select>
+                </div>
+
+                {draft.calendarKind === 'weekend' && (
+                  <div>
+                    <label
+                      htmlFor="overlap-policy-select"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Overlap Policy
+                    </label>
+                    <select
+                      id="overlap-policy-select"
+                      value={draft.overlapPolicy}
+                      onChange={(e) =>
+                        setDraft((prev) => ({
+                          ...prev,
+                          overlapPolicy: e.target.value as OfferOverlapPolicy,
+                        }))
+                      }
+                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+                    >
+                      <option value="unknown">Unknown (show alongside standard)</option>
+                      <option value="alternative">Alternative (coexists with standard)</option>
+                      <option value="replaces_standard">
+                        Replaces standard on eligible days
+                      </option>
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              {draft.calendarKind === 'weekend' && (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label
+                        htmlFor="calendar-start-time-input"
+                        className="block text-xs font-medium text-gray-700 mb-1"
+                      >
+                        Saturday Start Time (optional HH:MM)
+                      </label>
+                      <Input
+                        id="calendar-start-time-input"
+                        type="text"
+                        value={draft.calendarStartTime}
+                        onChange={(e) =>
+                          setDraft((prev) => ({
+                            ...prev,
+                            calendarStartTime: e.target.value,
+                          }))
+                        }
+                        placeholder="Leave blank if unspecified (e.g. 09:00)"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="calendar-end-time-input"
+                        className="block text-xs font-medium text-gray-700 mb-1"
+                      >
+                        Sunday End Time (optional HH:MM)
+                      </label>
+                      <Input
+                        id="calendar-end-time-input"
+                        type="text"
+                        value={draft.calendarEndTime}
+                        onChange={(e) =>
+                          setDraft((prev) => ({
+                            ...prev,
+                            calendarEndTime: e.target.value,
+                          }))
+                        }
+                        placeholder="Leave blank if unspecified (e.g. 18:00)"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Leave start/end times blank unless explicitly stated by the supplier (evaluated
+                    strictly in shop-local calendar).
+                  </p>
+                </div>
+              )}
+            </div>
+
             {/* Attached Extension Charges */}
             <div className="border-t border-blue-200 pt-3 space-y-2">
               <div className="flex items-center justify-between">
@@ -1284,7 +1446,7 @@ export function RentalOffersModal({
         {/* Footer Actions */}
         <div className="flex items-center justify-between border-t border-gray-200 pt-4">
           <p className="text-xs text-gray-500">
-            Standalone daily offers automatically sync legacy daily rate summaries.
+            Unrestricted standalone daily offers automatically sync legacy daily rate summaries.
           </p>
           <div className="flex items-center gap-2">
             <Button

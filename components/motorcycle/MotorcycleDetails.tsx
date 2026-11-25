@@ -22,10 +22,13 @@ import { getShopUrl } from '@/lib/utils/urls'
 import { formatMotorcycleYear } from '@/lib/utils'
 import {
   formatBillingIncrementPhrase,
+  formatCalendarEligibilityLabel,
   formatDurationUnitLabel,
   formatExtensionBillingPhrase,
   formatOfferBillingUnitPhrase,
   formatOfferDurationRangeLabel,
+  formatOverlapPolicyLabel,
+  isCalendarRestrictedOffer,
   resolveFallbackRentalOffers,
   selectPrimaryHeadlineOffer,
   shouldShowHeadlineFromPrefix,
@@ -117,6 +120,13 @@ export default function MotorcycleDetails({
   const offers = resolveDisplayOffers(motorcycle)
   const headlineOffer = selectPrimaryHeadlineOffer(offers)
   const showHeadlineFrom = shouldShowHeadlineFromPrefix(offers, headlineOffer)
+  const hasCalendarRestrictedOffers = offers.some(isCalendarRestrictedOffer)
+  const hasUnknownOverlapPolicy = offers.some(
+    (offer) => isCalendarRestrictedOffer(offer) && (offer.overlapPolicy ?? 'unknown') === 'unknown'
+  )
+  const headlineCalendarSuffix = headlineOffer?.calendarEligibility
+    ? ` (${formatCalendarEligibilityLabel(headlineOffer.calendarEligibility, 'short')})`
+    : ''
   const fallbackCurrency = rental_rate_currency || headlineOffer?.currency || null
 
   return (
@@ -173,7 +183,7 @@ export default function MotorcycleDetails({
           </div>
           {headlineOffer && (
             <div className="text-gray-600">
-              {formatOfferBillingUnitPhrase(headlineOffer)}
+              {formatOfferBillingUnitPhrase(headlineOffer)}{headlineCalendarSuffix}
             </div>
           )}
         </div>
@@ -231,10 +241,23 @@ export default function MotorcycleDetails({
                               <Badge variant="secondary" className="text-xs border border-gray-200">
                                 {OFFER_TYPE_LABELS[offer.offerType]}
                               </Badge>
+                              {offer.calendarEligibility && (
+                                <Badge
+                                  variant="default"
+                                  className="text-xs bg-amber-50 text-amber-800 border border-amber-200"
+                                >
+                                  {formatCalendarEligibilityLabel(offer.calendarEligibility)}
+                                </Badge>
+                              )}
                             </div>
                             <div className="text-sm text-gray-600">
                               {formatOfferDurationRangeLabel(offer)}
                             </div>
+                            {offer.calendarEligibility && (
+                              <div className="text-xs text-amber-800">
+                                {formatOverlapPolicyLabel(offer.overlapPolicy ?? 'unknown')}
+                              </div>
+                            )}
                             {offer.minCommitment && (
                               <div className="text-xs text-gray-600">
                                 Min. commitment: {offer.minCommitment.value}{' '}
@@ -290,6 +313,17 @@ export default function MotorcycleDetails({
                     )
                   })}
                 </div>
+                {hasCalendarRestrictedOffers && (
+                  <p
+                    data-testid="calendar-offers-catalog-note"
+                    className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-600"
+                  >
+                    Published catalog rates shown for reference (not live date-specific quotes).
+                    {hasUnknownOverlapPolicy
+                      ? ' Calendar-restricted and standard options may overlap depending on your pickup and return dates—please confirm exact dates, shop-local hours, and applicable pricing directly with the shop.'
+                      : ' Calendar restrictions apply in shop-local time—please confirm exact dates and hours directly with the shop.'}
+                  </p>
+                )}
               </CardContent>
             </Card>
           )}
