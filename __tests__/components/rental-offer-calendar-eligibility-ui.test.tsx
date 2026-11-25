@@ -123,31 +123,49 @@ describe('Calendar Eligibility & Overlap Policy across UI, Admin, Chat & JSON-LD
   });
 
   describe('1. Public MotorcycleDetails, MotorcycleCard & MotorcycleTable', () => {
-    it('renders La Ducatessa coexisting standard and weekend packages with transparent catalog framing and zero fabricated hours', () => {
-      render(<MotorcycleDetails motorcycle={buildMotorcycle()} />);
+    it('renders La Ducatessa coexisting standard and weekend packages without cluttered per-row pills/labels while keeping the bottom catalog note', () => {
+      const { unmount } = render(<MotorcycleDetails motorcycle={buildMotorcycle()} />);
 
       const stdOffer = screen.getByTestId('rental-offer-off-std-2d');
       expect(within(stdOffer).getByText('2-day package')).toBeInTheDocument();
       expect(within(stdOffer).getByText('€215')).toBeInTheDocument();
       expect(within(stdOffer).getByText(/for 2 days/i)).toBeInTheDocument();
+      expect(within(stdOffer).queryByText(/Fixed Package/i)).not.toBeInTheDocument();
+      expect(within(stdOffer).queryByText(/Fixed 2 days/i)).not.toBeInTheDocument();
       expect(within(stdOffer).queryByText(/Saturday–Sunday/i)).not.toBeInTheDocument();
 
       const wkndOffer = screen.getByTestId('rental-offer-off-wknd-2d');
       expect(within(wkndOffer).getByText('Weekend package')).toBeInTheDocument();
       expect(within(wkndOffer).getByText('€260')).toBeInTheDocument();
       expect(within(wkndOffer).getByText(/for 2 days/i)).toBeInTheDocument();
-      expect(within(wkndOffer).getByText('Saturday–Sunday')).toBeInTheDocument();
-      expect(within(wkndOffer).getByText(/Overlap policy unknown/i)).toBeInTheDocument();
+      // Cluttered per-row labels are intentionally removed from public MotorcycleDetails (#254)
+      expect(within(wkndOffer).queryByText(/Fixed Package/i)).not.toBeInTheDocument();
+      expect(within(wkndOffer).queryByText(/Saturday–Sunday/i)).not.toBeInTheDocument();
+      expect(within(wkndOffer).queryByText(/Fixed 2 days/i)).not.toBeInTheDocument();
+      expect(within(wkndOffer).queryByText(/Overlap policy unknown/i)).not.toBeInTheDocument();
       // Never fabricates pickup/return hours
       expect(within(wkndOffer).queryByText(/09:00|18:00|48 hours/i)).not.toBeInTheDocument();
 
-      // Transparent non-authoritative catalog framing note shown when calendar-restricted offers exist
+      // Transparent non-authoritative catalog framing note stays visible when calendar-restricted offers exist
       expect(screen.getByTestId('calendar-offers-catalog-note')).toHaveTextContent(
         /confirm exact dates.*directly with the shop/i
       );
+      unmount();
+
+      // Unlabeled standard and weekend packages use natural fallback titles (never "Fixed Package")
+      render(
+        <MotorcycleDetails
+          motorcycle={buildMotorcycle({
+            rental_offers: LA_DUCATESSA_OFFERS.map((o) => ({ ...o, supplierLabel: null })),
+          })}
+        />
+      );
+      expect(within(screen.getByTestId('rental-offer-off-std-2d')).getByText('2-day package')).toBeInTheDocument();
+      expect(within(screen.getByTestId('rental-offer-off-wknd-2d')).getByText('Weekend package')).toBeInTheDocument();
+      expect(screen.queryByText(/Fixed Package/i)).not.toBeInTheDocument();
     });
 
-    it('shows explicit HH:MM hours only when specified and appends (Sat–Sun) in header/card/table for restricted-only bikes', () => {
+    it('keeps restricted-only (Sat–Sun) suffix on header/card/table while omitting per-row calendar/overlap/type pills on MotorcycleDetails', () => {
       const restrictedOnlyBike = buildMotorcycle({
         id: 'bike-wknd-only',
         rental_offers: [
@@ -167,10 +185,13 @@ describe('Calendar Eligibility & Overlap Policy across UI, Admin, Chat & JSON-LD
       const { unmount } = render(<MotorcycleDetails motorcycle={restrictedOnlyBike} />);
       expect(screen.getByText(/for 2 days \(Sat–Sun, 09:00–18:00\)/i)).toBeInTheDocument();
       const timedCard = screen.getByTestId('rental-offer-off-wknd-timed');
-      expect(within(timedCard).getByText('Saturday–Sunday (09:00–18:00)')).toBeInTheDocument();
+      expect(within(timedCard).getByText('Weekend package')).toBeInTheDocument();
+      expect(within(timedCard).queryByText(/Fixed Package/i)).not.toBeInTheDocument();
+      expect(within(timedCard).queryByText(/Saturday–Sunday/i)).not.toBeInTheDocument();
+      expect(within(timedCard).queryByText(/Fixed 2 days/i)).not.toBeInTheDocument();
       expect(
-        within(timedCard).getByText(/Replaces standard rates on eligible days/i)
-      ).toBeInTheDocument();
+        within(timedCard).queryByText(/Replaces standard rates on eligible days/i)
+      ).not.toBeInTheDocument();
       unmount();
 
       // Listing card prefers unrestricted headline for coexisting bike, and appends (Sat–Sun) for restricted-only bike

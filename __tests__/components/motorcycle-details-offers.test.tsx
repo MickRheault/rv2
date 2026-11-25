@@ -188,25 +188,36 @@ describe('MotorcycleDetails Flexible Rental Offers Display (#210)', () => {
     expect(screen.getByText(/Min\. commitment: 3 calendar months/i)).toBeInTheDocument();
     expect(screen.getAllByText(/From/i).length).toBeGreaterThanOrEqual(1);
 
+    // Multi-tier non-package offers keep duration ranges while packages omit redundant "Fixed N ..." & type pills (#254)
+    const dailyCard = screen.getByTestId('rental-offer-off-daily');
+    expect(within(dailyCard).getByText('Daily rate')).toBeInTheDocument();
+    expect(within(dailyCard).getByText('1–6 days')).toBeInTheDocument();
+    expect(within(dailyCard).queryByText('Daily Rate')).not.toBeInTheDocument();
+
     // Weekly package shows authoritative total, daily equivalent clearly labeled, and attached extension inside its card
     const weeklyCard = screen.getByTestId('rental-offer-off-pkg-7');
     expect(within(weeklyCard).getByText(/3,000/)).toBeInTheDocument();
     expect(within(weeklyCard).getByText(/for 7 days/i)).toBeInTheDocument();
+    expect(within(weeklyCard).queryByText(/Fixed Package/i)).not.toBeInTheDocument();
+    expect(within(weeklyCard).queryByText(/Fixed 7 days/i)).not.toBeInTheDocument();
     expect(within(weeklyCard).getByText(/428\.57/)).toBeInTheDocument();
     expect(within(weeklyCard).getByText(/daily equivalent/i)).toBeInTheDocument();
     expect(within(weeklyCard).getByText(/450/)).toBeInTheDocument();
     expect(within(weeklyCard).getByText(/per extra day/i)).toBeInTheDocument();
 
-    // Calendar-month card never shows a daily equivalent
+    // Calendar-month card never shows a daily equivalent, keeps duration range, omits type pill
     const calMonthCard = screen.getByTestId('rental-offer-off-cal-month');
     expect(within(calMonthCard).getByText(/6,000/)).toBeInTheDocument();
     expect(within(calMonthCard).getByText(/per calendar month/i)).toBeInTheDocument();
+    expect(within(calMonthCard).getByText('1+ calendar months')).toBeInTheDocument();
+    expect(within(calMonthCard).queryByText('Monthly Rental')).not.toBeInTheDocument();
     expect(within(calMonthCard).queryByText(/daily equivalent/i)).not.toBeInTheDocument();
 
-    // 30-day fixed package shows daily equivalent
+    // 30-day fixed package shows daily equivalent and omits redundant "Fixed 30 days"
     const pass30Card = screen.getByTestId('rental-offer-off-30-days');
     expect(within(pass30Card).getByText(/8,000/)).toBeInTheDocument();
     expect(within(pass30Card).getByText(/for 30 days/i)).toBeInTheDocument();
+    expect(within(pass30Card).queryByText(/Fixed 30 days/i)).not.toBeInTheDocument();
     expect(within(pass30Card).getByText(/266\.67/)).toBeInTheDocument();
     expect(within(pass30Card).getByText(/daily equivalent/i)).toBeInTheDocument();
   });
@@ -337,5 +348,8 @@ describe('MotorcycleDetails Flexible Rental Offers Display (#210)', () => {
     // Header and card both show 'for 7 days' (2 occurrences), whereas 'for 3 calendar months' appears only in card (1 occurrence)
     expect(screen.getAllByText(/for 7 days/i)).toHaveLength(2);
     expect(screen.getAllByText(/for 3 calendar months/i)).toHaveLength(1);
+    expect(within(screen.getByTestId('rental-offer-pkg-first')).getByText('7-day package')).toBeInTheDocument();
+    expect(within(screen.getByTestId('rental-offer-pkg-second')).getByText('3-month package')).toBeInTheDocument();
+    expect(screen.queryByText(/Fixed Package/i)).not.toBeInTheDocument();
   });
 });
