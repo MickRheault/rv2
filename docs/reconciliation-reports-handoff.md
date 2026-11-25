@@ -3,8 +3,10 @@
 Related design artifacts:
 - Spec: [2026-10-31-reconciliation-reports-change-proposals-spec.md](./specs/2026-10-31-reconciliation-reports-change-proposals-spec.md) (Issue [#201](https://github.com/MickRheault/rv2/issues/201))
 - Spec: [2026-11-11-agent-proposal-list-and-reject-spec.md](./specs/2026-11-11-agent-proposal-list-and-reject-spec.md) (Issue [#217](https://github.com/MickRheault/rv2/issues/217))
+- Spec: [2026-11-25-rental-offer-calendar-eligibility-and-overlap-policy-spec.md](./specs/2026-11-25-rental-offer-calendar-eligibility-and-overlap-policy-spec.md) (Issue [#245](https://github.com/MickRheault/rv2/issues/245), originates from [#244](https://github.com/MickRheault/rv2/issues/244))
 - Architecture Decision Record: [ADR 0017: Reconciliation Reports, Unresolved Candidates, and Staged-vs-Completed Crawl Separation](./adr/0017-reconciliation-reports-and-unresolved-candidates.md)
 - Architecture Decision Record: [ADR 0019: Narrow Agent-Authenticated Proposal Listing and Rejection](./adr/0019-narrow-agent-proposal-listing-and-rejection.md)
+- Architecture Decision Record: [ADR 0021: Calendar Eligibility and Overlap Policy on Standalone Rental Offers](./adr/0021-rental-offer-calendar-eligibility-and-overlap-policy.md)
 
 ---
 
@@ -460,3 +462,42 @@ Response (`200 OK`):
 | `500 Internal Server Error` | Unexpected server/database failure (rolled back best-effort; internal error strings are never exposed) | `{ "error": "Internal server error rejecting proposal" }` |
 
 If an agent retries `POST /api/agent/change-proposals/:id/reject` on a proposal that was already rejected, the server returns `409 Conflict` with `"currentStatus": "rejected"` and `"currentVersion": <n>` without inserting a duplicate `proposal_decision_events` row or overwriting the original rejection reason. Callers treating `"currentStatus": "rejected"` as terminal can safely confirm audit details via `GET /api/agent/change-proposals/:id`.
+
+---
+
+## 8. Coexisting Calendar-Restricted Rental Offers & Private Evidence Provenance (`#245` / `#244`)
+
+### 8.1 Calendar Eligibility (`calendarEligibility`) & Overlap Policy (`overlapPolicy`)
+
+Standalone offers in `proposedData.offers[]` (and returned on `GET /api/agent/tasks` baselines and `/api/v1/motorcycles*` / MCP responses) support optional structured calendar eligibility and tri-state overlap policy:
+
+- **`calendarEligibility`** (`null` = unrestricted; forbidden on `extensions[]`):
+  ```json
+  {
+    "kind": "weekend",
+    "startDay": "saturday",
+    "endDay": "sunday",
+    "startTime": null,
+    "endTime": null,
+    "timezoneBasis": "shop_local"
+  }
+  ```
+  - Preserve unspecified pickup/return hours as `null` — **never** fabricate hours (e.g. `09:00`–`18:00`) or equate a 2-day weekend package to 48 hours unless the supplier explicitly states those times.
+  - Because `calendarEligibility` participates in duplicate detection, an unrestricted `2-day package (€215)` and a Saturday–Sunday `Weekend package (€260)` coexist cleanly on the same motorcycle (even without distinct `supplierLabel` values).
+- **`overlapPolicy`**: `'unknown' | 'alternative' | 'replaces_standard' | null`
+  - Defaults to `'unknown'` when `calendarEligibility` is non-null.
+  - **Must be `null`** when `calendarEligibility` is `null` (non-null `overlapPolicy` on an unrestricted offer fails with `400 Bad Request`).
+  - **Never infer** `'replaces_standard'` or `'alternative'` from price, specificity, or label; leave as `'unknown'` unless explicitly verified.
+- **Legacy Compatibility & Concurrency**:
+  - Calendar-restricted offers are excluded from legacy `rates[]` / `rental_rate_tiers` projections and duration-only price filters (`durationDays`, `minPrice`/`maxPrice`).
+  - Legacy `rates[]`-only proposal updates targeting a motorcycle that holds any calendar-restricted offer return **`409 Conflict`** at staging and apply time.
+  - Stale-state concurrency digests (`originalData.offers` vs live `rental_offers`) include both `calendarEligibility` and `overlapPolicy`; concurrent edits to either field trigger `409 Conflict` on apply.
+
+### 8.2 Private Evidence Provenance (`evidence[].provenance`)
+
+Each `ReconciliationEvidenceRecord` inside `reconciliationReport.entries[].evidence[]` supports an optional private `provenance` field:
+
+- `'supplier_explicit'` — directly observed on the supplier's published page/table (omitted or `null` provenance is interpreted as supplier-explicit while the `provenance` property remains absent on readback).
+- `'owner_approved_interpretation'` — reflects an explicit owner-approved rule/mapping (for example, mapping a supplier's `"Weekend"` column to `Saturday–Sunday` with `overlapPolicy: 'unknown'` and `startTime: null, endTime: null` per an approved policy decision).
+- Any other non-null value fails validation with `400 Bad Request`.
+- **Privacy boundary**: `evidence[].provenance` is stored strictly inside private reconciliation JSONB records for admin review and is never exposed on public motorcycle pages, `/api/v1/*`, AI chat, or MCP responses.

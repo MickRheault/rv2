@@ -20,8 +20,10 @@ import {
 } from './tool-conditions';
 import { sanitizeMotorcycleForTool, sanitizeShopForTool } from './tool-payload';
 import {
+    formatCalendarEligibilityLabel,
     formatExtensionBillingPhrase,
     formatOfferBillingUnitPhrase,
+    formatOverlapPolicyLabel,
     getStandaloneDailyRate,
     parseDurationDaysParam,
     parseIsoCurrencyParam,
@@ -44,7 +46,7 @@ export const openAITools: ChatCompletionTool[] = [
         function: {
             name: 'list_motorcycles',
             description:
-                'Search and list available motorcycles for rent. Returns results with model, brand, category, engineCapacityCc (null when unlisted in the catalog — treat null as unlisted rather than guessing), pricing/rentalOffers, conditions, inclusions, shop, and location. Use city and category NAMES (e.g., "Bangkok", "Scooter") — they will be resolved automatically. Set brand and category ONLY when explicitly requested by the user.',
+                'Search and list available motorcycles for rent. Returns results with model, brand, category, engineCapacityCc (null when unlisted in the catalog — treat null as unlisted rather than guessing), pricing/rentalOffers (including optional calendarEligibility such as Saturday–Sunday weekend restrictions and overlapPolicy), conditions, inclusions, shop, and location. Use city and category NAMES (e.g., "Bangkok", "Scooter") — they will be resolved automatically. Set brand and category ONLY when explicitly requested by the user.',
             parameters: {
                 type: 'object',
                 properties: {
@@ -71,15 +73,15 @@ export const openAITools: ChatCompletionTool[] = [
                         description:
                             'Motorcycle model or free-text search term (e.g., "Win", "Detech Win", "X-ADV 750", "NVX 155").',
                     },
-                    minPrice: { type: 'number', description: 'Minimum daily rental price (or daily equivalent when durationDays is set)' },
-                    maxPrice: { type: 'number', description: 'Maximum daily rental price (or daily equivalent when durationDays is set)' },
+                    minPrice: { type: 'number', description: 'Minimum daily rental price (or daily equivalent when durationDays is set; excludes calendar-restricted offers)' },
+                    maxPrice: { type: 'number', description: 'Maximum daily rental price (or daily equivalent when durationDays is set; excludes calendar-restricted offers)' },
                     currency: {
                         type: 'string',
                         description: '3-letter ISO currency code such as THB, USD, VND, or EUR — use when the user specifies a currency',
                     },
                     durationDays: {
                         type: 'number',
-                        description: 'Positive integer rental duration in days (e.g., 7 for a week or 30 for 30 days) — evaluates covering daily brackets and exact-day packages',
+                        description: 'Positive integer rental duration in days (e.g., 7 for a week or 30 for 30 days) — evaluates unrestricted covering daily brackets and exact-day packages (calendar-restricted offers such as weekend packages are excluded from duration-only filters)',
                     },
                     knownPriceOnly: {
                         type: 'boolean',
@@ -94,7 +96,7 @@ export const openAITools: ChatCompletionTool[] = [
         type: 'function',
         function: {
             name: 'get_motorcycle',
-            description: 'Get detailed information about a specific motorcycle by its ID.',
+            description: 'Get detailed information about a specific motorcycle by its ID, including rentalOffers (with calendarEligibility and overlapPolicy), conditions, and shop inclusions.',
             parameters: {
                 type: 'object',
                 properties: {
@@ -128,7 +130,7 @@ export const openAITools: ChatCompletionTool[] = [
         type: 'function',
         function: {
             name: 'get_shop',
-            description: 'Get detailed information about a specific rental shop.',
+            description: 'Get detailed information about a specific rental shop, including its fleet with rentalOffers (calendarEligibility and overlapPolicy), conditions, and inclusions.',
             parameters: {
                 type: 'object',
                 properties: {
@@ -272,12 +274,23 @@ function buildMotorcycleToolPricing(m: MotorcyclePricingRecord | null | undefine
             : null;
     const currency = headlineOffer?.currency || fallbackCurrency;
 
+    const headlineCalendarSuffix = headlineOffer?.calendarEligibility
+        ? ` (${formatCalendarEligibilityLabel(headlineOffer.calendarEligibility, 'short')})`
+        : '';
     const priceDisplay = headlineOffer
-        ? `${showFrom ? 'From ' : ''}${formatPlainAmount(headlineOffer.amount)} ${headlineOffer.currency} ${formatOfferBillingUnitPhrase(headlineOffer)}`
+        ? `${showFrom ? 'From ' : ''}${formatPlainAmount(headlineOffer.amount)} ${headlineOffer.currency} ${formatOfferBillingUnitPhrase(headlineOffer)}${headlineCalendarSuffix}`
         : 'Price on request';
 
     const rentalOffers = sortRentalOffersForDisplay(offers).map((o) => {
         const billingUnitPhrase = formatOfferBillingUnitPhrase(o);
+        const calendarEligibility = o.calendarEligibility ?? null;
+        const calendarEligibilityLabel = calendarEligibility
+            ? formatCalendarEligibilityLabel(calendarEligibility)
+            : null;
+        const overlapPolicy = o.overlapPolicy ?? null;
+        const overlapPolicyLabel = overlapPolicy
+            ? formatOverlapPolicyLabel(overlapPolicy)
+            : null;
         return {
             offerType: o.offerType,
             amount: o.amount,
@@ -287,12 +300,16 @@ function buildMotorcycleToolPricing(m: MotorcyclePricingRecord | null | undefine
             minDuration: o.minDuration,
             maxDuration: o.maxDuration,
             billingUnitPhrase,
-            formattedOffer: `${o.isFrom ? 'From ' : ''}${formatPlainAmount(o.amount)} ${o.currency} ${billingUnitPhrase}`,
+            formattedOffer: `${o.isFrom ? 'From ' : ''}${formatPlainAmount(o.amount)} ${o.currency} ${billingUnitPhrase}${calendarEligibilityLabel ? `, ${calendarEligibilityLabel}` : ''}`,
             dailyEquivalent: o.dailyEquivalent,
             minCommitment: o.minCommitment,
             billingIncrement: o.billingIncrement,
             supplierLabel: o.supplierLabel,
             isFrom: o.isFrom,
+            calendarEligibility,
+            calendarEligibilityLabel,
+            overlapPolicy,
+            overlapPolicyLabel,
             extensions: o.extensions.map((ext) => ({
                 amount: ext.amount,
                 currency: ext.currency,

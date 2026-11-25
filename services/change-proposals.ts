@@ -634,16 +634,23 @@ function areRateTierStatesEqual(
   return true;
 }
 
-function canonicalizeOffersForComparison(rawOffers: any[]): any[] {
-  if (!Array.isArray(rawOffers) || rawOffers.length === 0) return [];
+function canonicalizeOffersForComparison(
+  rawOffers: any[],
+  options?: { preHydrated?: boolean }
+): any[] | null {
+  if (!Array.isArray(rawOffers)) return null;
+  if (rawOffers.length === 0) return [];
   let normalized: NormalizedRentalOffer[];
   try {
-    normalized =
-      rawOffers[0] && typeof rawOffers[0] === 'object' && 'offer_type' in rawOffers[0]
-        ? hydrateRentalOffersFromRows(rawOffers)
-        : validateAndNormalizeRentalOffers(rawOffers, { requireNonEmpty: false });
+    if (options?.preHydrated) {
+      normalized = rawOffers as NormalizedRentalOffer[];
+    } else if (rawOffers[0] && typeof rawOffers[0] === 'object' && 'offer_type' in rawOffers[0]) {
+      normalized = hydrateRentalOffersFromRows(rawOffers);
+    } else {
+      normalized = validateAndNormalizeRentalOffers(rawOffers, { requireNonEmpty: false });
+    }
   } catch {
-    return rawOffers;
+    return null;
   }
 
   return normalized
@@ -663,6 +670,17 @@ function canonicalizeOffersForComparison(rawOffers: any[]): any[] {
         : null,
       supplierLabel: o.supplierLabel ?? null,
       isFrom: Boolean(o.isFrom),
+      calendarEligibility: o.calendarEligibility
+        ? {
+            kind: o.calendarEligibility.kind,
+            startDay: o.calendarEligibility.startDay,
+            endDay: o.calendarEligibility.endDay,
+            startTime: o.calendarEligibility.startTime ?? null,
+            endTime: o.calendarEligibility.endTime ?? null,
+            timezoneBasis: o.calendarEligibility.timezoneBasis,
+          }
+        : null,
+      overlapPolicy: o.overlapPolicy ?? null,
       extensions: [...(o.extensions || [])]
         .map((ext) => ({
           amount: Number(ext.amount),
@@ -693,6 +711,17 @@ function canonicalizeSortKey(obj: Record<string, any>): string {
     obj.maxDuration,
     obj.currency,
     obj.supplierLabel ?? '',
+    obj.calendarEligibility
+      ? [
+          obj.calendarEligibility.kind,
+          obj.calendarEligibility.startDay,
+          obj.calendarEligibility.endDay,
+          obj.calendarEligibility.startTime ?? '',
+          obj.calendarEligibility.endTime ?? '',
+          obj.calendarEligibility.timezoneBasis,
+        ]
+      : null,
+    obj.overlapPolicy ?? '',
     obj.amount,
   ]);
 }
@@ -701,10 +730,13 @@ function areOfferStatesEqual(
   expectedOriginalOffers: any[],
   liveOffers: NormalizedRentalOffer[]
 ): boolean {
-  const expectedDigest = computeCanonicalSha256Digest(
-    canonicalizeOffersForComparison(expectedOriginalOffers)
-  );
-  const liveDigest = computeCanonicalSha256Digest(canonicalizeOffersForComparison(liveOffers));
+  const expectedCanonical = canonicalizeOffersForComparison(expectedOriginalOffers);
+  const liveCanonical = canonicalizeOffersForComparison(liveOffers, { preHydrated: true });
+  if (!expectedCanonical || !liveCanonical) {
+    return false;
+  }
+  const expectedDigest = computeCanonicalSha256Digest(expectedCanonical);
+  const liveDigest = computeCanonicalSha256Digest(liveCanonical);
   return expectedDigest === liveDigest;
 }
 
@@ -1303,7 +1335,7 @@ function enforceAndCaptureProposalItemOfferBaseline(item: any, liveRow: any): vo
     hasStrictNonDailyOrExtensionOffers(liveOffers)
   ) {
     throw new RentalOfferConflictError(
-      `Cannot stage legacy rates-only update for motorcycle '${item.entity_id}' because it currently holds non-daily or extension rental offers; submit proposedData.offers instead.`
+      `Cannot stage legacy rates-only update for motorcycle '${item.entity_id}' because it currently holds non-daily, calendar-restricted, or extension rental offers; submit proposedData.offers instead.`
     );
   }
 
@@ -3916,7 +3948,7 @@ export class ChangeProposalService {
           hasStrictNonDailyOrExtensionOffers(liveOffers)
         ) {
           throw new RentalOfferConflictError(
-            `Cannot apply legacy rates-only update to motorcycle '${item.entity_id}' because it currently holds non-daily or extension rental offers.`
+            `Cannot apply legacy rates-only update to motorcycle '${item.entity_id}' because it currently holds non-daily, calendar-restricted, or extension rental offers.`
           );
         }
 
@@ -4091,7 +4123,7 @@ export class ChangeProposalService {
             }
             if (hasStrictNonDailyOrExtensionOffers(liveOffers)) {
               throw new StaleMotorcycleStateError(
-                `Stale motorcycle offers for '${item.entity_id}': concurrent non-daily or extension rental_offers added since proposal staging.`
+                `Stale motorcycle offers for '${item.entity_id}': concurrent non-daily, calendar-restricted, or extension rental_offers added since proposal staging.`
               );
             }
           }
@@ -4345,10 +4377,19 @@ export class ChangeProposalService {
                       summary_rate_per_day: prev.rental_rate_per_day ?? null,
                       summary_currency: prev.rental_rate_currency ?? null,
                     };
-                await (supabase as any).rpc('replace_motorcycle_rental_offers', {
-                  p_motorcycle_id: item.entity_id,
-                  p_payload: rpcRestorePayload,
-                });
+                const rollbackRpcRes = await (supabase as any).rpc(
+                  'replace_motorcycle_rental_offers',
+                  {
+                    p_motorcycle_id: item.entity_id,
+                    p_payload: rpcRestorePayload,
+                  }
+                );
+                if (rollbackRpcRes?.error) {
+                  console.error(
+                    `Failed to roll back rental_offers for motorcycle ${item.entity_id}:`,
+                    rollbackRpcRes.error
+                  );
+                }
               } catch {
                 // Best-effort offers rollback
               }
