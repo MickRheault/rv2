@@ -194,6 +194,16 @@ describe('MotorcycleDetails Flexible Rental Offers Display (#210)', () => {
     expect(within(dailyCard).getByText('1–6 days')).toBeInTheDocument();
     expect(within(dailyCard).queryByText('Daily Rate')).not.toBeInTheDocument();
 
+    const hourlyCard = screen.getByTestId('rental-offer-off-hourly');
+    expect(within(hourlyCard).getByText('Quick Spin')).toBeInTheDocument();
+    expect(within(hourlyCard).getByText('1+ hours')).toBeInTheDocument();
+    expect(within(hourlyCard).queryByText('Hourly Rental')).not.toBeInTheDocument();
+
+    const hourlyBlockCard = screen.getByTestId('rental-offer-off-hourly-block');
+    expect(within(hourlyBlockCard).getByText('Half-Day Block')).toBeInTheDocument();
+    expect(within(hourlyBlockCard).queryByText(/Fixed 4 hours/i)).not.toBeInTheDocument();
+    expect(within(hourlyBlockCard).queryByText('Hourly Rental')).not.toBeInTheDocument();
+
     // Weekly package shows authoritative total, daily equivalent clearly labeled, and attached extension inside its card
     const weeklyCard = screen.getByTestId('rental-offer-off-pkg-7');
     expect(within(weeklyCard).getByText(/3,000/)).toBeInTheDocument();
@@ -252,6 +262,7 @@ describe('MotorcycleDetails Flexible Rental Offers Display (#210)', () => {
 
     expect(screen.queryByText(/Price on request/i)).not.toBeInTheDocument();
     expect(screen.getAllByText(/per calendar month/i).length).toBeGreaterThanOrEqual(2);
+    expect(within(screen.getByTestId('rental-offer-off-only-month')).getByText('Monthly rental')).toBeInTheDocument();
     // Security deposit still uses THB currency
     expect(screen.getByText(/5,000/)).toBeInTheDocument();
   });

@@ -152,16 +152,81 @@ describe('Calendar Eligibility & Overlap Policy across UI, Admin, Chat & JSON-LD
       );
       unmount();
 
-      // Unlabeled standard and weekend packages use natural fallback titles (never "Fixed Package")
+      // Unlabeled and whitespace-only offers use natural fallback titles (never "Fixed Package")
       render(
         <MotorcycleDetails
           motorcycle={buildMotorcycle({
-            rental_offers: LA_DUCATESSA_OFFERS.map((o) => ({ ...o, supplierLabel: null })),
+            rental_offers: [
+              { ...LA_DUCATESSA_OFFERS[0], supplierLabel: '   ' },
+              { ...LA_DUCATESSA_OFFERS[1], supplierLabel: null },
+              {
+                id: 'off-wknd-daily',
+                offerType: 'daily',
+                amount: 140,
+                currency: 'EUR',
+                billingBasis: 'per_day',
+                durationUnit: 'day',
+                minDuration: 1,
+                maxDuration: null,
+                minCommitment: null,
+                billingIncrement: null,
+                supplierLabel: null,
+                isFrom: false,
+                calendarEligibility: WEEKEND_SAT_SUN,
+                overlapPolicy: 'unknown',
+                sortOrder: 2,
+                dailyEquivalent: null,
+                extensions: [],
+              },
+              {
+                id: 'off-hr-pkg',
+                offerType: 'hourly',
+                amount: 40,
+                currency: 'EUR',
+                billingBasis: 'package_total',
+                durationUnit: 'hour',
+                minDuration: 0.5,
+                maxDuration: 0.5,
+                minCommitment: null,
+                billingIncrement: null,
+                supplierLabel: null,
+                isFrom: false,
+                calendarEligibility: null,
+                overlapPolicy: null,
+                sortOrder: 3,
+                dailyEquivalent: null,
+                extensions: [],
+              },
+              {
+                id: 'off-hr-plain',
+                offerType: 'hourly',
+                amount: 30,
+                currency: 'EUR',
+                billingBasis: 'per_hour',
+                durationUnit: 'hour',
+                minDuration: 1,
+                maxDuration: null,
+                minCommitment: null,
+                billingIncrement: null,
+                supplierLabel: null,
+                isFrom: false,
+                calendarEligibility: null,
+                overlapPolicy: null,
+                sortOrder: 4,
+                dailyEquivalent: null,
+                extensions: [],
+              },
+            ],
           })}
         />
       );
       expect(within(screen.getByTestId('rental-offer-off-std-2d')).getByText('2-day package')).toBeInTheDocument();
       expect(within(screen.getByTestId('rental-offer-off-wknd-2d')).getByText('Weekend package')).toBeInTheDocument();
+      const wkndDailyCard = screen.getByTestId('rental-offer-off-wknd-daily');
+      expect(within(wkndDailyCard).getByText('Weekend rate')).toBeInTheDocument();
+      expect(within(wkndDailyCard).getByText('1+ days')).toBeInTheDocument();
+      expect(within(screen.getByTestId('rental-offer-off-hr-pkg')).getByText('0.5-hour package')).toBeInTheDocument();
+      expect(within(screen.getByTestId('rental-offer-off-hr-plain')).getByText('Hourly rental')).toBeInTheDocument();
       expect(screen.queryByText(/Fixed Package/i)).not.toBeInTheDocument();
     });
 

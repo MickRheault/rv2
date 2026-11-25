@@ -43,13 +43,17 @@ interface MotorcycleDetailsProps {
 }
 
 function getPublicOfferTitle(offer: NormalizedRentalOffer): string {
-  if (offer.supplierLabel) return offer.supplierLabel
+  const supplierLabel = offer.supplierLabel?.trim()
+  if (supplierLabel) return supplierLabel
   if (offer.calendarEligibility?.kind === 'weekend') {
     return offer.billingBasis === 'package_total' || offer.offerType === 'package'
       ? 'Weekend package'
       : 'Weekend rate'
   }
   if (offer.billingBasis === 'package_total') {
+    if (!Number.isFinite(offer.minDuration) || offer.minDuration <= 0) {
+      return 'Package'
+    }
     const unit =
       offer.durationUnit === 'hour'
         ? 'hour'
@@ -253,10 +257,8 @@ export default function MotorcycleDetails({
                       >
                         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                           <div className="space-y-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="font-medium text-gray-900">
-                                {getPublicOfferTitle(offer)}
-                              </span>
+                            <div className="font-medium text-gray-900">
+                              {getPublicOfferTitle(offer)}
                             </div>
                             {offer.billingBasis !== 'package_total' && (
                               <div className="text-sm text-gray-600">
