@@ -358,7 +358,7 @@ const handler = createMcpHandler(
                     conditions: z.string().optional().describe('Structured conditions as JSON string: [{"condition_type_id": "...", "notes": "..."}]'),
                     feature_ids: z.array(z.string()).optional().describe('Array of feature IDs to assign'),
                     rental_rate_tiers: z.string().optional().describe('Legacy daily pricing tiers as JSON string array: [{"min_days": 1, "max_days": 6, "rate_per_day": 100, "currency": "USD"}]'),
-                    rental_offers: z.string().optional().describe('Canonical flexible rental offers as JSON string array supporting daily, package, hourly, monthly + nested extensions[]'),
+                    rental_offers: z.string().optional().describe('Canonical flexible rental offers as JSON string array supporting daily, package, hourly, monthly, optional calendarEligibility ({ kind: "weekend", startDay: "saturday", endDay: "sunday", startTime: null | "HH:MM", endTime: null | "HH:MM", timezoneBasis: "shop_local" }), overlapPolicy ("unknown" | "alternative" | "replaces_standard" | null), and nested extensions[]'),
                 },
             },
             withToolErrorHandling(async (params, extra) => {
@@ -447,7 +447,7 @@ const handler = createMcpHandler(
                     conditions: z.string().optional().describe('Structured conditions as JSON string: [{"condition_type_id": "...", "notes": "..."}]'),
                     feature_ids: z.array(z.string()).optional().describe('Array of feature IDs to assign'),
                     rental_rate_tiers: z.string().optional().describe('Legacy daily pricing tiers as JSON string array: [{"min_days": 1, "max_days": 6, "rate_per_day": 100, "currency": "USD"}]'),
-                    rental_offers: z.string().optional().describe('Canonical flexible rental offers as JSON string array supporting daily, package, hourly, monthly + nested extensions[]'),
+                    rental_offers: z.string().optional().describe('Canonical flexible rental offers as JSON string array supporting daily, package, hourly, monthly, optional calendarEligibility ({ kind: "weekend", startDay: "saturday", endDay: "sunday", startTime: null | "HH:MM", endTime: null | "HH:MM", timezoneBasis: "shop_local" }), overlapPolicy ("unknown" | "alternative" | "replaces_standard" | null), and nested extensions[]'),
                 },
             },
             withToolErrorHandling(async ({ id, ...data }, extra) => {
@@ -746,10 +746,10 @@ const handler = createMcpHandler(
             'set_motorcycle_offers',
             {
                 title: 'Set Motorcycle Rental Offers',
-                description: 'Bulk-set canonical flexible rental offers (daily, package, hourly, monthly + nested extensions) for a motorcycle',
+                description: 'Bulk-set canonical flexible rental offers (daily, package, hourly, monthly + nested extensions) with optional calendarEligibility (e.g. Saturday–Sunday weekend packages) and overlapPolicy for a motorcycle',
                 inputSchema: {
                     motorcycle_id: z.string().describe('Motorcycle ID'),
-                    offers: z.string().describe('JSON string array of RentalOfferInput objects with optional nested extensions[]'),
+                    offers: z.string().describe('JSON string array of RentalOfferInput objects with optional calendarEligibility ({ kind: "weekend", startDay: "saturday", endDay: "sunday", startTime: null | "HH:MM", endTime: null | "HH:MM", timezoneBasis: "shop_local" }), overlapPolicy ("unknown" | "alternative" | "replaces_standard" | null), and nested extensions[]'),
                 },
             },
             withToolErrorHandling(async ({ motorcycle_id, offers }, extra) => {

@@ -121,6 +121,15 @@ export interface ReconciliationCoverage {
   pages: ReconciliationPageObservation[];
 }
 
+export const SUPPORTED_EVIDENCE_PROVENANCE = new Set([
+  'supplier_explicit',
+  'owner_approved_interpretation',
+] as const);
+
+export type ReconciliationEvidenceProvenance =
+  | 'supplier_explicit'
+  | 'owner_approved_interpretation';
+
 export interface ReconciliationEvidenceRecord {
   sourceUrl: string;
   snippet: string;
@@ -129,6 +138,7 @@ export interface ReconciliationEvidenceRecord {
   linkedUrl: string | null;
   observedAt: string | null;
   contentHash: string | null;
+  provenance?: ReconciliationEvidenceProvenance;
 }
 
 export interface ReconciliationIssue {
@@ -1034,6 +1044,20 @@ export function normalizeAndValidateReconciliationReport(
                   Err
                 )
               : null;
+          let provenance: ReconciliationEvidenceProvenance | undefined;
+          if (ev.provenance !== undefined && ev.provenance !== null) {
+            if (
+              typeof ev.provenance !== 'string' ||
+              !SUPPORTED_EVIDENCE_PROVENANCE.has(ev.provenance as ReconciliationEvidenceProvenance)
+            ) {
+              throw new Err(
+                `entries[${eIdx}].evidence[${evIdx}].provenance ('${String(
+                  ev.provenance
+                )}') must be 'supplier_explicit' or 'owner_approved_interpretation'.`
+              );
+            }
+            provenance = ev.provenance as ReconciliationEvidenceProvenance;
+          }
 
           return {
             sourceUrl,
@@ -1043,6 +1067,7 @@ export function normalizeAndValidateReconciliationReport(
             linkedUrl,
             observedAt,
             contentHash,
+            ...(provenance ? { provenance } : {}),
           };
         }
       );

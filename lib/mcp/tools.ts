@@ -20,8 +20,10 @@ import {
 } from './tool-conditions';
 import { sanitizeMotorcycleForTool, sanitizeShopForTool } from './tool-payload';
 import {
+    formatCalendarEligibilityLabel,
     formatExtensionBillingPhrase,
     formatOfferBillingUnitPhrase,
+    formatOverlapPolicyLabel,
     getStandaloneDailyRate,
     parseDurationDaysParam,
     parseIsoCurrencyParam,
@@ -79,7 +81,7 @@ export const openAITools: ChatCompletionTool[] = [
                     },
                     durationDays: {
                         type: 'number',
-                        description: 'Positive integer rental duration in days (e.g., 7 for a week or 30 for 30 days) — evaluates covering daily brackets and exact-day packages',
+                        description: 'Positive integer rental duration in days (e.g., 7 for a week or 30 for 30 days) — evaluates unrestricted covering daily brackets and exact-day packages (calendar-restricted offers such as weekend packages are excluded from duration-only filters)',
                     },
                     knownPriceOnly: {
                         type: 'boolean',
@@ -265,7 +267,7 @@ function parseListMotorcyclesPriceFilters(args: Record<string, unknown>) {
 function buildMotorcycleToolPricing(m: MotorcyclePricingRecord | null | undefined) {
     const offers = resolveMotorcycleRentalOffers(m);
     const dailyRate = getStandaloneDailyRate(m);
-    const { headlineOffer, showFrom } = resolveListingHeadline(m);
+    const { headlineOffer, unitLabel, showFrom } = resolveListingHeadline(m);
     const fallbackCurrency =
         typeof m?.rental_rate_currency === 'string' && m.rental_rate_currency.trim().length > 0
             ? m.rental_rate_currency.trim().toUpperCase()
@@ -273,11 +275,19 @@ function buildMotorcycleToolPricing(m: MotorcyclePricingRecord | null | undefine
     const currency = headlineOffer?.currency || fallbackCurrency;
 
     const priceDisplay = headlineOffer
-        ? `${showFrom ? 'From ' : ''}${formatPlainAmount(headlineOffer.amount)} ${headlineOffer.currency} ${formatOfferBillingUnitPhrase(headlineOffer)}`
+        ? `${showFrom ? 'From ' : ''}${formatPlainAmount(headlineOffer.amount)} ${headlineOffer.currency} ${unitLabel}`
         : 'Price on request';
 
     const rentalOffers = sortRentalOffersForDisplay(offers).map((o) => {
         const billingUnitPhrase = formatOfferBillingUnitPhrase(o);
+        const calendarEligibility = o.calendarEligibility ?? null;
+        const calendarEligibilityLabel = calendarEligibility
+            ? formatCalendarEligibilityLabel(calendarEligibility)
+            : null;
+        const overlapPolicy = o.overlapPolicy ?? null;
+        const overlapPolicyLabel = overlapPolicy
+            ? formatOverlapPolicyLabel(overlapPolicy)
+            : null;
         return {
             offerType: o.offerType,
             amount: o.amount,
@@ -287,12 +297,16 @@ function buildMotorcycleToolPricing(m: MotorcyclePricingRecord | null | undefine
             minDuration: o.minDuration,
             maxDuration: o.maxDuration,
             billingUnitPhrase,
-            formattedOffer: `${o.isFrom ? 'From ' : ''}${formatPlainAmount(o.amount)} ${o.currency} ${billingUnitPhrase}`,
+            formattedOffer: `${o.isFrom ? 'From ' : ''}${formatPlainAmount(o.amount)} ${o.currency} ${billingUnitPhrase}${calendarEligibilityLabel ? `, ${calendarEligibilityLabel}` : ''}`,
             dailyEquivalent: o.dailyEquivalent,
             minCommitment: o.minCommitment,
             billingIncrement: o.billingIncrement,
             supplierLabel: o.supplierLabel,
             isFrom: o.isFrom,
+            calendarEligibility,
+            calendarEligibilityLabel,
+            overlapPolicy,
+            overlapPolicyLabel,
             extensions: o.extensions.map((ext) => ({
                 amount: ext.amount,
                 currency: ext.currency,

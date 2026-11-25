@@ -663,6 +663,17 @@ function canonicalizeOffersForComparison(rawOffers: any[]): any[] {
         : null,
       supplierLabel: o.supplierLabel ?? null,
       isFrom: Boolean(o.isFrom),
+      calendarEligibility: o.calendarEligibility
+        ? {
+            kind: o.calendarEligibility.kind,
+            startDay: o.calendarEligibility.startDay,
+            endDay: o.calendarEligibility.endDay,
+            startTime: o.calendarEligibility.startTime ?? null,
+            endTime: o.calendarEligibility.endTime ?? null,
+            timezoneBasis: o.calendarEligibility.timezoneBasis,
+          }
+        : null,
+      overlapPolicy: o.overlapPolicy ?? null,
       extensions: [...(o.extensions || [])]
         .map((ext) => ({
           amount: Number(ext.amount),
@@ -693,6 +704,17 @@ function canonicalizeSortKey(obj: Record<string, any>): string {
     obj.maxDuration,
     obj.currency,
     obj.supplierLabel ?? '',
+    obj.calendarEligibility
+      ? [
+          obj.calendarEligibility.kind,
+          obj.calendarEligibility.startDay,
+          obj.calendarEligibility.endDay,
+          obj.calendarEligibility.startTime ?? '',
+          obj.calendarEligibility.endTime ?? '',
+          obj.calendarEligibility.timezoneBasis,
+        ]
+      : null,
+    obj.overlapPolicy ?? '',
     obj.amount,
   ]);
 }
@@ -1303,7 +1325,7 @@ function enforceAndCaptureProposalItemOfferBaseline(item: any, liveRow: any): vo
     hasStrictNonDailyOrExtensionOffers(liveOffers)
   ) {
     throw new RentalOfferConflictError(
-      `Cannot stage legacy rates-only update for motorcycle '${item.entity_id}' because it currently holds non-daily or extension rental offers; submit proposedData.offers instead.`
+      `Cannot stage legacy rates-only update for motorcycle '${item.entity_id}' because it currently holds non-daily, calendar-restricted, or extension rental offers; submit proposedData.offers instead.`
     );
   }
 
@@ -3916,7 +3938,7 @@ export class ChangeProposalService {
           hasStrictNonDailyOrExtensionOffers(liveOffers)
         ) {
           throw new RentalOfferConflictError(
-            `Cannot apply legacy rates-only update to motorcycle '${item.entity_id}' because it currently holds non-daily or extension rental offers.`
+            `Cannot apply legacy rates-only update to motorcycle '${item.entity_id}' because it currently holds non-daily, calendar-restricted, or extension rental offers.`
           );
         }
 
@@ -4091,7 +4113,7 @@ export class ChangeProposalService {
             }
             if (hasStrictNonDailyOrExtensionOffers(liveOffers)) {
               throw new StaleMotorcycleStateError(
-                `Stale motorcycle offers for '${item.entity_id}': concurrent non-daily or extension rental_offers added since proposal staging.`
+                `Stale motorcycle offers for '${item.entity_id}': concurrent non-daily, calendar-restricted, or extension rental_offers added since proposal staging.`
               );
             }
           }

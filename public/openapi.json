@@ -384,7 +384,7 @@
             },
             "put": {
                 "summary": "Replace motorcycle rental offers",
-                "description": "Atomically replace all Rental Offers and attached Extension Charges for a motorcycle, automatically projecting standalone unlabeled daily offers to legacy daily rate tiers (admin only)",
+                "description": "Atomically replace all Rental Offers and attached Extension Charges for a motorcycle, supporting optional calendarEligibility and overlapPolicy on standalone offers and automatically projecting unrestricted standalone daily offers to legacy daily rate tiers (admin only)",
                 "operationId": "replaceMotorcycleOffers",
                 "tags": [
                     "Motorcycles"
@@ -443,7 +443,7 @@
         "/motorcycles/{id}/rate-tiers": {
             "put": {
                 "summary": "Replace legacy daily rate tiers",
-                "description": "Replace standalone daily rate tiers for daily-only motorcycles. Returns 409 Conflict if non-daily or extension offers exist on the motorcycle.",
+                "description": "Replace standalone daily rate tiers for daily-only unrestricted motorcycles. Returns 409 Conflict if non-daily, calendar-restricted, or extension offers exist on the motorcycle.",
                 "operationId": "replaceMotorcycleRateTiers",
                 "tags": [
                     "Motorcycles"
@@ -1349,6 +1349,55 @@
                     }
                 }
             },
+            "RentalOfferCalendarEligibility": {
+                "type": "object",
+                "required": [
+                    "kind"
+                ],
+                "additionalProperties": false,
+                "description": "Optional structured calendar restriction on a standalone Rental Offer (null = unrestricted; forbidden on extension offers). Evaluated strictly in shop-local calendar without fabricating unspecified pickup/return hours.",
+                "properties": {
+                    "kind": {
+                        "type": "string",
+                        "enum": [
+                            "weekend"
+                        ]
+                    },
+                    "startDay": {
+                        "type": "string",
+                        "enum": [
+                            "saturday"
+                        ],
+                        "default": "saturday"
+                    },
+                    "endDay": {
+                        "type": "string",
+                        "enum": [
+                            "sunday"
+                        ],
+                        "default": "sunday"
+                    },
+                    "startTime": {
+                        "type": "string",
+                        "nullable": true,
+                        "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                        "description": "Optional explicit 24-hour HH:MM start time on Saturday in shop-local time; null when not stated by supplier."
+                    },
+                    "endTime": {
+                        "type": "string",
+                        "nullable": true,
+                        "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                        "description": "Optional explicit 24-hour HH:MM end time on Sunday in shop-local time; null when not stated by supplier."
+                    },
+                    "timezoneBasis": {
+                        "type": "string",
+                        "enum": [
+                            "shop_local"
+                        ],
+                        "default": "shop_local"
+                    }
+                }
+            },
             "RentalOfferInput": {
                 "type": "object",
                 "required": [
@@ -1413,6 +1462,21 @@
                     },
                     "isFrom": {
                         "type": "boolean"
+                    },
+                    "calendarEligibility": {
+                        "$ref": "#/components/schemas/RentalOfferCalendarEligibility",
+                        "nullable": true,
+                        "description": "Optional calendar restriction (null = unrestricted). Calendar-restricted offers coexist with same-duration unrestricted offers and are excluded from legacy daily projections and duration-only price filters."
+                    },
+                    "overlapPolicy": {
+                        "type": "string",
+                        "enum": [
+                            "unknown",
+                            "alternative",
+                            "replaces_standard"
+                        ],
+                        "nullable": true,
+                        "description": "Tri-state precedence rule when a calendar-restricted offer overlaps unrestricted offers on eligible dates. Defaults to 'unknown' when calendarEligibility is non-null; MUST be null when calendarEligibility is null."
                     },
                     "extensions": {
                         "type": "array",
