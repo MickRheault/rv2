@@ -27,14 +27,12 @@ import {
   formatExtensionBillingPhrase,
   formatOfferBillingUnitPhrase,
   formatOfferDurationRangeLabel,
-  formatOverlapPolicyLabel,
   isCalendarRestrictedOffer,
   resolveFallbackRentalOffers,
   selectPrimaryHeadlineOffer,
   shouldShowHeadlineFromPrefix,
   sortRentalOffersForDisplay,
   type NormalizedRentalOffer,
-  type StandaloneOfferType,
 } from '@/lib/rental-offers'
 import SameModelWidget from '@/components/motorcycle/SameModelWidget'
 
@@ -44,11 +42,36 @@ interface MotorcycleDetailsProps {
   countryName?: string
 }
 
-const OFFER_TYPE_LABELS: Record<StandaloneOfferType, string> = {
-  daily: 'Daily Rate',
-  hourly: 'Hourly Rental',
-  package: 'Fixed Package',
-  monthly: 'Monthly Rental',
+function getPublicOfferTitle(offer: NormalizedRentalOffer): string {
+  const supplierLabel = offer.supplierLabel?.trim()
+  if (supplierLabel) return supplierLabel
+  if (offer.calendarEligibility?.kind === 'weekend') {
+    return offer.billingBasis === 'package_total' || offer.offerType === 'package'
+      ? 'Weekend package'
+      : 'Weekend rate'
+  }
+  if (offer.billingBasis === 'package_total') {
+    if (!Number.isFinite(offer.minDuration) || offer.minDuration <= 0) {
+      return 'Package'
+    }
+    const unit =
+      offer.durationUnit === 'hour'
+        ? 'hour'
+        : offer.durationUnit === 'calendar_month'
+        ? 'month'
+        : 'day'
+    return `${offer.minDuration}-${unit} package`
+  }
+  switch (offer.offerType) {
+    case 'daily':
+      return 'Daily rate'
+    case 'hourly':
+      return 'Hourly rental'
+    case 'monthly':
+      return 'Monthly rental'
+    default:
+      return 'Package'
+  }
 }
 
 function resolveDisplayOffers(motorcycle: MotorcycleWithDetails): NormalizedRentalOffer[] {
@@ -234,28 +257,12 @@ export default function MotorcycleDetails({
                       >
                         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                           <div className="space-y-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="font-medium text-gray-900">
-                                {offer.supplierLabel || OFFER_TYPE_LABELS[offer.offerType]}
-                              </span>
-                              <Badge variant="secondary" className="text-xs border border-gray-200">
-                                {OFFER_TYPE_LABELS[offer.offerType]}
-                              </Badge>
-                              {offer.calendarEligibility && (
-                                <Badge
-                                  variant="default"
-                                  className="text-xs bg-amber-50 text-amber-800 border border-amber-200"
-                                >
-                                  {formatCalendarEligibilityLabel(offer.calendarEligibility)}
-                                </Badge>
-                              )}
+                            <div className="font-medium text-gray-900">
+                              {getPublicOfferTitle(offer)}
                             </div>
-                            <div className="text-sm text-gray-600">
-                              {formatOfferDurationRangeLabel(offer)}
-                            </div>
-                            {offer.calendarEligibility && (
-                              <div className="text-xs text-amber-800">
-                                {formatOverlapPolicyLabel(offer.overlapPolicy ?? 'unknown')}
+                            {offer.billingBasis !== 'package_total' && (
+                              <div className="text-sm text-gray-600">
+                                {formatOfferDurationRangeLabel(offer)}
                               </div>
                             )}
                             {offer.minCommitment && (
