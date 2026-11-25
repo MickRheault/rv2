@@ -362,7 +362,9 @@ export function stripIdsFromNormalizedOffers(
 }
 
 export function hasStrictNonDailyOrExtensionOffers(offers: NormalizedRentalOffer[]): boolean {
-  return offers.some((o) => o.offerType !== 'daily' || o.extensions.length > 0);
+  return offers.some(
+    (o) => o.offerType !== 'daily' || o.extensions.length > 0 || o.calendarEligibility != null
+  );
 }
 
 export interface HydratedMotorcycleBaselinePricing {

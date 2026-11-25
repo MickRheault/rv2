@@ -56,6 +56,14 @@ _Avoid_: Standalone extra-day tier, unlinked overage note
 A read-only comparison figure (`round(amount / days, 2)`) deterministically derived for fixed-day `package_total` Rental Offers (`duration_unit = 'day'`, fixed `days > 1`), displayed secondary to the authoritative package total and never computed for `calendar_month`, `hourly`, `daily`, or `extension` offers.
 _Avoid_: Standalone daily rate, 30-day calendar-month division, manual daily override
 
+**Calendar Eligibility**:
+An optional calendar-window restriction on a standalone Rental Offer (such as a Saturday–Sunday weekend window in the rental shop's local calendar, with optional pickup/return hours kept unset when unspecified), modeled independently from rental duration so standard duration offers and calendar-restricted offers can coexist verbatim.
+_Avoid_: Weekend label only, 48-hour duration alias, fabricated pickup hours, live booking calendar
+
+**Overlap Policy**:
+An explicit precedence rule on a calendar-restricted Rental Offer declaring whether it acts as an `alternative` to standard offers, `replaces_standard` pricing during its eligible calendar window, or remains `unknown` when supplier evidence does not establish precedence; never inferred from price, specificity, or label.
+_Avoid_: Cheapest wins, implicit weekend override, automatic date quote
+
 **Recovery Snapshot**:
 A full, self-contained SQL dump of the `public` and `auth` database schemas and data, compressed and GPG-encrypted for point-in-time disaster recovery.
 _Avoid_: Partial dump, unencrypted export, table CSV

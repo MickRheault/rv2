@@ -82,6 +82,8 @@ export function serializeOffersForRpc(offers: NormalizedRentalOffer[]) {
       billing_increment_unit: o.billingIncrement?.unit ?? null,
       supplier_label: o.supplierLabel,
       is_from: o.isFrom,
+      calendar_eligibility: o.calendarEligibility ?? null,
+      overlap_policy: o.overlapPolicy ?? null,
       sort_order: index,
       extensions: o.extensions.map((ext, extIdx) => ({
         amount: ext.amount,

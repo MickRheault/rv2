@@ -1016,6 +1016,7 @@ export type Database = {
           billing_basis: string
           billing_increment_unit: string | null
           billing_increment_value: number | null
+          calendar_eligibility: Json | null
           created_at: string
           currency: string
           duration_unit: string
@@ -1027,6 +1028,7 @@ export type Database = {
           min_duration: number
           motorcycle_id: string
           offer_type: string
+          overlap_policy: string | null
           parent_offer_id: string | null
           sort_order: number
           supplier_label: string | null
@@ -1037,6 +1039,7 @@ export type Database = {
           billing_basis: string
           billing_increment_unit?: string | null
           billing_increment_value?: number | null
+          calendar_eligibility?: Json | null
           created_at?: string
           currency: string
           duration_unit: string
@@ -1048,6 +1051,7 @@ export type Database = {
           min_duration: number
           motorcycle_id: string
           offer_type: string
+          overlap_policy?: string | null
           parent_offer_id?: string | null
           sort_order?: number
           supplier_label?: string | null
@@ -1058,6 +1062,7 @@ export type Database = {
           billing_basis?: string
           billing_increment_unit?: string | null
           billing_increment_value?: number | null
+          calendar_eligibility?: Json | null
           created_at?: string
           currency?: string
           duration_unit?: string
@@ -1069,6 +1074,7 @@ export type Database = {
           min_duration?: number
           motorcycle_id?: string
           offer_type?: string
+          overlap_policy?: string | null
           parent_offer_id?: string | null
           sort_order?: number
           supplier_label?: string | null
